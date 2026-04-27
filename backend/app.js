@@ -15,8 +15,13 @@ const app = express();
 
 // Middlewares
 app.use(express.json());
-app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+
+// CORS normalization: remove trailing slash from frontend URL
+const frontendUrl = env.FRONTEND_URL ? env.FRONTEND_URL.replace(/\/$/, "") : 'http://localhost:5173';
+app.use(cors({ origin: frontendUrl, credentials: true }));
+
 app.use(requestLogger);
+
 
 // Routes
 app.use('/api/auth', authRoutes);
