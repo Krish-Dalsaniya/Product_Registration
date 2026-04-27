@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-heading: "IBM Plex Sans", sans-serif;
+  --color-emerald-primary: #1a7a48;
+}
+
+:root {
+  --bg-sidebar: #061411;
+  --bg-workspace: #F8FAFC;
+  --bg-card-light: #FFFFFF;
+  --border-light: #E2E8F0;
+  --text-main-light: #0F172A;
+  --text-muted-light: #64748B;
+  --emerald-accent: #1a7a48;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-workspace);
+    color: var(--text-main-light);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    @apply antialiased overflow-x-hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    @apply tracking-tight;
+  }
+}
+
+/* Light Workspace Cards & Elements */
+.workspace-card {
+  background: var(--bg-card-light);
+  border: 0.5px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Sidebar Utilities */
+.sidebar-glass {
+  background: rgba(6, 20, 17, 0.98);
+  backdrop-filter: blur(20px);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+/* Button & Active States */
+.btn-primary {
+  @apply bg-[#1a7a48] hover:bg-[#15633a] text-white font-bold py-2.5 px-6 rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2 text-[13px];
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s infinite;
+}
+
+/* Table Utilities */
+table th {
+  font-family: var(--font-heading);
+  @apply uppercase tracking-widest text-gray-400 font-bold;
+}
+
+table td {
+  font-family: var(--font-sans);
+}
