@@ -47,7 +47,7 @@ const Sidebar = ({ role }) => {
       <div className="w-6 flex justify-center">
         {Icon && <Icon size={18} className={location.pathname === to ? 'text-blue-600' : 'text-gray-400'} strokeWidth={2} />}
       </div>
-      <span className={`text-sm tracking-tight ${isSubItem ? 'text-[11px]' : ''}`}>{label}</span>
+      <span className={`text-sm font-bold tracking-tight ${isSubItem ? 'text-[11px] font-medium' : ''}`}>{label}</span>
     </NavLink>
   );
 
@@ -130,7 +130,7 @@ const Sidebar = ({ role }) => {
                 >
                   <div className="flex items-center gap-4">
                     <PenTool size={18} className={openMenus.designers ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'} />
-                    <span className={`text-xs font-bold tracking-widest ${openMenus.designers ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`}>DESIGNERS</span>
+                    <span className={`text-sm font-bold tracking-tight ${openMenus.designers ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`}>Designers</span>
                   </div>
                   {openMenus.designers ? <ChevronUp size={12} className="text-blue-600" /> : <ChevronDown size={12} className="text-gray-400" />}
                 </div>
@@ -142,8 +142,8 @@ const Sidebar = ({ role }) => {
                   </div>
                 )}
 
-                <NavItem to="/admin/maintenance" label="MAINTENANCE" icon={Wrench} />
-                <NavItem to="/admin/sales" label="SALES" icon={ShoppingBag} />
+                <NavItem to="/admin/maintenance" label="Maintenance" icon={Wrench} />
+                <NavItem to="/admin/sales" label="Sales" icon={ShoppingBag} />
 
               </div>
             )}
