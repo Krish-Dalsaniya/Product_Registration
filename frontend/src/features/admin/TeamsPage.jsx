@@ -36,8 +36,12 @@ const TeamsPage = () => {
       setData(res.data.data);
       const userRes = await getUsers({ role, limit: 100 });
       setAvailableUsers(userRes.data.data);
-      const itemRes = await axiosInstance.get(role === 'Designer' ? '/admin/projects' : '/admin/products');
-      setAvailableItems(itemRes.data.data);
+      if (role !== 'Designer') {
+        const itemRes = await axiosInstance.get(role === 'Sales' ? '/admin/products' : '/admin/products');
+        setAvailableItems(itemRes.data.data);
+      } else {
+        setAvailableItems([]);
+      }
     } catch (error) {
       toast.error(`Failed to fetch ${role} information`);
     } finally {
@@ -60,7 +64,7 @@ const TeamsPage = () => {
     setIsSubmitting(true);
     try {
       if (modalMode === 'create') {
-        await createTeam({ ...formData, role_name: role, member_ids: selectedMembers, project_ids: role === 'Designer' ? selectedItems : [], product_ids: role !== 'Designer' ? selectedItems : [] });
+        await createTeam({ ...formData, role_name: role, member_ids: selectedMembers, project_ids: [], product_ids: role !== 'Designer' ? selectedItems : [] });
         toast.success(`${role} Team created successfully!`);
       } else {
         toast.success(`Team updated successfully!`);
@@ -122,7 +126,11 @@ const TeamsPage = () => {
         </div>
       )
     },
-    { key: 'active_projects', label: role === 'Sales' ? 'Sales Targets' : role === 'Maintenance' ? 'Tasks' : 'Active Projects', render: (row) => <span className="font-bold text-gray-800">{row.active_projects || 0}</span> }
+    ...(role !== 'Designer' ? [{ 
+      key: 'active_projects', 
+      label: role === 'Sales' ? 'Sales Targets' : 'Tasks', 
+      render: (row) => <span className="font-bold text-gray-800">{row.active_projects || 0}</span> 
+    }] : [])
   ];
 
   const getRoleIcon = () => {
@@ -173,7 +181,7 @@ const TeamsPage = () => {
               <input {...register('team_name', { required: 'Team name is required' })} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px] disabled:bg-gray-50" placeholder={`e.g. ${role} Unit Alpha`} />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className={`grid ${role === 'Designer' ? 'grid-cols-1' : 'grid-cols-2'} gap-6`}>
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Users size={12} /> Personnel</label>
                 <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1 custom-scrollbar bg-gray-50/30">
@@ -188,21 +196,23 @@ const TeamsPage = () => {
                   })}
                 </div>
               </div>
-              <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Box size={12} /> {role === 'Designer' ? 'Projects' : 'Products'}</label>
-                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1 custom-scrollbar bg-gray-50/30">
-                  {availableItems.map(item => {
-                    const itemName = item.project_name || item.product_name;
-                    const isSelected = selectedItems.includes(item.project_id || item.product_id) || (modalMode === 'view' && (selectedTeam?.active_project_names?.includes(itemName) || selectedTeam?.linked_products?.includes(itemName)));
-                    return (
-                      <div key={item.project_id || item.product_id} onClick={() => toggleSelection(item.project_id || item.product_id, selectedItems, setSelectedItems)} className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${isSelected ? 'bg-blue-500/10 border border-blue-500/20' : modalMode === 'view' ? 'opacity-50' : 'hover:bg-white cursor-pointer'}`}>
-                        <span className={`text-[11px] font-bold tracking-tight ${isSelected ? 'text-blue-600' : 'text-gray-400'}`}>{itemName}</span>
-                        {isSelected && <Check size={12} className="text-blue-500" />}
-                      </div>
-                    );
-                  })}
+              {role !== 'Designer' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Box size={12} /> {role === 'Sales' ? 'Products' : 'Tasks'}</label>
+                  <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1 custom-scrollbar bg-gray-50/30">
+                    {availableItems.map(item => {
+                      const itemName = item.project_name || item.product_name;
+                      const isSelected = selectedItems.includes(item.project_id || item.product_id) || (modalMode === 'view' && (selectedTeam?.active_project_names?.includes(itemName) || selectedTeam?.linked_products?.includes(itemName)));
+                      return (
+                        <div key={item.project_id || item.product_id} onClick={() => toggleSelection(item.project_id || item.product_id, selectedItems, setSelectedItems)} className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${isSelected ? 'bg-blue-500/10 border border-blue-500/20' : modalMode === 'view' ? 'opacity-50' : 'hover:bg-white cursor-pointer'}`}>
+                          <span className={`text-[11px] font-bold tracking-tight ${isSelected ? 'text-blue-600' : 'text-gray-400'}`}>{itemName}</span>
+                          {isSelected && <Check size={12} className="text-blue-500" />}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div>
