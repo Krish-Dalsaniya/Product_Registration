@@ -55,13 +55,12 @@ const Sidebar = ({ role }) => {
     <aside className="w-64 bg-[#061411] h-screen fixed left-0 top-0 z-40 hidden md:flex flex-col shadow-2xl border-r border-white/5 sidebar-glass">
       {/* USER PROFILE AT TOP */}
       <div className="p-6 border-b border-white/5 bg-black/10">
-        <div className="flex flex-col group cursor-pointer mb-10">
-          <div className="flex items-baseline gap-0.5">
-            <span className="text-white font-serif text-3xl font-bold tracking-tight">LE</span>
-            <div className="w-6 h-6 bg-white rounded-full mb-0.5" />
-            <span className="text-white font-serif text-3xl font-bold tracking-tight">NS'</span>
-          </div>
-          <span className="text-[10px] text-gray-400 font-bold tracking-[0.3em] uppercase -mt-1 ml-auto">Integrations</span>
+        <div className="flex justify-center mb-10">
+          <img 
+            src="/logo.png" 
+            alt="Leons CRM" 
+            className="h-10 w-auto object-contain" 
+          />
         </div>
 
 
