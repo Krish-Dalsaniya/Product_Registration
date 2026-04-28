@@ -47,8 +47,8 @@ const LoginPage = () => {
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: "url('/bg.jpg.jpeg')" }}
     >
-      {/* Overlay to ensure readability */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+      {/* Light Overlay */}
+      <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]" />
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
@@ -65,7 +65,7 @@ const LoginPage = () => {
         <div className="glass-card p-8 animate-in fade-in zoom-in-95 duration-500">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <label className="block text-[10px] font-black text-gray-100 uppercase tracking-widest mb-2 ml-1">Email Address</label>
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
               <div className="relative group">
                 <input
                   {...register('email', { 
@@ -73,7 +73,7 @@ const LoginPage = () => {
                     pattern: { value: /^\S+@\S+$/i, message: 'Invalid email format' }
                   })}
                   type="email"
-                  className={`w-full bg-white/[0.02] border ${errors.email ? 'border-red-500' : 'border-white/5'} rounded-xl px-5 py-3.5 text-white outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-500`}
+                  className={`w-full bg-gray-50 border ${errors.email ? 'border-red-500' : 'border-gray-200'} rounded-xl px-5 py-3.5 text-gray-900 outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-400`}
                   placeholder="name@procore.sys"
                 />
               </div>
@@ -81,12 +81,12 @@ const LoginPage = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-100 uppercase tracking-widest mb-2 ml-1">Password</label>
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Password</label>
               <div className="relative group">
                 <input
                   {...register('password', { required: 'Password is required' })}
                   type={showPassword ? 'text' : 'password'}
-                  className={`w-full bg-white/[0.02] border ${errors.password ? 'border-red-500' : 'border-white/5'} rounded-xl px-5 py-3.5 text-white outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-500`}
+                  className={`w-full bg-gray-50 border ${errors.password ? 'border-red-500' : 'border-gray-200'} rounded-xl px-5 py-3.5 text-gray-900 outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-400`}
                   placeholder="••••••••"
                 />
                 <button

@@ -132,7 +132,7 @@ const UserListPage = ({ initialRole = '' }) => {
         
         <button 
           onClick={handleOpenCreate} 
-          className="bg-[#1a7a48] hover:bg-[#15633a] text-white font-bold py-2.5 px-6 rounded-lg shadow-lg shadow-emerald-900/10 transition-all active:scale-95 flex items-center gap-2 text-[13px]"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg shadow-blue-900/10 transition-all active:scale-95 flex items-center gap-2 text-[13px]"
         >
           <Plus size={18} />
           <span>{initialRole ? `Add ${initialRole}` : 'Add New User'}</span>
@@ -147,7 +147,7 @@ const UserListPage = ({ initialRole = '' }) => {
             placeholder="Filter records..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg py-2.5 pl-10 pr-4 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px]"
+            className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg py-2.5 pl-10 pr-4 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]"
           />
         </div>
         
@@ -232,20 +232,20 @@ const UserListPage = ({ initialRole = '' }) => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
-              <input {...register('full_name', { required: 'Name is required' })} autoComplete="off" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px]" placeholder="e.g. John Doe" />
+              <input {...register('full_name', { required: 'Name is required' })} autoComplete="off" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]" placeholder="e.g. John Doe" />
               {errors.full_name && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.full_name.message}</p>}
             </div>
 
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
-              <input {...register('email', { required: 'Email is required' })} type="email" autoComplete="off" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px]" placeholder="john@procore.sys" />
+              <input {...register('email', { required: 'Email is required' })} type="email" autoComplete="off" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]" placeholder="john@procore.sys" />
               {errors.email && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.email.message}</p>}
             </div>
 
             {modalMode === 'create' && (
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password</label>
-                <input {...register('password', { required: 'Password is required' })} type="password" autoComplete="new-password" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px]" placeholder="••••••••" />
+                <input {...register('password', { required: 'Password is required' })} type="password" autoComplete="new-password" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]" placeholder="••••••••" />
                 {errors.password && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.password.message}</p>}
               </div>
             )}
@@ -253,7 +253,7 @@ const UserListPage = ({ initialRole = '' }) => {
             {!initialRole && (
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Department</label>
-                <select {...register('role_name', { required: 'Role is required' })} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px] appearance-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
+                <select {...register('role_name', { required: 'Role is required' })} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
                   <option value="Designer">Designer Department</option>
                   <option value="Sales">Sales Network</option>
                   <option value="Maintenance">Maintenance Crew</option>
@@ -262,7 +262,7 @@ const UserListPage = ({ initialRole = '' }) => {
             )}
 
             <div className="pt-4">
-              <button disabled={isSubmitting} type="submit" className="w-full bg-[#1a7a48] hover:bg-[#15633a] text-white font-bold py-3.5 rounded-lg shadow-lg shadow-emerald-900/10 transition-all active:scale-95 flex items-center justify-center gap-2 text-[13px]">
+              <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-blue-900/10 transition-all active:scale-95 flex items-center justify-center gap-2 text-[13px]">
                 {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : modalMode === 'create' ? 'INITIALIZE REGISTRATION' : 'UPDATE USER PROFILE'}
               </button>
             </div>

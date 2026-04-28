@@ -39,29 +39,31 @@ const Sidebar = ({ role }) => {
       className={({ isActive }) =>
         `flex items-center gap-4 px-10 py-3 transition-all ${
           isActive 
-            ? 'text-white font-bold bg-white/5' 
-            : 'text-gray-400 hover:text-white hover:bg-white/5'
+            ? 'text-blue-600 font-bold bg-blue-50' 
+            : 'text-gray-500 hover:text-blue-600 hover:bg-gray-50'
         }`
       }
     >
       <div className="w-6 flex justify-center">
-        {Icon && <Icon size={18} className={location.pathname === to ? 'text-emerald-500' : 'text-gray-500'} strokeWidth={2} />}
+        {Icon && <Icon size={18} className={location.pathname === to ? 'text-blue-600' : 'text-gray-400'} strokeWidth={2} />}
       </div>
-      <span className={`text-sm tracking-tight ${isSubItem ? 'text-xs' : ''}`}>{label}</span>
+      <span className={`text-sm tracking-tight ${isSubItem ? 'text-[11px]' : ''}`}>{label}</span>
     </NavLink>
   );
 
   return (
-    <aside className="w-64 bg-[#061411] h-screen fixed left-0 top-0 z-40 hidden md:flex flex-col shadow-2xl border-r border-white/5 sidebar-glass">
+    <aside className="w-64 bg-white h-screen fixed left-0 top-0 z-40 hidden md:flex flex-col shadow-xl border-r border-gray-100">
       {/* USER PROFILE AT TOP */}
-      <div className="p-6 border-b border-white/5 bg-black/10">
-        <div className="flex justify-center mb-10">
-          <img 
-            src="/logo.png" 
-            alt="Leons CRM" 
-            className="h-10 w-auto object-contain" 
-          />
-        </div>
+      {/* LOGO AT TOP */}
+      <div className="p-8 border-b border-gray-50 flex justify-center">
+        <img 
+          src="/logo.png" 
+          alt="Leons CRM" 
+          className="h-10 w-auto object-contain" 
+        />
+      </div>
+
+      <div className="p-6 border-b border-gray-50 bg-gray-50/50">
 
 
 
@@ -87,8 +89,8 @@ const Sidebar = ({ role }) => {
           </div>
 
           <div className="mt-5 text-center">
-            <p className="text-base font-bold text-white tracking-tight leading-tight">{user?.full_name?.toLowerCase()}</p>
-            <p className="text-[12px] font-medium text-gray-500 mt-1">{user?.role_name}</p>
+            <p className="text-base font-bold text-gray-900 tracking-tight leading-tight">{user?.full_name?.toLowerCase()}</p>
+            <p className="text-[12px] font-medium text-gray-400 mt-1">{user?.role_name}</p>
           </div>
         </div>
 
@@ -105,16 +107,16 @@ const Sidebar = ({ role }) => {
             {/* Category: User Center (Matching Image Behavior but Dark Theme) */}
             <div 
               onClick={() => toggleMenu('users')}
-              className={`flex items-center justify-between px-8 py-3.5 cursor-pointer hover:bg-white/5 transition-all ${openMenus.users ? 'text-emerald-400' : 'text-gray-400'}`}
+              className={`flex items-center justify-between px-8 py-3.5 cursor-pointer hover:bg-gray-50 transition-all ${openMenus.users ? 'text-blue-600' : 'text-gray-500'}`}
             >
               <div className="flex items-center gap-4">
-                <Box size={20} className={openMenus.users ? 'text-emerald-400' : 'text-gray-500'} />
+                <Box size={20} className={openMenus.users ? 'text-blue-600' : 'text-gray-400'} />
                 <span className="text-sm font-bold uppercase tracking-tight">Users</span>
               </div>
               {openMenus.users ? (
-                <ChevronUp size={16} className="text-emerald-400" strokeWidth={2.5} />
+                <ChevronUp size={16} className="text-blue-600" strokeWidth={2.5} />
               ) : (
-                <ChevronDown size={16} className="text-gray-500" strokeWidth={2.5} />
+                <ChevronDown size={16} className="text-gray-400" strokeWidth={2.5} />
               )}
             </div>
 
@@ -124,13 +126,13 @@ const Sidebar = ({ role }) => {
                 {/* Nested Designers Sub-category */}
                 <div 
                   onClick={(e) => { e.stopPropagation(); toggleMenu('designers'); }}
-                  className="flex items-center justify-between px-10 py-2.5 cursor-pointer hover:text-white transition-all group"
+                  className="flex items-center justify-between px-10 py-2.5 cursor-pointer hover:text-blue-600 transition-all group"
                 >
                   <div className="flex items-center gap-4">
-                    <PenTool size={18} className={openMenus.designers ? 'text-emerald-400' : 'text-gray-400 group-hover:text-gray-200'} />
-                    <span className={`text-xs font-bold tracking-widest ${openMenus.designers ? 'text-emerald-400' : 'text-gray-400 group-hover:text-gray-200'}`}>DESIGNERS</span>
+                    <PenTool size={18} className={openMenus.designers ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'} />
+                    <span className={`text-xs font-bold tracking-widest ${openMenus.designers ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`}>DESIGNERS</span>
                   </div>
-                  {openMenus.designers ? <ChevronUp size={12} className="text-emerald-400" /> : <ChevronDown size={12} className="text-gray-400" />}
+                  {openMenus.designers ? <ChevronUp size={12} className="text-blue-600" /> : <ChevronDown size={12} className="text-gray-400" />}
                 </div>
 
                 {openMenus.designers && (
@@ -165,10 +167,10 @@ const Sidebar = ({ role }) => {
       </div>
 
       {/* SIGN OUT AT BOTTOM */}
-      <div className="p-4 border-t border-white/5">
+      <div className="p-4 border-t border-gray-100">
         <button
           onClick={logout}
-          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl bg-red-500/5 hover:bg-red-500/10 text-xs font-black text-red-400 border border-red-500/10 transition-all uppercase tracking-widest group"
+          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl bg-red-50 hover:bg-red-100 text-xs font-black text-red-600 border border-red-100 transition-all uppercase tracking-widest group"
         >
           <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
           <span>Logout Session</span>

@@ -43,13 +43,13 @@ const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentP
                   <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
                       onClick={(e) => { e.stopPropagation(); onView && onView(row); }}
-                      className="border-[0.5px] border-gray-300 bg-transparent text-[11px] px-2 py-1 rounded-[5px] hover:bg-white hover:border-emerald-500 transition-all"
+                      className="border-[0.5px] border-gray-300 bg-transparent text-[11px] px-2 py-1 rounded-[5px] hover:bg-white hover:border-blue-500 transition-all"
                     >
                       View
                     </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); onEdit && onEdit(row); }}
-                      className="border-[0.5px] border-gray-300 bg-transparent text-[11px] px-2 py-1 rounded-[5px] hover:bg-white hover:border-emerald-500 transition-all"
+                      className="border-[0.5px] border-gray-300 bg-transparent text-[11px] px-2 py-1 rounded-[5px] hover:bg-white hover:border-blue-500 transition-all"
                     >
                       Edit
                     </button>

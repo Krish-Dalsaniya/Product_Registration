@@ -3,8 +3,8 @@ import React from 'react';
 const RoleBadge = ({ role }) => {
   const styles = {
     Sales: {
-      bg: '#d4f5e9',
-      text: '#0e6640'
+      bg: '#ecfeff',
+      text: '#0891b2'
     },
     Designer: {
       bg: '#e4e2ff',

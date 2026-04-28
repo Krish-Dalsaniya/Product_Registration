@@ -134,10 +134,10 @@ const TeamsPage = () => {
   ];
 
   const getRoleIcon = () => {
-    if (role === 'Designer') return <Layout className="text-[#1a7a48]" />;
-    if (role === 'Sales') return <ShoppingBag className="text-[#1a7a48]" />;
-    if (role === 'Maintenance') return <Wrench className="text-[#1a7a48]" />;
-    return <Briefcase className="text-[#1a7a48]" />;
+    if (role === 'Designer') return <Layout className="text-blue-600" />;
+    if (role === 'Sales') return <ShoppingBag className="text-blue-600" />;
+    if (role === 'Maintenance') return <Wrench className="text-blue-600" />;
+    return <Briefcase className="text-blue-600" />;
   };
 
   return (
@@ -169,16 +169,16 @@ const TeamsPage = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalMode === 'create' ? `Configure New ${role} Team` : modalMode === 'edit' ? `Update ${role} Team` : `${role} Team Profile`}>
         <div className="space-y-6">
           {modalMode === 'view' && (
-             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
-                <Info className="text-emerald-600 mt-0.5" size={18} />
-                <p className="text-xs text-emerald-800 font-medium leading-relaxed">Viewing active configuration for <strong>{selectedTeam?.team_name}</strong>. This record is currently operational.</p>
+             <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3">
+                <Info className="text-blue-600 mt-0.5" size={18} />
+                <p className="text-xs text-blue-800 font-medium leading-relaxed">Viewing active configuration for <strong>{selectedTeam?.team_name}</strong>. This record is currently operational.</p>
              </div>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Team Designation</label>
-              <input {...register('team_name', { required: 'Team name is required' })} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px] disabled:bg-gray-50" placeholder={`e.g. ${role} Unit Alpha`} />
+              <input {...register('team_name', { required: 'Team name is required' })} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-gray-50" placeholder={`e.g. ${role} Unit Alpha`} />
             </div>
 
             <div className={`grid ${role === 'Designer' ? 'grid-cols-1' : 'grid-cols-2'} gap-6`}>
@@ -217,12 +217,12 @@ const TeamsPage = () => {
 
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Operation Description</label>
-              <textarea {...register('description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px] resize-none disabled:bg-gray-50" placeholder="Operational directives and notes..." />
+              <textarea {...register('description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] resize-none disabled:bg-gray-50" placeholder="Operational directives and notes..." />
             </div>
 
             {modalMode !== 'view' && (
               <div className="pt-2">
-                <button disabled={isSubmitting} type="submit" className="w-full bg-[#1a7a48] hover:bg-[#15633a] text-white font-bold py-3.5 rounded-lg shadow-lg shadow-emerald-900/10 transition-all active:scale-95 flex items-center justify-center gap-2 text-[13px]">
+                <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-blue-900/10 transition-all active:scale-95 flex items-center justify-center gap-2 text-[13px]">
                   {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : modalMode === 'create' ? `INITIALIZE ${role.toUpperCase()} TEAM` : `UPDATE ${role.toUpperCase()} TEAM`}
                 </button>
               </div>
