@@ -36,7 +36,9 @@ async function seed() {
       const res = await client.query(
         `INSERT INTO users (full_name, email, password_hash, role_id) 
          VALUES ($1, $2, $3, $4) 
-         ON CONFLICT (email) DO UPDATE SET full_name = EXCLUDED.full_name
+         ON CONFLICT (email) DO UPDATE SET 
+            full_name = EXCLUDED.full_name,
+            password_hash = EXCLUDED.password_hash
          RETURNING user_id`,
         [u.name, u.email, passwordHash, roles[u.role]]
       );
@@ -84,7 +86,7 @@ async function seed() {
 
     // 5. Team Members
     await client.query(
-      `INSERT INTO team_members (team_id, designer_id, is_lead) VALUES 
+      `INSERT INTO team_members (team_id, user_id, is_lead) VALUES 
        ($1, $2, true),
        ($3, $4, true)
        ON CONFLICT DO NOTHING`,

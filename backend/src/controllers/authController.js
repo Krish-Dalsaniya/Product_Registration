@@ -18,13 +18,20 @@ const login = async (req, res, next) => {
       `SELECT u.*, r.role_name 
        FROM users u 
        JOIN roles r ON r.role_id = u.role_id 
-       WHERE u.email = $1 AND u.is_active = true`,
+       WHERE LOWER(u.email) = LOWER($1) AND u.is_active = true`,
       [email]
     );
 
     const user = result.rows[0];
 
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    if (!user) {
+      console.log(`[Login] User not found for email: ${email}`);
+      return sendError(res, 'UNAUTHORIZED', 'Invalid email or password', 401);
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    if (!isPasswordValid) {
+      console.log(`[Login] Invalid password for user: ${email}`);
       return sendError(res, 'UNAUTHORIZED', 'Invalid email or password', 401);
     }
 
