@@ -65,12 +65,12 @@ const LoginPage = () => {
         <div className="glass-card p-8 animate-in fade-in zoom-in-95 duration-500">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Identity Identifier</label>
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Email Address</label>
               <div className="relative group">
                 <input
                   {...register('email', { 
-                    required: 'Identity identifier is required',
-                    pattern: { value: /^\S+@\S+$/i, message: 'Invalid identifier format' }
+                    required: 'Email address is required',
+                    pattern: { value: /^\S+@\S+$/i, message: 'Invalid email format' }
                   })}
                   type="email"
                   className={`w-full bg-white/[0.02] border ${errors.email ? 'border-red-500' : 'border-white/5'} rounded-xl px-5 py-3.5 text-white outline-none focus:border-emerald-500/50 transition-all placeholder:text-gray-700`}
@@ -81,10 +81,10 @@ const LoginPage = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Security Cipher</label>
+              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Password</label>
               <div className="relative group">
                 <input
-                  {...register('password', { required: 'Security cipher is required' })}
+                  {...register('password', { required: 'Password is required' })}
                   type={showPassword ? 'text' : 'password'}
                   className={`w-full bg-white/[0.02] border ${errors.password ? 'border-red-500' : 'border-white/5'} rounded-xl px-5 py-3.5 text-white outline-none focus:border-emerald-500/50 transition-all placeholder:text-gray-700`}
                   placeholder="••••••••"

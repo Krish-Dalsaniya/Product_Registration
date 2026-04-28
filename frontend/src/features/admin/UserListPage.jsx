@@ -232,20 +232,20 @@ const UserListPage = ({ initialRole = '' }) => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
-              <input {...register('full_name', { required: 'Name is required' })} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px]" placeholder="e.g. John Doe" />
+              <input {...register('full_name', { required: 'Name is required' })} autoComplete="off" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px]" placeholder="e.g. John Doe" />
               {errors.full_name && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.full_name.message}</p>}
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">System Identifier</label>
-              <input {...register('email', { required: 'Email is required' })} type="email" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px]" placeholder="john@procore.sys" />
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
+              <input {...register('email', { required: 'Email is required' })} type="email" autoComplete="off" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px]" placeholder="john@procore.sys" />
               {errors.email && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.email.message}</p>}
             </div>
 
             {modalMode === 'create' && (
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Security Cipher</label>
-                <input {...register('password', { required: 'Password is required' })} type="password" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px]" placeholder="••••••••" />
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password</label>
+                <input {...register('password', { required: 'Password is required' })} type="password" autoComplete="new-password" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-[#1a7a48] focus:ring-4 focus:ring-emerald-500/5 transition-all text-[13px]" placeholder="••••••••" />
                 {errors.password && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.password.message}</p>}
               </div>
             )}
