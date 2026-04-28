@@ -173,7 +173,7 @@ const Sidebar = ({ role }) => {
           className="w-full flex items-center justify-center gap-3 py-3 rounded-xl bg-red-50 hover:bg-red-100 text-xs font-black text-red-600 border border-red-100 transition-all uppercase tracking-widest group"
         >
           <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
-          <span>Logout Session</span>
+          <span>Logout</span>
         </button>
       </div>
     </aside>

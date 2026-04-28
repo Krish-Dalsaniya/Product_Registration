@@ -188,9 +188,9 @@ const TeamsPage = () => {
                   {availableUsers.map(u => {
                     const isSelected = selectedMembers.includes(u.user_id) || (modalMode === 'view' && selectedTeam?.member_names?.includes(u.full_name));
                     return (
-                      <div key={u.user_id} onClick={() => toggleSelection(u.user_id, selectedMembers, setSelectedMembers)} className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${isSelected ? 'bg-[#1a7a48]/10 border border-[#1a7a48]/20' : modalMode === 'view' ? 'opacity-50' : 'hover:bg-white cursor-pointer'}`}>
-                        <span className={`text-[11px] font-bold tracking-tight ${isSelected ? 'text-[#1a7a48]' : 'text-gray-400'}`}>{u.full_name}</span>
-                        {isSelected && <Check size={12} className="text-[#1a7a48]" />}
+                      <div key={u.user_id} onClick={() => toggleSelection(u.user_id, selectedMembers, setSelectedMembers)} className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${isSelected ? 'bg-blue-600/10 border border-blue-600/20' : modalMode === 'view' ? 'opacity-50' : 'hover:bg-white cursor-pointer'}`}>
+                        <span className={`text-[11px] font-bold tracking-tight ${isSelected ? 'text-blue-600' : 'text-gray-400'}`}>{u.full_name}</span>
+                        {isSelected && <Check size={12} className="text-blue-600" />}
                       </div>
                     );
                   })}

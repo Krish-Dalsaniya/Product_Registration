@@ -105,10 +105,10 @@ const UserListPage = ({ initialRole = '' }) => {
   );
 
   const getRoleIcon = () => {
-    if (initialRole === 'Designer') return <PenTool className="text-[#1a7a48]" />;
-    if (initialRole === 'Sales') return <ShoppingBag className="text-[#1a7a48]" />;
-    if (initialRole === 'Maintenance') return <Wrench className="text-[#1a7a48]" />;
-    return <Users className="text-[#1a7a48]" />;
+    if (initialRole === 'Designer') return <PenTool className="text-blue-600" />;
+    if (initialRole === 'Sales') return <ShoppingBag className="text-blue-600" />;
+    if (initialRole === 'Maintenance') return <Wrench className="text-blue-600" />;
+    return <Users className="text-blue-600" />;
   };
 
   return (
@@ -141,7 +141,7 @@ const UserListPage = ({ initialRole = '' }) => {
 
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group w-full">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a7a48] transition-colors" size={16} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={16} />
           <input
             type="text"
             placeholder="Filter records..."
@@ -162,7 +162,7 @@ const UserListPage = ({ initialRole = '' }) => {
                 }}
                 className={`px-4 py-1.5 rounded-[6px] text-[11px] font-bold transition-all tracking-tight ${
                   roleFilter === role 
-                    ? 'bg-[#1a7a48] text-white shadow-sm' 
+                    ? 'bg-blue-600 text-white shadow-sm' 
                     : 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
                 }`}
               >
@@ -194,7 +194,7 @@ const UserListPage = ({ initialRole = '' }) => {
         {modalMode === 'view' ? (
           <div className="space-y-6">
             <div className="flex items-center gap-5 p-4 bg-gray-50 rounded-2xl border-[0.5px] border-gray-100">
-              <div className="w-16 h-16 rounded-full bg-[#1a7a48]/10 flex items-center justify-center text-[#1a7a48] font-bold text-2xl border border-[#1a7a48]/20">
+              <div className="w-16 h-16 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600 font-bold text-2xl border border-blue-600/20">
                 {selectedUser?.full_name?.charAt(0)}
               </div>
               <div>
