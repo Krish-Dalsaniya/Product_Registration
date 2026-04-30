@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 const LoginPage = lazy(() => import('../features/auth/LoginPage'));
 const UserListPage = lazy(() => import('../features/admin/UserListPage'));
 const TeamsPage = lazy(() => import('../features/admin/TeamsPage'));
+const ProductListPage = lazy(() => import('../features/admin/ProductListPage'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-[60vh]">
@@ -49,6 +50,7 @@ const Router = () => {
           <Route path="/admin/maintenance" element={<UserListPage initialRole="Maintenance" />} />
           <Route path="/admin/sales" element={<UserListPage initialRole="Sales" />} />
           <Route path="/admin/teams" element={<TeamsPage />} />
+          <Route path="/admin/products" element={<ProductListPage />} />
         </Route>
 
         {/* Designer Routes */}

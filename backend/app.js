@@ -11,6 +11,8 @@ const adminRoutes = require('./src/routes/admin');
 const designerRoutes = require('./src/routes/designer');
 const salesRoutes = require('./src/routes/sales');
 const maintenanceRoutes = require('./src/routes/maintenance');
+const productRoutes = require('./src/routes/products');
+const categoryRoutes = require('./src/routes/categories');
 
 const app = express();
 
@@ -39,11 +41,13 @@ app.use(requestLogger);
 
 
 // Routes
+app.use('/api/categories', categoryRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/designer', designerRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/products', productRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));

@@ -167,6 +167,8 @@ const Sidebar = ({ role }) => {
 
               </div>
             )}
+
+            <NavItem to="/admin/products" label="Products" icon={Zap} />
           </div>
         )}
 

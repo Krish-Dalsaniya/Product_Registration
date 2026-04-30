@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => {
   if (!isOpen) return null;
 
   return (
@@ -13,8 +13,8 @@ const Modal = ({ isOpen, onClose, title, children }) => {
       />
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-0 overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+      <div className={`relative w-full ${maxWidth} bg-white rounded-2xl shadow-2xl p-0 overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]`}>
+        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 flex-shrink-0">
           <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">{title}</h3>
           <button 
             onClick={onClose}
@@ -24,7 +24,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
           </button>
         </div>
         
-        <div className="p-8">
+        <div className="p-8 overflow-y-auto custom-scrollbar">
           {children}
         </div>
       </div>
