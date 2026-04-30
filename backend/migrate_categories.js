@@ -61,12 +61,21 @@ async function migrate() {
       console.log('Seeded initial categories.');
     }
 
-    console.log('Category migration completed.');
+    console.log('Category migration completed successfully.');
   } catch (err) {
-    console.error('Migration failed:', err);
+    console.error('MIGRATION ERROR:', err.message);
+    throw err; // Re-throw to handle in server startup
   } finally {
     await pool.end();
   }
 }
 
-migrate();
+// Only run immediately if this file is executed directly
+if (require.main === module) {
+  migrate().catch(err => {
+    console.error('Immediate migration failed:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = migrate;
