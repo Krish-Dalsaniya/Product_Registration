@@ -12,6 +12,9 @@ const ProductListPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
+
+  const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+  const assetBaseURL = rawApiUrl.replace(/\/api$/, '');
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -371,9 +374,9 @@ const ProductListPage = () => {
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Product Image</label>
                 {modalMode !== 'create' && selectedProduct?.image_url && (
                   <div className="mb-3 relative group w-24 h-24">
-                    <img src={`http://localhost:3000${selectedProduct.image_url}`} alt="Product" className="w-full h-full object-cover rounded-xl border border-gray-200" />
+                    <img src={`${assetBaseURL}${selectedProduct.image_url}`} alt="Product" className="w-full h-full object-cover rounded-xl border border-gray-200" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
-                       <a href={`http://localhost:3000${selectedProduct.image_url}`} target="_blank" rel="noreferrer" className="p-1.5 bg-white rounded-lg text-blue-600"><Search size={14} /></a>
+                       <a href={`${assetBaseURL}${selectedProduct.image_url}`} target="_blank" rel="noreferrer" className="p-1.5 bg-white rounded-lg text-blue-600"><Search size={14} /></a>
                     </div>
                   </div>
                 )}
@@ -392,7 +395,7 @@ const ProductListPage = () => {
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Product Documents</label>
                 {modalMode !== 'create' && selectedProduct?.document_url && (
                   <div className="mb-3">
-                    <a href={`http://localhost:3000${selectedProduct.document_url}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-600 hover:bg-blue-600 hover:text-white transition-all group">
+                    <a href={`${assetBaseURL}${selectedProduct.document_url}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-600 hover:bg-blue-600 hover:text-white transition-all group">
                       <FileText size={18} />
                       <span className="text-[12px] font-bold uppercase tracking-tight">View Attached Document</span>
                     </a>
