@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getUsers, createUser } from '../../api/admin';
+import { useNavigate } from 'react-router-dom';
+import { getUsers, createUser, getAdminStats } from '../../api/admin';
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
@@ -8,7 +9,9 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
 const UserListPage = ({ initialRole = '' }) => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState({ designers: 0, sales: 0, maintenance: 0, teams: 0 });
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState(initialRole);
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,6 +27,22 @@ const UserListPage = ({ initialRole = '' }) => {
 
   useEffect(() => {
     setRoleFilter(initialRole);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [initialRole]);
+  
+  const fetchStats = async () => {
+    try {
+      const res = await getAdminStats();
+      setStats(res.data.data);
+    } catch (error) {
+      console.error('Stats fetch error', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!initialRole) {
+      fetchStats();
+    }
   }, [initialRole]);
 
   const fetchUsers = async () => {
@@ -75,12 +94,6 @@ const UserListPage = ({ initialRole = '' }) => {
     setIsModalOpen(true);
   };
 
-  const handleView = (user) => {
-    setModalMode('view');
-    setSelectedUser(user);
-    setIsModalOpen(true);
-  };
-
   const handleEdit = (user) => {
     setModalMode('edit');
     setSelectedUser(user);
@@ -111,6 +124,21 @@ const UserListPage = ({ initialRole = '' }) => {
     return <Users className="text-blue-600" />;
   };
 
+  const StatCard = ({ title, count, icon: Icon, to }) => (
+    <div 
+      onClick={() => navigate(to)}
+      className="bg-white p-5 rounded-2xl border-[0.5px] border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group active:scale-[0.98] flex items-center justify-between"
+    >
+      <div className="space-y-1">
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{title}</p>
+        <h3 className="text-2xl font-black text-gray-900 tracking-tighter">{count}</h3>
+      </div>
+      <div className="p-3.5 rounded-xl bg-slate-50 group-hover:bg-blue-50 group-hover:scale-110 transition-all duration-300">
+        <Icon size={22} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -130,14 +158,25 @@ const UserListPage = ({ initialRole = '' }) => {
           </div>
         </div>
         
-        <button 
-          onClick={handleOpenCreate} 
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg shadow-blue-900/10 transition-all active:scale-95 flex items-center gap-2 text-[13px]"
-        >
-          <Plus size={18} />
-          <span>{initialRole ? `Add ${initialRole}` : 'Add New User'}</span>
-        </button>
+        {!initialRole && (
+          <button 
+            onClick={handleOpenCreate} 
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg shadow-blue-900/10 transition-all active:scale-95 flex items-center gap-2 text-[13px]"
+          >
+            <Plus size={18} />
+            <span>Add New User</span>
+          </button>
+        )}
       </div>
+
+      {!initialRole && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard title="Designers" count={stats.designers} icon={PenTool} to="/admin/designers" />
+          <StatCard title="Teams" count={stats.teams} icon={Users} to="/admin/teams" />
+          <StatCard title="Maintenance" count={stats.maintenance} icon={Wrench} to="/admin/maintenance" />
+          <StatCard title="Sales" count={stats.sales} icon={ShoppingBag} to="/admin/sales" />
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group w-full">
@@ -182,54 +221,15 @@ const UserListPage = ({ initialRole = '' }) => {
         filteredCount={filteredUsers.length}
         currentPage={pagination.page}
         totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
-        onView={handleView}
         onEdit={handleEdit}
       />
 
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={modalMode === 'create' ? 'Personnel Registration' : modalMode === 'edit' ? 'Update User Profile' : 'Personnel Details'}
+        title={modalMode === 'create' ? 'Personnel Registration' : 'Update User Profile'}
       >
-        {modalMode === 'view' ? (
-          <div className="space-y-6">
-            <div className="flex items-center gap-5 p-4 bg-gray-50 rounded-2xl border-[0.5px] border-gray-100">
-              <div className="w-16 h-16 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600 font-bold text-2xl border border-blue-600/20">
-                {selectedUser?.full_name?.charAt(0)}
-              </div>
-              <div>
-                <h4 className="text-xl font-black text-gray-900 tracking-tight">{selectedUser?.full_name}</h4>
-                <div className="flex items-center gap-2 mt-1">
-                  <RoleBadge role={selectedUser?.role_name} />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <div className="flex items-center gap-4 p-3 hover:bg-gray-50 transition-colors rounded-xl group">
-                <div className="p-2.5 bg-blue-50 text-blue-500 rounded-lg group-hover:scale-110 transition-transform"><Mail size={18} /></div>
-                <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Email Address</p>
-                  <p className="text-sm font-semibold text-gray-700">{selectedUser?.email}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 p-3 hover:bg-gray-50 transition-colors rounded-xl group">
-                <div className="p-2.5 bg-purple-50 text-purple-500 rounded-lg group-hover:scale-110 transition-transform"><Calendar size={18} /></div>
-                <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Joined Date</p>
-                  <p className="text-sm font-semibold text-gray-700">{new Date(selectedUser?.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="pt-4">
-              <button onClick={() => setIsModalOpen(false)} className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-lg transition-all active:scale-95 text-[13px] uppercase tracking-widest">Close Profile</button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
               <input {...register('full_name', { required: 'Name is required' })} autoComplete="off" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]" placeholder="e.g. John Doe" />
@@ -267,7 +267,6 @@ const UserListPage = ({ initialRole = '' }) => {
               </button>
             </div>
           </form>
-        )}
       </Modal>
     </div>
   );

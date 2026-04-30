@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import RoleBadge from './RoleBadge';
 import { 
@@ -19,6 +19,7 @@ import {
 const Sidebar = ({ role }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [openMenus, setOpenMenus] = useState({
     users: true,
     designers: false
@@ -106,18 +107,29 @@ const Sidebar = ({ role }) => {
             
             {/* Category: User Center (Matching Image Behavior but Dark Theme) */}
             <div 
-              onClick={() => toggleMenu('users')}
-              className={`flex items-center justify-between px-8 py-3.5 cursor-pointer hover:bg-gray-50 transition-all ${openMenus.users ? 'text-blue-600' : 'text-gray-500'}`}
+              className={`flex items-center justify-between px-8 py-3.5 transition-all ${
+                location.pathname === '/admin/users' || (openMenus.users && !location.pathname.includes('/admin/'))
+                  ? 'text-blue-600' 
+                  : 'text-gray-500'
+              }`}
             >
-              <div className="flex items-center gap-4">
-                <Box size={20} className={openMenus.users ? 'text-blue-600' : 'text-gray-400'} />
+              <div 
+                onClick={() => navigate('/admin/users')}
+                className="flex items-center gap-4 cursor-pointer hover:text-blue-600 transition-colors flex-1 group"
+              >
+                <Box size={20} className={location.pathname === '/admin/users' ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'} />
                 <span className="text-sm font-bold uppercase tracking-tight">Users</span>
               </div>
-              {openMenus.users ? (
-                <ChevronUp size={16} className="text-blue-600" strokeWidth={2.5} />
-              ) : (
-                <ChevronDown size={16} className="text-gray-400" strokeWidth={2.5} />
-              )}
+              <div 
+                onClick={(e) => { e.stopPropagation(); toggleMenu('users'); }}
+                className="cursor-pointer p-1.5 hover:bg-gray-100 rounded-md transition-all"
+              >
+                {openMenus.users ? (
+                  <ChevronUp size={16} className={openMenus.users ? 'text-blue-600' : 'text-gray-400'} strokeWidth={2.5} />
+                ) : (
+                  <ChevronDown size={16} className="text-gray-400" strokeWidth={2.5} />
+                )}
+              </div>
             </div>
 
 
@@ -125,19 +137,27 @@ const Sidebar = ({ role }) => {
               <div className="space-y-0.5">
                 {/* Nested Designers Sub-category */}
                 <div 
-                  onClick={(e) => { e.stopPropagation(); toggleMenu('designers'); }}
-                  className="flex items-center justify-between px-10 py-2.5 cursor-pointer hover:text-blue-600 transition-all group"
+                  className={`flex items-center justify-between px-10 py-2.5 transition-all ${
+                    location.pathname === '/admin/designers' || openMenus.designers ? 'text-blue-600' : 'text-gray-500'
+                  }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <PenTool size={18} className={openMenus.designers ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'} />
-                    <span className={`text-sm font-bold tracking-tight ${openMenus.designers ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`}>Designers</span>
+                  <div 
+                    onClick={() => navigate('/admin/designers')}
+                    className="flex items-center gap-4 cursor-pointer hover:text-blue-600 transition-colors flex-1 group"
+                  >
+                    <PenTool size={18} className={location.pathname === '/admin/designers' ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'} />
+                    <span className="text-sm font-bold tracking-tight">Designers</span>
                   </div>
-                  {openMenus.designers ? <ChevronUp size={12} className="text-blue-600" /> : <ChevronDown size={12} className="text-gray-400" />}
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); toggleMenu('designers'); }}
+                    className="cursor-pointer p-1 hover:bg-gray-100 rounded-md transition-all"
+                  >
+                    {openMenus.designers ? <ChevronUp size={12} className="text-blue-600" /> : <ChevronDown size={12} className="text-gray-400" />}
+                  </div>
                 </div>
 
                 {openMenus.designers && (
                   <div className="space-y-0.5 mb-2">
-                    <NavItem to="/admin/designers" label="Overview" isSubItem />
                     <NavItem to="/admin/teams?role=Designer" label="Teams" isSubItem />
                   </div>
                 )}

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, onView, onEdit }) => {
+const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, onEdit }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -29,8 +29,7 @@ const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentP
             {data.map((row, index) => (
               <tr 
                 key={index} 
-                className="group hover:bg-gray-50/80 transition-colors cursor-pointer"
-                onClick={() => onView && onView(row)}
+                className="group hover:bg-gray-50/80 transition-colors"
               >
                 {columns.map((col) => (
                   <td key={col.key} className="px-4 py-3.5 text-[13px] text-gray-700 font-medium">
@@ -38,18 +37,11 @@ const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentP
                   </td>
                 ))}
                 
-                {/* Row Hover Actions */}
                 <td className="px-4 py-3.5 text-right">
-                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onView && onView(row); }}
-                      className="border-[0.5px] border-gray-300 bg-transparent text-[11px] px-2 py-1 rounded-[5px] hover:bg-white hover:border-blue-500 transition-all"
-                    >
-                      View
-                    </button>
+                  <div className="flex items-center justify-end gap-2">
                     <button 
                       onClick={(e) => { e.stopPropagation(); onEdit && onEdit(row); }}
-                      className="border-[0.5px] border-gray-300 bg-transparent text-[11px] px-2 py-1 rounded-[5px] hover:bg-white hover:border-blue-500 transition-all"
+                      className="border-[0.5px] border-gray-200 bg-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-[6px] text-gray-500 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
                     >
                       Edit
                     </button>

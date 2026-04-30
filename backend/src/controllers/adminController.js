@@ -142,6 +142,24 @@ const getMaintenance = async (req, res, next) => {
   }
 };
 
+const getAdminStats = async (req, res, next) => {
+  try {
+    const designerCount = await db.query("SELECT COUNT(*) FROM designer_profiles");
+    const salesCount = await db.query("SELECT COUNT(*) FROM sales_profiles");
+    const maintenanceCount = await db.query("SELECT COUNT(*) FROM maintenance_profiles");
+    const teamCount = await db.query("SELECT COUNT(*) FROM teams");
+
+    sendSuccess(res, {
+      designers: parseInt(designerCount.rows[0].count),
+      sales: parseInt(salesCount.rows[0].count),
+      maintenance: parseInt(maintenanceCount.rows[0].count),
+      teams: parseInt(teamCount.rows[0].count),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const bcrypt = require('bcryptjs');
 
 const createUser = async (req, res, next) => {
@@ -188,6 +206,7 @@ module.exports = {
   getTeams,
   getSales,
   getMaintenance,
+  getAdminStats,
   createUser
 };
 

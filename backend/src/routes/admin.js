@@ -10,6 +10,7 @@ router.use(requireRole('Admin'));
 
 const utilityController = require('../controllers/adminUtilityController');
 
+router.get('/stats', adminController.getAdminStats);
 router.get('/users', adminController.getUsers);
 router.post('/users', adminController.createUser);
 router.get('/users/:userId', adminController.getUserById);

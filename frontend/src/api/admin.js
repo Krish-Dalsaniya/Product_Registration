@@ -1,5 +1,6 @@
 import axiosInstance from './axiosInstance';
 
+export const getAdminStats = () => axiosInstance.get('/admin/stats');
 export const getUsers = (params) => axiosInstance.get('/admin/users', { params });
 export const getUserById = (userId) => axiosInstance.get(`/admin/users/${userId}`);
 export const getDesigners = (params) => axiosInstance.get('/admin/designers', { params });
