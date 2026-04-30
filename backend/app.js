@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const env = require('./src/config/env');
 const requestLogger = require('./src/middleware/requestLogger');
 const errorHandler = require('./src/middleware/errorHandler');
@@ -14,6 +15,7 @@ const maintenanceRoutes = require('./src/routes/maintenance');
 const app = express();
 
 // Middlewares
+app.use(compression());
 app.use(express.json());
 
 // CORS normalization: handle both trailing slash and non-trailing slash
