@@ -1,4 +1,6 @@
 const db = require('../config/db');
+const path = require('path');
+const fs = require('fs');
 const { sendSuccess } = require('../utils/response');
 const { parsePagination } = require('../utils/pagination');
 
@@ -53,11 +55,14 @@ const createProduct = async (req, res, next) => {
     });
   }
 
-  const images = req.files['image'] ? req.files['image'].map(f => `/uploads/${f.filename}`) : [];
-  const documents = req.files['document'] ? req.files['document'].map(f => `/uploads/${f.filename}`) : [];
-
-  const image_url = images.length > 0 ? images[0] : null;
-  const document_url = documents.length > 0 ? documents[0] : null;
+  const imageFiles = req.files['image'] || [];
+  const documentFiles = req.files['document'] || [];
+  
+  const images = JSON.stringify(imageFiles.map(f => `/uploads/${f.filename}`));
+  const documents = JSON.stringify(documentFiles.map(f => `/uploads/${f.filename}`));
+  
+  const image_url = imageFiles.length > 0 ? `/uploads/${imageFiles[0].filename}` : null;
+  const document_url = documentFiles.length > 0 ? `/uploads/${documentFiles[0].filename}` : null;
 
   try {
     const result = await db.query(
@@ -72,8 +77,8 @@ const createProduct = async (req, res, next) => {
         feature,
         image_url,
         document_url,
-        gallery_images,
-        gallery_documents
+        images,
+        documents
       ) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [
@@ -87,8 +92,8 @@ const createProduct = async (req, res, next) => {
         feature,
         image_url,
         document_url,
-        JSON.stringify(images),
-        JSON.stringify(documents)
+        images,
+        documents
       ]
     );
 
@@ -129,8 +134,19 @@ const updateProduct = async (req, res, next) => {
   }
 
   try {
-    const newImages = req.files['image'] ? req.files['image'].map(f => `/uploads/${f.filename}`) : [];
-    const newDocs = req.files['document'] ? req.files['document'].map(f => `/uploads/${f.filename}`) : [];
+    // Fetch existing assets to append
+    const currentProduct = await db.query('SELECT images, documents FROM products WHERE product_id = $1', [id]);
+    const oldImages = currentProduct.rows[0]?.images || [];
+    const oldDocs = currentProduct.rows[0]?.documents || [];
+
+    const newImageFiles = req.files['image'] || [];
+    const newDocFiles = req.files['document'] || [];
+
+    const newImageUrls = newImageFiles.map(f => `/uploads/${f.filename}`);
+    const newDocUrls = newDocFiles.map(f => `/uploads/${f.filename}`);
+
+    const updatedImages = [...oldImages, ...newImageUrls];
+    const updatedDocuments = [...oldDocs, ...newDocUrls];
 
     // Build update query dynamically for assets
     let queryText = `
@@ -142,20 +158,31 @@ const updateProduct = async (req, res, next) => {
           category = $5,
           sub_category = $6,
           specification = $7,
-          feature = $8
+          feature = $8,
+          images = $9,
+          documents = $10
     `;
-    const params = [product_name, product_code, description, unit_price || 0, category, sub_category, specification, feature];
+    const params = [
+      product_name, 
+      product_code, 
+      description, 
+      unit_price || 0, 
+      category, 
+      sub_category, 
+      specification, 
+      feature,
+      JSON.stringify(updatedImages),
+      JSON.stringify(updatedDocuments)
+    ];
 
-    let paramIdx = 9;
-    if (newImages.length > 0) {
-      queryText += `, image_url = $${paramIdx++}, gallery_images = $${paramIdx++}`;
-      params.push(newImages[0]);
-      params.push(JSON.stringify(newImages));
+    let paramIdx = 11;
+    if (newImageUrls.length > 0) {
+      queryText += `, image_url = $${paramIdx++}`;
+      params.push(newImageUrls[0]);
     }
-    if (newDocs.length > 0) {
-      queryText += `, document_url = $${paramIdx++}, gallery_documents = $${paramIdx++}`;
-      params.push(newDocs[0]);
-      params.push(JSON.stringify(newDocs));
+    if (newDocUrls.length > 0) {
+      queryText += `, document_url = $${paramIdx++}`;
+      params.push(newDocUrls[0]);
     }
 
     queryText += ` WHERE product_id = $${paramIdx} RETURNING *`;
@@ -176,8 +203,38 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
+const removeAsset = async (req, res, next) => {
+  const { id } = req.params;
+  const { url, type } = req.body; // type: 'images' or 'documents'
+
+  try {
+    const product = await db.query(`SELECT ${type} FROM products WHERE product_id = $1`, [id]);
+    if (product.rows.length === 0) return res.status(404).json({ success: false, error: { message: 'Product not found' } });
+
+    const currentAssets = product.rows[0][type] || [];
+    const updatedAssets = currentAssets.filter(assetUrl => assetUrl !== url);
+
+    await db.query(`UPDATE products SET ${type} = $1 WHERE product_id = $2`, [JSON.stringify(updatedAssets), id]);
+
+    // Physically delete file
+    const filePath = path.join(__dirname, '../../', url);
+    console.log('Attempting to delete file at:', filePath);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log('File deleted successfully');
+    } else {
+      console.warn('File not found on disk:', filePath);
+    }
+
+    sendSuccess(res, { message: 'Asset removed successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   createProduct,
-  updateProduct
+  updateProduct,
+  removeAsset
 };

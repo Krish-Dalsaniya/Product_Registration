@@ -38,17 +38,17 @@ const Sidebar = ({ role }) => {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex items-center gap-4 px-10 py-3 transition-all ${
+        `flex items-center gap-4 px-8 py-3.5 transition-all ${
           isActive 
             ? 'text-blue-600 font-bold bg-blue-50' 
             : 'text-gray-500 hover:text-blue-600 hover:bg-gray-50'
-        }`
+        } ${isSubItem ? 'px-10 py-2.5' : ''}`
       }
     >
       <div className="w-6 flex justify-center">
-        {Icon && <Icon size={18} className={location.pathname === to ? 'text-blue-600' : 'text-gray-400'} strokeWidth={2} />}
+        {Icon && <Icon size={20} className={location.pathname === to ? 'text-blue-600' : 'text-gray-400'} strokeWidth={2} />}
       </div>
-      <span className={`text-sm font-bold tracking-tight ${isSubItem ? 'text-[11px] font-medium' : ''}`}>{label}</span>
+      <span className={`text-sm font-bold tracking-tight uppercase ${isSubItem ? 'text-[11px] font-medium' : ''}`}>{label}</span>
     </NavLink>
   );
 
@@ -90,7 +90,7 @@ const Sidebar = ({ role }) => {
           </div>
 
           <div className="mt-5 text-center">
-            <p className="text-base font-bold text-gray-900 tracking-tight leading-tight">{user?.full_name?.toLowerCase()}</p>
+            <p className="text-base font-bold text-gray-900 tracking-tight leading-tight uppercase">{user?.full_name}</p>
             <p className="text-[12px] font-medium text-gray-400 mt-1">{user?.role_name}</p>
           </div>
         </div>
@@ -108,21 +108,23 @@ const Sidebar = ({ role }) => {
             {/* Category: User Center (Matching Image Behavior but Dark Theme) */}
             <div 
               className={`flex items-center justify-between px-8 py-3.5 transition-all ${
-                location.pathname === '/admin/users' || (openMenus.users && !location.pathname.includes('/admin/'))
-                  ? 'text-blue-600' 
-                  : 'text-gray-500'
+                location.pathname.startsWith('/admin/') && !location.pathname.includes('/admin/products') && !location.pathname.includes('/admin/teams')
+                  ? 'text-blue-600 font-bold bg-blue-50' 
+                  : 'text-gray-500 hover:text-blue-600 hover:bg-gray-50'
               }`}
             >
               <div 
                 onClick={() => navigate('/admin/users')}
-                className="flex items-center gap-4 cursor-pointer hover:text-blue-600 transition-colors flex-1 group"
+                className="flex items-center gap-4 cursor-pointer flex-1 group"
               >
-                <Box size={20} className={location.pathname === '/admin/users' ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'} />
+                <div className="w-6 flex justify-center">
+                  <Users size={20} className={location.pathname.startsWith('/admin/') && !location.pathname.includes('/admin/products') ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'} />
+                </div>
                 <span className="text-sm font-bold uppercase tracking-tight">Users</span>
               </div>
               <div 
                 onClick={(e) => { e.stopPropagation(); toggleMenu('users'); }}
-                className="cursor-pointer p-1.5 hover:bg-gray-100 rounded-md transition-all"
+                className="cursor-pointer p-1.5 hover:bg-white/50 rounded-md transition-all"
               >
                 {openMenus.users ? (
                   <ChevronUp size={16} className={openMenus.users ? 'text-blue-600' : 'text-gray-400'} strokeWidth={2.5} />
@@ -138,19 +140,21 @@ const Sidebar = ({ role }) => {
                 {/* Nested Designers Sub-category */}
                 <div 
                   className={`flex items-center justify-between px-10 py-2.5 transition-all ${
-                    location.pathname === '/admin/designers' || openMenus.designers ? 'text-blue-600' : 'text-gray-500'
+                    location.pathname === '/admin/designers' || openMenus.designers ? 'text-blue-600 bg-blue-50/30' : 'text-gray-500 hover:bg-gray-50'
                   }`}
                 >
                   <div 
                     onClick={() => navigate('/admin/designers')}
-                    className="flex items-center gap-4 cursor-pointer hover:text-blue-600 transition-colors flex-1 group"
+                    className="flex items-center gap-4 cursor-pointer flex-1 group"
                   >
-                    <PenTool size={18} className={location.pathname === '/admin/designers' ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'} />
-                    <span className="text-sm font-bold tracking-tight">Designers</span>
+                    <div className="w-5 flex justify-center">
+                      <PenTool size={18} className={location.pathname === '/admin/designers' ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'} />
+                    </div>
+                    <span className="text-[12px] font-bold tracking-tight uppercase">Designers</span>
                   </div>
                   <div 
                     onClick={(e) => { e.stopPropagation(); toggleMenu('designers'); }}
-                    className="cursor-pointer p-1 hover:bg-gray-100 rounded-md transition-all"
+                    className="cursor-pointer p-1 hover:bg-white/50 rounded-md transition-all"
                   >
                     {openMenus.designers ? <ChevronUp size={12} className="text-blue-600" /> : <ChevronDown size={12} className="text-gray-400" />}
                   </div>
@@ -162,8 +166,8 @@ const Sidebar = ({ role }) => {
                   </div>
                 )}
 
-                <NavItem to="/admin/maintenance" label="Maintenance" icon={Wrench} />
-                <NavItem to="/admin/sales" label="Sales" icon={ShoppingBag} />
+                <NavItem to="/admin/maintenance" label="Maintenance" icon={Wrench} isSubItem />
+                <NavItem to="/admin/sales" label="Sales" icon={ShoppingBag} isSubItem />
 
               </div>
             )}

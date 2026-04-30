@@ -25,5 +25,6 @@ router.put('/:id',
   ]),
   productController.updateProduct
 );
+router.delete('/:id/assets', verifyToken, requireRole('Admin'), productController.removeAsset);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -38,8 +39,8 @@ async function migrate() {
       ADD COLUMN IF NOT EXISTS feature TEXT,
       ADD COLUMN IF NOT EXISTS image_url TEXT,
       ADD COLUMN IF NOT EXISTS document_url TEXT,
-      ADD COLUMN IF NOT EXISTS gallery_images JSONB DEFAULT '[]',
-      ADD COLUMN IF NOT EXISTS gallery_documents JSONB DEFAULT '[]';
+      ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]',
+      ADD COLUMN IF NOT EXISTS documents JSONB DEFAULT '[]';
     `);
 
     // Seed some initial data if empty
