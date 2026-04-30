@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { getCategories, getSubCategories, createCategory, createSubCategory } from '../../api/categories';
+import { 
+  getCategories, 
+  getSubCategories, 
+  createCategory, 
+  createSubCategory,
+  updateCategory,
+  deleteCategory,
+  updateSubCategory,
+  deleteSubCategory
+} from '../../api/categories';
 import { Plus, X, ChevronRight, Edit2, Trash2, ArrowLeft, Loader2, Folder, Subtitles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -10,6 +19,7 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [editingItem, setEditingItem] = useState(null); // { id, name }
   const [newName, setNewName] = useState('');
 
   const fetchCategories = async () => {
@@ -65,22 +75,62 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
     onClose();
   };
 
-  const handleAdd = async () => {
+  const handleAction = async () => {
     if (!newName.trim()) return;
     try {
-      if (view === 'categories') {
-        await createCategory({ name: newName });
-        fetchCategories();
+      if (editingItem) {
+        if (view === 'categories') {
+          await updateCategory(editingItem.id, { name: newName });
+          fetchCategories();
+        } else {
+          await updateSubCategory(editingItem.id, { name: newName });
+          fetchSubCategories(selectedCategory.id);
+        }
+        toast.success('Updated successfully');
       } else {
-        await createSubCategory(selectedCategory.id, { name: newName });
-        fetchSubCategories(selectedCategory.id);
+        if (view === 'categories') {
+          await createCategory({ name: newName });
+          fetchCategories();
+        } else {
+          await createSubCategory(selectedCategory.id, { name: newName });
+          fetchSubCategories(selectedCategory.id);
+        }
+        toast.success('Created successfully');
       }
       setNewName('');
       setIsAdding(false);
-      toast.success('Configuration updated successfully');
+      setEditingItem(null);
     } catch (error) {
-      toast.error('Action failed');
+      const msg = error.response?.data?.error?.message || error.message || 'Action failed';
+      toast.error(msg);
+      console.error('Category Action Error:', error);
     }
+  };
+
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    try {
+      if (view === 'categories') {
+        await deleteCategory(id);
+        fetchCategories();
+      } else {
+        await deleteSubCategory(id);
+        fetchSubCategories(selectedCategory.id);
+      }
+      toast.success('Deleted successfully');
+    } catch (error) {
+      const msg = error.response?.data?.error?.message || error.message || 'Delete failed';
+      toast.error(msg);
+      console.error('Category Delete Error:', error);
+    }
+  };
+
+  const startEdit = (e, item) => {
+    e.stopPropagation();
+    setEditingItem(item);
+    setNewName(item.name);
+    setIsAdding(true);
   };
 
   if (!isOpen) return null;
@@ -109,7 +159,7 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
           </div>
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => setIsAdding(true)}
+              onClick={() => { setIsAdding(true); setEditingItem(null); setNewName(''); }}
               className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-900/20 active:scale-95"
             >
               <Plus size={18} strokeWidth={3} />
@@ -124,17 +174,21 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
         <div className="p-6 max-h-[450px] overflow-y-auto custom-scrollbar space-y-4">
           {isAdding && (
             <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl flex flex-col gap-3 animate-in slide-in-from-top-4 duration-300">
-              <label className="text-[9px] font-bold text-blue-600 uppercase tracking-widest ml-1">New designation</label>
+              <label className="text-[9px] font-bold text-blue-600 uppercase tracking-widest ml-1">
+                {editingItem ? 'Update designation' : 'New designation'}
+              </label>
               <div className="flex gap-2">
                 <input 
                   autoFocus
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder={view === 'categories' ? "Enter category name..." : "Enter sub-category name..."}
+                  placeholder="Enter name..."
                   className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all"
-                  onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAction()}
                 />
-                <button onClick={handleAdd} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-md shadow-blue-900/10">Add</button>
+                <button onClick={handleAction} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest shadow-md shadow-blue-900/10">
+                  {editingItem ? 'Save' : 'Add'}
+                </button>
               </div>
             </div>
           )}
@@ -161,12 +215,12 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
                   </div>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-                  <div className="p-1.5 bg-white text-gray-400 hover:text-blue-600 rounded-lg shadow-sm border border-gray-100 transition-all">
+                  <button onClick={(e) => startEdit(e, cat)} className="p-1.5 bg-white text-gray-400 hover:text-blue-600 rounded-lg shadow-sm border border-gray-100 transition-all">
                     <Edit2 size={14} />
-                  </div>
-                  <div className="p-1.5 bg-white text-gray-400 hover:text-red-500 rounded-lg shadow-sm border border-gray-100 transition-all">
+                  </button>
+                  <button onClick={(e) => handleDelete(e, cat.id)} className="p-1.5 bg-white text-gray-400 hover:text-red-500 rounded-lg shadow-sm border border-gray-100 transition-all">
                     <Trash2 size={14} />
-                  </div>
+                  </button>
                   <div className="p-1.5 bg-blue-600 text-white rounded-lg shadow-md transition-all">
                     <ChevronRight size={14} strokeWidth={3} />
                   </div>
@@ -191,12 +245,12 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
                   <h4 className="text-[13px] font-bold text-gray-700 tracking-tight group-hover:text-blue-600 transition-colors">{sub.name}</h4>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                  <div className="p-1.5 bg-white text-gray-400 hover:text-blue-600 rounded-lg shadow-sm border border-gray-100">
+                  <button onClick={(e) => startEdit(e, sub)} className="p-1.5 bg-white text-gray-400 hover:text-blue-600 rounded-lg shadow-sm border border-gray-100">
                     <Edit2 size={12} />
-                  </div>
-                  <div className="p-1.5 bg-white text-gray-400 hover:text-red-500 rounded-lg shadow-sm border border-gray-100">
+                  </button>
+                  <button onClick={(e) => handleDelete(e, sub.id)} className="p-1.5 bg-white text-gray-400 hover:text-red-500 rounded-lg shadow-sm border border-gray-100">
                     <Trash2 size={12} />
-                  </div>
+                  </button>
                 </div>
               </div>
             )) : (

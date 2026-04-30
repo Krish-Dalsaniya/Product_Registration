@@ -78,8 +78,19 @@ const ProductListPage = () => {
     if (modalMode === 'view') return;
     setIsSubmitting(true);
     try {
+      const formData = new FormData();
+      Object.keys(data).forEach(key => {
+        if (key === 'image' || key === 'document') {
+          if (data[key] && data[key][0]) {
+            formData.append(key, data[key][0]);
+          }
+        } else {
+          formData.append(key, data[key]);
+        }
+      });
+
       if (modalMode === 'create') {
-        await createProduct(data);
+        await createProduct(formData);
         toast.success('Product created successfully!');
       } else {
         toast.success('Product updated successfully!');
@@ -285,23 +296,34 @@ const ProductListPage = () => {
               {/* Row 4 */}
               <div className="space-y-2">
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Product Image</label>
-                <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-100 rounded-xl hover:bg-blue-50 transition-all cursor-pointer group">
-                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-blue-600 shadow-sm border border-gray-200 transition-all group-hover:scale-110">
-                    <Box size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">Upload Product Image</p>
+                <div className="relative group">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    {...register('image')}
+                    className="w-full opacity-0 absolute inset-0 cursor-pointer z-10" 
+                  />
+                  <div className="w-full bg-gray-50 border-[0.5px] border-gray-200 border-dashed rounded-xl px-4 py-3 flex items-center justify-between group-hover:border-blue-600 group-hover:bg-blue-50/30 transition-all">
+                    <span className="text-[13px] text-gray-400 font-medium truncate">
+                      {watch('image')?.[0]?.name || "Select image asset"}
+                    </span>
+                    <Plus size={18} className="text-blue-600" />
                   </div>
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Product Documents</label>
-                <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-100 rounded-xl hover:bg-blue-50 transition-all cursor-pointer group">
-                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-400 group-hover:text-blue-500 shadow-sm border border-gray-200 transition-all group-hover:scale-110">
-                    <FileText size={20} />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">Upload Product Documents</p>
+                <div className="relative group">
+                  <input 
+                    type="file" 
+                    {...register('document')}
+                    className="w-full opacity-0 absolute inset-0 cursor-pointer z-10" 
+                  />
+                  <div className="w-full bg-gray-50 border-[0.5px] border-gray-200 border-dashed rounded-xl px-4 py-3 flex items-center justify-between group-hover:border-blue-600 group-hover:bg-blue-50/30 transition-all">
+                    <span className="text-[13px] text-gray-400 font-medium truncate">
+                      {watch('document')?.[0]?.name || "Select documentation (PDF/DOC)"}
+                    </span>
+                    <Plus size={18} className="text-blue-600" />
                   </div>
                 </div>
               </div>
@@ -309,16 +331,6 @@ const ProductListPage = () => {
 
             {/* Note: product_code is still needed for the database but hidden from this simple view if user only wants these 8 */}
             <input type="hidden" {...register('product_code')} value={Math.random().toString(36).substring(7).toUpperCase()} />
-
-            {/* Operational Chips (Premium Design) */}
-            <div className="flex flex-wrap gap-2 py-4">
-              {['Products', 'Materials', 'Spares', 'Assemblies'].map((chip, idx) => (
-                <button key={chip} type="button" className={`px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.15em] transition-all flex items-center gap-2.5 ${idx === 0 ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                  <div className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'bg-gray-400'}`} />
-                  {chip}
-                </button>
-              ))}
-            </div>
 
             <div className="pt-2">
               <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl shadow-xl shadow-blue-900/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-[12px] uppercase tracking-[0.2em]">

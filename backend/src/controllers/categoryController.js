@@ -56,9 +56,61 @@ const createSubCategory = async (req, res, next) => {
   }
 };
 
+const updateCategory = async (req, res, next) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  try {
+    const result = await db.query(
+      'UPDATE product_categories SET name = $1 WHERE id = $2 RETURNING *',
+      [name, id]
+    );
+    sendSuccess(res, result.rows[0]);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteCategory = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    await db.query('DELETE FROM product_categories WHERE id = $1', [id]);
+    sendSuccess(res, null, 'Category deleted');
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateSubCategory = async (req, res, next) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  try {
+    const result = await db.query(
+      'UPDATE product_sub_categories SET name = $1 WHERE id = $2 RETURNING *',
+      [name, id]
+    );
+    sendSuccess(res, result.rows[0]);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteSubCategory = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    await db.query('DELETE FROM product_sub_categories WHERE id = $1', [id]);
+    sendSuccess(res, null, 'Sub-category deleted');
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCategories,
   getSubCategories,
   createCategory,
-  createSubCategory
+  createSubCategory,
+  updateCategory,
+  deleteCategory,
+  updateSubCategory,
+  deleteSubCategory
 };

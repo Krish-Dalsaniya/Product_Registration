@@ -35,10 +35,11 @@ const createProduct = async (req, res, next) => {
     category,
     sub_category,
     specification,
-    feature,
-    image_url,
-    document_url
+    feature
   } = req.body;
+
+  const image_url = req.files['image'] ? `/uploads/${req.files['image'][0].filename}` : null;
+  const document_url = req.files['document'] ? `/uploads/${req.files['document'][0].filename}` : null;
 
   try {
     const result = await db.query(

@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const compression = require('compression');
 const env = require('./src/config/env');
@@ -19,6 +20,8 @@ const app = express();
 // Middlewares
 app.use(compression());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // CORS normalization: handle both trailing slash and non-trailing slash
 const origins = [
