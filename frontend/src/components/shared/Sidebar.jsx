@@ -21,7 +21,7 @@ const Sidebar = ({ role }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [openMenus, setOpenMenus] = useState({
-    users: true,
+    users: false,
     designers: false
   });
 

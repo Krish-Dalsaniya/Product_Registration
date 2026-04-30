@@ -144,10 +144,26 @@ const getMaintenance = async (req, res, next) => {
 
 const getAdminStats = async (req, res, next) => {
   try {
-    const designerCount = await db.query("SELECT COUNT(*) FROM designer_profiles");
-    const salesCount = await db.query("SELECT COUNT(*) FROM sales_profiles");
-    const maintenanceCount = await db.query("SELECT COUNT(*) FROM maintenance_profiles");
-    const teamCount = await db.query("SELECT COUNT(*) FROM teams");
+    const designerCount = await db.query(`
+      SELECT COUNT(*) FROM designer_profiles dp
+      JOIN users u ON dp.designer_id = u.user_id
+      WHERE u.is_active = TRUE
+    `);
+    const salesCount = await db.query(`
+      SELECT COUNT(*) FROM sales_profiles sp
+      JOIN users u ON sp.sales_id = u.user_id
+      WHERE u.is_active = TRUE
+    `);
+    const maintenanceCount = await db.query(`
+      SELECT COUNT(*) FROM maintenance_profiles mp
+      JOIN users u ON mp.maintenance_id = u.user_id
+      WHERE u.is_active = TRUE
+    `);
+    const teamCount = await db.query(`
+      SELECT COUNT(*) FROM teams t
+      JOIN roles r ON t.role_id = r.role_id
+      WHERE r.role_name = 'Designer'
+    `);
 
     sendSuccess(res, {
       designers: parseInt(designerCount.rows[0].count),
