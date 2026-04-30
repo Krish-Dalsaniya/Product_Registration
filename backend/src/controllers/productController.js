@@ -94,7 +94,78 @@ const createProduct = async (req, res, next) => {
   }
 };
 
+const updateProduct = async (req, res, next) => {
+  const { id } = req.params;
+  const { 
+    product_name, 
+    product_code, 
+    description, 
+    unit_price,
+    category,
+    sub_category,
+    feature,
+    fuel_types,
+    nozzles,
+    dispensing
+  } = req.body;
+
+  let specification = req.body.specification;
+  const isDispenser = category?.toLowerCase() === 'dispenser' || sub_category?.toLowerCase() === 'dispenser';
+  
+  if (isDispenser) {
+    specification = JSON.stringify({
+      fuel_types: Array.isArray(fuel_types) ? fuel_types : (fuel_types ? [fuel_types] : []),
+      nozzles,
+      dispensing,
+      original_spec: specification
+    });
+  }
+
+  try {
+    // Build update query dynamically for assets
+    let queryText = `
+      UPDATE products 
+      SET product_name = $1, 
+          product_code = $2, 
+          description = $3, 
+          unit_price = $4,
+          category = $5,
+          sub_category = $6,
+          specification = $7,
+          feature = $8
+    `;
+    const params = [product_name, product_code, description, unit_price || 0, category, sub_category, specification, feature];
+
+    let paramIdx = 9;
+    if (req.files['image']) {
+      queryText += `, image_url = $${paramIdx++}`;
+      params.push(`/uploads/${req.files['image'][0].filename}`);
+    }
+    if (req.files['document']) {
+      queryText += `, document_url = $${paramIdx++}`;
+      params.push(`/uploads/${req.files['document'][0].filename}`);
+    }
+
+    queryText += ` WHERE product_id = $${paramIdx} RETURNING *`;
+    params.push(id);
+
+    const result = await db.query(queryText, params);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: { message: 'Product not found' } });
+    }
+
+    sendSuccess(res, result.rows[0]);
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(400).json({ success: false, error: { message: 'Product code already exists' } });
+    }
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
-  createProduct
+  createProduct,
+  updateProduct
 };

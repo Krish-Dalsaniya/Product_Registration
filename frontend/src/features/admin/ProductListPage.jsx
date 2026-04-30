@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getProducts, createProduct } from '../../api/products';
+import { getProducts, createProduct, updateProduct } from '../../api/products';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import CategoryModal from '../../components/shared/CategoryModal';
@@ -108,10 +108,12 @@ const ProductListPage = () => {
         }
       });
 
+
       if (modalMode === 'create') {
         await createProduct(formData);
         toast.success('Product created successfully!');
       } else {
+        await updateProduct(selectedProduct.product_id, formData);
         toast.success('Product updated successfully!');
       }
       setIsModalOpen(false);

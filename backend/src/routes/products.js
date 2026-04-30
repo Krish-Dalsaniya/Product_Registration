@@ -16,5 +16,14 @@ router.post('/',
   ]),
   productController.createProduct
 );
+router.put('/:id', 
+  verifyToken, 
+  requireRole('Admin'), 
+  upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'document', maxCount: 1 }
+  ]),
+  productController.updateProduct
+);
 
 module.exports = router;
