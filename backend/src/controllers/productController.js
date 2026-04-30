@@ -27,6 +27,7 @@ const getProducts = async (req, res, next) => {
 };
 
 const createProduct = async (req, res, next) => {
+  console.log('Incoming Product Data:', req.body);
   const { 
     product_name, 
     product_code, 
@@ -34,9 +35,23 @@ const createProduct = async (req, res, next) => {
     unit_price,
     category,
     sub_category,
-    specification,
-    feature
+    feature,
+    fuel_types,
+    nozzles,
+    dispensing
   } = req.body;
+
+  let specification = req.body.specification;
+  const isDispenser = category?.toLowerCase() === 'dispenser' || sub_category?.toLowerCase() === 'dispenser';
+  
+  if (isDispenser) {
+    specification = JSON.stringify({
+      fuel_types: Array.isArray(fuel_types) ? fuel_types : (fuel_types ? [fuel_types] : []),
+      nozzles,
+      dispensing,
+      original_spec: specification
+    });
+  }
 
   const image_url = req.files['image'] ? `/uploads/${req.files['image'][0].filename}` : null;
   const document_url = req.files['document'] ? `/uploads/${req.files['document'][0].filename}` : null;

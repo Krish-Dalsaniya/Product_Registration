@@ -29,10 +29,21 @@ async function migrate() {
       )
     `);
 
+    // Add missing columns to products table
+    await pool.query(`
+      ALTER TABLE products 
+      ADD COLUMN IF NOT EXISTS category VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS sub_category VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS specification TEXT,
+      ADD COLUMN IF NOT EXISTS feature TEXT,
+      ADD COLUMN IF NOT EXISTS image_url TEXT,
+      ADD COLUMN IF NOT EXISTS document_url TEXT;
+    `);
+
     // Seed some initial data if empty
     const catCheck = await pool.query('SELECT COUNT(*) FROM product_categories');
     if (parseInt(catCheck.rows[0].count) === 0) {
-      const cats = ['Controllers & Processors', 'IC', 'PCB', 'Thermal Printers'];
+      const cats = ['Controllers & Processors', 'IC', 'PCB', 'Thermal Printers', 'Dispenser'];
       for (const cat of cats) {
         const res = await pool.query('INSERT INTO product_categories (name) VALUES ($1) RETURNING id', [cat]);
         const catId = res.rows[0].id;
@@ -42,6 +53,9 @@ async function migrate() {
           for (const sub of subCats) {
             await pool.query('INSERT INTO product_sub_categories (category_id, name) VALUES ($1, $2)', [catId, sub]);
           }
+        }
+        if (cat === 'Dispenser') {
+          await pool.query('INSERT INTO product_sub_categories (category_id, name) VALUES ($1, $2)', [catId, 'Dispenser']);
         }
       }
       console.log('Seeded initial categories.');
