@@ -1,6 +1,7 @@
 import React from 'react';
+import { Eye } from 'lucide-react';
 
-const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, onEdit }) => {
+const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, onView, onEdit }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -38,7 +39,14 @@ const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentP
                 ))}
                 
                 <td className="px-4 py-3.5 text-right">
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end gap-3">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onView && onView(row); }}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                      title="View Details"
+                    >
+                      <Eye size={18} />
+                    </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); onEdit && onEdit(row); }}
                       className="border-[0.5px] border-gray-200 bg-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-[6px] text-gray-500 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"

@@ -94,6 +94,12 @@ const UserListPage = ({ initialRole = '' }) => {
     setIsModalOpen(true);
   };
 
+  const handleView = (user) => {
+    setModalMode('view');
+    setSelectedUser(user);
+    setIsModalOpen(true);
+  };
+
   const handleEdit = (user) => {
     setModalMode('edit');
     setSelectedUser(user);
@@ -221,15 +227,53 @@ const UserListPage = ({ initialRole = '' }) => {
         filteredCount={filteredUsers.length}
         currentPage={pagination.page}
         totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
+        onView={handleView}
         onEdit={handleEdit}
       />
 
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={modalMode === 'create' ? 'Personnel Registration' : 'Update User Profile'}
+        title={modalMode === 'create' ? 'Personnel Registration' : modalMode === 'edit' ? 'Update User Profile' : 'Personnel Details'}
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {modalMode === 'view' ? (
+          <div className="space-y-6">
+            <div className="flex items-center gap-5 p-4 bg-gray-50 rounded-2xl border-[0.5px] border-gray-100">
+              <div className="w-16 h-16 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600 font-bold text-2xl border border-blue-600/20">
+                {selectedUser?.full_name?.charAt(0)}
+              </div>
+              <div>
+                <h4 className="text-xl font-black text-gray-900 tracking-tight">{selectedUser?.full_name}</h4>
+                <div className="flex items-center gap-2 mt-1">
+                  <RoleBadge role={selectedUser?.role_name} />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div className="flex items-center gap-4 p-3 hover:bg-gray-50 transition-colors rounded-xl group">
+                <div className="p-2.5 bg-blue-50 text-blue-500 rounded-lg group-hover:scale-110 transition-transform"><Mail size={18} /></div>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Email Address</p>
+                  <p className="text-sm font-semibold text-gray-700">{selectedUser?.email}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 p-3 hover:bg-gray-50 transition-colors rounded-xl group">
+                <div className="p-2.5 bg-purple-50 text-purple-500 rounded-lg group-hover:scale-110 transition-transform"><Calendar size={18} /></div>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Joined Date</p>
+                  <p className="text-sm font-semibold text-gray-700">{new Date(selectedUser?.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <button onClick={() => setIsModalOpen(false)} className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-lg transition-all active:scale-95 text-[13px] uppercase tracking-widest">Close Profile</button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
               <input {...register('full_name', { required: 'Name is required' })} autoComplete="off" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]" placeholder="e.g. John Doe" />
@@ -267,6 +311,7 @@ const UserListPage = ({ initialRole = '' }) => {
               </button>
             </div>
           </form>
+        )}
       </Modal>
     </div>
   );
