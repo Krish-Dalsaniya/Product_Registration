@@ -11,8 +11,8 @@ router.post('/',
   verifyToken, 
   requireRole('Admin'), 
   upload.fields([
-    { name: 'image', maxCount: 1 },
-    { name: 'document', maxCount: 1 }
+    { name: 'image', maxCount: 10 },
+    { name: 'document', maxCount: 10 }
   ]),
   productController.createProduct
 );
@@ -20,8 +20,8 @@ router.put('/:id',
   verifyToken, 
   requireRole('Admin'), 
   upload.fields([
-    { name: 'image', maxCount: 1 },
-    { name: 'document', maxCount: 1 }
+    { name: 'image', maxCount: 10 },
+    { name: 'document', maxCount: 10 }
   ]),
   productController.updateProduct
 );

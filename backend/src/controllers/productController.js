@@ -53,8 +53,11 @@ const createProduct = async (req, res, next) => {
     });
   }
 
-  const image_url = req.files['image'] ? `/uploads/${req.files['image'][0].filename}` : null;
-  const document_url = req.files['document'] ? `/uploads/${req.files['document'][0].filename}` : null;
+  const images = req.files['image'] ? req.files['image'].map(f => `/uploads/${f.filename}`) : [];
+  const documents = req.files['document'] ? req.files['document'].map(f => `/uploads/${f.filename}`) : [];
+
+  const image_url = images.length > 0 ? images[0] : null;
+  const document_url = documents.length > 0 ? documents[0] : null;
 
   try {
     const result = await db.query(
@@ -68,9 +71,11 @@ const createProduct = async (req, res, next) => {
         specification,
         feature,
         image_url,
-        document_url
+        document_url,
+        gallery_images,
+        gallery_documents
       ) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [
         product_name, 
         product_code, 
@@ -81,7 +86,9 @@ const createProduct = async (req, res, next) => {
         specification,
         feature,
         image_url,
-        document_url
+        document_url,
+        JSON.stringify(images),
+        JSON.stringify(documents)
       ]
     );
 
@@ -122,6 +129,9 @@ const updateProduct = async (req, res, next) => {
   }
 
   try {
+    const newImages = req.files['image'] ? req.files['image'].map(f => `/uploads/${f.filename}`) : [];
+    const newDocs = req.files['document'] ? req.files['document'].map(f => `/uploads/${f.filename}`) : [];
+
     // Build update query dynamically for assets
     let queryText = `
       UPDATE products 
@@ -137,13 +147,15 @@ const updateProduct = async (req, res, next) => {
     const params = [product_name, product_code, description, unit_price || 0, category, sub_category, specification, feature];
 
     let paramIdx = 9;
-    if (req.files['image']) {
-      queryText += `, image_url = $${paramIdx++}`;
-      params.push(`/uploads/${req.files['image'][0].filename}`);
+    if (newImages.length > 0) {
+      queryText += `, image_url = $${paramIdx++}, gallery_images = $${paramIdx++}`;
+      params.push(newImages[0]);
+      params.push(JSON.stringify(newImages));
     }
-    if (req.files['document']) {
-      queryText += `, document_url = $${paramIdx++}`;
-      params.push(`/uploads/${req.files['document'][0].filename}`);
+    if (newDocs.length > 0) {
+      queryText += `, document_url = $${paramIdx++}, gallery_documents = $${paramIdx++}`;
+      params.push(newDocs[0]);
+      params.push(JSON.stringify(newDocs));
     }
 
     queryText += ` WHERE product_id = $${paramIdx} RETURNING *`;

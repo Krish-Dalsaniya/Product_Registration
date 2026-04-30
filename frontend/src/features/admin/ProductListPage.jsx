@@ -372,19 +372,25 @@ const ProductListPage = () => {
 
               <div className="space-y-2">
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Product Image</label>
-                {modalMode !== 'create' && selectedProduct?.image_url && (
-                  <div className="mb-3 relative group w-24 h-24">
-                    <img src={`${assetBaseURL}${selectedProduct.image_url}`} alt="Product" className="w-full h-full object-cover rounded-xl border border-gray-200" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
-                       <a href={`${assetBaseURL}${selectedProduct.image_url}`} target="_blank" rel="noreferrer" className="p-1.5 bg-white rounded-lg text-blue-600"><Search size={14} /></a>
-                    </div>
+                {modalMode !== 'create' && (selectedProduct?.gallery_images || selectedProduct?.image_url) && (
+                  <div className="mb-4 flex flex-wrap gap-3">
+                    {(Array.isArray(selectedProduct?.gallery_images) ? selectedProduct.gallery_images : (selectedProduct?.image_url ? [selectedProduct.image_url] : [])).map((img, idx) => (
+                      <div key={idx} className="relative group w-20 h-20">
+                        <img src={`${assetBaseURL}${img}`} alt={`Gallery ${idx}`} className="w-full h-full object-cover rounded-xl border border-gray-200" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                           <a href={`${assetBaseURL}${img}`} target="_blank" rel="noreferrer" className="p-1.5 bg-white rounded-lg text-blue-600 shadow-sm"><Search size={12} /></a>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
                 {modalMode !== 'view' && (
                   <div className="relative group">
-                    <input type="file" accept="image/*" {...register('image')} className="w-full opacity-0 absolute inset-0 cursor-pointer z-10" />
+                    <input type="file" accept="image/*" multiple {...register('image')} className="w-full opacity-0 absolute inset-0 cursor-pointer z-10" />
                     <div className="w-full bg-gray-50 border-[0.5px] border-gray-200 border-dashed rounded-xl px-4 py-3 flex items-center justify-between group-hover:border-blue-600 group-hover:bg-blue-50/30 transition-all">
-                      <span className="text-[13px] text-gray-400 font-medium truncate">{watch('image')?.[0]?.name || (selectedProduct?.image_url ? "Change image" : "Select image asset")}</span>
+                      <span className="text-[13px] text-gray-400 font-medium truncate">
+                        {watch('image')?.length > 0 ? `${watch('image').length} images selected` : (selectedProduct?.image_url ? "Add/Change images" : "Select image assets (Multiple)")}
+                      </span>
                       <Plus size={18} className="text-blue-600" />
                     </div>
                   </div>
@@ -393,19 +399,24 @@ const ProductListPage = () => {
 
               <div className="space-y-2">
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Product Documents</label>
-                {modalMode !== 'create' && selectedProduct?.document_url && (
-                  <div className="mb-3">
-                    <a href={`${assetBaseURL}${selectedProduct.document_url}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-600 hover:bg-blue-600 hover:text-white transition-all group">
-                      <FileText size={18} />
-                      <span className="text-[12px] font-bold uppercase tracking-tight">View Attached Document</span>
-                    </a>
+                {modalMode !== 'create' && (selectedProduct?.gallery_documents || selectedProduct?.document_url) && (
+                  <div className="mb-4 space-y-2">
+                    {(Array.isArray(selectedProduct?.gallery_documents) ? selectedProduct.gallery_documents : (selectedProduct?.document_url ? [selectedProduct.document_url] : [])).map((doc, idx) => (
+                      <a key={idx} href={`${assetBaseURL}${doc}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 bg-blue-50/50 border border-blue-100 rounded-xl text-blue-600 hover:bg-blue-600 hover:text-white transition-all group">
+                        <FileText size={18} />
+                        <span className="text-[11px] font-bold uppercase tracking-tight truncate">Document {idx + 1} - View Details</span>
+                        <ChevronRight size={14} className="ml-auto opacity-50 group-hover:translate-x-1 transition-all" />
+                      </a>
+                    ))}
                   </div>
                 )}
                 {modalMode !== 'view' && (
                   <div className="relative group">
-                    <input type="file" {...register('document')} className="w-full opacity-0 absolute inset-0 cursor-pointer z-10" />
+                    <input type="file" multiple {...register('document')} className="w-full opacity-0 absolute inset-0 cursor-pointer z-10" />
                     <div className="w-full bg-gray-50 border-[0.5px] border-gray-200 border-dashed rounded-xl px-4 py-3 flex items-center justify-between group-hover:border-blue-600 group-hover:bg-blue-50/30 transition-all">
-                      <span className="text-[13px] text-gray-400 font-medium truncate">{watch('document')?.[0]?.name || (selectedProduct?.document_url ? "Change document" : "Select documentation (PDF/DOC)")}</span>
+                      <span className="text-[13px] text-gray-400 font-medium truncate">
+                        {watch('document')?.length > 0 ? `${watch('document').length} documents selected` : (selectedProduct?.document_url ? "Add/Change documentation" : "Select documentation (Multiple)")}
+                      </span>
                       <Plus size={18} className="text-blue-600" />
                     </div>
                   </div>

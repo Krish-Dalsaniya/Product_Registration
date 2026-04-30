@@ -37,7 +37,9 @@ async function migrate() {
       ADD COLUMN IF NOT EXISTS specification TEXT,
       ADD COLUMN IF NOT EXISTS feature TEXT,
       ADD COLUMN IF NOT EXISTS image_url TEXT,
-      ADD COLUMN IF NOT EXISTS document_url TEXT;
+      ADD COLUMN IF NOT EXISTS document_url TEXT,
+      ADD COLUMN IF NOT EXISTS gallery_images JSONB DEFAULT '[]',
+      ADD COLUMN IF NOT EXISTS gallery_documents JSONB DEFAULT '[]';
     `);
 
     // Seed some initial data if empty
