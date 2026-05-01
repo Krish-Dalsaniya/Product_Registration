@@ -27,6 +27,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const isDev = env.NODE_ENV !== 'production';
 const allowedOrigins = [...(env.FRONTEND_URLS || [])];
 
+console.log('CORS Initialized with Allowed Origins:', allowedOrigins);
+
 // In development, also allow localhost and common tunnels
 if (isDev) {
   allowedOrigins.push(/localhost(:\d+)?$/);
@@ -41,16 +43,26 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
     
+    const normalizedOrigin = origin.trim().replace(/\/$/, "");
+    
     const isAllowed = allowedOrigins.some(allowed => {
       if (allowed instanceof RegExp) return allowed.test(origin);
-      return allowed.replace(/\/$/, "") === origin.replace(/\/$/, "");
+      const normalizedAllowed = allowed.trim().replace(/\/$/, "");
+      
+      // Strict match
+      if (normalizedAllowed === normalizedOrigin) return true;
+      
+      // Fuzzy match (ignore https/http differences and check if one contains the other)
+      const pureAllowed = normalizedAllowed.replace(/^https?:\/\//, "");
+      const pureOrigin = normalizedOrigin.replace(/^https?:\/\//, "");
+      return pureAllowed === pureOrigin;
     });
 
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.warn(`CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      console.error(`[CORS REJECTED] Origin: "${origin}" | Allowed: ${JSON.stringify(allowedOrigins)}`);
+      callback(new Error(`Not allowed by CORS: ${origin}`));
     }
   },
   credentials: true
