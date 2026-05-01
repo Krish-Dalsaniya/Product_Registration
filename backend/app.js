@@ -23,10 +23,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// CORS: Reverted to yesterday's style for maximum compatibility
+// CORS: Reverted to yesterday's style + hardcoded fallback for Netlify
 const origins = [
-  env.FRONTEND_URL ? env.FRONTEND_URL.replace(/\/$/, "") : 'http://localhost:5173',
-  env.FRONTEND_URL ? (env.FRONTEND_URL.endsWith('/') ? env.FRONTEND_URL : `${env.FRONTEND_URL}/`) : 'http://localhost:5173/'
+  env.FRONTEND_URL ? env.FRONTEND_URL.replace(/\/$/, "") : 'https://productsregistration.netlify.app',
+  env.FRONTEND_URL ? (env.FRONTEND_URL.endsWith('/') ? env.FRONTEND_URL : `${env.FRONTEND_URL}/`) : 'https://productsregistration.netlify.app/',
+  'https://productsregistration.netlify.app',
+  'https://productsregistration.netlify.app/'
 ];
 
 app.use(cors({ 
