@@ -23,36 +23,35 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// CORS: in development, allow all localhost and tunnel domains; in production, validate against whitelist
+// CORS: Support multiple origins from FRONTEND_URLS env var
 const isDev = env.NODE_ENV !== 'production';
-const configuredFrontends = (env.FRONTEND_URLS || []).map(u => u.replace(/\/$/, ""));
+const allowedOrigins = [...(env.FRONTEND_URLS || [])];
+
+// In development, also allow localhost and common tunnels
+if (isDev) {
+  allowedOrigins.push(/localhost(:\d+)?$/);
+  allowedOrigins.push(/127\.0\.0\.1(:\d+)?$/);
+  allowedOrigins.push(/\.devtunnels\.ms$/);
+  allowedOrigins.push(/\.ngrok\.io$/);
+  allowedOrigins.push(/\.trycloudflare\.com$/);
+}
 
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    const normalizedOrigin = origin.replace(/\/$/, "");
     
-    // if explicitly configured, always allow (fastest check)
-    if (configuredFrontends.length && configuredFrontends.indexOf(normalizedOrigin) !== -1) {
-      return callback(null, true);
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) return allowed.test(origin);
+      return allowed.replace(/\/$/, "") === origin.replace(/\/$/, "");
+    });
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
-    
-    // in development, allow any localhost and known tunnel domains
-    if (isDev) {
-      try {
-        const host = new URL(origin).hostname;
-        // allow localhost / 127.0.0.1 (any port)
-        if (host === 'localhost' || host === '127.0.0.1') return callback(null, true);
-        // allow tunnel domains commonly used for port forwarding (dev tunnels, ngrok, cloudflare)
-        if (host.endsWith('devtunnels.ms') || host.endsWith('ngrok.io') || host.endsWith('trycloudflare.com')) {
-          return callback(null, true);
-        }
-      } catch (e) {
-        // fall through to rejection
-      }
-    }
-    
-    callback(new Error('Not allowed by CORS'));
   },
   credentials: true
 }));
