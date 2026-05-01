@@ -2,10 +2,12 @@ require('dotenv').config();
 
 // Support multiple frontend origins via FRONTEND_URLS (comma-separated).
 // Fallback to FRONTEND_URL for single-value compatibility.
+const cleanUrl = (url) => url ? url.trim().replace(/^["']|["']$/g, '').replace(/\/$/, "") : null;
+
 const frontendUrlsEnv = process.env.FRONTEND_URLS;
-const frontendUrls = frontendUrlsEnv
-  ? frontendUrlsEnv.split(',').map(s => s.trim()).filter(Boolean)
-  : (process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : ['http://localhost:5173']);
+let frontendUrls = frontendUrlsEnv
+  ? frontendUrlsEnv.split(',').map(cleanUrl).filter(Boolean)
+  : (process.env.FRONTEND_URL ? [cleanUrl(process.env.FRONTEND_URL)] : ['http://localhost:5173']);
 
 const env = {
   DATABASE_URL: process.env.DATABASE_URL,
@@ -14,7 +16,6 @@ const env = {
   PORT: process.env.PORT || 3000,
   NODE_ENV: process.env.NODE_ENV || 'development',
   FRONTEND_URLS: frontendUrls,
-  // keep FRONTEND_URL for backward compatibility (first entry)
   FRONTEND_URL: frontendUrls[0]
 };
 
