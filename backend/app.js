@@ -17,11 +17,17 @@ const categoryRoutes = require('./src/routes/categories');
 
 const app = express();
 
+const fs = require('fs');
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // Middlewares
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadDir));
 
 // CORS: Reverted to yesterday's style + hardcoded fallback for Netlify
 const origins = [
