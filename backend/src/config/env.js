@@ -1,7 +1,11 @@
 require('dotenv').config();
 
+console.log('--- Environment Sync Audit ---');
+console.log('Available Env Keys:', Object.keys(process.env).filter(k => !k.includes('SECRET') && !k.includes('PASS')));
+console.log('FRONTEND_URL value:', process.env.FRONTEND_URL ? 'PRESENT' : 'MISSING');
+console.log('FRONTEND_URLS value:', process.env.FRONTEND_URLS ? 'PRESENT' : 'MISSING');
+
 // Support multiple frontend origins via FRONTEND_URLS (comma-separated).
-// Fallback to FRONTEND_URL for single-value compatibility.
 const cleanUrl = (url) => url ? url.trim().replace(/^["']|["']$/g, '').replace(/\/$/, "") : null;
 
 const frontendUrlsEnv = process.env.FRONTEND_URLS;
