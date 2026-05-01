@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getTeams, createTeam } from '../../api/adminTeams';
+import { getTeams, createTeam, updateTeam } from '../../api/adminTeams';
 import { getUsers } from '../../api/admin';
 import axiosInstance from '../../api/axiosInstance';
 import DataTable from '../../components/shared/DataTable';
@@ -15,6 +15,7 @@ const TeamsPage = () => {
   
   const [data, setData] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [availableItems, setAvailableItems] = useState([]); 
   const [loading, setLoading] = useState(true);
 
@@ -34,14 +35,24 @@ const TeamsPage = () => {
     try {
       const res = await getTeams({ role });
       setData(res.data.data);
+      // Deduplicate by user_id — v_admin_user_panel returns one row per team membership
+      const dedup = (arr) => {
+        const seen = new Set();
+        return arr.filter(u => {
+          if (seen.has(u.user_id)) return false;
+          seen.add(u.user_id);
+          return true;
+        });
+      };
+
       const userRes = await getUsers({ role, limit: 100 });
-      setAvailableUsers(userRes.data.data);
-      if (role !== 'Designer') {
-        const itemRes = await axiosInstance.get(role === 'Sales' ? '/admin/products' : '/admin/products');
-        setAvailableItems(itemRes.data.data);
-      } else {
-        setAvailableItems([]);
-      }
+      setAvailableUsers(dedup(userRes.data.data));
+      const allUserRes = await getUsers({ limit: 500 });
+      setAllUsers(dedup(allUserRes.data.data));
+      
+      // Always fetch products for the dropdown
+      const itemRes = await axiosInstance.get('/admin/products');
+      setAvailableItems(itemRes.data.data);
     } catch (error) {
       toast.error(`Failed to fetch ${role} information`);
     } finally {
@@ -67,6 +78,7 @@ const TeamsPage = () => {
         await createTeam({ ...formData, role_name: role, member_ids: selectedMembers, project_ids: [], product_ids: role !== 'Designer' ? selectedItems : [] });
         toast.success(`${role} Team created successfully!`);
       } else {
+        await updateTeam(selectedTeam.team_id, { ...formData, member_ids: selectedMembers });
         toast.success(`Team updated successfully!`);
       }
       setIsModalOpen(false);
@@ -86,14 +98,29 @@ const TeamsPage = () => {
     setSelectedTeam(null);
     setSelectedMembers([]);
     setSelectedItems([]);
-    reset({ team_name: '', description: '' });
+    reset({ 
+      team_name: '', 
+      description: '', 
+      product_name: '', 
+      product_description: '', 
+      team_lead_id: '', 
+      client_handler_id: '' 
+    });
     setIsModalOpen(true);
   };
 
   const handleView = (team) => {
     setModalMode('view');
     setSelectedTeam(team);
-    setSelectedMembers([]); 
+    reset({ 
+      team_name: team.team_name, 
+      description: team.description || '',
+      product_name: team.product_name || '',
+      product_description: team.product_description || '',
+      team_lead_id: team.team_lead_id || '',
+      client_handler_id: team.client_handler_id || ''
+    });
+    setSelectedMembers(team.member_ids || []); 
     setSelectedItems([]);
     setIsModalOpen(true);
   };
@@ -101,8 +128,15 @@ const TeamsPage = () => {
   const handleEdit = (team) => {
     setModalMode('edit');
     setSelectedTeam(team);
-    reset({ team_name: team.team_name, description: team.description || '' });
-    setSelectedMembers([]); 
+    reset({ 
+      team_name: team.team_name, 
+      description: team.description || '',
+      product_name: team.product_name || '',
+      product_description: team.product_description || '',
+      team_lead_id: team.team_lead_id || '',
+      client_handler_id: team.client_handler_id || ''
+    });
+    setSelectedMembers(team.member_ids || []); 
     setSelectedItems([]);
     setIsModalOpen(true);
   };
@@ -176,48 +210,82 @@ const TeamsPage = () => {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Team Designation</label>
-              <input {...register('team_name', { required: 'Team name is required' })} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-gray-50" placeholder={`e.g. ${role} Unit Alpha`} />
-            </div>
-
-            <div className={`grid ${role === 'Designer' ? 'grid-cols-1' : 'grid-cols-2'} gap-6`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Users size={12} /> Personnel</label>
-                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1 custom-scrollbar bg-gray-50/30">
-                  {availableUsers.map(u => {
-                    const isSelected = selectedMembers.includes(u.user_id) || (modalMode === 'view' && selectedTeam?.member_names?.includes(u.full_name));
-                    return (
-                      <div key={u.user_id} onClick={() => toggleSelection(u.user_id, selectedMembers, setSelectedMembers)} className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${isSelected ? 'bg-blue-600/10 border border-blue-600/20' : modalMode === 'view' ? 'opacity-50' : 'hover:bg-white cursor-pointer'}`}>
-                        <span className={`text-[11px] font-bold tracking-tight ${isSelected ? 'text-blue-600' : 'text-gray-400'}`}>{u.full_name}</span>
-                        {isSelected && <Check size={12} className="text-blue-600" />}
-                      </div>
-                    );
-                  })}
-                </div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Team Designation</label>
+                <input {...register('team_name', { required: 'Team name is required' })} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-gray-50" placeholder={`e.g. ${role} Unit Alpha`} />
               </div>
-              {role !== 'Designer' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Box size={12} /> {role === 'Sales' ? 'Products' : 'Tasks'}</label>
-                  <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1 custom-scrollbar bg-gray-50/30">
-                    {availableItems.map(item => {
-                      const itemName = item.project_name || item.product_name;
-                      const isSelected = selectedItems.includes(item.project_id || item.product_id) || (modalMode === 'view' && (selectedTeam?.active_project_names?.includes(itemName) || selectedTeam?.linked_products?.includes(itemName)));
-                      return (
-                        <div key={item.project_id || item.product_id} onClick={() => toggleSelection(item.project_id || item.product_id, selectedItems, setSelectedItems)} className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${isSelected ? 'bg-blue-500/10 border border-blue-500/20' : modalMode === 'view' ? 'opacity-50' : 'hover:bg-white cursor-pointer'}`}>
-                          <span className={`text-[11px] font-bold tracking-tight ${isSelected ? 'text-blue-600' : 'text-gray-400'}`}>{itemName}</span>
-                          {isSelected && <Check size={12} className="text-blue-500" />}
-                        </div>
-                      );
-                    })}
+              <div className="relative">
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Product Selection</label>
+                <div className="relative">
+                  <select {...register('product_name')} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-gray-50 appearance-none">
+                    <option value="">Select Available Product</option>
+                    {availableItems.map(p => <option key={p.product_id} value={p.product_name}>{p.product_name}</option>)}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <Plus size={14} className="rotate-45" />
                   </div>
                 </div>
-              )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative">
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Team Lead</label>
+                <div className="relative">
+                  <select {...register('team_lead_id')} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-gray-50 appearance-none">
+                    <option value="">Select Team Lead</option>
+                    {allUsers.filter(u => u.role_name === 'Designer').map(u => <option key={u.user_id} value={u.user_id}>{u.full_name}</option>)}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <Plus size={14} className="rotate-45" />
+                  </div>
+                </div>
+              </div>
+              <div className="relative">
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Client Handler</label>
+                <div className="relative">
+                  <select {...register('client_handler_id')} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-gray-50 appearance-none">
+                    <option value="">Select Client Handler</option>
+                    {allUsers.filter(u => u.role_name === 'Designer').map(u => <option key={u.user_id} value={u.user_id}>{u.full_name}</option>)}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <Plus size={14} className="rotate-45" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Product Description</label>
+                <textarea {...register('product_description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] resize-none disabled:bg-gray-50" placeholder="Key product requirements..." />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Team Description</label>
+                <textarea {...register('description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] resize-none disabled:bg-gray-50" placeholder="Operational directives..." />
+              </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Operation Description</label>
-              <textarea {...register('description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] resize-none disabled:bg-gray-50" placeholder="Operational directives and notes..." />
+               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Users size={12} /> Personnel Selection</label>
+               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-gray-50/50 border border-gray-200 rounded-xl max-h-48 overflow-y-auto custom-scrollbar">
+                 {allUsers.filter(u => u.role_name === 'Designer').map(u => {
+                   const isSelected = selectedMembers.includes(u.user_id);
+                   return (
+                     <div 
+                       key={u.user_id} 
+                       onClick={() => toggleSelection(u.user_id, selectedMembers, setSelectedMembers)} 
+                       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all border ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-100 hover:border-blue-200 cursor-pointer'}`}
+                     >
+                       <div className={`w-4 h-4 rounded flex items-center justify-center border ${isSelected ? 'bg-white border-white' : 'bg-gray-50 border-gray-200'}`}>
+                         {isSelected && <Check size={10} className="text-blue-600" />}
+                       </div>
+                       <span className="text-[10px] font-bold uppercase tracking-tight truncate">{u.full_name}</span>
+                     </div>
+                   );
+                 })}
+               </div>
             </div>
 
             {modalMode !== 'view' && (

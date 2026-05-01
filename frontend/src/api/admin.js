@@ -11,4 +11,5 @@ export const getSalesById = (id) => axiosInstance.get(`/admin/sales/${id}`);
 export const getMaintenanceUsers = (params) => axiosInstance.get('/admin/maintenance', { params });
 export const getMaintenanceById = (id) => axiosInstance.get(`/admin/maintenance/${id}`);
 export const createUser = (data) => axiosInstance.post('/admin/users', data);
+export const updateUser = (id, data) => axiosInstance.put(`/admin/users/${id}`, data);
 

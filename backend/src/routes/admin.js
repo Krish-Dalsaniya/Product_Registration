@@ -9,14 +9,17 @@ router.use(verifyToken);
 router.use(requireRole('Admin'));
 
 const utilityController = require('../controllers/adminUtilityController');
+const adminTeamController = require('../controllers/adminTeamController');
 
 router.get('/stats', adminController.getAdminStats);
 router.get('/users', adminController.getUsers);
 router.post('/users', adminController.createUser);
+router.put('/users/:userId', adminController.updateUser);
 router.get('/users/:userId', adminController.getUserById);
 router.get('/designers', adminController.getDesigners);
 router.get('/teams', adminController.getTeams);
-router.post('/teams', require('../controllers/adminTeamController').createTeam);
+router.post('/teams', adminTeamController.createTeam);
+router.put('/teams/:id', adminTeamController.updateTeam);
 router.get('/sales', adminController.getSales);
 router.get('/maintenance', adminController.getMaintenance);
 

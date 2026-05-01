@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getProducts, createProduct, updateProduct, removeAsset } from '../../api/products';
+import { getProducts, createProduct, updateProduct, removeAsset, deleteProduct } from '../../api/products';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import CategoryModal from '../../components/shared/CategoryModal';
@@ -27,6 +27,23 @@ const ProductListPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'table' or 'grid'
+  const [activeTab, setActiveTab] = useState('description'); // 'description', 'specification', 'features', 'documents', 'faqs'
+  const [specRows, setSpecRows] = useState([{ key: '', value: '' }]);
+  const [faqRows, setFaqRows] = useState([{ question: '', answer: '' }]);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+
+  // Auto-slide the gallery when in view mode with multiple images
+  useEffect(() => {
+    if (modalMode !== 'view') return;
+    const allImages = selectedProduct?.images && selectedProduct.images.length > 1
+      ? selectedProduct.images
+      : null;
+    if (!allImages) return;
+    const timer = setInterval(() => {
+      setActiveImageIdx(i => (i + 1) % allImages.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [modalMode, selectedProduct, activeImageIdx]);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
   const watchedCategory = watch('category');
@@ -45,6 +62,29 @@ const ProductListPage = () => {
       console.error('Spec parse error:', e);
     }
     return null;
+  };
+
+  const parseSpecRows = (specStr) => {
+    try {
+      if (!specStr) return [{ key: '', value: '' }];
+      const outerParsed = JSON.parse(specStr);
+
+      // Case 1: Dispenser product — specs_table is nested inside original_spec
+      if (outerParsed?.fuel_types !== undefined && outerParsed?.original_spec) {
+        try {
+          const innerParsed = JSON.parse(outerParsed.original_spec);
+          if (innerParsed?.type === 'specs_table' && Array.isArray(innerParsed.rows) && innerParsed.rows.length > 0) {
+            return innerParsed.rows;
+          }
+        } catch (e) { /* original_spec is plain text */ }
+      }
+
+      // Case 2: Non-dispenser product — specs_table stored directly
+      if (outerParsed?.type === 'specs_table' && Array.isArray(outerParsed.rows) && outerParsed.rows.length > 0) {
+        return outerParsed.rows;
+      }
+    } catch (e) { /* not json at all */ }
+    return [{ key: '', value: '' }];
   };
 
   const handleCategoryPick = (category) => {
@@ -101,6 +141,14 @@ const ProductListPage = () => {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
+      // Serialize specRows into specification — always append directly
+      // since the textarea is removed, react-hook-form won't include it in `data`
+      const validRows = specRows.filter(r => r.key.trim() !== '');
+      const specJson = validRows.length > 0
+        ? JSON.stringify({ type: 'specs_table', rows: validRows })
+        : '';
+      formData.append('specification', specJson);
+
       Object.keys(data).forEach(key => {
         if (key === 'image' || key === 'document') {
           if (data[key] && data[key][0]) {
@@ -108,11 +156,15 @@ const ProductListPage = () => {
           }
         } else if (key === 'fuel_types' && Array.isArray(data[key])) {
           data[key].forEach(val => formData.append('fuel_types', val));
-        } else {
+        } else if (key !== 'specification') {
+          // skip 'specification' — already appended above
           formData.append(key, data[key]);
         }
       });
 
+      // Append FAQs
+      const validFaqs = faqRows.filter(f => f.question.trim() !== '');
+      formData.append('faqs', JSON.stringify(validFaqs));
 
       if (modalMode === 'create') {
         await createProduct(formData);
@@ -123,6 +175,8 @@ const ProductListPage = () => {
       }
       setIsModalOpen(false);
       reset();
+      setSpecRows([{ key: '', value: '' }]);
+      setFaqRows([{ question: '', answer: '' }]);
       fetchProducts();
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Action failed');
@@ -135,6 +189,8 @@ const ProductListPage = () => {
     setModalMode('create');
     setSelectedProduct(null);
     setCurrentCategoryObject(null);
+    setSpecRows([{ key: '', value: '' }]);
+    setFaqRows([{ question: '', answer: '' }]);
     reset({ 
       product_name: '', 
       product_code: Math.random().toString(36).substring(7).toUpperCase(), 
@@ -155,10 +211,18 @@ const ProductListPage = () => {
 
   const handleView = (product) => {
     console.log('Viewing Product:', product);
-    setModalMode('view');
-    setSelectedProduct(product);
-    
     const hardware = parseHardwareSpec(product.specification);
+    const enrichedProduct = {
+      ...product,
+      parsedSpecification: hardware ? hardware.original_spec : product.specification,
+      hardware: hardware
+    };
+    
+    setSelectedProduct(enrichedProduct);
+    setModalMode('view');
+    setActiveTab('description');
+    setActiveImageIdx(0);
+    
     const resetData = {
       ...product,
       fuel_types: hardware?.fuel_types || [],
@@ -178,6 +242,8 @@ const ProductListPage = () => {
     setSelectedProduct(product);
     
     const hardware = parseHardwareSpec(product.specification);
+    setSpecRows(parseSpecRows(product.specification));
+    setFaqRows(product.faqs && product.faqs.length > 0 ? product.faqs : [{ question: '', answer: '' }]);
     const resetData = { 
       product_name: product.product_name, 
       product_code: product.product_code, 
@@ -209,6 +275,18 @@ const ProductListPage = () => {
       fetchProducts();
     } catch (error) {
       toast.error('Failed to remove asset');
+    }
+  };
+
+  const handleDelete = async (product) => {
+    if (!window.confirm(`Are you sure you want to delete "${product.product_name}"? This action cannot be undone.`)) return;
+    try {
+      await deleteProduct(product.product_id);
+      toast.success(`"${product.product_name}" deleted successfully!`);
+      setIsModalOpen(false);
+      fetchProducts();
+    } catch (error) {
+      toast.error('Failed to delete product');
     }
   };
 
@@ -321,7 +399,7 @@ const ProductListPage = () => {
               key={product.product_id} 
               className="bg-white border-[0.5px] border-gray-200 rounded-2xl overflow-hidden group hover:border-blue-600 hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-300 flex flex-col"
             >
-              <button 
+              <div 
                 onClick={() => handleView(product)}
                 className="relative aspect-square w-full overflow-hidden bg-gray-50 border-b-[0.5px] border-gray-100 block cursor-zoom-in group/img"
               >
@@ -337,26 +415,31 @@ const ProductListPage = () => {
                   </div>
                 )}
                 
-                <div className="absolute top-3 right-3 opacity-0 group-hover/img:opacity-100 transition-opacity translate-x-4 group-hover/img:translate-x-0 transition-all duration-300">
+                <div className="absolute top-3 right-3 opacity-0 group-hover/img:opacity-100 transition-opacity translate-x-4 group-hover/img:translate-x-0 transition-all duration-300 flex flex-col gap-2">
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleEdit(product); }} 
                     className="w-9 h-9 bg-white rounded-xl shadow-xl flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all"
                   >
                     <Plus size={18} />
                   </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleDelete(product); }} 
+                    className="w-9 h-9 bg-white rounded-xl shadow-xl flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                  >
+                    <Trash2 size={15} />
+                  </button>
                 </div>
-
+                
                 <div className="absolute top-3 left-3">
                   <span className="bg-white/90 backdrop-blur-md border border-white/50 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full text-blue-600 shadow-sm">
                     {product.category || 'Standard'}
                   </span>
                 </div>
-              </button>
+              </div>
 
               <div className="p-5 flex-1 flex flex-col">
                 <div className="flex-1 space-y-4">
                   <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{product.product_code}</p>
                     <h3 className="text-[18px] font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors">{product.product_name}</h3>
                   </div>
 
@@ -367,15 +450,21 @@ const ProductListPage = () => {
                   </div>
                 </div>
 
-                <button 
-                  onClick={() => handleView(product)}
-                  className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-end group/btn w-full"
+                <div 
+                  className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between group/btn w-full"
                 >
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(product); }}
+                    className="flex items-center gap-1.5 text-red-400 font-black text-[10px] uppercase tracking-[0.15em] hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 size={12} strokeWidth={3} />
+                    <span>Delete</span>
+                  </button>
                   <div className="flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-all group-hover/btn:translate-x-0 translate-x-2">
                     <span>View Profile</span>
                     <ChevronRight size={14} strokeWidth={3} />
                   </div>
-                </button>
+                </div>
               </div>
             </div>
           ))}
@@ -395,38 +484,83 @@ const ProductListPage = () => {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 {/* Left: Gallery */}
                 <div className="lg:col-span-5 space-y-4">
-                  <div className="aspect-square bg-gray-50 rounded-2xl border-[0.5px] border-gray-200 overflow-hidden group relative flex items-center justify-center">
-                    {selectedProduct?.image_url ? (
-                      <button 
-                        onClick={() => setPreviewImageUrl(`${assetBaseURL}${selectedProduct.image_url}`)}
-                        className="w-full h-full cursor-zoom-in"
-                      >
-                        <img 
-                          src={`${assetBaseURL}${selectedProduct.image_url}`} 
-                          className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
-                          alt="Main Product"
-                        />
-                      </button>
-                    ) : (
-                      <Box size={100} className="text-gray-200" strokeWidth={1} />
-                    )}
-                    <div className="absolute bottom-4 right-4 p-3 bg-white/90 backdrop-blur rounded-xl shadow-xl text-blue-600 opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
-                      <Search size={20} />
-                    </div>
-                  </div>
-                  
-                  {/* Thumbnail Gallery */}
-                  <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
-                    {(selectedProduct?.images || (selectedProduct?.image_url ? [selectedProduct.image_url] : [])).map((url, idx) => (
-                      <button 
-                        key={idx}
-                        onClick={() => setSelectedProduct({...selectedProduct, image_url: url})}
-                        className={`w-20 h-20 flex-shrink-0 rounded-xl border-2 transition-all overflow-hidden bg-gray-50 flex items-center justify-center ${selectedProduct?.image_url === url ? 'border-blue-600 shadow-md shadow-blue-900/10' : 'border-gray-100 hover:border-blue-200'}`}
-                      >
-                        <img src={`${assetBaseURL}${url}`} className="w-full h-full object-contain p-1" alt={`Thumb ${idx}`} />
-                      </button>
-                    ))}
-                  </div>
+                  {(() => {
+                    const allImages = selectedProduct?.images && selectedProduct.images.length > 0
+                      ? selectedProduct.images
+                      : (selectedProduct?.image_url ? [selectedProduct.image_url] : []);
+                    const hasMultiple = allImages.length > 1;
+                    const currentUrl = allImages[activeImageIdx] || allImages[0];
+
+                    // Auto-slide effect
+                    return (
+                      <>
+                        <div className="aspect-square bg-gray-50 rounded-2xl border-[0.5px] border-gray-200 overflow-hidden group relative flex items-center justify-center">
+                          {currentUrl ? (
+                            <button
+                              onClick={() => setPreviewImageUrl(`${assetBaseURL}${currentUrl}`)}
+                              className="w-full h-full cursor-zoom-in"
+                            >
+                              <img
+                                key={activeImageIdx}
+                                src={`${assetBaseURL}${currentUrl}`}
+                                className="w-full h-full object-contain p-4 transition-all duration-700 ease-in-out animate-in fade-in slide-in-from-right-4"
+                                alt="Main Product"
+                              />
+                            </button>
+                          ) : (
+                            <Box size={100} className="text-gray-200" strokeWidth={1} />
+                          )}
+
+                          {/* Left / Right arrows for multi-image */}
+                          {hasMultiple && (
+                            <>
+                              <button
+                                onClick={() => setActiveImageIdx(i => (i - 1 + allImages.length) % allImages.length)}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur rounded-lg shadow-lg flex items-center justify-center text-gray-600 hover:text-blue-600 hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+                              >
+                                <ChevronRight size={16} className="rotate-180" />
+                              </button>
+                              <button
+                                onClick={() => setActiveImageIdx(i => (i + 1) % allImages.length)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur rounded-lg shadow-lg flex items-center justify-center text-gray-600 hover:text-blue-600 hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+                              >
+                                <ChevronRight size={16} />
+                              </button>
+                              {/* Dot indicators */}
+                              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                                {allImages.map((_, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => setActiveImageIdx(i)}
+                                    className={`w-1.5 h-1.5 rounded-full transition-all ${i === activeImageIdx ? 'bg-blue-600 w-4' : 'bg-gray-300 hover:bg-blue-300'}`}
+                                  />
+                                ))}
+                              </div>
+                            </>
+                          )}
+
+                          <div className="absolute bottom-4 right-4 p-3 bg-white/90 backdrop-blur rounded-xl shadow-xl text-blue-600 opacity-0 group-hover:opacity-100 transition-all pointer-events-none">
+                            <Search size={20} />
+                          </div>
+                        </div>
+
+                        {/* Thumbnail Gallery */}
+                        <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                          {allImages.map((url, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setActiveImageIdx(idx)}
+                              className={`w-20 h-20 flex-shrink-0 rounded-xl border-2 transition-all overflow-hidden bg-gray-50 flex items-center justify-center ${
+                                idx === activeImageIdx ? 'border-blue-600 shadow-md shadow-blue-900/10' : 'border-gray-100 hover:border-blue-200'
+                              }`}
+                            >
+                              <img src={`${assetBaseURL}${url}`} className="w-full h-full object-contain p-1" alt={`Thumb ${idx}`} />
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Right: Quick Info */}
@@ -445,41 +579,186 @@ const ProductListPage = () => {
 
                   <div className="space-y-4">
                     <p className="text-[15px] text-gray-500 font-medium leading-relaxed">
-                      LIPL Smart Solutions provides industrial-grade equipment designed for reliability and operational excellence.
+                      CRUDEX Controls Smart Dispenser provides industrial-grade equipment designed for reliability and operational excellence.
                     </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-y-4 pt-8">
                     <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Brand</p>
-                    <p className="text-[12px] font-black text-gray-900 uppercase tracking-widest">: LIPL SMART SOLUTIONS</p>
+                    <p className="text-[12px] font-black text-gray-900 uppercase tracking-widest">: CRUDEX CONTROLS SMART DISPENSER</p>
                     <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Category</p>
                     <p className="text-[12px] font-black text-gray-900 uppercase tracking-widest">: {selectedProduct?.category}</p>
                     <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Tags</p>
                     <p className="text-[12px] font-black text-gray-900 uppercase tracking-widest">: {selectedProduct?.sub_category || 'INDUSTRIAL'}</p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3 pt-6">
+                    <button
+                      onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedProduct), 100); }}
+                      className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] uppercase tracking-[0.15em] py-3 px-4 rounded-xl transition-all active:scale-95"
+                    >
+                      <Plus size={14} strokeWidth={3} />
+                      <span>Edit Product</span>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(selectedProduct)}
+                      className="flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-500 hover:text-white font-black text-[11px] uppercase tracking-[0.15em] py-3 px-4 rounded-xl transition-all active:scale-95"
+                    >
+                      <Trash2 size={14} strokeWidth={3} />
+                      <span>Delete</span>
+                    </button>
                   </div>
                 </div>
               </div>
 
               {/* Bottom Section: Tabs */}
               <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
-                <div className="flex bg-gray-50/50 border-b border-gray-100 p-2">
-                  <button className="px-8 py-4 text-[13px] font-black uppercase tracking-widest text-blue-600 border-b-4 border-blue-600">Description</button>
-                  <button className="px-8 py-4 text-[13px] font-bold uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors">Specification</button>
+                <div className="flex bg-gray-50/50 border-b border-gray-100 overflow-x-auto">
+                  {[
+                    { key: 'description', label: 'Description' },
+                    { key: 'specification', label: 'Specification' },
+                    { key: 'features', label: 'Features' },
+                    { key: 'documents', label: 'Documents' },
+                    { key: 'faqs', label: "FAQ's" },
+                  ].map(tab => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`px-7 py-4 text-[12px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-shrink-0 ${
+                        activeTab === tab.key ? 'text-blue-600 border-b-4 border-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
-                <div className="p-10 space-y-6">
-                  <div className="prose prose-blue max-w-none">
+                <div className="p-8">
+                  {activeTab === 'description' && (
                     <p className="text-[15px] text-gray-600 leading-relaxed font-medium">
                       {selectedProduct?.description || 'No detailed description available for this product yet.'}
                     </p>
-                    {selectedProduct?.specification && (
-                      <div className="mt-8 pt-8 border-t border-gray-50">
-                        <h4 className="text-[16px] font-black text-gray-900 uppercase tracking-widest mb-4">Product Specifications:</h4>
-                        <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 text-[14px] text-gray-600 font-bold leading-relaxed whitespace-pre-wrap">
-                          {selectedProduct.specification}
+                  )}
+
+                  {activeTab === 'specification' && (() => {
+                    let specTableRows = null;
+                    try {
+                      let raw = selectedProduct?.specification;
+                      if (raw) {
+                        const outerParsed = JSON.parse(raw);
+                        if (outerParsed?.fuel_types !== undefined && outerParsed?.original_spec) {
+                          raw = outerParsed.original_spec;
+                          try {
+                            const innerParsed = JSON.parse(raw);
+                            if (innerParsed?.type === 'specs_table' && Array.isArray(innerParsed.rows)) {
+                              specTableRows = innerParsed.rows.filter(r => r.key?.trim());
+                            }
+                          } catch (e) { /* original_spec is plain text */ }
+                        } else if (outerParsed?.type === 'specs_table' && Array.isArray(outerParsed.rows)) {
+                          specTableRows = outerParsed.rows.filter(r => r.key?.trim());
+                        }
+                      }
+                    } catch (e) { /* not json */ }
+
+                    if (specTableRows && specTableRows.length > 0) {
+                      return (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-400">
+                          <div className="border border-gray-200 rounded-xl overflow-hidden">
+                            {specTableRows.map((row, idx) => (
+                              <div key={idx} className={`grid grid-cols-[220px_1fr] border-b border-gray-100 last:border-b-0 ${ idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                                <div className="px-6 py-4 text-[13px] font-bold text-gray-700 border-r border-gray-100">{row.key}:</div>
+                                <div className="px-6 py-4 text-[13px] text-gray-500 font-medium text-left">{row.value || '—'}</div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
+                      );
+                    }
+                    return (
+                      <div className="text-center py-10">
+                        <p className="text-gray-400 font-bold uppercase tracking-widest text-[12px]">No specifications provided for this product.</p>
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()}
+
+                  {activeTab === 'features' && (
+                    <div>
+                      {selectedProduct?.feature ? (
+                        <div className="space-y-3">
+                          {selectedProduct.feature.split('\n').filter(f => f.trim()).map((feat, idx) => (
+                            <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-blue-50/50 border border-blue-100/50">
+                              <div className="mt-0.5 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                                <Check size={11} strokeWidth={3} className="text-white" />
+                              </div>
+                              <p className="text-[14px] text-gray-700 font-medium leading-relaxed">{feat.trim()}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-10">
+                          <p className="text-gray-400 font-bold uppercase tracking-widest text-[12px]">No features listed for this product.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'documents' && (
+                    <div>
+                      {(selectedProduct?.documents || (selectedProduct?.document_url ? [selectedProduct.document_url] : [])).length > 0 ? (
+                        <div className="space-y-3">
+                          {(selectedProduct?.documents || [selectedProduct?.document_url]).filter(Boolean).map((docUrl, idx) => {
+                            const filename = docUrl.split('/').pop();
+                            return (
+                              <a
+                                key={idx}
+                                href={`${assetBaseURL}${docUrl}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/30 transition-all group"
+                              >
+                                <div className="p-2.5 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                  <FileText size={20} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[13px] font-bold text-gray-800 truncate">{filename}</p>
+                                  <p className="text-[11px] text-gray-400 font-medium uppercase tracking-widest">Document {idx + 1}</p>
+                                </div>
+                                <ChevronRight size={16} className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                              </a>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-10">
+                          <p className="text-gray-400 font-bold uppercase tracking-widest text-[12px]">No documents attached to this product.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'faqs' && (
+                    <div>
+                      {(selectedProduct?.faqs && selectedProduct.faqs.length > 0) ? (
+                        <div className="space-y-4">
+                          {selectedProduct.faqs.map((faq, idx) => (
+                            <details key={idx} className="group border border-gray-200 rounded-xl overflow-hidden">
+                              <summary className="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer bg-white hover:bg-gray-50 transition-colors select-none">
+                                <p className="text-[14px] font-bold text-gray-800">{faq.question}</p>
+                                <ChevronRight size={16} className="text-gray-400 group-open:rotate-90 transition-transform flex-shrink-0" />
+                              </summary>
+                              <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
+                                <p className="text-[14px] text-gray-600 font-medium leading-relaxed">{faq.answer}</p>
+                              </div>
+                            </details>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-10">
+                          <p className="text-gray-400 font-bold uppercase tracking-widest text-[12px]">No FAQ's available for this product.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -524,21 +803,23 @@ const ProductListPage = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Sub Category</label>
-                    <div className="flex gap-2">
-                      <input 
-                        {...register('sub_category')} 
-                        readOnly
-                        onClick={openSubCategoryModal}
-                        className={`flex-1 border-[0.5px] border-gray-200 rounded-xl px-4 py-3 text-[13px] font-medium outline-none transition-all ${watchedCategory ? 'bg-white cursor-pointer focus:border-blue-600' : 'bg-gray-100 opacity-50 cursor-not-allowed'}`} 
-                        placeholder={watchedCategory ? "Select sub category" : "Select category first"} 
-                      />
-                      <button type="button" disabled={!watchedCategory} onClick={openSubCategoryModal} className={`w-[46px] h-[46px] border rounded-xl flex items-center justify-center transition-all ${!watchedCategory ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-blue-600/10 border-blue-600/20 text-blue-600 hover:bg-blue-600 hover:text-white active:scale-90'}`}>
-                        <Plus size={20} strokeWidth={3} />
-                      </button>
+                  {watchedCategory?.toLowerCase() !== 'dispenser' && (
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Sub Category</label>
+                      <div className="flex gap-2">
+                        <input 
+                          {...register('sub_category')} 
+                          readOnly
+                          onClick={openSubCategoryModal}
+                          className={`flex-1 border-[0.5px] border-gray-200 rounded-xl px-4 py-3 text-[13px] font-medium outline-none transition-all ${watchedCategory ? 'bg-white cursor-pointer focus:border-blue-600' : 'bg-gray-100 opacity-50 cursor-not-allowed'}`} 
+                          placeholder={watchedCategory ? "Select sub category" : "Select category first"} 
+                        />
+                        <button type="button" disabled={!watchedCategory} onClick={openSubCategoryModal} className={`w-[46px] h-[46px] border rounded-xl flex items-center justify-center transition-all ${!watchedCategory ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-blue-600/10 border-blue-600/20 text-blue-600 hover:bg-blue-600 hover:text-white active:scale-90'}`}>
+                          <Plus size={20} strokeWidth={3} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Unit Price ($)</label>
@@ -559,14 +840,14 @@ const ProductListPage = () => {
                       <button
                         type="button"
                         onClick={() => setIsHardwareModalOpen(true)}
-                        className="w-full p-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl shadow-xl shadow-blue-900/20 hover:shadow-2xl hover:scale-[1.01] transition-all flex items-center justify-between group"
+                        className="w-full p-5 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-2xl shadow-xl shadow-blue-900/10 hover:shadow-2xl hover:scale-[1.01] transition-all flex items-center justify-between group"
                       >
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-white/10 rounded-xl backdrop-blur-md">
                             <Activity className="text-white" size={24} />
                           </div>
                           <div className="text-left">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Optional Hardware Specs</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Dispenser Specification</p>
                             <h4 className="text-[15px] font-black uppercase tracking-tight">Configure Dispenser Hardware</h4>
                           </div>
                         </div>
@@ -589,8 +870,62 @@ const ProductListPage = () => {
                   </div>
 
                   <div className="col-span-full space-y-2">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Product Specification</label>
-                    <textarea {...register('specification')} rows={3} className="w-full border-[0.5px] border-gray-200 rounded-xl px-4 py-3 text-[13px] font-medium outline-none transition-all resize-none bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5" placeholder="Enter technical specifications..." />
+                    <div className="flex items-center justify-between ml-1 mb-3">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Product Specifications</label>
+                      <span className="text-[10px] text-gray-400 font-medium">{specRows.filter(r => r.key.trim()).length} rows</span>
+                    </div>
+                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                      {/* Table Header */}
+                      <div className="grid grid-cols-[1fr_1fr_40px] bg-gray-50 border-b border-gray-200">
+                        <div className="px-4 py-2.5 text-[10px] font-black text-gray-500 uppercase tracking-[0.15em]">Attribute</div>
+                        <div className="px-4 py-2.5 text-[10px] font-black text-gray-500 uppercase tracking-[0.15em] border-l border-gray-200">Value</div>
+                        <div />
+                      </div>
+                      {/* Table Rows */}
+                      {specRows.map((row, idx) => (
+                        <div key={idx} className="grid grid-cols-[1fr_1fr_40px] border-b border-gray-100 last:border-b-0 group hover:bg-blue-50/30 transition-colors">
+                          <input
+                            type="text"
+                            value={row.key}
+                            onChange={(e) => {
+                              const updated = [...specRows];
+                              updated[idx].key = e.target.value;
+                              setSpecRows(updated);
+                            }}
+                            placeholder="e.g. Item Type"
+                            className="px-4 py-3 text-[13px] font-medium bg-transparent outline-none text-gray-800 placeholder-gray-300"
+                          />
+                          <input
+                            type="text"
+                            value={row.value}
+                            onChange={(e) => {
+                              const updated = [...specRows];
+                              updated[idx].value = e.target.value;
+                              setSpecRows(updated);
+                            }}
+                            placeholder="e.g. Camera Bracket"
+                            className="px-4 py-3 text-[13px] font-medium bg-transparent outline-none text-gray-600 placeholder-gray-300 border-l border-gray-100"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setSpecRows(specRows.filter((_, i) => i !== idx))}
+                            disabled={specRows.length === 1}
+                            className="flex items-center justify-center text-gray-300 hover:text-red-500 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Add Row Button */}
+                    <button
+                      type="button"
+                      onClick={() => setSpecRows([...specRows, { key: '', value: '' }])}
+                      className="mt-2 flex items-center gap-2 text-blue-600 text-[11px] font-black uppercase tracking-[0.15em] hover:text-blue-700 transition-colors"
+                    >
+                      <Plus size={14} strokeWidth={3} />
+                      <span>Add Row</span>
+                    </button>
                   </div>
 
                   <div className="col-span-full space-y-2">
@@ -598,12 +933,25 @@ const ProductListPage = () => {
                     {modalMode === 'edit' && (
                       <div className="flex flex-wrap gap-3 mb-3">
                         {(selectedProduct?.images || (selectedProduct?.image_url ? [selectedProduct.image_url] : [])).map((url, idx) => (
-                          <div key={idx} className="relative group w-20 h-20">
-                            <img src={`${assetBaseURL}${url}`} alt="Product" className="w-full h-full object-cover rounded-xl border border-gray-200" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
-                               <button type="button" onClick={() => setPreviewImageUrl(`${assetBaseURL}${url}`)} className="p-1.5 bg-white rounded-lg text-blue-600 shadow-lg hover:bg-blue-50"><Search size={14} /></button>
-                               <button type="button" onClick={(e) => { e.stopPropagation(); handleRemoveAsset(url, 'images'); }} className="p-1.5 bg-white rounded-lg text-red-600 shadow-lg hover:bg-red-50"><Trash2 size={14} /></button>
-                            </div>
+                          <div key={idx} className="relative w-24 h-24 flex-shrink-0">
+                            <img
+                              src={`${assetBaseURL}${url}`}
+                              alt="Product"
+                              className="w-full h-full object-cover rounded-xl border border-gray-200 cursor-pointer"
+                              onClick={() => setPreviewImageUrl(`${assetBaseURL}${url}`)}
+                            />
+                            {/* Always-visible delete button */}
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleRemoveAsset(url, 'images'); }}
+                              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all z-10"
+                              title="Delete image"
+                            >
+                              <Trash2 size={11} strokeWidth={3} />
+                            </button>
+                            {idx === 0 && (
+                              <span className="absolute bottom-1 left-1 bg-blue-600 text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md">Main</span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -649,6 +997,58 @@ const ProductListPage = () => {
                         <Plus size={18} className="text-blue-600" />
                       </div>
                     </div>
+                  </div>
+
+                  {/* FAQ Editor */}
+                  <div className="col-span-full space-y-3">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">FAQ's</label>
+                    <div className="space-y-3">
+                      {faqRows.map((faq, idx) => (
+                        <div key={idx} className="border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50/50">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">FAQ {idx + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => setFaqRows(faqRows.filter((_, i) => i !== idx))}
+                              disabled={faqRows.length === 1}
+                              className="text-gray-300 hover:text-red-500 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={faq.question}
+                            onChange={(e) => {
+                              const updated = [...faqRows];
+                              updated[idx].question = e.target.value;
+                              setFaqRows(updated);
+                            }}
+                            placeholder="Question"
+                            className="w-full border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 text-[13px] font-medium outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 bg-white transition-all"
+                          />
+                          <textarea
+                            value={faq.answer}
+                            onChange={(e) => {
+                              const updated = [...faqRows];
+                              updated[idx].answer = e.target.value;
+                              setFaqRows(updated);
+                            }}
+                            placeholder="Answer"
+                            rows={2}
+                            className="w-full border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 text-[13px] font-medium outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 bg-white transition-all resize-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFaqRows([...faqRows, { question: '', answer: '' }])}
+                      className="flex items-center gap-2 text-blue-600 text-[11px] font-black uppercase tracking-[0.15em] hover:text-blue-700 transition-colors"
+                    >
+                      <Plus size={14} strokeWidth={3} />
+                      <span>Add FAQ</span>
+                    </button>
                   </div>
                 </div>
 

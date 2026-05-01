@@ -55,7 +55,18 @@ const getMaintenanceOverview = async (req, res) => {
 };
 
 const createTeam = async (req, res) => {
-  const { team_name, description, role_name, member_ids = [], project_ids = [], product_ids = [] } = req.body;
+  const { 
+    team_name, 
+    description, 
+    role_name, 
+    member_ids = [], 
+    project_ids = [], 
+    product_ids = [],
+    product_name,
+    product_description,
+    team_lead_id,
+    client_handler_id
+  } = req.body;
   const client = await pool.connect();
   
   try {
@@ -65,8 +76,24 @@ const createTeam = async (req, res) => {
     const role_id = roleResult.rows[0]?.role_id;
     
     const teamResult = await client.query(
-      'INSERT INTO teams (team_name, description, role_id) VALUES ($1, $2, $3) RETURNING team_id',
-      [team_name, description, role_id]
+      `INSERT INTO teams (
+        team_name, 
+        description, 
+        role_id, 
+        product_name, 
+        product_description, 
+        team_lead_id, 
+        client_handler_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING team_id`,
+      [
+        team_name, 
+        description, 
+        role_id, 
+        product_name, 
+        product_description, 
+        team_lead_id || null, 
+        client_handler_id || null
+      ]
     );
     const team_id = teamResult.rows[0].team_id;
 
@@ -106,10 +133,67 @@ const createTeam = async (req, res) => {
 };
 
 
+const updateTeam = async (req, res) => {
+  const { id } = req.params;
+  const { 
+    team_name, 
+    description, 
+    member_ids = [], 
+    product_name,
+    product_description,
+    team_lead_id,
+    client_handler_id
+  } = req.body;
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    await client.query(
+      `UPDATE teams 
+       SET team_name = $1, 
+           description = $2, 
+           product_name = $3, 
+           product_description = $4, 
+           team_lead_id = $5, 
+           client_handler_id = $6
+       WHERE team_id = $7`,
+      [
+        team_name, 
+        description, 
+        product_name, 
+        product_description, 
+        team_lead_id || null, 
+        client_handler_id || null, 
+        id
+      ]
+    );
+
+    // Sync members: delete old and insert new
+    await client.query('DELETE FROM team_members WHERE team_id = $1', [id]);
+    if (member_ids.length > 0) {
+      const values = member_ids.map((_, i) => `($1, $${i + 2})`).join(', ');
+      await client.query(
+        `INSERT INTO team_members (team_id, user_id) VALUES ${values}`,
+        [id, ...member_ids]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Team updated successfully' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: { message: error.message } });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getDesignerTeams,
   getSalesOverview,
   getMaintenanceOverview,
-  createTeam
+  createTeam,
+  updateTeam
 };
 

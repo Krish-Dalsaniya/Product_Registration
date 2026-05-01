@@ -7,7 +7,11 @@ const getUsers = async (req, res, next) => {
   const { role } = req.query;
 
   try {
-    let queryText = `SELECT *, COUNT(*) OVER() as total_count FROM v_admin_user_panel`;
+    // Use DISTINCT ON to prevent duplicate rows caused by users belonging to multiple teams
+    let queryText = `
+      SELECT DISTINCT ON (user_id) *, COUNT(*) OVER() as total_count
+      FROM v_admin_user_panel
+    `;
     const params = [limit, offset];
 
     if (role) {
@@ -15,7 +19,7 @@ const getUsers = async (req, res, next) => {
       params.push(role);
     }
 
-    queryText += ` ORDER BY created_at DESC LIMIT $1 OFFSET $2`;
+    queryText += ` ORDER BY user_id, created_at DESC LIMIT $1 OFFSET $2`;
 
     const result = await db.query(queryText, params);
     const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
@@ -179,7 +183,7 @@ const getAdminStats = async (req, res, next) => {
 const bcrypt = require('bcryptjs');
 
 const createUser = async (req, res, next) => {
-  const { full_name, email, password, role_name } = req.body;
+  const { full_name, email, password, role_name, team_id } = req.body;
 
   try {
     // Get role_id
@@ -206,7 +210,56 @@ const createUser = async (req, res, next) => {
       await db.query('INSERT INTO maintenance_profiles (maintenance_id) VALUES ($1)', [userId]);
     }
 
+    // Assign to team if provided
+    if (team_id) {
+      await db.query(
+        'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
+        [team_id, userId]
+      );
+    }
+
     sendSuccess(res, result.rows[0], null, 201);
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(400).json({ success: false, error: { message: 'Email already exists' } });
+    }
+    next(error);
+  }
+};
+
+const updateUser = async (req, res, next) => {
+  const { userId } = req.params;
+  const { full_name, email, role_name, team_id } = req.body;
+
+  try {
+    // Get role_id
+    const roleResult = await db.query('SELECT role_id FROM roles WHERE role_name = $1', [role_name]);
+    if (roleResult.rows.length === 0) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid role' } });
+    }
+    const role_id = roleResult.rows[0].role_id;
+
+    const result = await db.query(
+      `UPDATE users 
+       SET full_name = $1, email = $2, role_id = $3 
+       WHERE user_id = $4 RETURNING user_id, full_name, email`,
+      [full_name, email, role_id, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: { message: 'User not found' } });
+    }
+
+    // Sync team assignment
+    await db.query('DELETE FROM team_members WHERE user_id = $1', [userId]);
+    if (team_id) {
+      await db.query(
+        'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
+        [team_id, userId]
+      );
+    }
+
+    sendSuccess(res, result.rows[0], 'User updated successfully');
   } catch (error) {
     if (error.code === '23505') {
       return res.status(400).json({ success: false, error: { message: 'Email already exists' } });
@@ -223,6 +276,7 @@ module.exports = {
   getSales,
   getMaintenance,
   getAdminStats,
-  createUser
+  createUser,
+  updateUser
 };
 

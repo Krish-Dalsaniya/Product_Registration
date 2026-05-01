@@ -64,6 +64,9 @@ const createProduct = async (req, res, next) => {
   const image_url = imageFiles.length > 0 ? `/uploads/${imageFiles[0].filename}` : null;
   const document_url = documentFiles.length > 0 ? `/uploads/${documentFiles[0].filename}` : null;
 
+  let faqs = [];
+  try { if (req.body.faqs) faqs = JSON.parse(req.body.faqs); } catch(e) {}
+
   try {
     const result = await db.query(
       `INSERT INTO products (
@@ -75,12 +78,13 @@ const createProduct = async (req, res, next) => {
         sub_category,
         specification,
         feature,
+        faqs,
         image_url,
         document_url,
         images,
         documents
       ) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
       [
         product_name, 
         product_code, 
@@ -90,6 +94,7 @@ const createProduct = async (req, res, next) => {
         sub_category,
         specification,
         feature,
+        JSON.stringify(faqs),
         image_url,
         document_url,
         images,
@@ -149,6 +154,9 @@ const updateProduct = async (req, res, next) => {
     const updatedDocuments = [...oldDocs, ...newDocUrls];
 
     // Build update query dynamically for assets
+    let faqs = [];
+    try { if (req.body.faqs) faqs = JSON.parse(req.body.faqs); } catch(e) {}
+
     let queryText = `
       UPDATE products 
       SET product_name = $1, 
@@ -159,8 +167,9 @@ const updateProduct = async (req, res, next) => {
           sub_category = $6,
           specification = $7,
           feature = $8,
-          images = $9,
-          documents = $10
+          faqs = $9,
+          images = $10,
+          documents = $11
     `;
     const params = [
       product_name, 
@@ -171,19 +180,17 @@ const updateProduct = async (req, res, next) => {
       sub_category, 
       specification, 
       feature,
+      JSON.stringify(faqs),
       JSON.stringify(updatedImages),
       JSON.stringify(updatedDocuments)
     ];
 
-    let paramIdx = 11;
-    if (newImageUrls.length > 0) {
-      queryText += `, image_url = $${paramIdx++}`;
-      params.push(newImageUrls[0]);
-    }
-    if (newDocUrls.length > 0) {
-      queryText += `, document_url = $${paramIdx++}`;
-      params.push(newDocUrls[0]);
-    }
+    let paramIdx = 12;
+    const finalImageUrl = updatedImages.length > 0 ? updatedImages[0] : null;
+    const finalDocUrl = updatedDocuments.length > 0 ? updatedDocuments[0] : null;
+
+    queryText += `, image_url = $${paramIdx++}, document_url = $${paramIdx++}`;
+    params.push(finalImageUrl, finalDocUrl);
 
     queryText += ` WHERE product_id = $${paramIdx} RETURNING *`;
     params.push(id);
@@ -213,8 +220,13 @@ const removeAsset = async (req, res, next) => {
 
     const currentAssets = product.rows[0][type] || [];
     const updatedAssets = currentAssets.filter(assetUrl => assetUrl !== url);
+    const colToUpdate = type === 'images' ? 'image_url' : 'document_url';
+    const nextAsset = updatedAssets.length > 0 ? updatedAssets[0] : null;
 
-    await db.query(`UPDATE products SET ${type} = $1 WHERE product_id = $2`, [JSON.stringify(updatedAssets), id]);
+    await db.query(
+      `UPDATE products SET ${type} = $1, ${colToUpdate} = $2 WHERE product_id = $3`, 
+      [JSON.stringify(updatedAssets), nextAsset, id]
+    );
 
     // Physically delete file
     const filePath = path.join(__dirname, '../../', url);
@@ -232,9 +244,26 @@ const removeAsset = async (req, res, next) => {
   }
 };
 
+const deleteProduct = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query(
+      'UPDATE products SET is_active = FALSE WHERE product_id = $1 RETURNING product_id, product_name',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: { message: 'Product not found' } });
+    }
+    sendSuccess(res, { message: `Product "${result.rows[0].product_name}" deleted successfully` });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   createProduct,
   updateProduct,
-  removeAsset
+  removeAsset,
+  deleteProduct
 };

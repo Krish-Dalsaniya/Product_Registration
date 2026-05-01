@@ -23,20 +23,38 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// CORS normalization: handle both trailing slash and non-trailing slash
-const origins = [
-  env.FRONTEND_URL ? env.FRONTEND_URL.replace(/\/$/, "") : 'http://localhost:5173',
-  env.FRONTEND_URL ? (env.FRONTEND_URL.endsWith('/') ? env.FRONTEND_URL : `${env.FRONTEND_URL}/`) : 'http://localhost:5173/'
-];
-app.use(cors({ 
+// CORS: in development, allow all localhost and tunnel domains; in production, validate against whitelist
+const isDev = env.NODE_ENV !== 'production';
+const configuredFrontends = (env.FRONTEND_URLS || []).map(u => u.replace(/\/$/, ""));
+
+app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || origins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    if (!origin) return callback(null, true);
+    const normalizedOrigin = origin.replace(/\/$/, "");
+    
+    // if explicitly configured, always allow (fastest check)
+    if (configuredFrontends.length && configuredFrontends.indexOf(normalizedOrigin) !== -1) {
+      return callback(null, true);
     }
-  }, 
-  credentials: true 
+    
+    // in development, allow any localhost and known tunnel domains
+    if (isDev) {
+      try {
+        const host = new URL(origin).hostname;
+        // allow localhost / 127.0.0.1 (any port)
+        if (host === 'localhost' || host === '127.0.0.1') return callback(null, true);
+        // allow tunnel domains commonly used for port forwarding (dev tunnels, ngrok, cloudflare)
+        if (host.endsWith('devtunnels.ms') || host.endsWith('ngrok.io') || host.endsWith('trycloudflare.com')) {
+          return callback(null, true);
+        }
+      } catch (e) {
+        // fall through to rejection
+      }
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
 }));
 
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUsers, createUser, getAdminStats } from '../../api/admin';
+import { getUsers, createUser, updateUser, getAdminStats, getTeams } from '../../api/admin';
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
@@ -15,6 +15,7 @@ const UserListPage = ({ initialRole = '' }) => {
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState(initialRole);
   const [searchTerm, setSearchTerm] = useState('');
+  const [teams, setTeams] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
   
   // Modal State
@@ -23,7 +24,8 @@ const UserListPage = ({ initialRole = '' }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
+  const selectedRole = watch('role_name');
 
   useEffect(() => {
     setRoleFilter(initialRole);
@@ -34,6 +36,8 @@ const UserListPage = ({ initialRole = '' }) => {
     try {
       const res = await getAdminStats();
       setStats(res.data.data);
+      const teamsRes = await getTeams();
+      setTeams(teamsRes.data.data);
     } catch (error) {
       console.error('Stats fetch error', error);
     }
@@ -75,6 +79,7 @@ const UserListPage = ({ initialRole = '' }) => {
         await createUser(data);
         toast.success('User created successfully!');
       } else {
+        await updateUser(selectedUser.user_id, data);
         toast.success('User updated successfully!');
       }
       setIsModalOpen(false);
@@ -90,7 +95,7 @@ const UserListPage = ({ initialRole = '' }) => {
   const handleOpenCreate = () => {
     setModalMode('create');
     setSelectedUser(null);
-    reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer' });
+    reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer', team_id: '' });
     setIsModalOpen(true);
   };
 
@@ -103,7 +108,12 @@ const UserListPage = ({ initialRole = '' }) => {
   const handleEdit = (user) => {
     setModalMode('edit');
     setSelectedUser(user);
-    reset({ full_name: user.full_name, email: user.email, role_name: user.role_name });
+    reset({ 
+      full_name: user.full_name, 
+      email: user.email, 
+      role_name: user.role_name, 
+      team_id: user.team_id || '' 
+    });
     setIsModalOpen(true);
   };
 
@@ -130,20 +140,55 @@ const UserListPage = ({ initialRole = '' }) => {
     return <Users className="text-blue-600" />;
   };
 
-  const StatCard = ({ title, count, icon: Icon, to }) => (
-    <div 
-      onClick={() => navigate(to)}
-      className="bg-white p-5 rounded-2xl border-[0.5px] border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group active:scale-[0.98] flex items-center justify-between"
-    >
-      <div className="space-y-1">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{title}</p>
-        <h3 className="text-2xl font-black text-gray-900 tracking-tighter">{count}</h3>
+  const StatCard = ({ title, count, icon: Icon, to }) => {
+    const roleColors = {
+      Designers: { 
+        bg: 'bg-[#e4e2ff]', 
+        text: 'text-[#3730a3]', 
+        iconBg: 'bg-[#3730a3]/10', 
+        iconColor: 'text-[#3730a3]',
+        border: 'border-[#3730a3]/20'
+      },
+      Sales: { 
+        bg: 'bg-[#ecfeff]', 
+        text: 'text-[#0891b2]', 
+        iconBg: 'bg-[#0891b2]/10', 
+        iconColor: 'text-[#0891b2]',
+        border: 'border-[#0891b2]/20'
+      },
+      Maintenance: { 
+        bg: 'bg-[#fef3c7]', 
+        text: 'text-[#92400e]', 
+        iconBg: 'bg-[#92400e]/10', 
+        iconColor: 'text-[#92400e]',
+        border: 'border-[#92400e]/20'
+      },
+      Teams: { 
+        bg: 'bg-white', 
+        text: 'text-gray-900', 
+        iconBg: 'bg-slate-50', 
+        iconColor: 'text-slate-400',
+        border: 'border-gray-200'
+      }
+    };
+
+    const style = roleColors[title] || roleColors.Teams;
+
+    return (
+      <div 
+        onClick={() => navigate(to)}
+        className={`${style.bg} p-5 rounded-2xl border-[0.5px] ${style.border} shadow-sm hover:shadow-md hover:border-blue-400 transition-all cursor-pointer group active:scale-[0.98] flex items-center justify-between`}
+      >
+        <div className="space-y-1">
+          <p className={`text-[10px] font-bold ${style.text} opacity-70 uppercase tracking-[0.2em]`}>{title}</p>
+          <h3 className={`text-2xl font-black ${style.text} tracking-tighter`}>{count}</h3>
+        </div>
+        <div className={`p-3.5 rounded-xl ${style.iconBg} group-hover:scale-110 transition-all duration-300`}>
+          <Icon size={22} className={`${style.iconColor}`} />
+        </div>
       </div>
-      <div className="p-3.5 rounded-xl bg-slate-50 group-hover:bg-blue-50 group-hover:scale-110 transition-all duration-300">
-        <Icon size={22} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
@@ -266,6 +311,16 @@ const UserListPage = ({ initialRole = '' }) => {
                   <p className="text-sm font-semibold text-gray-700">{new Date(selectedUser?.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
                 </div>
               </div>
+
+              {selectedUser?.team_name && (
+                <div className="flex items-center gap-4 p-3 hover:bg-gray-50 transition-colors rounded-xl group">
+                  <div className="p-2.5 bg-green-50 text-green-500 rounded-lg group-hover:scale-110 transition-transform"><Users size={18} /></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Assigned Team</p>
+                    <p className="text-sm font-semibold text-gray-700">{selectedUser.team_name}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="pt-4">
@@ -295,13 +350,25 @@ const UserListPage = ({ initialRole = '' }) => {
             )}
 
             {!initialRole && (
-              <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Department</label>
-                <select {...register('role_name', { required: 'Role is required' })} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
-                  <option value="Designer">Designer Department</option>
-                  <option value="Sales">Sales Network</option>
-                  <option value="Maintenance">Maintenance Crew</option>
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Department</label>
+                  <select {...register('role_name', { required: 'Role is required' })} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
+                    <option value="Designer">Designer Department</option>
+                    <option value="Sales">Sales Network</option>
+                    <option value="Maintenance">Maintenance Crew</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Assign to Team (Optional)</label>
+                  <select {...register('team_id')} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
+                    <option value="">No Team Assignment</option>
+                    {teams
+                      .filter(t => !selectedRole || t.role_name === selectedRole)
+                      .map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)
+                    }
+                  </select>
+                </div>
               </div>
             )}
 
