@@ -866,7 +866,15 @@ const ProductListPage = () => {
 
                   <div className="col-span-full space-y-2">
                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Product Description</label>
-                    <textarea {...register('description')} rows={2} className="w-full border-[0.5px] border-gray-200 rounded-xl px-4 py-3 text-[13px] font-medium outline-none transition-all resize-none bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5" placeholder="Enter product details..." />
+                    <textarea {...register('description')} rows={2} className="w-full border-[0.5px] border-gray-200 rounded-xl px-4 py-3 text-[13px] font-medium outline-none transition-all resize-none bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5" placeholder="Enter a brief overview of the product..." />
+                  </div>
+
+                  <div className="col-span-full space-y-2">
+                    <div className="flex items-center justify-between ml-1 mb-1">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em]">Key Features</label>
+                      <span className="text-[9px] text-blue-500 font-bold uppercase tracking-tighter">One feature per line</span>
+                    </div>
+                    <textarea {...register('feature')} rows={3} className="w-full border-[0.5px] border-gray-200 rounded-xl px-4 py-3 text-[13px] font-medium outline-none transition-all resize-none bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5" placeholder="• High durability&#10;• Weather resistant&#10;• Easy installation..." />
                   </div>
 
                   <div className="col-span-full space-y-2">
