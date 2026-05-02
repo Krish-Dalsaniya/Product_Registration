@@ -189,11 +189,42 @@ const updateTeam = async (req, res) => {
   }
 };
 
+const deleteTeam = async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // 1. Remove team members
+    await client.query('DELETE FROM team_members WHERE team_id = $1', [id]);
+    
+    // 2. Unlink projects (set team_id to null)
+    await client.query('UPDATE projects SET team_id = NULL WHERE team_id = $1', [id]);
+    
+    // 3. Delete the team
+    const result = await client.query('DELETE FROM teams WHERE team_id = $1 RETURNING team_id', [id]);
+    
+    if (result.rows.length === 0) {
+       await client.query('ROLLBACK');
+       return res.status(404).json({ error: { message: 'Team not found' } });
+    }
+    
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Team deleted successfully' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: { message: error.message } });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getDesignerTeams,
   getSalesOverview,
   getMaintenanceOverview,
   createTeam,
-  updateTeam
+  updateTeam,
+  deleteTeam
 };
 

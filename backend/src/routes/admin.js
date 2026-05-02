@@ -16,10 +16,12 @@ router.get('/users', adminController.getUsers);
 router.post('/users', adminController.createUser);
 router.put('/users/:userId', adminController.updateUser);
 router.get('/users/:userId', adminController.getUserById);
+router.delete('/users/:userId', adminController.deleteUser);
 router.get('/designers', adminController.getDesigners);
 router.get('/teams', adminController.getTeams);
 router.post('/teams', adminTeamController.createTeam);
 router.put('/teams/:id', adminTeamController.updateTeam);
+router.delete('/teams/:id', adminTeamController.deleteTeam);
 router.get('/sales', adminController.getSales);
 router.get('/maintenance', adminController.getMaintenance);
 

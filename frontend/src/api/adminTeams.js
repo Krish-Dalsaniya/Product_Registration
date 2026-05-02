@@ -6,4 +6,5 @@ export const getSalesOverview = (params) => axiosInstance.get('/admin/sales', { 
 export const getMaintenanceOverview = (params) => axiosInstance.get('/admin/maintenance', { params });
 export const createTeam = (data) => axiosInstance.post('/admin/teams', data);
 export const updateTeam = (id, data) => axiosInstance.put(`/admin/teams/${id}`, data);
+export const deleteTeam = (id) => axiosInstance.delete(`/admin/teams/${id}`);
 

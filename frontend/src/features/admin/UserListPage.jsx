@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUsers, createUser, updateUser, getAdminStats, getTeams } from '../../api/admin';
+import { getUsers, createUser, updateUser, deleteUser, getAdminStats, getTeams } from '../../api/admin';
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
-import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench } from 'lucide-react';
+import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import Breadcrumbs from '../../components/shared/Breadcrumbs';
 
 const UserListPage = ({ initialRole = '' }) => {
   const navigate = useNavigate();
@@ -117,6 +118,17 @@ const UserListPage = ({ initialRole = '' }) => {
     setIsModalOpen(true);
   };
 
+  const handleDelete = async (user) => {
+    if (!window.confirm(`Are you sure you want to delete "${user.full_name}"? This will also remove their profile records.`)) return;
+    try {
+      await deleteUser(user.user_id);
+      toast.success('User deleted successfully');
+      fetchUsers();
+    } catch (error) {
+      toast.error('Failed to delete user');
+    }
+  };
+
   const columns = [
     { key: 'full_name', label: 'Full Name' },
     { key: 'email', label: 'Email Address' },
@@ -192,6 +204,11 @@ const UserListPage = ({ initialRole = '' }) => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
+      <Breadcrumbs items={[
+        { label: 'Users', path: '/admin/users', active: !initialRole },
+        ...(initialRole ? [{ label: initialRole, active: true }] : [])
+      ]} />
+      
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           {/* Brand Icon Box matching Image Style */}
@@ -204,7 +221,7 @@ const UserListPage = ({ initialRole = '' }) => {
             </h1>
 
             <p className="text-[12px] text-[#64748B] font-bold mt-1.5 uppercase tracking-[0.15em]">
-              OPERATIONAL RECORDS AND PERSONNEL MANAGEMENT
+              OPERATIONAL RECORDS AND USER MANAGEMENT
             </p>
           </div>
         </div>
@@ -274,6 +291,7 @@ const UserListPage = ({ initialRole = '' }) => {
         totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
         onView={handleView}
         onEdit={handleEdit}
+        onDelete={handleDelete}
       />
 
       <Modal 

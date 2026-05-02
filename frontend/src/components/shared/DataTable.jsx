@@ -1,7 +1,7 @@
 import React from 'react';
-import { Eye } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 
-const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, onView, onEdit }) => {
+const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, onView, onEdit, onDelete }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -52,6 +52,13 @@ const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentP
                       className="border-[0.5px] border-gray-200 bg-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-[6px] text-gray-500 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
                     >
                       Edit
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onDelete && onDelete(row); }}
+                      className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      title="Delete Record"
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </td>

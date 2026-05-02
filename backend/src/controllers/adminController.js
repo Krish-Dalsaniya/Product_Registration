@@ -268,6 +268,37 @@ const updateUser = async (req, res, next) => {
   }
 };
 
+const deleteUser = async (req, res, next) => {
+  const { userId } = req.params;
+
+  try {
+    // Start transaction
+    await db.query('BEGIN');
+
+    // 1. Delete profiles
+    await db.query('DELETE FROM designer_profiles WHERE designer_id = $1', [userId]);
+    await db.query('DELETE FROM sales_profiles WHERE sales_id = $1', [userId]);
+    await db.query('DELETE FROM maintenance_profiles WHERE maintenance_id = $1', [userId]);
+    
+    // 2. Delete team memberships
+    await db.query('DELETE FROM team_members WHERE user_id = $1', [userId]);
+
+    // 3. Delete from users table
+    const result = await db.query('DELETE FROM users WHERE user_id = $1 RETURNING user_id', [userId]);
+
+    if (result.rows.length === 0) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: { message: 'User not found' } });
+    }
+
+    await db.query('COMMIT');
+    sendSuccess(res, null, 'User deleted successfully');
+  } catch (error) {
+    await db.query('ROLLBACK');
+    next(error);
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -277,6 +308,7 @@ module.exports = {
   getMaintenance,
   getAdminStats,
   createUser,
-  updateUser
+  updateUser,
+  deleteUser
 };
 

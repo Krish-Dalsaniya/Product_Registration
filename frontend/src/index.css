@@ -29,6 +29,24 @@
     font-family: var(--font-heading);
     @apply tracking-tight;
   }
+
+  /* Custom Checkbox Styles (Tick) */
+  input[type="checkbox"] {
+    @apply appearance-none w-4 h-4 border border-gray-300 rounded bg-white checked:bg-blue-600 checked:border-blue-600 transition-all cursor-pointer relative flex items-center justify-center;
+  }
+  input[type="checkbox"]:checked::after {
+    content: '';
+    @apply absolute w-[5px] h-[9px] border-r-2 border-b-2 border-white rotate-45 mb-[1px];
+  }
+
+  /* Custom Radio Styles (Dot) */
+  input[type="radio"] {
+    @apply appearance-none w-4 h-4 border border-gray-300 rounded-full bg-white checked:border-blue-600 transition-all cursor-pointer relative flex items-center justify-center;
+  }
+  input[type="radio"]:checked::after {
+    content: '';
+    @apply w-2 h-2 rounded-full bg-blue-600 scale-100 transition-transform;
+  }
 }
 
 /* Light Workspace Cards & Elements */

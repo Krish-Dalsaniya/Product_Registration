@@ -25,7 +25,7 @@ const DashboardLayout = () => {
       <Navbar />
       <div className="flex">
         <Sidebar role={user?.role_name} />
-        <main className="flex-1 md:ml-64 p-6 pt-24 min-h-screen transition-all duration-300">
+        <main className="flex-1 md:ml-64 p-6 pt-20 min-h-screen transition-all duration-300">
           <Suspense fallback={<PageLoader />}>
             <Outlet />
           </Suspense>

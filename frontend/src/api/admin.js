@@ -12,4 +12,5 @@ export const getMaintenanceUsers = (params) => axiosInstance.get('/admin/mainten
 export const getMaintenanceById = (id) => axiosInstance.get(`/admin/maintenance/${id}`);
 export const createUser = (data) => axiosInstance.post('/admin/users', data);
 export const updateUser = (id, data) => axiosInstance.put(`/admin/users/${id}`, data);
+export const deleteUser = (id) => axiosInstance.delete(`/admin/users/${id}`);
 

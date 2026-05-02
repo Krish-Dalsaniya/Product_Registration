@@ -8,6 +8,7 @@ import Modal from '../../components/shared/Modal';
 import { Briefcase, ShoppingBag, Wrench, Layout, Plus, Loader2, Check, Box, Users, Info } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import Breadcrumbs from '../../components/shared/Breadcrumbs';
 
 const TeamsPage = () => {
   const [searchParams] = useSearchParams();
@@ -141,6 +142,17 @@ const TeamsPage = () => {
     setIsModalOpen(true);
   };
 
+  const handleDelete = async (team) => {
+    if (!window.confirm(`Are you sure you want to delete "${team.team_name}"? This action will unlink associated projects.`)) return;
+    try {
+      await deleteTeam(team.team_id);
+      toast.success('Team deleted successfully');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete team');
+    }
+  };
+
   const toggleSelection = (id, list, setter) => {
     if (modalMode === 'view') return;
     setter(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
@@ -176,6 +188,11 @@ const TeamsPage = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
+      <Breadcrumbs items={[
+        { label: 'Teams', path: '/admin/teams' },
+        { label: `${role} Division`, active: true }
+      ]} />
+      
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           {/* Brand Icon Box matching Image Style */}
@@ -198,7 +215,7 @@ const TeamsPage = () => {
         </button>
       </div>
 
-      <DataTable columns={columns} data={data} loading={loading} onView={handleView} onEdit={handleEdit} />
+      <DataTable columns={columns} data={data} loading={loading} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalMode === 'create' ? `Configure New ${role} Team` : modalMode === 'edit' ? `Update ${role} Team` : `${role} Team Profile`}>
         <div className="space-y-6">

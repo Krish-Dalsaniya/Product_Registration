@@ -1,37 +1,26 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    const isImage = file.fieldname === 'image';
+    return {
+      folder: isImage ? 'products/images' : 'products/documents',
+      resource_type: isImage ? 'image' : 'raw',
+      allowed_formats: isImage ? ['jpg', 'jpeg', 'png', 'webp'] : ['pdf', 'doc', 'docx', 'xls', 'xlsx'],
+      public_id: `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9]/g, '_')}`,
+    };
   },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const cleanOriginalName = file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');
-    cb(null, file.fieldname + '-' + uniqueSuffix + '-' + cleanOriginalName);
-  }
 });
 
 const upload = multer({ 
   storage: storage,
-  fileFilter: (req, file, cb) => {
-    if (file.fieldname === 'image') {
-      if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-      } else {
-        cb(new Error('Only images are allowed for product image'));
-      }
-    } else if (file.fieldname === 'document') {
-      cb(null, true); // Allow all for now
-    } else {
-      cb(null, true);
-    }
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
   }
 });
 
 module.exports = upload;
+

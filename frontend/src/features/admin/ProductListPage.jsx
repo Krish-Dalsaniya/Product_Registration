@@ -3,9 +3,10 @@ import { getProducts, createProduct, updateProduct, removeAsset, deleteProduct }
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import CategoryModal from '../../components/shared/CategoryModal';
-import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import Breadcrumbs from '../../components/shared/Breadcrumbs';
 
 const ProductListPage = () => {
   const [products, setProducts] = useState([]);
@@ -15,6 +16,14 @@ const ProductListPage = () => {
 
   const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
   const assetBaseURL = rawApiUrl.replace(/\/api$/, '');
+
+  const getFullUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    // Ensure relative paths start with /
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+    return `${assetBaseURL}${cleanUrl}`;
+  };
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -193,9 +202,7 @@ const ProductListPage = () => {
     setFaqRows([{ question: '', answer: '' }]);
     reset({ 
       product_name: '', 
-      product_code: Math.random().toString(36).substring(7).toUpperCase(), 
       description: '', 
-      unit_price: 0,
       category: '',
       sub_category: '',
       specification: '',
@@ -246,9 +253,7 @@ const ProductListPage = () => {
     setFaqRows(product.faqs && product.faqs.length > 0 ? product.faqs : [{ question: '', answer: '' }]);
     const resetData = { 
       product_name: product.product_name, 
-      product_code: product.product_code, 
       description: product.description || '', 
-      unit_price: product.unit_price,
       category: product.category || '',
       sub_category: product.sub_category || '',
       feature: product.feature || '',
@@ -298,12 +303,12 @@ const ProductListPage = () => {
         <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center shadow-sm">
           {row.image_url ? (
             <img 
-              src={`${assetBaseURL}${row.image_url}`} 
+              src={getFullUrl(row.image_url)} 
               alt={row.product_name} 
               className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform"
               onClick={(e) => {
                 e.stopPropagation();
-                setPreviewImageUrl(`${assetBaseURL}${row.image_url}`);
+                setPreviewImageUrl(getFullUrl(row.image_url));
               }}
             />
           ) : (
@@ -312,13 +317,7 @@ const ProductListPage = () => {
         </div>
       )
     },
-    { key: 'product_code', label: 'Product Code' },
     { key: 'product_name', label: 'Product Name' },
-    { 
-      key: 'unit_price', 
-      label: 'Unit Price',
-      render: (row) => <span className="font-bold text-gray-900">${parseFloat(row.unit_price).toLocaleString()}</span>
-    },
     { 
       key: 'created_at', 
       label: 'Registration Date',
@@ -327,7 +326,11 @@ const ProductListPage = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
+      <Breadcrumbs items={[
+        { label: 'Products', active: true }
+      ]} />
+      
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           <div className="p-4 bg-white border-[0.5px] border-gray-200 rounded-xl shadow-sm">
@@ -405,7 +408,7 @@ const ProductListPage = () => {
               >
                 {product.image_url ? (
                   <img 
-                    src={`${assetBaseURL}${product.image_url}`} 
+                    src={getFullUrl(product.image_url)} 
                     alt={product.product_name} 
                     className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500"
                   />
@@ -450,20 +453,14 @@ const ProductListPage = () => {
                   </div>
                 </div>
 
-                <div 
-                  className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between group/btn w-full"
-                >
-                  <button
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <button 
                     onClick={(e) => { e.stopPropagation(); handleDelete(product); }}
-                    className="flex items-center gap-1.5 text-red-400 font-black text-[10px] uppercase tracking-[0.15em] hover:text-red-600 transition-colors"
+                    className="flex items-center gap-2 text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-red-700 transition-colors"
                   >
-                    <Trash2 size={12} strokeWidth={3} />
-                    <span>Delete</span>
+                    <Trash2 size={14} />
+                    Delete
                   </button>
-                  <div className="flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-all group-hover/btn:translate-x-0 translate-x-2">
-                    <span>View Profile</span>
-                    <ChevronRight size={14} strokeWidth={3} />
-                  </div>
                 </div>
               </div>
             </div>
@@ -497,12 +494,12 @@ const ProductListPage = () => {
                         <div className="aspect-square bg-gray-50 rounded-2xl border-[0.5px] border-gray-200 overflow-hidden group relative flex items-center justify-center">
                           {currentUrl ? (
                             <button
-                              onClick={() => setPreviewImageUrl(`${assetBaseURL}${currentUrl}`)}
+                              onClick={() => setPreviewImageUrl(getFullUrl(currentUrl))}
                               className="w-full h-full cursor-zoom-in"
                             >
                               <img
                                 key={activeImageIdx}
-                                src={`${assetBaseURL}${currentUrl}`}
+                                src={getFullUrl(currentUrl)}
                                 className="w-full h-full object-contain p-4 transition-all duration-700 ease-in-out animate-in fade-in slide-in-from-right-4"
                                 alt="Main Product"
                               />
@@ -551,10 +548,10 @@ const ProductListPage = () => {
                               key={idx}
                               onClick={() => setActiveImageIdx(idx)}
                               className={`w-20 h-20 flex-shrink-0 rounded-xl border-2 transition-all overflow-hidden bg-gray-50 flex items-center justify-center ${
-                                idx === activeImageIdx ? 'border-blue-600 shadow-md shadow-blue-900/10' : 'border-gray-100 hover:border-blue-200'
+                               idx === activeImageIdx ? 'border-blue-600 shadow-md shadow-blue-900/10' : 'border-gray-100 hover:border-blue-200'
                               }`}
                             >
-                              <img src={`${assetBaseURL}${url}`} className="w-full h-full object-contain p-1" alt={`Thumb ${idx}`} />
+                              <img src={getFullUrl(url)} className="w-full h-full object-contain p-1" alt={`Thumb ${idx}`} />
                             </button>
                           ))}
                         </div>
@@ -578,9 +575,7 @@ const ProductListPage = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <p className="text-[15px] text-gray-500 font-medium leading-relaxed">
-                      CRUDEX Controls Smart Dispenser provides industrial-grade equipment designed for reliability and operational excellence.
-                    </p>
+
                   </div>
 
                   <div className="grid grid-cols-2 gap-y-4 pt-8">
@@ -685,11 +680,9 @@ const ProductListPage = () => {
                     <div>
                       {selectedProduct?.feature ? (
                         <div className="space-y-3">
-                          {selectedProduct.feature.split('\n').filter(f => f.trim()).map((feat, idx) => (
-                            <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-blue-50/50 border border-blue-100/50">
-                              <div className="mt-0.5 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                                <Check size={11} strokeWidth={3} className="text-white" />
-                              </div>
+                           {selectedProduct.feature.split('\n').filter(f => f.trim()).map((feat, idx) => (
+                            <div key={idx} className="flex items-start gap-4 p-4 rounded-xl bg-blue-50/30 border border-blue-100/50">
+                              <div className="mt-2 w-1.5 h-1.5 rounded-full bg-blue-600 flex-shrink-0" />
                               <p className="text-[14px] text-gray-700 font-medium leading-relaxed">{feat.trim()}</p>
                             </div>
                           ))}
@@ -708,23 +701,43 @@ const ProductListPage = () => {
                         <div className="space-y-3">
                           {(selectedProduct?.documents || [selectedProduct?.document_url]).filter(Boolean).map((docUrl, idx) => {
                             const filename = docUrl.split('/').pop();
+                            const fullUrl = getFullUrl(docUrl);
                             return (
-                              <a
+                              <div
                                 key={idx}
-                                href={`${assetBaseURL}${docUrl}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/30 transition-all group"
+                                className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 bg-white hover:border-blue-300 transition-all group"
                               >
-                                <div className="p-2.5 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                <div className="p-2.5 bg-blue-50 rounded-lg text-blue-600">
                                   <FileText size={20} />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-[13px] font-bold text-gray-800 truncate">{filename}</p>
                                   <p className="text-[11px] text-gray-400 font-medium uppercase tracking-widest">Document {idx + 1}</p>
                                 </div>
-                                <ChevronRight size={16} className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
-                              </a>
+                                <div className="flex items-center gap-2">
+                                  <a
+                                    href={
+                                      fullUrl.match(/\.(docx|doc|xlsx|xls|pptx|ppt)$/i) && window.location.hostname !== 'localhost'
+                                        ? `https://docs.google.com/viewer?url=${encodeURIComponent(fullUrl)}&embedded=true`
+                                        : fullUrl
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                    title="View Document"
+                                  >
+                                    <Eye size={18} />
+                                  </a>
+                                  <a
+                                    href={fullUrl}
+                                    download={filename}
+                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                    title="Download Document"
+                                  >
+                                    <Download size={18} />
+                                  </a>
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
@@ -821,19 +834,7 @@ const ProductListPage = () => {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] ml-1">Unit Price ($)</label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input 
-                        type="number" 
-                        step="0.01" 
-                        {...register('unit_price', { required: true })} 
-                        className="w-full bg-white border-[0.5px] border-gray-200 rounded-xl pl-10 pr-4 py-3 text-[13px] font-medium outline-none transition-all focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5" 
-                        placeholder="0.00" 
-                      />
-                    </div>
-                  </div>
+
 
                   {(watchedCategory?.toLowerCase() === 'dispenser' || watchedSubCategory?.toLowerCase() === 'dispenser') && (
                     <div className="col-span-full">
@@ -943,10 +944,10 @@ const ProductListPage = () => {
                         {(selectedProduct?.images || (selectedProduct?.image_url ? [selectedProduct.image_url] : [])).map((url, idx) => (
                           <div key={idx} className="relative w-24 h-24 flex-shrink-0">
                             <img
-                              src={`${assetBaseURL}${url}`}
+                              src={getFullUrl(url)}
                               alt="Product"
                               className="w-full h-full object-cover rounded-xl border border-gray-200 cursor-pointer"
-                              onClick={() => setPreviewImageUrl(`${assetBaseURL}${url}`)}
+                              onClick={() => setPreviewImageUrl(getFullUrl(url))}
                             />
                             {/* Always-visible delete button */}
                             <button
@@ -988,7 +989,7 @@ const ProductListPage = () => {
                                 <span className="text-[11px] font-bold uppercase tracking-tight truncate max-w-[180px] text-blue-600">{displayName}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <a href={`${assetBaseURL}${url}`} target="_blank" rel="noreferrer" className="p-1.5 bg-white rounded-lg text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-blue-50"><Search size={14} /></a>
+                                <a href={getFullUrl(url)} target="_blank" rel="noreferrer" className="p-1.5 bg-white rounded-lg text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-blue-50"><Search size={14} /></a>
                                 <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveAsset(url, 'documents'); }} className="p-1.5 bg-white rounded-lg text-red-600 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50"><Trash2 size={14} /></button>
                               </div>
                             </div>
@@ -1112,7 +1113,7 @@ const ProductListPage = () => {
                       <div className="text-gray-400 peer-checked:text-blue-600 transition-colors">{type.icon}</div>
                       <span className="text-[12px] font-black text-gray-900 uppercase tracking-tighter">{type.label}</span>
                       <div className="ml-auto w-5 h-5 rounded-md border border-gray-200 bg-white peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all flex items-center justify-center">
-                        <Check size={12} className="text-white" strokeWidth={5} />
+                        <Check size={12} className="text-white opacity-0 peer-checked:opacity-100 transition-opacity" strokeWidth={5} />
                       </div>
                     </div>
                   </label>
@@ -1149,7 +1150,7 @@ const ProductListPage = () => {
                     <input type="radio" value={`${num} dispensing`} {...register('dispensing')} disabled={modalMode === 'view'} className="peer sr-only" />
                     <div className="flex items-center justify-between p-4 bg-white border-[0.5px] border-gray-200 rounded-xl transition-all peer-checked:border-blue-600 peer-checked:bg-blue-50/50 group-hover:border-blue-300">
                       <span className="text-[12px] font-bold text-gray-700 uppercase tracking-tight">{num} dispensing</span>
-                      <CheckCircle size={20} className="text-gray-200 peer-checked:text-blue-600 transition-colors" />
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-200 peer-checked:border-blue-600 peer-checked:border-[6px] transition-all" />
                     </div>
                   </label>
                 ))}
