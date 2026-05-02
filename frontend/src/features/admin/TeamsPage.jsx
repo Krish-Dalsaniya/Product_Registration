@@ -166,7 +166,7 @@ const TeamsPage = () => {
       render: (row) => (
         <div className="flex flex-wrap gap-1">
           {row.member_names?.split(', ').map((name, i) => (
-            <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-bold uppercase tracking-wider">{name}</span>
+            <span key={i} className="px-2 py-0.5 bg-[var(--bg-workspace)] text-[var(--text-muted)] rounded text-[10px] font-bold uppercase tracking-wider">{name}</span>
           ))}
           {!row.member_names && <span className="text-gray-400 text-xs italic">No members</span>}
         </div>
@@ -196,14 +196,14 @@ const TeamsPage = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           {/* Brand Icon Box matching Image Style */}
-          <div className="p-4 bg-white border-[0.5px] border-gray-200 rounded-xl shadow-sm">
+          <div className="p-4 bg-[var(--bg-card)] border-[0.5px] border-[var(--border-color)] rounded-xl shadow-sm">
             {getRoleIcon()}
           </div>
           <div>
-            <h1 className="text-[26px] font-black text-[#0B1A16] tracking-tighter uppercase leading-none">
+            <h1 className="text-[26px] font-black text-[var(--text-main)] tracking-tighter uppercase leading-none">
               {role} Teams
             </h1>
-            <p className="text-[12px] text-[#64748B] font-bold mt-1.5 uppercase tracking-[0.15em]">
+            <p className="text-[12px] text-[var(--text-muted)] font-bold mt-1.5 uppercase tracking-[0.15em]">
               OPERATIONAL RECORDS AND PERSONNEL MANAGEMENT
             </p>
           </div>
@@ -229,17 +229,17 @@ const TeamsPage = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Team Designation</label>
-                <input {...register('team_name', { required: 'Team name is required' })} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-gray-50" placeholder={`e.g. ${role} Unit Alpha`} />
+                <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Team Designation</label>
+                <input {...register('team_name', { required: 'Team name is required' })} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder={`e.g. ${role} Unit Alpha`} />
               </div>
               <div className="relative">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Product Selection</label>
+                <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Product Selection</label>
                 <div className="relative">
-                  <select {...register('product_name')} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-gray-50 appearance-none">
+                  <select {...register('product_name')} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)] appearance-none">
                     <option value="">Select Available Product</option>
                     {availableItems.map(p => <option key={p.product_id} value={p.product_name}>{p.product_name}</option>)}
                   </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
                     <Plus size={14} className="rotate-45" />
                   </div>
                 </div>
@@ -275,27 +275,27 @@ const TeamsPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Product Description</label>
-                <textarea {...register('product_description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] resize-none disabled:bg-gray-50" placeholder="Key product requirements..." />
+                <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Product Description</label>
+                <textarea {...register('product_description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] resize-none disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder="Key product requirements..." />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Team Description</label>
-                <textarea {...register('description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] resize-none disabled:bg-gray-50" placeholder="Operational directives..." />
+                <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Team Description</label>
+                <textarea {...register('description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] resize-none disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder="Operational directives..." />
               </div>
             </div>
 
             <div>
-               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Users size={12} /> Personnel Selection</label>
-               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-gray-50/50 border border-gray-200 rounded-xl max-h-48 overflow-y-auto custom-scrollbar">
+               <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 flex items-center gap-2"><Users size={12} /> Personnel Selection</label>
+               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] rounded-xl max-h-48 overflow-y-auto custom-scrollbar">
                  {allUsers.filter(u => u.role_name === 'Designer').map(u => {
                    const isSelected = selectedMembers.includes(u.user_id);
                    return (
                      <div 
                        key={u.user_id} 
                        onClick={() => toggleSelection(u.user_id, selectedMembers, setSelectedMembers)} 
-                       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all border ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-gray-600 border-gray-100 hover:border-blue-200 cursor-pointer'}`}
+                       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all border ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-[var(--bg-card)] text-[var(--text-main)] border-[var(--border-color)] hover:border-blue-200 cursor-pointer'}`}
                      >
-                       <div className={`w-4 h-4 rounded flex items-center justify-center border ${isSelected ? 'bg-white border-white' : 'bg-gray-50 border-gray-200'}`}>
+                       <div className={`w-4 h-4 rounded flex items-center justify-center border ${isSelected ? 'bg-white border-white' : 'bg-[var(--bg-workspace)] border-[var(--border-color)]'}`}>
                          {isSelected && <Check size={10} className="text-blue-600" />}
                        </div>
                        <span className="text-[10px] font-bold uppercase tracking-tight truncate">{u.full_name}</span>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import RoleBadge from './RoleBadge';
 import { 
   Users, 
@@ -18,6 +19,7 @@ import {
 
 const Sidebar = ({ role }) => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [openMenus, setOpenMenus] = useState({
@@ -40,8 +42,8 @@ const Sidebar = ({ role }) => {
       className={({ isActive }) =>
         `flex items-center gap-4 px-8 py-3.5 transition-all ${
           isActive 
-            ? 'text-blue-600 font-bold bg-blue-50' 
-            : 'text-gray-500 hover:text-blue-600 hover:bg-gray-50'
+            ? 'text-blue-600 font-bold bg-blue-50/50' 
+            : 'text-[var(--text-muted)] hover:text-blue-600 hover:bg-gray-50/50'
         } ${isSubItem ? 'px-10 py-2.5' : ''}`
       }
     >
@@ -53,25 +55,25 @@ const Sidebar = ({ role }) => {
   );
 
   return (
-    <aside className="w-64 bg-white h-screen fixed left-0 top-0 z-40 hidden md:flex flex-col shadow-xl border-r border-gray-100">
+    <aside className="w-64 bg-[var(--bg-card)] h-screen fixed left-0 top-0 z-40 hidden md:flex flex-col shadow-xl border-r border-[var(--border-color)] transition-colors duration-300">
       {/* USER PROFILE AT TOP */}
       {/* LOGO AT TOP */}
-      <div className="p-8 border-b border-gray-50 flex justify-center">
+      <div className="p-8 border-b border-[var(--border-color)] flex justify-center">
         <img 
-          src="/logo.png" 
+          src={theme === 'dark' ? '/logo.png' : '/logo.png'} 
           alt="Leons CRM" 
-          className="h-10 w-auto object-contain" 
+          className="h-10 w-auto object-contain brightness-100 invert-0 dark:invert-0" 
         />
       </div>
 
-      <div className="p-6 border-b border-gray-50 bg-gray-50/50">
+      <div className="p-6 border-b border-[var(--border-color)] bg-[var(--bg-workspace)]/30">
 
 
 
         <div className="flex flex-col items-center">
           <div className="relative group">
             {/* Avatar with thick green border */}
-            <div className="w-24 h-24 rounded-full border-[6px] border-[#61A085] p-0.5 overflow-hidden bg-white shadow-xl">
+            <div className="w-24 h-24 rounded-full border-[6px] border-[#61A085] p-0.5 overflow-hidden bg-[var(--bg-card)] shadow-xl">
               <img 
                 src="/avatar.png" 
                 alt="Profile" 
@@ -80,18 +82,18 @@ const Sidebar = ({ role }) => {
             </div>
 
             {/* Settings Overlay Cog */}
-            <div className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-gray-100 cursor-pointer hover:scale-110 transition-transform">
-              <div className="text-gray-400">
+            <div className="absolute bottom-0 right-0 w-8 h-8 bg-[var(--bg-card)] rounded-full flex items-center justify-center shadow-md border border-[var(--border-color)] cursor-pointer hover:scale-110 transition-transform">
+              <div className="text-[var(--text-muted)]">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
                 </svg>
               </div>
             </div>
           </div>
 
           <div className="mt-5 text-center">
-            <p className="text-base font-bold text-gray-900 tracking-tight leading-tight uppercase">{user?.full_name}</p>
-            <p className="text-[12px] font-medium text-gray-400 mt-1">{user?.role_name}</p>
+            <p className="text-base font-black text-[var(--text-main)] tracking-tight leading-tight uppercase">{user?.full_name}</p>
+            <p className="text-[12px] font-bold text-[var(--text-muted)] mt-1">{user?.role_name}</p>
           </div>
         </div>
 
@@ -109,8 +111,8 @@ const Sidebar = ({ role }) => {
             <div 
               className={`flex items-center justify-between px-8 py-3.5 transition-all ${
                 location.pathname.startsWith('/admin/') && !location.pathname.includes('/admin/products') && !location.pathname.includes('/admin/teams')
-                  ? 'text-blue-600 font-bold bg-blue-50' 
-                  : 'text-gray-500 hover:text-blue-600 hover:bg-gray-50'
+                  ? 'text-blue-600 font-bold bg-blue-50/50' 
+                  : 'text-[var(--text-muted)] hover:text-blue-600 hover:bg-gray-50/50'
               }`}
             >
               <div 
@@ -118,7 +120,7 @@ const Sidebar = ({ role }) => {
                 className="flex items-center gap-4 cursor-pointer flex-1 group"
               >
                 <div className="w-6 flex justify-center">
-                  <Users size={20} className={location.pathname.startsWith('/admin/') && !location.pathname.includes('/admin/products') ? 'text-blue-600' : 'text-gray-400 group-hover:text-blue-600'} />
+                  <Users size={20} className={location.pathname.startsWith('/admin/') && !location.pathname.includes('/admin/products') ? 'text-blue-600' : 'text-[var(--text-muted)] group-hover:text-blue-600'} />
                 </div>
                 <span className="text-sm font-bold uppercase tracking-tight">Users</span>
               </div>
@@ -140,7 +142,7 @@ const Sidebar = ({ role }) => {
                 {/* Nested Designers Sub-category */}
                 <div 
                   className={`flex items-center justify-between px-10 py-2.5 transition-all ${
-                    location.pathname === '/admin/designers' || openMenus.designers ? 'text-blue-600 bg-blue-50/30' : 'text-gray-500 hover:bg-gray-50'
+                    location.pathname === '/admin/designers' || openMenus.designers ? 'text-blue-600 bg-blue-50/30' : 'text-[var(--text-muted)] hover:bg-gray-50/50'
                   }`}
                 >
                   <div 
@@ -193,10 +195,10 @@ const Sidebar = ({ role }) => {
       </div>
 
       {/* SIGN OUT AT BOTTOM */}
-      <div className="p-4 border-t border-gray-100">
+      <div className="p-4 border-t border-[var(--border-color)]">
         <button
           onClick={logout}
-          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl bg-red-50 hover:bg-red-100 text-xs font-black text-red-600 border border-red-100 transition-all uppercase tracking-widest group"
+          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl bg-red-500/10 hover:bg-red-500 text-xs font-black text-red-500 hover:text-white border border-red-500/20 transition-all uppercase tracking-widest group"
         >
           <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
           <span>Logout</span>

@@ -21,7 +21,7 @@ const PageLoader = () => (
 const DashboardLayout = () => {
   const { user } = useAuth();
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[var(--bg-workspace)] transition-colors duration-300">
       <Navbar />
       <div className="flex">
         <Sidebar role={user?.role_name} />

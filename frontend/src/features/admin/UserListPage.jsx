@@ -155,32 +155,32 @@ const UserListPage = ({ initialRole = '' }) => {
   const StatCard = ({ title, count, icon: Icon, to }) => {
     const roleColors = {
       Designers: { 
-        bg: 'bg-[#e4e2ff]', 
-        text: 'text-[#3730a3]', 
-        iconBg: 'bg-[#3730a3]/10', 
-        iconColor: 'text-[#3730a3]',
-        border: 'border-[#3730a3]/20'
+        bg: 'bg-[var(--stat-designer-bg)]', 
+        text: 'text-[var(--stat-designer-text)]', 
+        iconBg: 'bg-[var(--stat-designer-text)]/10', 
+        iconColor: 'text-[var(--stat-designer-icon)]',
+        border: 'border-[var(--stat-designer-text)]/20'
       },
       Sales: { 
-        bg: 'bg-[#ecfeff]', 
-        text: 'text-[#0891b2]', 
-        iconBg: 'bg-[#0891b2]/10', 
-        iconColor: 'text-[#0891b2]',
-        border: 'border-[#0891b2]/20'
+        bg: 'bg-[var(--stat-sales-bg)]', 
+        text: 'text-[var(--stat-sales-text)]', 
+        iconBg: 'bg-[var(--stat-sales-text)]/10', 
+        iconColor: 'text-[var(--stat-sales-icon)]',
+        border: 'border-[var(--stat-sales-text)]/20'
       },
       Maintenance: { 
-        bg: 'bg-[#fef3c7]', 
-        text: 'text-[#92400e]', 
-        iconBg: 'bg-[#92400e]/10', 
-        iconColor: 'text-[#92400e]',
-        border: 'border-[#92400e]/20'
+        bg: 'bg-[var(--stat-maint-bg)]', 
+        text: 'text-[var(--stat-maint-text)]', 
+        iconBg: 'bg-[var(--stat-maint-text)]/10', 
+        iconColor: 'text-[var(--stat-maint-icon)]',
+        border: 'border-[var(--stat-maint-text)]/20'
       },
       Teams: { 
-        bg: 'bg-white', 
-        text: 'text-gray-900', 
-        iconBg: 'bg-slate-50', 
-        iconColor: 'text-slate-400',
-        border: 'border-gray-200'
+        bg: 'bg-[var(--bg-card)]', 
+        text: 'text-[var(--text-main)]', 
+        iconBg: 'bg-[var(--bg-workspace)]', 
+        iconColor: 'text-[var(--text-muted)]',
+        border: 'border-[var(--border-color)]'
       }
     };
 
@@ -212,15 +212,15 @@ const UserListPage = ({ initialRole = '' }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           {/* Brand Icon Box matching Image Style */}
-          <div className="p-4 bg-white border-[0.5px] border-gray-200 rounded-xl shadow-sm">
+          <div className="p-4 bg-[var(--bg-card)] border-[0.5px] border-[var(--border-color)] rounded-xl shadow-sm">
             {getRoleIcon()}
           </div>
           <div>
-            <h1 className="text-[26px] font-black text-[#0B1A16] tracking-tighter uppercase leading-none">
+            <h1 className="text-[26px] font-black text-[var(--text-main)] tracking-tighter uppercase leading-none">
               {initialRole ? (initialRole === 'Sales' ? initialRole : `${initialRole}s`) : 'Users'}
             </h1>
 
-            <p className="text-[12px] text-[#64748B] font-bold mt-1.5 uppercase tracking-[0.15em]">
+            <p className="text-[12px] text-[var(--text-muted)] font-bold mt-1.5 uppercase tracking-[0.15em]">
               OPERATIONAL RECORDS AND USER MANAGEMENT
             </p>
           </div>
@@ -248,18 +248,18 @@ const UserListPage = ({ initialRole = '' }) => {
 
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group w-full">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={16} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-blue-600 transition-colors" size={16} />
           <input
             type="text"
             placeholder="Filter records..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg py-2.5 pl-10 pr-4 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]"
+            className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg py-2.5 pl-10 pr-4 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] text-[var(--text-main)]"
           />
         </div>
         
         {!initialRole && (
-          <div className="flex bg-gray-100 p-[3px] rounded-[8px] border-[0.5px] border-gray-200 shadow-sm whitespace-nowrap">
+          <div className="flex bg-[var(--bg-card)] p-[3px] rounded-[8px] border-[0.5px] border-[var(--border-color)] shadow-sm whitespace-nowrap">
             {['', 'Designer', 'Sales', 'Maintenance'].map((role) => (
               <button
                 key={role}
@@ -270,7 +270,7 @@ const UserListPage = ({ initialRole = '' }) => {
                 className={`px-4 py-1.5 rounded-[6px] text-[11px] font-bold transition-all tracking-tight ${
                   roleFilter === role 
                     ? 'bg-blue-600 text-white shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-workspace)]'
                 }`}
               >
                 {(role || 'All').toUpperCase()}
@@ -301,12 +301,12 @@ const UserListPage = ({ initialRole = '' }) => {
       >
         {modalMode === 'view' ? (
           <div className="space-y-6">
-            <div className="flex items-center gap-5 p-4 bg-gray-50 rounded-2xl border-[0.5px] border-gray-100">
+            <div className="flex items-center gap-5 p-4 bg-[var(--bg-workspace)] rounded-2xl border-[0.5px] border-[var(--border-color)]">
               <div className="w-16 h-16 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600 font-bold text-2xl border border-blue-600/20">
                 {selectedUser?.full_name?.charAt(0)}
               </div>
               <div>
-                <h4 className="text-xl font-black text-gray-900 tracking-tight">{selectedUser?.full_name}</h4>
+                <h4 className="text-xl font-black text-[var(--text-main)] tracking-tight">{selectedUser?.full_name}</h4>
                 <div className="flex items-center gap-2 mt-1">
                   <RoleBadge role={selectedUser?.role_name} />
                 </div>
@@ -314,55 +314,55 @@ const UserListPage = ({ initialRole = '' }) => {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              <div className="flex items-center gap-4 p-3 hover:bg-gray-50 transition-colors rounded-xl group">
-                <div className="p-2.5 bg-blue-50 text-blue-500 rounded-lg group-hover:scale-110 transition-transform"><Mail size={18} /></div>
+              <div className="flex items-center gap-4 p-3 hover:bg-[var(--bg-workspace)] transition-colors rounded-xl group">
+                <div className="p-2.5 bg-blue-500/10 text-blue-500 rounded-lg group-hover:scale-110 transition-transform"><Mail size={18} /></div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Email Address</p>
-                  <p className="text-sm font-semibold text-gray-700">{selectedUser?.email}</p>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Email Address</p>
+                  <p className="text-sm font-semibold text-[var(--text-main)]">{selectedUser?.email}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-3 hover:bg-gray-50 transition-colors rounded-xl group">
-                <div className="p-2.5 bg-purple-50 text-purple-500 rounded-lg group-hover:scale-110 transition-transform"><Calendar size={18} /></div>
+              <div className="flex items-center gap-4 p-3 hover:bg-[var(--bg-workspace)] transition-colors rounded-xl group">
+                <div className="p-2.5 bg-purple-500/10 text-purple-500 rounded-lg group-hover:scale-110 transition-transform"><Calendar size={18} /></div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Joined Date</p>
-                  <p className="text-sm font-semibold text-gray-700">{new Date(selectedUser?.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Joined Date</p>
+                  <p className="text-sm font-semibold text-[var(--text-main)]">{new Date(selectedUser?.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
                 </div>
               </div>
 
               {selectedUser?.team_name && (
-                <div className="flex items-center gap-4 p-3 hover:bg-gray-50 transition-colors rounded-xl group">
-                  <div className="p-2.5 bg-green-50 text-green-500 rounded-lg group-hover:scale-110 transition-transform"><Users size={18} /></div>
+                <div className="flex items-center gap-4 p-3 hover:bg-[var(--bg-workspace)] transition-colors rounded-xl group">
+                  <div className="p-2.5 bg-green-500/10 text-green-500 rounded-lg group-hover:scale-110 transition-transform"><Users size={18} /></div>
                   <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Assigned Team</p>
-                    <p className="text-sm font-semibold text-gray-700">{selectedUser.team_name}</p>
+                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Assigned Team</p>
+                    <p className="text-sm font-semibold text-[var(--text-main)]">{selectedUser.team_name}</p>
                   </div>
                 </div>
               )}
             </div>
 
             <div className="pt-4">
-              <button onClick={() => setIsModalOpen(false)} className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-lg transition-all active:scale-95 text-[13px] uppercase tracking-widest">Close Profile</button>
+              <button onClick={() => setIsModalOpen(false)} className="w-full bg-[var(--text-main)] hover:bg-black text-[var(--bg-card)] font-bold py-3.5 rounded-lg transition-all active:scale-95 text-[13px] uppercase tracking-widest">Close Profile</button>
             </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
-              <input {...register('full_name', { required: 'Name is required' })} autoComplete="off" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]" placeholder="e.g. John Doe" />
+              <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
+              <input {...register('full_name', { required: 'Name is required' })} autoComplete="off" className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] text-[var(--text-main)]" placeholder="e.g. John Doe" />
               {errors.full_name && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.full_name.message}</p>}
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
-              <input {...register('email', { required: 'Email is required' })} type="email" autoComplete="off" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]" placeholder="john@procore.sys" />
+              <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
+              <input {...register('email', { required: 'Email is required' })} type="email" autoComplete="off" className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] text-[var(--text-main)]" placeholder="john@procore.sys" />
               {errors.email && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.email.message}</p>}
             </div>
 
             {modalMode === 'create' && (
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Password</label>
-                <input {...register('password', { required: 'Password is required' })} type="password" autoComplete="new-password" className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]" placeholder="••••••••" />
+                <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Password</label>
+                <input {...register('password', { required: 'Password is required' })} type="password" autoComplete="new-password" className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] text-[var(--text-main)]" placeholder="••••••••" />
                 {errors.password && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.password.message}</p>}
               </div>
             )}
@@ -370,16 +370,16 @@ const UserListPage = ({ initialRole = '' }) => {
             {!initialRole && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Department</label>
-                  <select {...register('role_name', { required: 'Role is required' })} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
+                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Department</label>
+                  <select {...register('role_name', { required: 'Role is required' })} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none text-[var(--text-main)]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
                     <option value="Designer">Designer Department</option>
                     <option value="Sales">Sales Network</option>
                     <option value="Maintenance">Maintenance Crew</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Assign to Team (Optional)</label>
-                  <select {...register('team_id')} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
+                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Assign to Team (Optional)</label>
+                  <select {...register('team_id')} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none text-[var(--text-main)]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
                     <option value="">No Team Assignment</option>
                     {teams
                       .filter(t => !selectedRole || t.role_name === selectedRole)

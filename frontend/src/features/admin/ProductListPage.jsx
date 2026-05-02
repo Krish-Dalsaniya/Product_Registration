@@ -354,14 +354,14 @@ const ProductListPage = () => {
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <div className="p-4 bg-white border-[0.5px] border-gray-200 rounded-xl shadow-sm">
+          <div className="p-4 bg-[var(--bg-card)] border-[0.5px] border-[var(--border-color)] rounded-xl shadow-sm">
             <Box className="text-blue-600" />
           </div>
           <div>
-            <h1 className="text-[26px] font-black text-[#0B1A16] tracking-tighter uppercase leading-none">
+            <h1 className="text-[26px] font-black text-[var(--text-main)] tracking-tighter uppercase leading-none">
               Products Catalogue
             </h1>
-            <p className="text-[12px] text-[#64748B] font-bold mt-1.5 uppercase tracking-[0.15em]">
+            <p className="text-[12px] text-[var(--text-muted)] font-bold mt-1.5 uppercase tracking-[0.15em]">
               INVENTORY AND PRODUCT SPECIFICATIONS
             </p>
           </div>
@@ -379,11 +379,11 @@ const ProductListPage = () => {
       {/* Category Filtering Dropdown */}
       <div className="w-full md:w-64">
         <div className="relative group">
-          <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={16} />
+          <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-blue-600 transition-colors" size={16} />
           <select
             value={selectedCategory || ''}
             onChange={(e) => setSelectedCategory(e.target.value || null)}
-            className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg py-2.5 pl-10 pr-4 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none cursor-pointer font-bold text-gray-700"
+            className="w-full bg-input-bg border-[0.5px] border-border-main rounded-lg py-2.5 pl-10 pr-4 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none cursor-pointer font-bold text-text-main"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -392,7 +392,7 @@ const ProductListPage = () => {
               </option>
             ))}
           </select>
-          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-focus-within:text-blue-600">
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted group-focus-within:text-blue-600">
             <ChevronRight size={14} className="rotate-90" />
           </div>
         </div>
@@ -400,26 +400,26 @@ const ProductListPage = () => {
 
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group w-full">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={16} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-blue-600 transition-colors" size={16} />
           <input
             type="text"
             placeholder="Search products by name or code..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg py-2.5 pl-10 pr-4 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px]"
+            className="w-full bg-input-bg border-[0.5px] border-border-main rounded-lg py-2.5 pl-10 pr-4 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] text-text-main"
           />
         </div>
 
-        <div className="flex bg-white border-[0.5px] border-gray-200 p-1 rounded-xl shadow-sm self-stretch md:self-auto">
+        <div className="flex bg-bg-card border-[0.5px] border-border-main p-1 rounded-xl shadow-sm self-stretch md:self-auto">
           <button 
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-lg transition-all flex items-center gap-2 ${viewMode === 'grid' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}`}
+            className={`p-2 rounded-lg transition-all flex items-center gap-2 ${viewMode === 'grid' ? 'bg-blue-600 text-white shadow-md' : 'text-text-muted hover:bg-gray-50'}`}
           >
             <LayoutGrid size={18} />
           </button>
           <button 
             onClick={() => setViewMode('table')}
-            className={`p-2 rounded-lg transition-all flex items-center gap-2 ${viewMode === 'table' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-50'}`}
+            className={`p-2 rounded-lg transition-all flex items-center gap-2 ${viewMode === 'table' ? 'bg-blue-600 text-white shadow-md' : 'text-text-muted hover:bg-gray-50'}`}
           >
             <List size={18} />
           </button>
@@ -443,11 +443,11 @@ const ProductListPage = () => {
           {products.map((product) => (
             <div 
               key={product.product_id} 
-              className="bg-white border-[0.5px] border-gray-200 rounded-2xl overflow-hidden group hover:border-blue-600 hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-300 flex flex-col"
+              className="bg-[var(--bg-card)] border-[0.5px] border-[var(--border-color)] rounded-2xl overflow-hidden group hover:border-blue-600 hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-300 flex flex-col"
             >
               <div 
                 onClick={() => handleView(product)}
-                className="relative aspect-square w-full overflow-hidden bg-gray-50 border-b-[0.5px] border-gray-100 block cursor-zoom-in group/img"
+                className="relative aspect-square w-full overflow-hidden bg-[var(--bg-workspace)]/30 border-b-[0.5px] border-[var(--border-color)] block cursor-zoom-in group/img"
               >
                 {product.image_url ? (
                   <img 
@@ -456,7 +456,7 @@ const ProductListPage = () => {
                     className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-200">
+                  <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)]/30">
                     <Box size={60} strokeWidth={1} />
                   </div>
                 )}
@@ -464,20 +464,20 @@ const ProductListPage = () => {
                 <div className="absolute top-3 right-3 opacity-0 group-hover/img:opacity-100 transition-opacity translate-x-4 group-hover/img:translate-x-0 transition-all duration-300 flex flex-col gap-2">
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleEdit(product); }} 
-                    className="w-9 h-9 bg-white rounded-xl shadow-xl flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all"
+                    className="w-9 h-9 bg-[var(--bg-card)] rounded-xl shadow-xl flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all"
                   >
                     <Plus size={18} />
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleDelete(product); }} 
-                    className="w-9 h-9 bg-white rounded-xl shadow-xl flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                    className="w-9 h-9 bg-[var(--bg-card)] rounded-xl shadow-xl flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all"
                   >
                     <Trash2 size={15} />
                   </button>
                 </div>
                 
                 <div className="absolute top-3 left-3">
-                  <span className="bg-white/90 backdrop-blur-md border border-white/50 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full text-blue-600 shadow-sm">
+                  <span className="bg-[var(--bg-card)]/90 backdrop-blur-md border border-[var(--border-color)] text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full text-blue-600 shadow-sm">
                     {product.category || 'Standard'}
                   </span>
                 </div>
@@ -486,17 +486,17 @@ const ProductListPage = () => {
               <div className="p-5 flex-1 flex flex-col">
                 <div className="flex-1 space-y-4">
                   <div>
-                    <h3 className="text-[18px] font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors">{product.product_name}</h3>
+                    <h3 className="text-[18px] font-black text-[var(--text-main)] leading-tight group-hover:text-blue-600 transition-colors">{product.product_name}</h3>
                   </div>
 
                   <div className="pt-2">
-                    <p className="text-[12px] text-gray-500 font-medium leading-relaxed line-clamp-4 text-left">
+                    <p className="text-[12px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-4 text-left">
                       {product.description || 'No description available for this product.'}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between pt-4 border-t border-[var(--border-color)]">
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleDelete(product); }}
                     className="flex items-center gap-2 text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-red-700 transition-colors"

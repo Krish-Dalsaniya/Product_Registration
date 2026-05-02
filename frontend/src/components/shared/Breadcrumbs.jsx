@@ -26,7 +26,7 @@ const Breadcrumbs = ({ items = [] }) => {
         {breadcrumbItems.map((item, index) => (
           <li key={index}>
             <div className="flex items-center">
-              {index > 0 && <ChevronRight size={14} className="text-gray-300 mx-1" />}
+              {index > 0 && <ChevronRight size={14} className="text-[var(--text-muted)] opacity-50 mx-1" />}
               {item.active ? (
                 <span className="text-[11px] font-black text-blue-600 uppercase tracking-[0.2em]">
                   {item.label}
@@ -34,7 +34,7 @@ const Breadcrumbs = ({ items = [] }) => {
               ) : (
                 <Link
                   to={item.path}
-                  className="text-[11px] font-black text-gray-400 hover:text-blue-600 uppercase tracking-[0.2em] transition-colors"
+                  className="text-[11px] font-black text-[var(--text-muted)] hover:text-blue-600 uppercase tracking-[0.2em] transition-colors"
                 >
                   {item.label}
                 </Link>

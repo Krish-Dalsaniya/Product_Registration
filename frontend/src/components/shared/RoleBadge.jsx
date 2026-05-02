@@ -3,20 +3,24 @@ import React from 'react';
 const RoleBadge = ({ role }) => {
   const styles = {
     Sales: {
-      bg: '#ecfeff',
-      text: '#0891b2'
+      bg: 'var(--stat-sales-bg)',
+      text: 'var(--stat-sales-text)'
     },
     Maintenance: {
-      bg: '#fef3c7',
-      text: '#92400e'
+      bg: 'var(--stat-maint-bg)',
+      text: 'var(--stat-maint-text)'
     },
     Admin: {
-      bg: '#f3e8ff',
-      text: '#6b21a8'
+      bg: 'var(--badge-admin-bg)',
+      text: 'var(--badge-admin-text)'
+    },
+    Designer: {
+      bg: 'var(--stat-designer-bg)',
+      text: 'var(--stat-designer-text)'
     }
   };
 
-  const current = styles[role] || { bg: '#f1f5f9', text: '#475569' };
+  const current = styles[role] || { bg: 'var(--badge-default-bg)', text: 'var(--badge-default-text)' };
 
   return (
     <span 

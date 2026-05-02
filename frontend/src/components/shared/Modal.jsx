@@ -13,18 +13,18 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => {
       />
       
       {/* Modal Content */}
-      <div className={`relative w-full ${maxWidth} bg-white rounded-2xl shadow-2xl p-0 overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]`}>
-        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 flex-shrink-0">
-          <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">{title}</h3>
+      <div className={`relative w-full ${maxWidth} bg-[var(--bg-card)] rounded-2xl shadow-2xl p-0 overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh] border border-[var(--border-color)]`}>
+        <div className="px-6 py-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-workspace)]/50 flex-shrink-0">
+          <h3 className="text-sm font-black text-[var(--text-main)] uppercase tracking-widest">{title}</h3>
           <button 
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-all"
+            className="p-1 rounded-lg hover:bg-[var(--bg-workspace)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all"
           >
             <X size={20} />
           </button>
         </div>
         
-        <div className="p-8 overflow-y-auto custom-scrollbar">
+        <div className="p-8 overflow-y-auto custom-scrollbar bg-[var(--bg-card)] text-[var(--text-main)]">
           {children}
         </div>
       </div>
