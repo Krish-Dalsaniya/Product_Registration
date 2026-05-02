@@ -20,9 +20,13 @@ const ProductListPage = () => {
   const getFullUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    // Ensure relative paths start with /
-    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    return `${assetBaseURL}${cleanUrl}`;
+    
+    // Remove leading slash from url if present to avoid double slashes
+    const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+    // Ensure assetBaseURL doesn't have a trailing slash
+    const base = assetBaseURL.endsWith('/') ? assetBaseURL.slice(0, -1) : assetBaseURL;
+    
+    return `${base}/${cleanUrl}`;
   };
   
   // Modal State
