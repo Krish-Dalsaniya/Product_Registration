@@ -1,0 +1,81 @@
+.error-banner-container {
+  width: 100%;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.error-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.error-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.error-title {
+  color: #991b1b;
+  font-weight: 700;
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.error-description {
+  color: #991b1b;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.error-retry-btn {
+  background: #f9fafb;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 24px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 8px;
+  align-self: flex-start;
+  transition: all 0.2s ease;
+}
+
+.error-retry-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.error-retry-btn:active {
+  background: #e5e7eb;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

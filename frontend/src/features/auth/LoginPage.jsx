@@ -4,12 +4,14 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ErrorBanner from '../../components/shared/ErrorBanner';
 
 const LoginPage = () => {
   const { login, isAuthenticated, user } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
   const navigate = useNavigate();
 
   if (isAuthenticated && user) {
@@ -24,6 +26,7 @@ const LoginPage = () => {
 
   const onSubmit = async (data) => {
     setIsLoading(true);
+    setApiError(null);
     try {
       const loggedUser = await login(data.email, data.password);
       toast.success(`Access Granted. Welcome back, ${loggedUser.full_name}.`);
@@ -36,7 +39,8 @@ const LoginPage = () => {
       };
       navigate(roleRoutes[loggedUser.role_name]);
     } catch (error) {
-      toast.error(error.response?.data?.error?.message || 'Authentication failed.');
+      setApiError(error.message || 'Authentication failed.');
+      toast.error(error.message || 'Authentication failed.');
     } finally {
       setIsLoading(false);
     }
@@ -63,6 +67,7 @@ const LoginPage = () => {
 
 
         <div className="glass-card p-8 animate-in fade-in zoom-in-95 duration-500">
+          <ErrorBanner error={apiError} onRetry={handleSubmit(onSubmit)} />
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>

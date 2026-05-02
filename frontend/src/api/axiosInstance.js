@@ -44,7 +44,16 @@ axiosInstance.interceptors.response.use(
         window.location.href = '/login';
       }
     }
-    return Promise.reject(error);
+    
+    // Transform error for easier UI consumption
+    const customError = {
+      message: error.response?.data?.error?.message || error.message || 'An unexpected error occurred',
+      code: error.response?.data?.error?.code || 'UNKNOWN_ERROR',
+      status: error.response?.status,
+      isNetworkError: !error.response
+    };
+    
+    return Promise.reject(customError);
   }
 );
 
