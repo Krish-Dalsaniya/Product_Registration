@@ -6,10 +6,6 @@ const RoleBadge = ({ role }) => {
       bg: '#ecfeff',
       text: '#0891b2'
     },
-    Designer: {
-      bg: '#e4e2ff',
-      text: '#3730a3'
-    },
     Maintenance: {
       bg: '#fef3c7',
       text: '#92400e'
