@@ -52,11 +52,7 @@ jobs:
 
             echo "Installing frontend dependencies..."
             cd "$APP_DIR/frontend"
-            if [ -f package-lock.json ]; then
-              npm ci
-            else
-              npm install
-            fi
+            npm install
 
             echo "Building frontend..."
             npm run build
