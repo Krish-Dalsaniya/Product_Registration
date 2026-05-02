@@ -14,6 +14,7 @@ const salesRoutes = require('./src/routes/sales');
 const maintenanceRoutes = require('./src/routes/maintenance');
 const productRoutes = require('./src/routes/products');
 const categoryRoutes = require('./src/routes/categories');
+const customerRoutes = require('./src/routes/customers');
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use('/api/designer', designerRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/customers', customerRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));

@@ -175,6 +175,7 @@ const Sidebar = ({ role }) => {
             )}
 
             <NavItem to="/admin/products" label="Products" icon={Zap} />
+            <NavItem to="/admin/customers" label="Customers" icon={Users} />
           </div>
         )}
 
