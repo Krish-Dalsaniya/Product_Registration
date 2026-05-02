@@ -7,11 +7,14 @@ import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets,
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
+import { getCategories } from '../../api/categories';
 
 const ProductListPage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
 
   const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
@@ -130,7 +133,8 @@ const ProductListPage = () => {
       const params = { 
         page: pagination.page, 
         limit: pagination.limit,
-        search: searchTerm || undefined
+        search: searchTerm || undefined,
+        category: selectedCategory || undefined
       };
       const res = await getProducts(params);
       setProducts(res.data.data);
@@ -142,12 +146,25 @@ const ProductListPage = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const res = await getCategories();
+      setCategories(res.data.data || res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchProducts();
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchTerm, pagination.page]);
+  }, [searchTerm, selectedCategory, pagination.page]);
 
   const onSubmit = async (data) => {
     if (modalMode === 'view') return;
@@ -357,6 +374,28 @@ const ProductListPage = () => {
           <Plus size={18} />
           <span>Add New Product</span>
         </button>
+      </div>
+
+      {/* Category Filtering Dropdown */}
+      <div className="w-full md:w-64">
+        <div className="relative group">
+          <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={16} />
+          <select
+            value={selectedCategory || ''}
+            onChange={(e) => setSelectedCategory(e.target.value || null)}
+            className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg py-2.5 pl-10 pr-4 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] appearance-none cursor-pointer font-bold text-gray-700"
+          >
+            <option value="">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat.id || cat.name} value={cat.name}>
+                {cat.name.toUpperCase()}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-focus-within:text-blue-600">
+            <ChevronRight size={14} className="rotate-90" />
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 items-center">

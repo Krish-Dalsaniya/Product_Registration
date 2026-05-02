@@ -6,15 +6,23 @@ const { parsePagination } = require('../utils/pagination');
 
 const getProducts = async (req, res, next) => {
   const { page, limit, offset } = parsePagination(req);
-  const { search } = req.query;
+  const { search, category } = req.query;
 
   try {
     let queryText = `SELECT *, COUNT(*) OVER() as total_count FROM products WHERE is_active = TRUE`;
     const params = [limit, offset];
+    let paramIdx = 3;
 
     if (search) {
-      queryText += ` AND (product_name ILIKE $3 OR product_code ILIKE $3)`;
+      queryText += ` AND (product_name ILIKE $${paramIdx} OR product_code ILIKE $${paramIdx})`;
       params.push(`%${search}%`);
+      paramIdx++;
+    }
+
+    if (category) {
+      queryText += ` AND category = $${paramIdx}`;
+      params.push(category);
+      paramIdx++;
     }
 
     queryText += ` ORDER BY created_at DESC LIMIT $1 OFFSET $2`;
