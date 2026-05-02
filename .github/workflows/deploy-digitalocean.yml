@@ -1,0 +1,78 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: product-registration-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DO_SSH_KEY }}" > ~/.ssh/do_key
+          chmod 600 ~/.ssh/do_key
+          ssh-keyscan -p "${{ secrets.DO_PORT }}" -H "${{ secrets.DO_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy on DigitalOcean
+        run: |
+          ssh -i ~/.ssh/do_key -p "${{ secrets.DO_PORT }}" "${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}" << 'EOF'
+            set -e
+
+            APP_DIR="/var/www/product-registration-app"
+            BRANCH="main"
+            NODE_OPTIONS_VALUE="--dns-result-order=ipv4first --no-network-family-autoselection"
+
+            echo "Going to app directory..."
+            cd "$APP_DIR"
+
+            echo "Checking required .env files..."
+            test -f backend/.env
+            test -f frontend/.env
+
+            echo "Pulling latest code from GitHub..."
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+            git pull --ff-only origin "$BRANCH"
+
+            echo "Installing backend dependencies..."
+            cd "$APP_DIR/backend"
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+
+            echo "Installing frontend dependencies..."
+            cd "$APP_DIR/frontend"
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+
+            echo "Building frontend..."
+            npm run build
+
+            echo "Restarting backend with PM2..."
+            cd "$APP_DIR/backend"
+            NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 restart product-registration-backend --update-env || NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 start npm --name product-registration-backend -- start
+
+            echo "Saving PM2 process list..."
+            pm2 save
+
+            echo "Testing Nginx..."
+            nginx -t
+
+            echo "Reloading Nginx..."
+            systemctl reload nginx
+
+            echo "Deployment completed successfully."
+          EOF
