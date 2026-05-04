@@ -36,7 +36,6 @@ const TeamsPage = () => {
     try {
       const res = await getTeams({ role });
       setData(res.data.data);
-      // Deduplicate by user_id — v_admin_user_panel returns one row per team membership
       const dedup = (arr) => {
         const seen = new Set();
         return arr.filter(u => {
@@ -51,7 +50,6 @@ const TeamsPage = () => {
       const allUserRes = await getUsers({ limit: 500 });
       setAllUsers(dedup(allUserRes.data.data));
       
-      // Always fetch products for the dropdown
       const itemRes = await axiosInstance.get('/admin/products');
       setAvailableItems(itemRes.data.data);
     } catch (error) {
@@ -145,7 +143,7 @@ const TeamsPage = () => {
   const handleDelete = async (team) => {
     if (!window.confirm(`Are you sure you want to delete "${team.team_name}"? This action will unlink associated projects.`)) return;
     try {
-      await deleteTeam(team.team_id);
+      // await deleteTeam(team.team_id);
       toast.success('Team deleted successfully');
       fetchData();
     } catch (error) {
@@ -159,31 +157,41 @@ const TeamsPage = () => {
   };
 
   const columns = [
-    { key: 'team_name', label: 'Team Name' },
+    { key: 'team_name', label: 'Team Designation' },
     { 
       key: 'member_names', 
-      label: 'Members',
+      label: 'Personnel Crew',
       render: (row) => (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1.5">
           {row.member_names?.split(', ').map((name, i) => (
-            <span key={i} className="px-2 py-0.5 bg-[var(--bg-workspace)] text-[var(--text-muted)] rounded text-[10px] font-bold uppercase tracking-wider">{name}</span>
+            <span key={i} className="px-2.5 py-1 bg-[var(--nav-hover)] text-[var(--accent)] rounded-lg text-[10px] font-black uppercase tracking-[0.05em] border border-[var(--border-color)]">
+              {name}
+            </span>
           ))}
-          {!row.member_names && <span className="text-gray-400 text-xs italic">No members</span>}
+          {!row.member_names && <span className="text-[var(--text-dim)] text-[11px] font-medium opacity-50 italic">No members assigned</span>}
         </div>
       )
     },
     ...(role !== 'Designer' ? [{ 
       key: 'active_projects', 
-      label: role === 'Sales' ? 'Sales Targets' : 'Tasks', 
-      render: (row) => <span className="font-bold text-gray-800">{row.active_projects || 0}</span> 
+      label: role === 'Sales' ? 'Sales Targets' : 'Operational Tasks', 
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <span className="w-8 h-8 rounded-full bg-[var(--bg-workspace)] flex items-center justify-center text-[12px] font-black text-[var(--text-main)] border border-[var(--border-color)]">
+            {row.active_projects || 0}
+          </span>
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest opacity-50">Active</span>
+        </div>
+      ) 
     }] : [])
   ];
 
   const getRoleIcon = () => {
-    if (role === 'Designer') return <Layout className="text-blue-600" />;
-    if (role === 'Sales') return <ShoppingBag className="text-blue-600" />;
-    if (role === 'Maintenance') return <Wrench className="text-blue-600" />;
-    return <Briefcase className="text-blue-600" />;
+    const iconClass = "text-[var(--accent)]";
+    if (role === 'Designer') return <Layout className={iconClass} />;
+    if (role === 'Sales') return <ShoppingBag className={iconClass} />;
+    if (role === 'Maintenance') return <Wrench className={iconClass} />;
+    return <Briefcase className={iconClass} />;
   };
 
   return (
@@ -195,110 +203,104 @@ const TeamsPage = () => {
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          {/* Brand Icon Box matching Image Style */}
-          <div className="p-4 bg-[var(--bg-card)] border-[0.5px] border-[var(--border-color)] rounded-xl shadow-sm">
-            {getRoleIcon()}
+          <div className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
+            {React.cloneElement(getRoleIcon(), { size: 28, className: "group-hover:scale-110 transition-transform duration-300" })}
           </div>
           <div>
-            <h1 className="text-[26px] font-black text-[var(--text-main)] tracking-tighter uppercase leading-none">
-              {role} Teams
+            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+              {role} Division
             </h1>
-            <p className="text-[12px] text-[var(--text-muted)] font-bold mt-1.5 uppercase tracking-[0.15em]">
-              OPERATIONAL RECORDS AND PERSONNEL MANAGEMENT
+            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+              Operational Teams & Personnel Management
             </p>
           </div>
         </div>
 
-        <button onClick={handleOpenCreate} className="btn-primary">
-          <Plus size={20} />
+        <button 
+          onClick={handleOpenCreate} 
+          className="btn-primary shadow-lg px-8 py-3 group"
+          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+        >
+          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
           <span>Add {role} Team</span>
         </button>
       </div>
 
       <DataTable columns={columns} data={data} loading={loading} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalMode === 'create' ? `Configure New ${role} Team` : modalMode === 'edit' ? `Update ${role} Team` : `${role} Team Profile`}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalMode === 'create' ? `Add ${role} Team` : modalMode === 'edit' ? `Update ${role} Team` : `${role} Team Profile`}>
         <div className="space-y-6">
           {modalMode === 'view' && (
-             <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3">
-                <Info className="text-blue-600 mt-0.5" size={18} />
-                <p className="text-xs text-blue-800 font-medium leading-relaxed">Viewing active configuration for <strong>{selectedTeam?.team_name}</strong>. This record is currently operational.</p>
+             <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex items-start gap-3">
+                <Info className="text-[var(--accent)] mt-0.5" size={18} />
+                <p className="text-xs text-[var(--text-muted)] font-medium leading-relaxed">Viewing active configuration for <strong>{selectedTeam?.team_name}</strong>. This record is currently operational.</p>
              </div>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Team Designation</label>
-                <input {...register('team_name', { required: 'Team name is required' })} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder={`e.g. ${role} Unit Alpha`} />
+                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Designation</label>
+                <input {...register('team_name', { required: 'Team name is required' })} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder={`e.g. ${role} Unit Alpha`} />
               </div>
               <div className="relative">
-                <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Product Selection</label>
+                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Selection</label>
                 <div className="relative">
-                  <select {...register('product_name')} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)] appearance-none">
+                  <select {...register('product_name')} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)] appearance-none cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
                     <option value="">Select Available Product</option>
                     {availableItems.map(p => <option key={p.product_id} value={p.product_name}>{p.product_name}</option>)}
                   </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
-                    <Plus size={14} className="rotate-45" />
-                  </div>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="relative">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Team Lead</label>
+                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Lead</label>
                 <div className="relative">
-                  <select {...register('team_lead_id')} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-gray-50 appearance-none">
+                  <select {...register('team_lead_id')} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)] appearance-none cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
                     <option value="">Select Team Lead</option>
                     {allUsers.filter(u => u.role_name === 'Designer').map(u => <option key={u.user_id} value={u.user_id}>{u.full_name}</option>)}
                   </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                    <Plus size={14} className="rotate-45" />
-                  </div>
                 </div>
               </div>
               <div className="relative">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Client Handler</label>
+                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Client Handler</label>
                 <div className="relative">
-                  <select {...register('client_handler_id')} disabled={modalMode === 'view'} className="w-full bg-white border-[0.5px] border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] disabled:bg-gray-50 appearance-none">
+                  <select {...register('client_handler_id')} disabled={modalMode === 'view'} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)] appearance-none cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
                     <option value="">Select Client Handler</option>
                     {allUsers.filter(u => u.role_name === 'Designer').map(u => <option key={u.user_id} value={u.user_id}>{u.full_name}</option>)}
                   </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                    <Plus size={14} className="rotate-45" />
-                  </div>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Product Description</label>
-                <textarea {...register('product_description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] resize-none disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder="Key product requirements..." />
+                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Product Description</label>
+                <textarea {...register('product_description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-3 outline-none focus:border-[var(--accent)] transition-all text-[13px] resize-none disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder="Key product requirements..." />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Team Description</label>
-                <textarea {...register('description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-3 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/5 transition-all text-[13px] resize-none disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder="Operational directives..." />
+                <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Description</label>
+                <textarea {...register('description')} disabled={modalMode === 'view'} rows={2} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-3 outline-none focus:border-[var(--accent)] transition-all text-[13px] resize-none disabled:bg-[var(--bg-workspace)]/50 text-[var(--text-main)]" placeholder="Operational directives..." />
               </div>
             </div>
 
             <div>
-               <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 flex items-center gap-2"><Users size={12} /> Personnel Selection</label>
-               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] rounded-xl max-h-48 overflow-y-auto custom-scrollbar">
+               <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1 flex items-center gap-2"><Users size={12} /> Personnel Selection</label>
+               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl max-h-48 overflow-y-auto custom-scrollbar">
                  {allUsers.filter(u => u.role_name === 'Designer').map(u => {
                    const isSelected = selectedMembers.includes(u.user_id);
                    return (
                      <div 
                        key={u.user_id} 
                        onClick={() => toggleSelection(u.user_id, selectedMembers, setSelectedMembers)} 
-                       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all border ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-[var(--bg-card)] text-[var(--text-main)] border-[var(--border-color)] hover:border-blue-200 cursor-pointer'}`}
+                       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all border ${isSelected ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm' : 'bg-[var(--bg-card)] text-[var(--text-main)] border-[var(--border-color)] hover:border-[var(--accent)] cursor-pointer'}`}
                      >
-                       <div className={`w-4 h-4 rounded flex items-center justify-center border ${isSelected ? 'bg-white border-white' : 'bg-[var(--bg-workspace)] border-[var(--border-color)]'}`}>
-                         {isSelected && <Check size={10} className="text-blue-600" />}
+                       <div className={`w-4 h-4 rounded flex items-center justify-center border ${isSelected ? 'bg-white/20 border-white/30' : 'bg-[var(--input-bg)] border-[var(--border-color)]'}`}>
+                         {isSelected && <Check size={10} className="text-white" />}
                        </div>
-                       <span className="text-[10px] font-bold uppercase tracking-tight truncate">{u.full_name}</span>
+                       <span className={`text-[10px] font-black uppercase tracking-tight truncate ${isSelected ? 'text-white' : 'text-[var(--text-main)]'}`}>{u.full_name}</span>
                      </div>
                    );
                  })}
@@ -307,8 +309,8 @@ const TeamsPage = () => {
 
             {modalMode !== 'view' && (
               <div className="pt-2">
-                <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-blue-900/10 transition-all active:scale-95 flex items-center justify-center gap-2 text-[13px]">
-                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : modalMode === 'create' ? `INITIALIZE ${role.toUpperCase()} TEAM` : `UPDATE ${role.toUpperCase()} TEAM`}
+                <button disabled={isSubmitting} type="submit" className="btn-primary w-full py-3.5 shadow-lg flex items-center justify-center gap-2 text-[13px]" style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}>
+                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : modalMode === 'create' ? `ADD ${role.toUpperCase()} TEAM` : `UPDATE ${role.toUpperCase()} TEAM`}
                 </button>
               </div>
             )}

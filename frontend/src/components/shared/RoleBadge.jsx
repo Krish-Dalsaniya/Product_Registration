@@ -3,35 +3,54 @@ import React from 'react';
 const RoleBadge = ({ role }) => {
   const styles = {
     Sales: {
-      bg: 'var(--stat-sales-bg)',
-      text: 'var(--stat-sales-text)'
+      background: 'var(--badge-sales-bg)',
+      color: 'var(--badge-sales-text)',
+      border: '1px solid var(--badge-sales-text)',
+      opacity: '0.9',
     },
     Maintenance: {
-      bg: 'var(--stat-maint-bg)',
-      text: 'var(--stat-maint-text)'
+      background: 'var(--badge-maint-bg)',
+      color: 'var(--badge-maint-text)',
+      border: '1px solid var(--badge-maint-text)',
+      opacity: '0.9',
     },
     Admin: {
-      bg: 'var(--badge-admin-bg)',
-      text: 'var(--badge-admin-text)'
+      background: 'var(--badge-admin-bg)',
+      color: 'var(--badge-admin-text)',
+      border: '1px solid var(--badge-admin-text)',
+      opacity: '0.9',
     },
     Designer: {
-      bg: 'var(--stat-designer-bg)',
-      text: 'var(--stat-designer-text)'
-    }
+      background: 'var(--badge-admin-bg)',
+      color: 'var(--badge-admin-text)',
+      border: '1px solid var(--badge-admin-text)',
+      opacity: '0.9',
+    },
+    Teams: {
+      background: 'var(--badge-teams-bg)',
+      color: 'var(--badge-teams-text)',
+      border: '1px solid var(--badge-teams-text)',
+      opacity: '0.9',
+    },
   };
 
-  const current = styles[role] || { bg: 'var(--badge-default-bg)', text: 'var(--badge-default-text)' };
+  const current = styles[role] || {
+    background: 'var(--badge-teams-bg)',
+    color: 'var(--badge-teams-text)',
+    border: '1px solid var(--badge-teams-text)',
+  };
 
   return (
-    <span 
-      style={{ 
-        backgroundColor: current.bg, 
-        color: current.text,
+    <span
+      style={{
+        ...current,
         padding: '3px 10px',
         fontSize: '11px',
-        fontWeight: '500',
+        fontWeight: '700',
         borderRadius: '20px',
-        display: 'inline-block'
+        display: 'inline-block',
+        letterSpacing: '0.05em',
+        textTransform: 'uppercase',
       }}
     >
       {role}

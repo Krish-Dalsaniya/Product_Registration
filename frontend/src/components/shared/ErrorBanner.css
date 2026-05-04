@@ -1,23 +1,24 @@
 .error-banner-container {
   width: 100%;
-  padding: 1.5rem;
+  padding: 1.5rem 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .error-banner {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 12px;
-  padding: 24px;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 16px;
+  padding: 20px 24px;
   display: flex;
   align-items: flex-start;
   gap: 16px;
   max-width: 500px;
   width: 100%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
 }
 
 .error-icon {
@@ -28,51 +29,58 @@
 .error-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .error-title {
-  color: #991b1b;
-  font-weight: 700;
-  font-size: 1.125rem;
+  color: #ef4444;
+  font-weight: 900;
+  font-size: 1rem;
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .error-description {
-  color: #991b1b;
-  font-size: 0.9375rem;
-  line-height: 1.4;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
   margin: 0;
-  opacity: 0.9;
+  font-weight: 600;
 }
 
 .error-retry-btn {
-  background: #f9fafb;
-  color: #111827;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 8px 24px;
-  font-size: 0.9375rem;
-  font-weight: 500;
+  background: var(--bg-workspace);
+  color: var(--accent);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 8px 20px;
+  font-size: 0.75rem;
+  font-weight: 900;
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 12px;
   align-self: flex-start;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
 }
 
 .error-retry-btn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--border-glow);
 }
 
 .error-retry-btn:active {
-  background: #e5e7eb;
+  transform: scale(0.95);
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-20px);
   }
   to {
     opacity: 1;

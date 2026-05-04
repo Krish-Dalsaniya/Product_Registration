@@ -23,7 +23,7 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-center min-h-screen bg-[var(--bg-workspace)] p-4">
           <ErrorBanner 
             error={this.state.error} 
             onRetry={this.handleRetry} 

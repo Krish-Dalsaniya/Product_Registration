@@ -2,74 +2,128 @@
 
 @theme {
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-heading: "IBM Plex Sans", sans-serif;
-  --color-blue-primary: #2563eb;
-  
-  --color-bg-workspace: var(--bg-workspace);
-  --color-bg-card: var(--bg-card);
-  --color-border-main: var(--border-color);
-  --color-text-main: var(--text-main);
-  --color-text-muted: var(--text-muted);
-  --color-blue-accent: var(--blue-accent);
-  --color-input-bg: var(--input-bg);
+  --font-heading: "Outfit", "IBM Plex Sans", sans-serif;
+
+  /* Theme tokens exposed to Tailwind */
+  --color-primary:        var(--primary);
+  --color-primary-hover:  var(--primary-hover);
+  --color-accent:         var(--accent);
+  --color-accent-hover:   var(--accent-hover);
+  --color-bg-page:        var(--bg-workspace);
+  --color-bg-sidebar:     var(--bg-sidebar);
+  --color-bg-surface:     var(--bg-card);
+  --color-bg-input:       var(--input-bg);
+  --color-border-main:    var(--border-color);
+  --color-text-main:      var(--text-main);
+  --color-text-muted:     var(--text-muted);
 }
 
+/* ═══════════════════════════════════════
+   THEME DEFINITIONS
+   ═══════════════════════════════════════ */
+
 :root {
-  --bg-sidebar: #061411;
-  --bg-workspace: #F8FAFC;
-  --bg-card: #FFFFFF;
-  --border-color: #E2E8F0;
-  --text-main: #0F172A;
-  --text-muted: #64748B;
-  --blue-accent: #2563eb;
-  --input-bg: #FFFFFF;
+  /* Default to Dark (Ocean Depths) to preserve current state as default fallback */
+  --primary:        #2c5364;
+  --primary-hover:  #1e3d4d;
+  --accent:         #00d2ff;
+  --accent-hover:   #00b8e0;
+  --mid:            #203a43;
+  --soft:           #2c5364; 
 
-  --stat-designer-bg: #e4e2ff;
-  --stat-designer-text: #3730a3;
-  --stat-designer-icon: #3730a3;
+  --bg-sidebar:     #0f2027;
+  --bg-workspace:   #0f2027;
+  --bg-card:        #203a43;
+  --bg-elevated:    #243f50;
+  --input-bg:       #1a3040;
 
-  --stat-sales-bg: #ecfeff;
-  --stat-sales-text: #0891b2;
-  --stat-sales-icon: #0891b2;
+  --text-main:      #e8f4f8;
+  --text-secondary: #7fb3c8;
+  --text-muted:     #7fb3c8;
+  --text-dim:       #3d6a7d;
 
-  --stat-maint-bg: #fef3c7;
-  --stat-maint-text: #92400e;
-  --stat-maint-icon: #92400e;
+  --border-color:   #1e3d4d;
+  --border-hover:   #2c5364;
+  --border-focus:   #00d2ff;
 
-  --badge-admin-bg: #f3e8ff;
-  --badge-admin-text: #6b21a8;
-  --badge-default-bg: #f1f5f9;
-  --badge-default-text: #475569;
+  --grad-primary:   linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+  --grad-accent:    linear-gradient(135deg, #2c5364 0%, #00d2ff 100%);
+  --grad-sidebar:   linear-gradient(180deg, #0f2027 0%, #203a43 100%);
+  --grad-card:      linear-gradient(145deg, #243f50 0%, #203a43 100%);
+  --grad-button:    linear-gradient(90deg, #00d2ff 0%, #2c5364 100%);
+  --grad-header:    linear-gradient(135deg, #203a43 0%, #0f2027 100%);
+
+  --card-shadow:       0 4px 24px rgba(0, 0, 0, 0.5);
+  --card-shadow-hover: 0 4px 24px rgba(0, 210, 255, 0.12);
+
+  --nav-hover: rgba(0, 210, 255, 0.08);
+  --nav-active: rgba(0, 210, 255, 0.15);
+
+  /* Badge tokens */
+  --badge-admin-bg:      rgba(0, 210, 255, 0.15);
+  --badge-admin-text:    #00d2ff;
+  --badge-maint-bg:      rgba(245, 158, 11, 0.1);
+  --badge-maint-text:    #fbbf24;
+  --badge-sales-bg:      rgba(52, 211, 153, 0.1);
+  --badge-sales-text:    #34d399;
+  --badge-teams-bg:      rgba(127, 179, 200, 0.12);
+  --badge-teams-text:    #7fb3c8;
+}
+
+[data-theme="light"] {
+  --primary:         #c2410c;
+  --primary-hover:   #9a3412;
+  --accent:          #f97316;
+  --accent-hover:    #ea6c0a;
+  --mid:             #fde8d5;
+
+  --bg-sidebar:      #ffecd2;
+  --bg-workspace:    #fff7f0;
+  --bg-card:         #ffffff;
+  --bg-elevated:     #fde8d5;
+  --input-bg:        #ffffff;
+
+  --text-main:       #431407;
+  --text-secondary:  #7a3010;
+  --text-muted:      #c1692a;
+  --text-dim:        #c1692a;
+
+  --border-color:    #fcd9b6;
+  --border-hover:    #fcb69f;
+  --border-focus:    #f97316;
+  --border-glow:     rgba(249, 115, 22, 0.2);
+
+  --grad-primary:   linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  --grad-accent:    linear-gradient(135deg, #f97316 0%, #fcb69f 100%);
+  --grad-sidebar:   linear-gradient(180deg, #ffecd2 0%, #fde8d5 100%);
+  --grad-card:      linear-gradient(145deg, #fff7f0 0%, #fde8d5 100%);
+  --grad-button:    linear-gradient(135deg, #f97316 0%, #fcb69f 100%);
+  --grad-header:    linear-gradient(135deg, #fff7f0 0%, #ffecd2 100%);
+
+  --card-shadow:       0 2px 16px rgba(249, 115, 22, 0.08);
+  --card-shadow-hover: 0 4px 20px rgba(249, 115, 22, 0.15);
+
+  --nav-hover: rgba(249, 115, 22, 0.08);
+  --nav-active: rgba(249, 115, 22, 0.15);
+
+  /* Badge tokens */
+  --badge-admin-bg:      #ffedd5;
+  --badge-admin-text:    #c2410c;
+  --badge-maint-bg:      #fee2e2;
+  --badge-maint-text:    #b91c1c;
+  --badge-sales-bg:      #d1fae5;
+  --badge-sales-text:    #065f46;
+  --badge-teams-bg:      #fef9c3;
+  --badge-teams-text:    #a16207;
 }
 
 [data-theme="dark"] {
-  --bg-sidebar: #020617;
-  --bg-workspace: #0B0F1A;
-  --bg-card: #151B2B;
-  --border-color: #242D3D;
-  --text-main: #F1F5F9;
-  --text-muted: #94A3B8;
-  --blue-accent: #3B82F6;
-  --input-bg: #1E293B;
-
-  --stat-designer-bg: #1e1b4b;
-  --stat-designer-text: #e0e7ff;
-  --stat-designer-icon: #818cf8;
-
-  --stat-sales-bg: #083344;
-  --stat-sales-text: #ecfeff;
-  --stat-sales-icon: #22d3ee;
-
-  --stat-maint-bg: #451a03;
-  --stat-maint-text: #fef3c7;
-  --stat-maint-icon: #fbbf24;
-
-  --badge-admin-bg: #4c1d95;
-  --badge-admin-text: #f3e8ff;
-  --badge-default-bg: #1e293b;
-  --badge-default-text: #94a3b8;
+  /* Variables are already in :root, but we can override here if needed for explicit dark mode */
 }
 
+/* ═══════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════ */
 @layer base {
   body {
     background-color: var(--bg-workspace);
@@ -85,77 +139,144 @@
     @apply tracking-tight;
   }
 
-  /* Custom Checkbox Styles (Tick) */
+  ::selection {
+    background: var(--border-glow, rgba(0, 210, 255, 0.25));
+    color: var(--text-main);
+  }
+
+  /* Custom Checkbox Styles */
   input[type="checkbox"] {
-    @apply appearance-none w-4 h-4 border border-gray-300 rounded transition-all cursor-pointer relative flex items-center justify-center;
+    @apply appearance-none w-4 h-4 rounded transition-all cursor-pointer relative flex items-center justify-center;
     background-color: var(--input-bg);
-    border-color: var(--border-color);
+    border: 1px solid var(--border-color);
   }
   input[type="checkbox"]:checked {
-    background-color: var(--blue-accent);
-    border-color: var(--blue-accent);
+    background-color: var(--accent);
+    border-color: var(--accent);
   }
   input[type="checkbox"]:checked::after {
     content: '';
-    @apply absolute w-[5px] h-[9px] border-r-2 border-b-2 border-white rotate-45 mb-[1px];
+    @apply absolute w-[5px] h-[9px] border-r-2 border-b-2 rotate-45 mb-[1px];
+    border-color: var(--bg-workspace);
   }
 
-  /* Custom Radio Styles (Dot) */
+  /* Custom Radio Styles */
   input[type="radio"] {
-    @apply appearance-none w-4 h-4 border border-gray-300 rounded-full transition-all cursor-pointer relative flex items-center justify-center;
+    @apply appearance-none w-4 h-4 rounded-full transition-all cursor-pointer relative flex items-center justify-center;
     background-color: var(--input-bg);
-    border-color: var(--border-color);
+    border: 1px solid var(--border-color);
   }
   input[type="radio"]:checked {
-    border-color: var(--blue-accent);
+    border-color: var(--accent);
   }
   input[type="radio"]:checked::after {
     content: '';
-    @apply w-2 h-2 rounded-full bg-blue-600 scale-100 transition-transform;
+    @apply w-2 h-2 rounded-full scale-100 transition-transform;
+    background-color: var(--accent);
+  }
+
+  /* Focus ring for inputs */
+  input:focus, select:focus, textarea:focus {
+    @apply outline-none ring-4 transition-all;
+    border-color: var(--accent) !important;
+    --tw-ring-color: var(--border-glow, rgba(0, 210, 255, 0.18));
   }
 }
 
-/* Light Workspace Cards & Elements */
+/* ═══════════════════════════════════════
+   WORKSPACE CARD (primary card component)
+   ═══════════════════════════════════════ */
 .workspace-card {
   background: var(--bg-card);
-  border: 0.5px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Sidebar Utilities */
-.sidebar-glass {
-  background: rgba(6, 20, 17, 0.98);
-  backdrop-filter: blur(20px);
+.workspace-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
 }
 
+/* ═══════════════════════════════════════
+   GLASS CARD
+   ═══════════════════════════════════════ */
 .glass-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--bg-card);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow);
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+/* ═══════════════════════════════════════
+   SIDEBAR GLASS
+   ═══════════════════════════════════════ */
+.sidebar-glass {
+  background: var(--grad-sidebar);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-color);
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-
-/* Button & Active States */
+/* ═══════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════ */
 .btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2 text-[13px];
+  background: var(--grad-button);
+  color: #ffffff;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s, box-shadow 0.2s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+  box-shadow: var(--card-shadow-hover);
+}
+.btn-primary:active {
+  transform: scale(0.98);
 }
 
+/* ═══════════════════════════════════════
+   SCROLLBARS
+   ═══════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-workspace); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--accent-hover); }
+
+/* ═══════════════════════════════════════
+   TABLE UTILITIES
+   ═══════════════════════════════════════ */
+table th {
+  font-family: var(--font-heading);
+  @apply uppercase tracking-[0.07em] font-bold;
+  color: var(--text-dim, #3d6a7d);
+  font-size: 12px;
+}
+
+table td {
+  font-family: var(--font-sans);
+}
+
+/* ═══════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════ */
 @keyframes pulse-soft {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
@@ -165,20 +286,5 @@
   animation: pulse-soft 2s infinite;
 }
 
-/* Table Utilities */
-table th {
-  font-family: var(--font-heading);
-  @apply uppercase tracking-widest text-gray-400 font-bold;
-}
-
-table td {
-  font-family: var(--font-sans);
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

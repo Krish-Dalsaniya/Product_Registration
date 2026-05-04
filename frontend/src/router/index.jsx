@@ -15,7 +15,7 @@ const CustomerListPage = lazy(() => import('../features/admin/CustomerListPage')
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-[60vh]">
-    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--accent)]"></div>
   </div>
 );
 
@@ -26,7 +26,7 @@ const DashboardLayout = () => {
       <Navbar />
       <div className="flex">
         <Sidebar role={user?.role_name} />
-        <main className="flex-1 md:ml-64 p-6 pt-20 min-h-screen transition-all duration-300">
+        <main className="flex-1 md:ml-64 p-6 pt-20 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]">
           <Suspense fallback={<PageLoader />}>
             <Outlet />
           </Suspense>
@@ -42,7 +42,7 @@ const Router = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/unauthorized" element={<div className="p-10 text-center text-red-600 font-bold">Unauthorized</div>} />
+        <Route path="/unauthorized" element={<div className="p-10 text-center text-rose-500 font-bold bg-[var(--bg-workspace)] h-screen uppercase tracking-widest text-sm">Unauthorized Access Restricted</div>} />
         
         {/* Admin Routes */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Admin']}><DashboardLayout /></RoleGuard></AuthGuard>}>
@@ -57,22 +57,22 @@ const Router = () => {
 
         {/* Designer Routes */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Designer']}><DashboardLayout /></RoleGuard></AuthGuard>}>
-          <Route path="/designer/dashboard" element={<div>Designer Dashboard</div>} />
+          <Route path="/designer/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Designer Dashboard Initialization...</div>} />
         </Route>
 
         {/* Sales Routes */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Sales']}><DashboardLayout /></RoleGuard></AuthGuard>}>
-          <Route path="/sales/dashboard" element={<div>Sales Dashboard</div>} />
-          <Route path="/sales/opportunities" element={<div>Sales Opportunities</div>} />
+          <Route path="/sales/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Sales Dashboard Initialization...</div>} />
+          <Route path="/sales/opportunities" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Opportunities Pipeline...</div>} />
         </Route>
 
         {/* Maintenance Routes */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Maintenance']}><DashboardLayout /></RoleGuard></AuthGuard>}>
-          <Route path="/maintenance/dashboard" element={<div>Maintenance Dashboard</div>} />
+          <Route path="/maintenance/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Maintenance Dashboard Initialization...</div>} />
         </Route>
 
         <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="*" element={<div className="p-10 text-center font-bold">404 Not Found</div>} />
+        <Route path="*" element={<div className="p-10 text-center font-black text-[var(--text-main)] bg-[var(--bg-workspace)] h-screen uppercase tracking-widest text-sm">404 — Record Not Found</div>} />
       </Routes>
     </Suspense>
   );
