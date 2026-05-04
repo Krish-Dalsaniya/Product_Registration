@@ -25,7 +25,7 @@ const Breadcrumbs = ({ items = [] }) => {
               )}
               {item.active ? (
                 <span
-                  className="text-[12px] font-black uppercase tracking-[0.2em]"
+                  className="text-[13px] font-black uppercase tracking-[0.15em]"
                   style={{ color: 'var(--text-main)' }}
                 >
                   {item.label}
@@ -33,7 +33,7 @@ const Breadcrumbs = ({ items = [] }) => {
               ) : (
                 <Link
                   to={item.path}
-                  className="text-[12px] font-black uppercase tracking-[0.2em] transition-colors duration-200"
+                  className="text-[13px] font-black uppercase tracking-[0.15em] transition-colors duration-200"
                   style={{ color: 'var(--text-muted)' }}
                   onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}

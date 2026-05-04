@@ -130,7 +130,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
         </button>
 
         {/* LOGO */}
-        <div className="p-8 flex justify-center" style={{ borderBottom: '1px solid var(--border-color)' }}>
+        <div className="p-5.75 flex justify-center" style={{ borderBottom: '1px solid var(--border-color)' }}>
           <div className="flex items-center gap-2">
             <span className="text-[22px] font-black uppercase tracking-[0.2em] text-[var(--text-main)]">
               CRUD<span className="text-[var(--accent)]">EX</span>
