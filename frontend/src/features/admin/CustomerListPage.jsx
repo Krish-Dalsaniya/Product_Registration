@@ -89,7 +89,8 @@ const CustomerListPage = () => {
       country: 'India',
       pincode: '',
       gst_no: '',
-      status: 'Active'
+      status: 'Active',
+      company_type: ''
     });
     setTechContacts([{ person: '', mobile: '' }]);
     setSalesContacts([{ person: '', mobile: '' }]);
@@ -129,6 +130,7 @@ const CustomerListPage = () => {
     { key: 'customer_code', label: 'Code' },
     { key: 'customer_name', label: 'Customer Name' },
     { key: 'company_name', label: 'Company' },
+    { key: 'company_type', label: 'Type' },
     { key: 'city', label: 'City' },
     {
       key: 'status',
@@ -214,6 +216,13 @@ const CustomerListPage = () => {
                   <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Customer Code</label>
                   <div className="text-[var(--text-main)] font-black text-lg uppercase tracking-tight">
                     {selectedCustomer?.customer_code}
+                  </div>
+                </div>
+
+                <div className="border-b border-[var(--border-color)] pb-4">
+                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Company Type</label>
+                  <div className="text-[var(--text-main)] font-bold text-base">
+                    {selectedCustomer?.company_type || 'Not Specified'}
                   </div>
                 </div>
 
@@ -419,14 +428,32 @@ const CustomerListPage = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Name</label>
-                  <input
-                    {...register('company_name', { required: 'Company name is required' })}
-                    className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                    placeholder="Acme Corp"
-                  />
-                </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Name</label>
+                      <input
+                        {...register('company_name', { required: 'Company name is required' })}
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
+                        placeholder="Acme Corp"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Type</label>
+                      <select
+                        {...register('company_type')}
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all appearance-none cursor-pointer"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+                      >
+                        <option value="">Select Company Type</option>
+                        <option value="Private Limited Company(Pvt Ltd)">Private Limited Company(Pvt Ltd)</option>
+                        <option value="Public Limited Company(Ltd)">Public Limited Company(Ltd)</option>
+                        <option value="One Person Company (OPC Pvt Ltd)">One Person Company (OPC Pvt Ltd)</option>
+                        <option value="Limited Liability Partnership (LLP)">Limited Liability Partnership (LLP)</option>
+                        <option value="Partnership Firm(&Co or &Associates)">Partnership Firm(&Co or &Associates)</option>
+                        <option value="Sole Proprietorship">Sole Proprietorship</option>
+                      </select>
+                    </div>
+                  </div>
 
                 <div>
                   <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">GST Number</label>

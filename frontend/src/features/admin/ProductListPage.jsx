@@ -608,9 +608,9 @@ const ProductListPage = () => {
                 </div>
               </div>
               <div className="pt-8 flex justify-end gap-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest hover:text-[var(--text-main)] transition-colors">Abort</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest hover:text-[var(--text-main)] transition-colors">Cancel</button>
                 <button disabled={isSubmitting} type="submit" className="btn-primary px-12 py-4 shadow-xl text-[12px] uppercase tracking-[0.2em]" style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}>
-                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (modalMode === 'create' ? 'Add Product' : 'Commit Changes')}
+                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (modalMode === 'create' ? 'Add Product' : 'Update Changes')}
                 </button>
               </div>
             </form>

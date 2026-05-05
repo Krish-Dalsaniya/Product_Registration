@@ -43,7 +43,8 @@ const createCustomer = async (req, res, next) => {
     country,
     pincode,
     gst_no,
-    status
+    status,
+    company_type
   } = req.body;
 
   const customer_name = [first_name, middle_name, last_name].filter(Boolean).join(' ');
@@ -54,8 +55,8 @@ const createCustomer = async (req, res, next) => {
         customer_code, customer_name, first_name, middle_name, last_name,
         company_name, company_address, billing_address, shipping_address,
         customer_site_location, technical_contacts, sales_contacts, udyam_aadhar_no,
-        email, city, state, country, pincode, gst_no, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) 
+        email, city, state, country, pincode, gst_no, status, company_type
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) 
       RETURNING *`,
       [
         customer_code, customer_name, first_name, middle_name, last_name,
@@ -64,7 +65,8 @@ const createCustomer = async (req, res, next) => {
         JSON.stringify(technical_contacts || []), 
         JSON.stringify(sales_contacts || []), 
         udyam_aadhar_no,
-        email, city, state, country, pincode, gst_no, status || 'Active'
+        email, city, state, country, pincode, gst_no, status || 'Active',
+        company_type
       ]
     );
     sendSuccess(res, result.rows[0], 201);
@@ -97,8 +99,11 @@ const updateCustomer = async (req, res, next) => {
     country,
     pincode,
     gst_no,
-    status
+    status,
+    company_type
   } = req.body;
+  
+  console.log('Update Request for ID:', id, 'Company Type:', company_type);
 
   const customer_name = [first_name, middle_name, last_name].filter(Boolean).join(' ');
 
@@ -109,8 +114,8 @@ const updateCustomer = async (req, res, next) => {
         company_name = $6, company_address = $7, billing_address = $8, shipping_address = $9,
         customer_site_location = $10, technical_contacts = $11, sales_contacts = $12,
         udyam_aadhar_no = $13, email = $14, city = $15, state = $16, country = $17, pincode = $18, 
-        gst_no = $19, status = $20, updated_at = CURRENT_TIMESTAMP
-      WHERE customer_id = $21 RETURNING *`,
+        gst_no = $19, status = $20, company_type = $21, updated_at = CURRENT_TIMESTAMP
+      WHERE customer_id = $22 RETURNING *`,
       [
         customer_code, customer_name, first_name, middle_name, last_name,
         company_name, company_address, billing_address, shipping_address,
@@ -118,7 +123,9 @@ const updateCustomer = async (req, res, next) => {
         JSON.stringify(technical_contacts || []), 
         JSON.stringify(sales_contacts || []),
         udyam_aadhar_no,
-        email, city, state, country, pincode, gst_no, status, id
+        email, city, state, country, pincode, gst_no, status, 
+        company_type || null, 
+        id
       ]
     );
     if (result.rows.length === 0) {

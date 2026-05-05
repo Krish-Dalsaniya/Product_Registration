@@ -203,7 +203,7 @@ const UserListPage = ({ initialRole = '' }) => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
       <Breadcrumbs items={[
         { label: 'Users', path: '/admin/users', active: !initialRole },
-        ...(initialRole ? [{ label: initialRole, active: true }] : [])
+        ...(initialRole ? [{ label: initialRole === 'Sales' ? initialRole : `${initialRole}s`, active: true }] : [])
       ]} />
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

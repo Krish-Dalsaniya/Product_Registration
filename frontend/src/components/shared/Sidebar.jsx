@@ -17,7 +17,8 @@ import {
   Zap,
   X,
   Sun,
-  Moon
+  Moon,
+  Cpu
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose }) => {
@@ -87,7 +88,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
         )}
       </div>
       <span
-        className="text-[12px] font-black tracking-[0.2em] uppercase relative z-10 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
+        className="text-[12px] font-black tracking-[0.1em] uppercase relative z-10 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
         style={{ fontSize: isSubItem ? '11px' : undefined }}
       >
         {label}
@@ -224,7 +225,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                   />
                 </div>
                 <span
-                  className="text-[12px] font-black uppercase tracking-[0.2em] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
+                  className="text-[12px] font-black uppercase tracking-[0.1em] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
                 >
                   Users
                 </span>
@@ -279,7 +280,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                         style={{ color: location.pathname === '/admin/designers' ? 'var(--accent)' : 'var(--text-dim)' }}
                       />
                     </div>
-                    <span className="text-[12px] font-black tracking-[0.2em] uppercase transition-all duration-300 group-hover:text-[var(--text-main)] group-hover:translate-x-1">
+                    <span className="text-[12px] font-black tracking-[0.1em] uppercase transition-all duration-300 group-hover:text-[var(--text-main)] group-hover:translate-x-1">
                       Designers
                     </span>
                   </div>
@@ -313,6 +314,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
 
             <NavItem to="/admin/products" label="Products" icon={Zap} />
             <NavItem to="/admin/customers" label="Customers" icon={Users} />
+            <NavItem to="/admin/feature-mapping" label="Feature Mapping" icon={Cpu} />
           </div>
         )}
 

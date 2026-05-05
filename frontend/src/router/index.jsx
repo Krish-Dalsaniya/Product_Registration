@@ -12,6 +12,7 @@ const UserListPage = lazy(() => import('../features/admin/UserListPage'));
 const TeamsPage = lazy(() => import('../features/admin/TeamsPage'));
 const ProductListPage = lazy(() => import('../features/admin/ProductListPage'));
 const CustomerListPage = lazy(() => import('../features/admin/CustomerListPage'));
+const FeatureMappingPage = lazy(() => import('../features/admin/FeatureMappingPage'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-[60vh]">
@@ -61,6 +62,7 @@ const Router = () => {
           <Route path="/admin/teams" element={<TeamsPage />} />
           <Route path="/admin/products" element={<ProductListPage />} />
           <Route path="/admin/customers" element={<CustomerListPage />} />
+          <Route path="/admin/feature-mapping" element={<FeatureMappingPage />} />
         </Route>
 
         {/* Designer Routes */}

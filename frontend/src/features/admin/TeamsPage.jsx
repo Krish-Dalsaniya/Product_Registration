@@ -209,8 +209,9 @@ const TeamsPage = () => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
       <Breadcrumbs items={[
-        { label: 'Teams', path: '/admin/teams', active: role === 'Designer' },
-        ...(role !== 'Designer' ? [{ label: `${role} Division`, active: true }] : [])
+        { label: 'Users', path: '/admin/users' },
+        { label: 'Designers', path: '/admin/designers' },
+        { label: 'Teams', active: true }
       ]} />
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
