@@ -30,18 +30,12 @@ const createCustomer = async (req, res, next) => {
     middle_name,
     last_name,
     company_name,
-    company_address,
-    billing_address,
-    shipping_address,
     customer_site_location,
     technical_contacts,
     sales_contacts,
+    addresses,
     udyam_aadhar_no,
     email,
-    city,
-    state,
-    country,
-    pincode,
     gst_no,
     status,
     company_type
@@ -53,19 +47,19 @@ const createCustomer = async (req, res, next) => {
     const result = await db.query(
       `INSERT INTO customers (
         customer_code, customer_name, first_name, middle_name, last_name,
-        company_name, company_address, billing_address, shipping_address,
-        customer_site_location, technical_contacts, sales_contacts, udyam_aadhar_no,
-        email, city, state, country, pincode, gst_no, status, company_type
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) 
+        company_name, customer_site_location, technical_contacts, sales_contacts, addresses, udyam_aadhar_no,
+        email, gst_no, status, company_type
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
       RETURNING *`,
       [
         customer_code, customer_name, first_name, middle_name, last_name,
-        company_name, company_address, billing_address, shipping_address,
+        company_name,
         customer_site_location, 
         JSON.stringify(technical_contacts || []), 
         JSON.stringify(sales_contacts || []), 
+        JSON.stringify(addresses || []),
         udyam_aadhar_no,
-        email, city, state, country, pincode, gst_no, status || 'Active',
+        email, gst_no, status || 'Active',
         company_type
       ]
     );
@@ -86,18 +80,12 @@ const updateCustomer = async (req, res, next) => {
     middle_name,
     last_name,
     company_name,
-    company_address,
-    billing_address,
-    shipping_address,
     customer_site_location,
     technical_contacts,
     sales_contacts,
+    addresses,
     udyam_aadhar_no,
     email,
-    city,
-    state,
-    country,
-    pincode,
     gst_no,
     status,
     company_type
@@ -111,19 +99,18 @@ const updateCustomer = async (req, res, next) => {
     const result = await db.query(
       `UPDATE customers SET 
         customer_code = $1, customer_name = $2, first_name = $3, middle_name = $4, last_name = $5,
-        company_name = $6, company_address = $7, billing_address = $8, shipping_address = $9,
-        customer_site_location = $10, technical_contacts = $11, sales_contacts = $12,
-        udyam_aadhar_no = $13, email = $14, city = $15, state = $16, country = $17, pincode = $18, 
-        gst_no = $19, status = $20, company_type = $21, updated_at = CURRENT_TIMESTAMP
-      WHERE customer_id = $22 RETURNING *`,
+        company_name = $6, customer_site_location = $7, technical_contacts = $8, sales_contacts = $9,
+        addresses = $10, udyam_aadhar_no = $11, email = $12, gst_no = $13, status = $14, company_type = $15, updated_at = CURRENT_TIMESTAMP
+      WHERE customer_id = $16 RETURNING *`,
       [
         customer_code, customer_name, first_name, middle_name, last_name,
-        company_name, company_address, billing_address, shipping_address,
+        company_name,
         customer_site_location, 
         JSON.stringify(technical_contacts || []), 
         JSON.stringify(sales_contacts || []),
+        JSON.stringify(addresses || []),
         udyam_aadhar_no,
-        email, city, state, country, pincode, gst_no, status, 
+        email, gst_no, status, 
         company_type || null, 
         id
       ]

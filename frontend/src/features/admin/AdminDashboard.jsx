@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { getAdminStats } from '../../api/admin';
-import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import { 
   Users, 
   Zap, 
@@ -79,7 +78,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-10">
-      <Breadcrumbs items={[{ label: 'Dashboard', active: true }]} />
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

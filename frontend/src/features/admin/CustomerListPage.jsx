@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '../../api/customers';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
-import { Search, Plus, Loader2, Users, Mail, Phone, MapPin, Building, Globe, Hash, ShieldCheck, Trash2, Edit3, Eye, FileText, Briefcase, CreditCard, PenTool } from 'lucide-react';
+import { Search, Plus, Loader2, Users, Mail, Phone, MapPin, Building, Globe, Hash, ShieldCheck, Trash2, Edit3, Edit2, Check, Eye, FileText, Briefcase, CreditCard, PenTool } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import Breadcrumbs from '../../components/shared/Breadcrumbs';
 
 const CustomerListPage = () => {
   const [customers, setCustomers] = useState([]);
@@ -17,6 +16,10 @@ const CustomerListPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [techContacts, setTechContacts] = useState([]);
   const [salesContacts, setSalesContacts] = useState([]);
+  const [addresses, setAddresses] = useState([]);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [editingAddressIdx, setEditingAddressIdx] = useState(null);
+  const [tempAddress, setTempAddress] = useState(null);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
 
@@ -24,6 +27,7 @@ const CustomerListPage = () => {
     setLoading(true);
     try {
       const data = await getCustomers();
+      console.log('Fetched Customers:', data);
       setCustomers(data);
     } catch (error) {
       toast.error('Failed to fetch customers');
@@ -50,7 +54,8 @@ const CustomerListPage = () => {
       const payload = {
         ...data,
         technical_contacts: techContacts.filter(c => c.person.trim()),
-        sales_contacts: salesContacts.filter(c => c.person.trim())
+        sales_contacts: salesContacts.filter(c => c.person.trim()),
+        addresses: addresses.filter(a => a.company_name?.trim())
       };
 
       if (modalMode === 'create') {
@@ -69,9 +74,51 @@ const CustomerListPage = () => {
     }
   };
 
+  const handleOpenAddressModal = (idx = null) => {
+    if (idx !== null) {
+      setTempAddress({ ...addresses[idx] });
+      setEditingAddressIdx(idx);
+    } else {
+      setTempAddress({
+        country: 'India',
+        company_name: '',
+        mobile: '',
+        pincode: '',
+        flat: '',
+        area: '',
+        landmark: '',
+        city: '',
+        state: '',
+        is_shipping: false,
+        is_billing: false,
+        is_registered: false
+      });
+      setEditingAddressIdx(null);
+    }
+    setIsAddressModalOpen(true);
+  };
+
+  const handleSaveAddress = () => {
+    if (!tempAddress.flat || !tempAddress.city) {
+      toast.error('Please fill in required fields');
+      return;
+    }
+    
+    let newAddresses = [...addresses];
+    
+    if (editingAddressIdx !== null) {
+      newAddresses[editingAddressIdx] = tempAddress;
+    } else {
+      newAddresses.push(tempAddress);
+    }
+    setAddresses(newAddresses);
+    setIsAddressModalOpen(false);
+  };
+
   const handleOpenCreate = () => {
     setTechContacts([]);
     setSalesContacts([]);
+    setAddresses([]);
     setModalMode('create');
     setSelectedCustomer(null);
     reset({
@@ -80,16 +127,8 @@ const CustomerListPage = () => {
       middle_name: '',
       last_name: '',
       company_name: '',
-      company_address: '',
-      billing_address: '',
-      shipping_address: '',
-      customer_site_location: '',
       udyam_aadhar_no: '',
       email: '',
-      city: '',
-      state: '',
-      country: 'India',
-      pincode: '',
       gst_no: '',
       status: 'Active',
       company_type: ''
@@ -103,6 +142,7 @@ const CustomerListPage = () => {
     reset(customer);
     setTechContacts(customer.technical_contacts || []);
     setSalesContacts(customer.sales_contacts || []);
+    setAddresses(customer.addresses || []);
     setIsModalOpen(true);
   };
 
@@ -112,6 +152,7 @@ const CustomerListPage = () => {
     reset(customer);
     setTechContacts(customer.technical_contacts || []);
     setSalesContacts(customer.sales_contacts || []);
+    setAddresses(customer.addresses || []);
     setIsModalOpen(true);
   };
 
@@ -131,7 +172,6 @@ const CustomerListPage = () => {
     { key: 'customer_name', label: 'Customer Name' },
     { key: 'company_name', label: 'Company' },
     { key: 'company_type', label: 'Type' },
-    { key: 'city', label: 'City' },
     {
       key: 'status',
       label: 'Status',
@@ -148,7 +188,6 @@ const CustomerListPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
-      <Breadcrumbs items={[{ label: 'Customers', active: true }]} />
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
@@ -194,6 +233,7 @@ const CustomerListPage = () => {
         onView={handleView}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        rowKey="customer_id"
       />
 
       <Modal
@@ -216,497 +256,380 @@ const CustomerListPage = () => {
         )}
       >
         {modalMode === 'view' ? (
-          <div className="space-y-6 animate-in fade-in duration-500 py-4">
-            <div className="grid grid-cols-1 gap-6">
-              {/* Identification & Company */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-                  <Hash size={16} className="text-[var(--accent)]" />
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Identification & Company</h3>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Customer Code</label>
-                  <div className="text-[var(--text-main)] font-black text-lg uppercase tracking-tight">
-                    {selectedCustomer?.customer_code}
-                  </div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Company Type</label>
-                  <div className="text-[var(--text-main)] font-bold text-base">
-                    {selectedCustomer?.company_type || 'Not Specified'}
-                  </div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Full Name</label>
-                  <div className="text-[var(--text-main)] font-bold text-base">
-                    {[selectedCustomer?.first_name, selectedCustomer?.middle_name, selectedCustomer?.last_name].filter(Boolean).join(' ')}
-                  </div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Company Name</label>
-                  <div className="text-[var(--text-main)] font-bold text-base">
-                    {selectedCustomer?.company_name}
-                  </div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">GST Number</label>
-                  <div className="text-[var(--text-main)] font-bold text-[14px]">
-                    {selectedCustomer?.gst_no || 'Not Provided'}
-                  </div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Udyam Aadhar No</label>
-                  <div className="text-[var(--text-main)] font-bold text-[14px]">
-                    {selectedCustomer?.udyam_aadhar_no || 'Not Provided'}
-                  </div>
+          <div className="space-y-6 animate-in fade-in duration-500 py-4 max-h-[80vh] overflow-y-auto pr-2 custom-scrollbar">
+            {/* Identification Section */}
+            <div className="space-y-6">
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1.5 opacity-80">Full Name</label>
+                <div className="text-xl font-black text-[var(--text-main)] uppercase tracking-tight">
+                  {[selectedCustomer?.first_name, selectedCustomer?.middle_name, selectedCustomer?.last_name].filter(Boolean).join(' ')}
                 </div>
               </div>
 
-              {/* Address & Location */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-                  <MapPin size={16} className="text-[var(--accent)]" />
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Address & Location</h3>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Billing Address</label>
-                  <div className="text-[var(--text-main)] text-[14px] leading-relaxed">
-                    {selectedCustomer?.billing_address || 'Not Provided'}
-                  </div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Shipping Address</label>
-                  <div className="text-[var(--text-main)] text-[14px] leading-relaxed">
-                    {selectedCustomer?.shipping_address || 'Not Provided'}
-                  </div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Company Address</label>
-                  <div className="text-[var(--text-main)] text-[14px] leading-relaxed">
-                    {selectedCustomer?.company_address || 'Not Provided'}
-                  </div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">City</label>
-                  <div className="text-[var(--text-main)] font-bold text-[13px]">{selectedCustomer?.city || '-'}</div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">State</label>
-                  <div className="text-[var(--text-main)] font-bold text-[13px]">{selectedCustomer?.state || '-'}</div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Pincode</label>
-                  <div className="text-[var(--text-main)] font-bold text-[13px]">{selectedCustomer?.pincode || '-'}</div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Country</label>
-                  <div className="text-[var(--text-main)] font-bold text-[13px]">{selectedCustomer?.country || '-'}</div>
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1.5 opacity-80">Customer Code</label>
+                <div className="text-base font-bold text-[var(--text-main)] uppercase">
+                  {selectedCustomer?.customer_code}
                 </div>
               </div>
 
-              {/* Contact Personnel */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-                  <Briefcase size={16} className="text-[var(--accent)]" />
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Contact Personnel</h3>
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1.5 opacity-80">Company Name</label>
+                <div className="text-base font-bold text-[var(--text-main)]">
+                  {selectedCustomer?.company_name}
                 </div>
+              </div>
 
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2 flex items-center gap-2">Technical Contacts</label>
-                  <div className="flex flex-wrap gap-3">
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1.5 opacity-80">Company Type</label>
+                <div className="text-[14px] font-bold text-[var(--text-main)]">
+                  {selectedCustomer?.company_type || 'N/A'}
+                </div>
+              </div>
+
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1.5 opacity-80">GST Number</label>
+                <div className="text-[14px] font-bold text-[var(--text-main)] font-mono">
+                  {selectedCustomer?.gst_no || 'N/A'}
+                </div>
+              </div>
+
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1.5 opacity-80">Udyam Aadhar No</label>
+                <div className="text-[14px] font-bold text-[var(--text-main)]">
+                  {selectedCustomer?.udyam_aadhar_no || 'N/A'}
+                </div>
+              </div>
+            </div>
+
+            {/* Addresses Section */}
+            <div className="space-y-6 pt-4">
+              <div className="flex items-center gap-2 mb-2 pb-2 border-b-2 border-[var(--accent)]/20">
+                <MapPin size={14} className="text-[var(--accent)]" />
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Registered Addresses</h3>
+              </div>
+              
+              <div className="flex flex-col gap-8">
+                {selectedCustomer?.addresses?.map((addr, i) => (
+                  <div key={i} className="border-b border-[var(--border-color)] pb-6 relative last:border-0">
+                    <div className="absolute top-0 right-0 flex gap-3">
+                      {addr.is_registered && <span className="px-3 py-1 border-2 border-blue-600 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-xl">Registered</span>}
+                      {addr.is_billing && <span className="px-3 py-1 border-2 border-purple-600 text-purple-600 text-[10px] font-black uppercase tracking-widest rounded-xl">Billing</span>}
+                      {addr.is_shipping && <span className="px-2.5 py-1 border-2 border-emerald-600 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-xl">Shipping</span>}
+                    </div>
+                    
+                    <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1 opacity-80">{addr.company_name}</label>
+                    <div className="text-[14px] font-medium text-[var(--text-main)] leading-relaxed">
+                      <p>{addr.flat}{addr.area ? `, ${addr.area}` : ''}</p>
+                      <p className="font-bold">{addr.city}, {addr.state} - {addr.pincode}</p>
+                      {addr.mobile && <p className="text-[12px] mt-1 opacity-60">Contact: {addr.mobile}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Personnel Section */}
+            <div className="space-y-6 pt-4">
+              <div className="flex items-center gap-2 mb-2 pb-2 border-b-2 border-[var(--accent)]/20">
+                <Users size={14} className="text-[var(--accent)]" />
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Key Personnel</h3>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-3 opacity-80">Technical Personnel</label>
+                  <div className="flex flex-wrap gap-2">
                     {selectedCustomer?.technical_contacts?.map((c, i) => (
-                      <div key={i} className="px-4 py-2 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col">
-                        <span className="text-[11px] font-black uppercase tracking-tight text-[var(--text-main)]">{c.person}</span>
-                        <span className="text-[10px] font-bold text-[var(--accent)]">{c.mobile}</span>
+                      <div key={i} className="px-3 py-1.5 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-lg flex flex-col min-w-[120px]">
+                        <span className="text-[11px] font-black uppercase text-[var(--text-main)]">{c.person}</span>
+                        <span className="text-[9px] font-bold text-[var(--accent)]">{c.mobile}</span>
                       </div>
                     ))}
-                    {(!selectedCustomer?.technical_contacts || selectedCustomer.technical_contacts.length === 0) && (
-                      <span className="text-[11px] text-[var(--text-dim)] italic">No technical contacts listed</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2 flex items-center gap-2">Sales Contacts</label>
-                  <div className="flex flex-wrap gap-3">
-                    {selectedCustomer?.sales_contacts?.map((c, i) => (
-                      <div key={i} className="px-4 py-2 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col">
-                        <span className="text-[11px] font-black uppercase tracking-tight text-[var(--text-main)]">{c.person}</span>
-                        <span className="text-[10px] font-bold text-[var(--accent)]">{c.mobile}</span>
-                      </div>
-                    ))}
-                    {(!selectedCustomer?.sales_contacts || selectedCustomer.sales_contacts.length === 0) && (
-                      <span className="text-[11px] text-[var(--text-dim)] italic">No sales contacts listed</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Communication & Status */}
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-                  <Mail size={16} className="text-[var(--accent)]" />
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Communication & Status</h3>
-                </div>
-
-                <div className="border-b border-[var(--border-color)] pb-4">
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Email Address</label>
-                  <div className="text-[var(--text-main)] font-bold text-[14px]">
-                    {selectedCustomer?.email || 'Not Provided'}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Account Status</label>
-                  <div className={`inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mt-1 ${selectedCustomer?.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                    {selectedCustomer?.status}
+                  <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-3 opacity-80">Sales Personnel</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCustomer?.sales_contacts?.map((c, i) => (
+                      <div key={i} className="px-3 py-1.5 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-lg flex flex-col min-w-[120px]">
+                        <span className="text-[11px] font-black uppercase text-[var(--text-main)]">{c.person}</span>
+                        <span className="text-[9px] font-bold text-[var(--accent)]">{c.mobile}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
-            
-            <div className="pt-6 border-t border-[var(--border-color)] flex justify-end">
-               <button onClick={() => setIsModalOpen(false)} className="px-8 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-[12px] font-black uppercase tracking-widest hover:bg-[var(--nav-hover)] transition-all">Close Profile</button>
+
+            {/* Communication Section */}
+            <div className="space-y-6 pt-4">
+              <div className="flex items-center gap-2 mb-2 pb-2 border-b-2 border-[var(--accent)]/20">
+                <Mail size={14} className="text-[var(--accent)]" />
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Communication</h3>
+              </div>
+              
+              <div className="border-b border-[var(--border-color)] pb-4">
+                <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1.5 opacity-80">Email Address</label>
+                <div className="text-[14px] font-bold text-[var(--text-main)]">
+                  {selectedCustomer?.email}
+                </div>
+              </div>
+
+              <div className="pb-4">
+                <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-1.5 opacity-80">Account Status</label>
+                <div className={`inline-block px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${selectedCustomer?.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                  {selectedCustomer?.status}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-[var(--border-color)] flex justify-end sticky bottom-0 bg-[var(--bg-card)] -mx-4 px-4 pb-2">
+               <button onClick={() => setIsModalOpen(false)} className="px-12 py-2.5 bg-[var(--accent)] text-white rounded-xl text-[12px] font-black uppercase tracking-widest hover:opacity-90 shadow-lg transition-all">Close Profile</button>
             </div>
           </div>
         ) : (
           <form id="customer-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
-              {/* Primary Details */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-                  <Hash size={16} className="text-[var(--accent)]" />
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Identification & Company</h3>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+              {/* Left Column */}
+              <div className="lg:col-span-6 space-y-8">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 pb-2 border-b border-[var(--border-color)]">
+                    <Building size={16} className="text-[var(--accent)]" />
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Company Information</h3>
+                  </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Customer Code</label>
-                    <input
-                      {...register('customer_code', { required: 'Code is required' })}
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                      placeholder="CUST-001"
-                    />
-                    {errors.customer_code && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.customer_code.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Udyam Aadhar No</label>
-                    <input
-                      {...register('udyam_aadhar_no')}
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                      placeholder="UDYAM-XX-00-0000000"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">First Name</label>
-                    <input
-                      {...register('first_name', { required: 'First name is required' })}
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                      placeholder="John"
-                    />
-                    {errors.first_name && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.first_name.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Middle Name</label>
-                    <input
-                      {...register('middle_name')}
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                      placeholder="M."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Last Name</label>
-                    <input
-                      {...register('last_name', { required: 'Last name is required' })}
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                      placeholder="Doe"
-                    />
-                    {errors.last_name && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.last_name.message}</p>}
-                  </div>
-                </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Name</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Customer Code</label>
                       <input
-                        {...register('company_name', { required: 'Company name is required' })}
-                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                        placeholder="Acme Corp"
+                        {...register('customer_code', { required: 'Code is required' })}
+                        placeholder="E.g. CUST001"
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]"
                       />
+                      {errors.customer_code && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.customer_code.message}</p>}
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Type</label>
-                      <select
-                        {...register('company_type')}
-                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all appearance-none cursor-pointer"
-                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
-                      >
-                        <option value="">Select Company Type</option>
-                        <option value="Private Limited Company(Pvt Ltd)">Private Limited Company(Pvt Ltd)</option>
-                        <option value="Public Limited Company(Ltd)">Public Limited Company(Ltd)</option>
-                        <option value="One Person Company (OPC Pvt Ltd)">One Person Company (OPC Pvt Ltd)</option>
-                        <option value="Limited Liability Partnership (LLP)">Limited Liability Partnership (LLP)</option>
-                        <option value="Partnership Firm(&Co or &Associates)">Partnership Firm(&Co or &Associates)</option>
-                        <option value="Sole Proprietorship">Sole Proprietorship</option>
-                      </select>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Udyam Aadhar</label>
+                      <input
+                        {...register('udyam_aadhar_no')}
+                        placeholder="UDYAM-XX-00-..."
+                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]"
+                      />
                     </div>
                   </div>
 
-                <div>
-                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">GST Number</label>
-                  <input
-                    {...register('gst_no')}
-                    className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                    placeholder="27AAAAA0000A1Z5"
-                  />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">First Name</label>
+                      <input {...register('first_name', { required: true })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Middle</label>
+                      <input {...register('middle_name')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Last Name</label>
+                      <input {...register('last_name', { required: true })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Company Name</label>
+                      <input {...register('company_name', { required: true })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Company Type</label>
+                        <select {...register('company_type')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px] appearance-none">
+                          <option value="">Select Type</option>
+                          <option value="Private Limited Company(Pvt Ltd)">Pvt Ltd</option>
+                          <option value="Public Limited Company(Ltd)">Ltd</option>
+                          <option value="Partnership Firm">Partnership</option>
+                          <option value="One Person Company(OPC)">OPC</option>
+                          <option value="Sole Proprietorship">Proprietorship</option>
+                          <option value="Limited Liability Partnership(LLP)">LLP</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">GST Number</label>
+                        <input {...register('gst_no')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-4 pt-4">
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-                    <MapPin size={16} className="text-[var(--accent)]" />
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Address & Location</h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Billing Address</label>
-                      <textarea
-                        {...register('billing_address')}
-                        rows={2}
-                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all resize-none placeholder:text-[var(--text-dim)]"
-                        placeholder="Enter billing address..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Shipping Address</label>
-                      <textarea
-                        {...register('shipping_address')}
-                        rows={2}
-                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all resize-none placeholder:text-[var(--text-dim)]"
-                        placeholder="Enter shipping address..."
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Company Address</label>
-                    <textarea
-                      {...register('company_address')}
-                      rows={2}
-                      className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all resize-none placeholder:text-[var(--text-dim)]"
-                      placeholder="Enter full company address..."
-                    />
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 pb-2 border-b border-[var(--border-color)]">
+                    <Mail size={16} className="text-[var(--accent)]" />
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Communication</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">City</label>
-                      <input
-                        {...register('city')}
-                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                      />
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Email</label>
+                      <input {...register('email', { required: true })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px]" />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">State</label>
-                      <input
-                        {...register('state')}
-                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Persons Section */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-                  <Briefcase size={16} className="text-[var(--accent)]" />
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Contact Personnel</h3>
-                </div>
-
-                {/* Technical Contacts */}
-                <div className="bg-[var(--nav-hover)] p-4 rounded-2xl border border-[var(--border-color)] space-y-3">
-                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3 mb-1">
-                    <div className="flex items-center gap-2">
-                      <PenTool size={16} className="text-[var(--accent)]" />
-                      <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">Technical Contacts</h4>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setTechContacts([...techContacts, { person: '', mobile: '' }])}
-                      className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5 hover:opacity-70 transition-all"
-                    >
-                      <Plus size={14} /> Add Person
-                    </button>
-                  </div>
-                  <div className="space-y-1 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                    {techContacts.map((contact, idx) => (
-                      <div key={idx} className="flex items-start gap-4 p-2 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] group transition-all hover:border-[var(--accent)]/30">
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-0.5 ml-1 opacity-60">Person Name</label>
-                            <input
-                              value={contact.person}
-                              onChange={(e) => {
-                                const updated = [...techContacts];
-                                updated[idx].person = e.target.value;
-                                setTechContacts(updated);
-                              }}
-                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                              placeholder="Full Name"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-0.5 ml-1 opacity-60">Mobile Number</label>
-                            <input
-                              value={contact.mobile}
-                              onChange={(e) => {
-                                const updated = [...techContacts];
-                                updated[idx].mobile = e.target.value;
-                                setTechContacts(updated);
-                              }}
-                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                              placeholder="+91 XXXXX XXXXX"
-                            />
-                          </div>
-                        </div>
-                        <div className="pt-6">
-                          <button
-                            type="button"
-                            onClick={() => setTechContacts(techContacts.filter((_, i) => i !== idx))}
-                            className="p-2.5 rounded-xl text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
-                            title="Remove contact"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sales Contacts */}
-                <div className="bg-[var(--nav-hover)] p-4 rounded-2xl border border-[var(--border-color)] space-y-3">
-                  <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3 mb-1">
-                    <div className="flex items-center gap-2">
-                      <CreditCard size={16} className="text-[var(--accent)]" />
-                      <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">Sales Contacts</h4>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSalesContacts([...salesContacts, { person: '', mobile: '' }])}
-                      className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5 hover:opacity-70 transition-all"
-                    >
-                      <Plus size={14} /> Add Person
-                    </button>
-                  </div>
-                  <div className="space-y-1 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                    {salesContacts.map((contact, idx) => (
-                      <div key={idx} className="flex items-start gap-4 p-2 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] group transition-all hover:border-[var(--accent)]/30">
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-0.5 ml-1 opacity-60">Person Name</label>
-                            <input
-                              value={contact.person}
-                              onChange={(e) => {
-                                const updated = [...salesContacts];
-                                updated[idx].person = e.target.value;
-                                setSalesContacts(updated);
-                              }}
-                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                              placeholder="Full Name"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-0.5 ml-1 opacity-60">Mobile Number</label>
-                            <input
-                              value={contact.mobile}
-                              onChange={(e) => {
-                                const updated = [...salesContacts];
-                                updated[idx].mobile = e.target.value;
-                                setSalesContacts(updated);
-                              }}
-                              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                              placeholder="+91 XXXXX XXXXX"
-                            />
-                          </div>
-                        </div>
-                        <div className="pt-6">
-                          <button
-                            type="button"
-                            onClick={() => setSalesContacts(salesContacts.filter((_, i) => i !== idx))}
-                            className="p-2.5 rounded-xl text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
-                            title="Remove contact"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4">
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-[var(--border-color)]">
-                    <Mail size={16} className="text-[var(--accent)]" />
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Communication & Status</h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Email Address</label>
-                      <input
-                        {...register('email')}
-                        type="email"
-                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all placeholder:text-[var(--text-dim)]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Account Status</label>
-                      <select
-                        {...register('status')}
-                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all appearance-none cursor-pointer"
-                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
-                      >
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Status</label>
+                      <select {...register('status')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 outline-none focus:border-[var(--accent)] transition-all font-bold text-[14px] appearance-none">
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                       </select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Pincode</label>
-                      <input
-                        {...register('pincode')}
-                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                      />
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="lg:col-span-6 space-y-8">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-[var(--border-color)]">
+                    <MapPin size={16} className="text-[var(--accent)]" />
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Address Directory</h3>
+                  </div>
+
+                  <div className="p-5 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl">
+                    <div className="flex items-center justify-between mb-4 border-b border-[var(--border-color)] pb-3">
+                      <span className="text-[11px] font-black uppercase text-[var(--text-main)] tracking-widest">Saved Addresses</span>
+                      <button type="button" onClick={() => handleOpenAddressModal()} className="flex items-center gap-1.5 text-[10px] font-black text-[var(--accent)] uppercase tracking-widest hover:opacity-70"><Plus size={14} /> Add New</button>
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Country</label>
-                      <input
-                        {...register('country')}
-                        className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--text-main)] focus:border-[var(--accent)] outline-none transition-all"
-                      />
+                    <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
+                      {addresses.map((addr, idx) => (
+                        <div key={idx} className="p-4 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
+                          <div>
+                            <p className="text-[12px] font-black uppercase text-[var(--text-main)]">{addr.company_name}</p>
+                            <p className="text-[11px] font-bold text-[var(--text-muted)] mb-1.5">{addr.city}, {addr.state}</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {addr.is_registered && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-blue-500/10 text-blue-600 border border-blue-500/20 rounded">Registered</span>}
+                              {addr.is_billing && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-purple-500/10 text-purple-600 border border-purple-500/20 rounded">Billing</span>}
+                              {addr.is_shipping && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded">Shipping</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button type="button" onClick={() => handleOpenAddressModal(idx)} className="p-2 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"><Edit2 size={16} /></button>
+                            <button type="button" onClick={() => setAddresses(addresses.filter((_, i) => i !== idx))} className="p-2 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded-lg transition-all"><Trash2 size={16} /></button>
+                          </div>
+                        </div>
+                      ))}
+                      {addresses.length === 0 && <div className="py-8 text-center border-2 border-dashed border-[var(--border-color)] rounded-xl opacity-20 text-[10px] font-black uppercase tracking-widest">No addresses added</div>}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 pb-2 border-b border-[var(--border-color)]">
+                    <Users size={16} className="text-[var(--accent)]" />
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)]">Key Personnel</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Technical Personnel</span>
+                        <button type="button" onClick={() => setTechContacts([...techContacts, { person: '', mobile: '' }])} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                      </div>
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
+                        {techContacts.map((c, i) => (
+                          <div key={i} className="flex gap-2 items-center bg-[var(--bg-workspace)]/50 p-2 rounded-lg border border-[var(--border-color)] group hover:border-orange-500/30 transition-all">
+                            <input value={c.person} onChange={e => { const n = [...techContacts]; n[i].person = e.target.value; setTechContacts(n); }} placeholder="Name" className="w-1/2 bg-transparent outline-none text-[12px] font-bold" />
+                            <input value={c.mobile} onChange={e => { const n = [...techContacts]; n[i].mobile = e.target.value; setTechContacts(n); }} placeholder="Mobile" className="w-1/2 bg-transparent outline-none text-[12px] font-bold" />
+                            <button type="button" onClick={() => setTechContacts(techContacts.filter((_, idx) => idx !== i))} className="text-rose-500/30 hover:text-rose-500"><Trash2 size={12} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Sales Personnel</span>
+                        <button type="button" onClick={() => setSalesContacts([...salesContacts, { person: '', mobile: '' }])} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                      </div>
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
+                        {salesContacts.map((c, i) => (
+                          <div key={i} className="flex gap-2 items-center bg-[var(--bg-workspace)]/50 p-2 rounded-lg border border-[var(--border-color)] group hover:border-orange-500/30 transition-all">
+                            <input value={c.person} onChange={e => { const n = [...salesContacts]; n[i].person = e.target.value; setSalesContacts(n); }} placeholder="Name" className="w-1/2 bg-transparent outline-none text-[12px] font-bold" />
+                            <input value={c.mobile} onChange={e => { const n = [...salesContacts]; n[i].mobile = e.target.value; setSalesContacts(n); }} placeholder="Mobile" className="w-1/2 bg-transparent outline-none text-[12px] font-bold" />
+                            <button type="button" onClick={() => setSalesContacts(salesContacts.filter((_, idx) => idx !== i))} className="text-rose-500/30 hover:text-rose-500"><Trash2 size={12} /></button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-
           </form>
-        )}      </Modal>
+        )}
+      </Modal>
+
+      {/* Address Modal */}
+      <Modal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        title={editingAddressIdx !== null ? "Edit Address Details" : "Register New Address"}
+        maxWidth="max-w-3xl"
+        headerActions={
+          <button onClick={handleSaveAddress} className="px-5 py-2 bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 shadow-lg flex items-center gap-2">
+            <Check size={14} /> Confirm Address
+          </button>
+        }
+      >
+        <div className="space-y-6 py-2">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Company/Entity Name</label>
+              <input value={tempAddress?.company_name} onChange={e => setTempAddress({ ...tempAddress, company_name: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" placeholder="E.g. Branch Office" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Contact Number</label>
+              <input value={tempAddress?.mobile} onChange={e => setTempAddress({ ...tempAddress, mobile: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" placeholder="Mobile for delivery" />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Flat, House, Building</label>
+              <input value={tempAddress?.flat} onChange={e => setTempAddress({ ...tempAddress, flat: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Area, Street, Village</label>
+              <input value={tempAddress?.area} onChange={e => setTempAddress({ ...tempAddress, area: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">City</label>
+              <input value={tempAddress?.city} onChange={e => setTempAddress({ ...tempAddress, city: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">State</label>
+              <input value={tempAddress?.state} onChange={e => setTempAddress({ ...tempAddress, state: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Pincode</label>
+              <input value={tempAddress?.pincode} onChange={e => setTempAddress({ ...tempAddress, pincode: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-10 pt-4 border-t border-[var(--border-color)]">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" checked={tempAddress?.is_registered} onChange={e => setTempAddress({ ...tempAddress, is_registered: e.target.checked })} className="w-5 h-5 rounded-md border-2 border-[var(--border-color)] text-blue-600 focus:ring-0 transition-all" />
+              <span className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)] group-hover:text-blue-600 transition-colors">Registered</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" checked={tempAddress?.is_billing} onChange={e => setTempAddress({ ...tempAddress, is_billing: e.target.checked })} className="w-5 h-5 rounded-md border-2 border-[var(--border-color)] text-purple-600 focus:ring-0 transition-all" />
+              <span className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)] group-hover:text-purple-600 transition-colors">Billing</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" checked={tempAddress?.is_shipping} onChange={e => setTempAddress({ ...tempAddress, is_shipping: e.target.checked })} className="w-5 h-5 rounded-md border-2 border-[var(--border-color)] text-emerald-600 focus:ring-0 transition-all" />
+              <span className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)] group-hover:text-emerald-600 transition-colors">Shipping</span>
+            </label>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

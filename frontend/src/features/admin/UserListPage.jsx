@@ -7,7 +7,6 @@ import Modal from '../../components/shared/Modal';
 import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import Breadcrumbs from '../../components/shared/Breadcrumbs';
 
 const UserListPage = ({ initialRole = '' }) => {
   const navigate = useNavigate();
@@ -201,10 +200,6 @@ const UserListPage = ({ initialRole = '' }) => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
-      <Breadcrumbs items={[
-        { label: 'Users', path: '/admin/users', active: !initialRole },
-        ...(initialRole ? [{ label: initialRole === 'Sales' ? initialRole : `${initialRole}s`, active: true }] : [])
-      ]} />
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">

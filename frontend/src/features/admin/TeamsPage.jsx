@@ -8,7 +8,6 @@ import Modal from '../../components/shared/Modal';
 import { Briefcase, ShoppingBag, Wrench, Layout, Plus, Loader2, Check, Box, Users, Info } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -208,11 +207,6 @@ const TeamsPage = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
-      <Breadcrumbs items={[
-        { label: 'Users', path: '/admin/users' },
-        { label: 'Designers', path: '/admin/designers' },
-        { label: 'Teams', active: true }
-      ]} />
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">

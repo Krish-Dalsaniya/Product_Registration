@@ -4,6 +4,7 @@ import AuthGuard from '../features/auth/AuthGuard';
 import RoleGuard from '../features/auth/RoleGuard';
 import Navbar from '../components/shared/Navbar';
 import Sidebar from '../components/shared/Sidebar';
+import Breadcrumbs from '../components/shared/Breadcrumbs';
 import { useAuth } from '../context/AuthContext';
 
 // Lazy load components
@@ -36,6 +37,9 @@ const DashboardLayout = () => {
           onClose={() => setIsSidebarOpen(false)} 
         />
         <main className={`flex-1 md:ml-64 px-4 md:px-8 py-0 pt-[4.2rem] md:pt-[4.2rem] min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]`}>
+          <div className="max-w-[1600px] mx-auto pt-6">
+            <Breadcrumbs />
+          </div>
           <Suspense fallback={<PageLoader />}>
             <Outlet />
           </Suspense>
@@ -57,6 +61,7 @@ const Router = () => {
         
         {/* Admin Routes */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Admin']}><DashboardLayout /></RoleGuard></AuthGuard>}>
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserListPage />} />
           <Route path="/admin/designers" element={<UserListPage initialRole="Designer" />} />
@@ -70,17 +75,20 @@ const Router = () => {
 
         {/* Designer Routes */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Designer']}><DashboardLayout /></RoleGuard></AuthGuard>}>
+          <Route path="/designer" element={<Navigate to="/designer/dashboard" />} />
           <Route path="/designer/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Designer Dashboard Initialization...</div>} />
         </Route>
 
         {/* Sales Routes */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Sales']}><DashboardLayout /></RoleGuard></AuthGuard>}>
+          <Route path="/sales" element={<Navigate to="/sales/dashboard" />} />
           <Route path="/sales/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Sales Dashboard Initialization...</div>} />
           <Route path="/sales/opportunities" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Opportunities Pipeline...</div>} />
         </Route>
 
         {/* Maintenance Routes */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Maintenance']}><DashboardLayout /></RoleGuard></AuthGuard>}>
+          <Route path="/maintenance" element={<Navigate to="/maintenance/dashboard" />} />
           <Route path="/maintenance/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Maintenance Dashboard Initialization...</div>} />
         </Route>
 

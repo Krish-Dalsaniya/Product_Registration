@@ -5,7 +5,6 @@ import Modal from '../../components/shared/Modal';
 import { Search, Plus, Loader2, Cpu, Code, Trash2, Edit3, Eye, Hash, Info, CheckCircle2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import Breadcrumbs from '../../components/shared/Breadcrumbs';
 
 const FeatureMappingPage = () => {
   const [mappings, setMappings] = useState([]);
@@ -145,7 +144,6 @@ const FeatureMappingPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
-      <Breadcrumbs items={[{ label: 'Feature Mapping', active: true }]} />
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Eye, Trash2 } from 'lucide-react';
 
-const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, onView, onEdit, onDelete }) => {
+const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, onView, onEdit, onDelete, rowKey = 'id' }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -29,7 +29,7 @@ const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentP
           <tbody>
             {data.map((row, index) => (
               <tr
-                key={row.id || index}
+                key={row[rowKey] || index}
                 className="transition-colors duration-200 group"
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = ''; }}

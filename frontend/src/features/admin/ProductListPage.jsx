@@ -6,7 +6,6 @@ import CategoryModal from '../../components/shared/CategoryModal';
 import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download, X, Zap, Building2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import { getCategories } from '../../api/categories';
 import { getCompanies } from '../../api/companies';
 import CompanyModal from '../../components/shared/CompanyModal';
@@ -349,7 +348,6 @@ const ProductListPage = () => {
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
-      <Breadcrumbs items={[{ label: 'Products', active: true }]} />
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
