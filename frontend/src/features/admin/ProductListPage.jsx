@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getProducts, createProduct, updateProduct, removeAsset, deleteProduct } from '../../api/products';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
@@ -13,6 +14,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
 const ProductListPage = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -486,6 +488,26 @@ const ProductListPage = () => {
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-400">
           {modalMode === 'view' ? (
             <div className="space-y-12 pb-10">
+              {/* Breadcrumb Navigation */}
+              <div className="flex items-center gap-4 px-1">
+                <button 
+                  onClick={() => navigate('/admin')}
+                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                >
+                  <span>Dashboard</span>
+                </button>
+                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                >
+                  <span>Products</span>
+                </button>
+                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">
+                  <span>{selectedProduct?.product_name}</span>
+                </div>
+              </div>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <div className="lg:col-span-5 space-y-6">
                   {(() => {
@@ -513,6 +535,39 @@ const ProductListPage = () => {
                     <div className="flex items-center gap-3 mb-4"><span className="bg-[var(--nav-hover)] text-[var(--accent)] font-black text-[11px] uppercase tracking-[0.2em] px-3 py-1.5 rounded-lg border border-[var(--border-color)]">{selectedProduct?.category || 'General'}</span><span className="text-[var(--text-muted)] font-black text-[11px] uppercase tracking-widest opacity-40">Ref: {selectedProduct?.product_id?.toString().slice(0, 8).toUpperCase()}</span></div>
                     {selectedProduct?.company_name && <p className="text-[12px] font-black text-[var(--accent)] uppercase tracking-[0.2em] mb-2">{selectedProduct.company_name}</p>}
                     <h1 className="text-4xl font-black text-[var(--text-main)] leading-tight tracking-tight">{selectedProduct?.product_name}</h1>
+                    
+                    {(() => {
+                      const hardware = parseHardwareSpec(selectedProduct?.specification);
+                      if (!hardware) return null;
+                      return (
+                        <div className="flex flex-wrap gap-x-8 gap-y-3 mt-6">
+                          {hardware.fuel_types?.length > 0 && (
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/10"><Droplet size={14} strokeWidth={3} /></div>
+                              <span className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.fuel_types.join(', ')}</span>
+                            </div>
+                          )}
+                          {hardware.dispenser_type && (
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/10"><LayoutGrid size={14} strokeWidth={3} /></div>
+                              <span className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.dispenser_type}</span>
+                            </div>
+                          )}
+                          {hardware.nozzles && (
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/10"><Box size={14} strokeWidth={3} /></div>
+                              <span className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.nozzles}</span>
+                            </div>
+                          )}
+                          {hardware.dispensing && (
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/10"><Activity size={14} strokeWidth={3} /></div>
+                              <span className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.dispensing}</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-6 py-6 border-y border-[var(--border-color)]">
                     <div className="flex items-center gap-2"><CheckCircle className="text-emerald-500" size={16} /><span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest">Certified Operational</span></div>
@@ -544,61 +599,30 @@ const ProductListPage = () => {
                       dangerouslySetInnerHTML={{ __html: selectedProduct?.description || 'No description available.' }}
                     /> 
                   )}
-                  {activeTab === 'specification' && (() => {
-                    const hardware = parseHardwareSpec(selectedProduct?.specification);
-                    const specTableRows = parseSpecRows(selectedProduct?.specification);
-                    
-                    return (
-                      <div className="space-y-8">
-                        {hardware && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-8 bg-[var(--nav-hover)] rounded-[24px] border border-[var(--border-color)] shadow-inner">
-                            {hardware.fuel_types?.length > 0 && (
-                              <div className="space-y-2">
-                                <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest opacity-70">Fuel Variants</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {hardware.fuel_types.map(f => <span key={f} className="px-2.5 py-1 bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] text-[10px] font-black rounded-lg uppercase tracking-tight">{f}</span>)}
-                                </div>
+                    {activeTab === 'specification' && (() => {
+                      const specTableRows = parseSpecRows(selectedProduct?.specification);
+                      
+                      return (
+                        <div className="space-y-8">
+                          {specTableRows.length > 0 && (specTableRows.some(r => r.key.trim() !== '')) ? (
+                            <div className="space-y-4">
+                              <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-card)]">
+                                {specTableRows.filter(r => r.key.trim() !== '').map((row, idx) => (
+                                  <div key={idx} className={`grid grid-cols-[220px_1fr] border-b border-[var(--border-color)] last:border-b-0 ${idx % 2 === 0 ? 'bg-[var(--bg-workspace)]/30' : 'bg-[var(--bg-workspace)]/10'}`}>
+                                    <div className="px-6 py-4 text-[13px] font-black text-[var(--text-muted)] border-r border-[var(--border-color)] uppercase tracking-wider">{row.key}</div>
+                                    <div className="px-6 py-4 text-[13px] text-[var(--text-main)] font-bold">{row.value || '—'}</div>
+                                  </div>
+                                ))}
                               </div>
-                            )}
-                            {hardware.dispenser_type && (
-                              <div className="space-y-2">
-                                <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest opacity-70">Dispenser Type</p>
-                                <p className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.dispenser_type}</p>
-                              </div>
-                            )}
-                            {hardware.nozzles && (
-                              <div className="space-y-2">
-                                <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest opacity-70">Nozzle Setup</p>
-                                <p className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.nozzles}</p>
-                              </div>
-                            )}
-                            {hardware.dispensing && (
-                              <div className="space-y-2">
-                                <p className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest opacity-70">Dispensing Flow</p>
-                                <p className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-tight">{hardware.dispensing}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {specTableRows.length > 0 && specTableRows[0].key ? (
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-2 px-1"><LayoutGrid size={14} className="text-[var(--accent)]" /><h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)]">Technical Parameters</h4></div>
-                            <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-card)]">
-                              {specTableRows.map((row, idx) => (
-                                <div key={idx} className={`grid grid-cols-[220px_1fr] border-b border-[var(--border-color)] last:border-b-0 ${idx % 2 === 0 ? 'bg-[var(--bg-workspace)]/30' : 'bg-[var(--bg-workspace)]/10'}`}>
-                                  <div className="px-6 py-4 text-[13px] font-black text-[var(--text-muted)] border-r border-[var(--border-color)] uppercase tracking-wider">{row.key}</div>
-                                  <div className="px-6 py-4 text-[13px] text-[var(--text-main)] font-bold">{row.value || '—'}</div>
-                                </div>
-                              ))}
                             </div>
-                          </div>
-                        ) : (
-                          !hardware && <div className="text-center py-12 bg-[var(--bg-workspace)]/20 rounded-3xl border-2 border-dashed border-[var(--border-color)]"><p className="text-[var(--text-dim)] font-black uppercase tracking-widest text-[11px] opacity-40">No technical data specified</p></div>
-                        )}
-                      </div>
-                    );
-                  })()}
+                          ) : (
+                            <div className="text-center py-12 bg-[var(--bg-workspace)]/20 rounded-3xl border-2 border-dashed border-[var(--border-color)]">
+                              <p className="text-[var(--text-dim)] font-black uppercase tracking-widest text-[11px] opacity-40">No technical data specified</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   {activeTab === 'features' && (
                     <div className="space-y-4 rich-text-content">
                       {selectedProduct?.feature ? (
