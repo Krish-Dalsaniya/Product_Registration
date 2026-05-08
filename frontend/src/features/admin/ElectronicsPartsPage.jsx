@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
-import { getElectronicsParts, createElectronicsPart, getElectronicsPartById, deleteElectronicsPart, updateElectronicsPart } from '../../api/inventory';
+import { getElectronicsParts, createElectronicsPart, getElectronicsPartById, deleteElectronicsPart, updateElectronicsPart, deleteElectronicsFile } from '../../api/inventory';
 import { getProducts } from '../../api/products';
 import { 
-  Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio
+  Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -174,31 +174,29 @@ const ElectronicsPartsPage = () => {
       return formData;
   }
 
-  const handleView = async (item) => {
-    setModalMode('view');
-    setIsModalOpen(true);
-    try {
-        const res = await getElectronicsPartById(item.part_id);
+  const loadPartDetails = async (id, mode) => {
+      try {
+        const res = await getElectronicsPartById(id);
         const fullData = res.data.data;
         setSelectedItem(fullData);
         reset(mapDataToForm(fullData));
-    } catch (error) {
+        if (mode) setModalMode(mode);
+      } catch (error) {
         toast.error('Failed to load details');
-    }
+      }
+  }
+
+  const handleView = async (item) => {
+    setModalMode('view');
+    setIsModalOpen(true);
+    await loadPartDetails(item.part_id);
   };
 
   const handleEdit = async (item) => {
     setModalMode('edit');
     setModalTab('general');
     setIsModalOpen(true);
-    try {
-        const res = await getElectronicsPartById(item.part_id);
-        const fullData = res.data.data;
-        setSelectedItem(fullData);
-        reset(mapDataToForm(fullData));
-    } catch (error) {
-        toast.error('Failed to load details');
-    }
+    await loadPartDetails(item.part_id);
   };
 
   const handleDelete = async (item) => {
@@ -210,6 +208,34 @@ const ElectronicsPartsPage = () => {
       } catch (error) {
         toast.error('Failed to delete');
       }
+    }
+  };
+
+  const handleRemoveFile = async (fieldName) => {
+    if (!selectedItem) return;
+    
+    // Map form names to DB columns
+    const fieldMapping = {
+        'file_datasheet': 'datasheet_url',
+        'file_wiring': 'wiring_diagram_url',
+        'file_manual': 'user_manual_url',
+        'file_test_report': 'test_report_url',
+        'file_calib_cert': 'calibration_cert_url',
+        'file_warranty': 'warranty_cert_url',
+        'file_invoice': 'invoice_url'
+    };
+
+    const dbField = fieldMapping[fieldName];
+    if (!dbField) return;
+
+    if (window.confirm('Are you sure you want to delete this file?')) {
+        try {
+            await deleteElectronicsFile(selectedItem.part_id, dbField);
+            toast.success('File removed successfully');
+            loadPartDetails(selectedItem.part_id, 'edit');
+        } catch (error) {
+            toast.error('Failed to remove file');
+        }
     }
   };
 
@@ -232,38 +258,67 @@ const ElectronicsPartsPage = () => {
     }
   };
 
-  const FileInput = ({ label, name, accept = "*", existingUrl }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-      <div className="relative group">
-        <input 
-          type="file" 
-          {...register(name)} 
-          accept={accept}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-        />
-        <div className="flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl group-hover:border-[var(--accent)] transition-all">
-          <div className="w-10 h-10 rounded-lg bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)]">
-            <FileUp size={18} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-bold text-[var(--text-main)] truncate">
-              {existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload'}
-            </p>
-            {existingUrl && (
-              <button 
-                type="button"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDownload(existingUrl); }}
-                className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 mt-1 hover:underline relative z-20"
-              >
-                <Download size={10} /> Download File
-              </button>
-            )}
+  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
+    const selectedFile = watch(name);
+    const hasNewFile = selectedFile && selectedFile.length > 0;
+    
+    const fileName = hasNewFile 
+      ? selectedFile[0].name 
+      : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+        <div className="relative group">
+          <input 
+            type="file" 
+            {...register(name)} 
+            accept={accept}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+          />
+          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
+              <FileUp size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
+                {fileName}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                {existingUrl && !hasNewFile && (
+                  <>
+                    <button 
+                      type="button"
+                      onClick={() => handleDownload(existingUrl)}
+                      className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Download size={10} /> Download
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveFile(name)}
+                      className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Trash2 size={10} /> Delete
+                    </button>
+                  </>
+                )}
+                {hasNewFile && (
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
+                    className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                  >
+                    <X size={10} /> Clear Selection
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
     <div className="space-y-2">
@@ -544,12 +599,6 @@ const ElectronicsPartsPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <button 
-            onClick={() => navigate('/admin/inventory')}
-            className="p-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
-          >
-            <ArrowLeft size={20} />
-          </button>
           <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group">
             <CircuitBoard size={24} className="text-[var(--accent)]" />
           </div>

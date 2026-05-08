@@ -4,11 +4,11 @@ import { toast } from 'react-hot-toast';
 import { 
   Search, Plus, Loader2, Plug, Zap, Info, Settings, 
   FileUp, ChevronRight, Eye, Download, Trash2, Box, Cpu,
-  Activity, ArrowLeft, ImageIcon, CheckCircle2, Layers, Factory, ShieldAlert, FileText, BatteryCharging, Wrench, Package, Shield, Scale, Ruler, Banknote, ShoppingCart
+  Activity, ArrowLeft, ImageIcon, CheckCircle2, Layers, Factory, ShieldAlert, FileText, BatteryCharging, Wrench, Package, Shield, Scale, Ruler, Banknote, ShoppingCart, X
 } from 'lucide-react';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
-import { getElectricalParts, createElectricalPart, updateElectricalPart, deleteElectricalPart, getElectricalPartById, deleteElectricalImage } from '../../api/inventory';
+import { getElectricalParts, createElectricalPart, updateElectricalPart, deleteElectricalPart, getElectricalPartById, deleteElectricalImage, deleteElectricalFile } from '../../api/inventory';
 import { getProducts } from '../../api/products';
 
 const FILE_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -196,6 +196,35 @@ const ElectricalPartsPage = () => {
     }
   };
 
+  const handleRemoveFile = async (fieldName) => {
+    if (!selectedItem) return;
+    
+    // Map form names to DB columns
+    const fieldMapping = {
+        'file_datasheet': 'datasheet_url',
+        'file_wiring': 'wiring_diagram_url',
+        'file_manual': 'installation_manual_url',
+        'file_test_report': 'test_report_url',
+        'file_calib_cert': 'calibration_cert_url',
+        'file_compliance': 'compliance_cert_url',
+        'file_warranty': 'warranty_doc_url',
+        'file_invoice': 'invoice_url'
+    };
+
+    const dbField = fieldMapping[fieldName];
+    if (!dbField) return;
+
+    if (window.confirm('Are you sure you want to delete this file?')) {
+        try {
+            await deleteElectricalFile(selectedItem.part_id, dbField);
+            toast.success('File removed successfully');
+            loadPartDetails(selectedItem.part_id, 'edit');
+        } catch (error) {
+            toast.error('Failed to remove file');
+        }
+    }
+  };
+
   const handleDownload = async (url, filename) => {
     try {
       const fullUrl = buildFileUrl(url);
@@ -271,38 +300,67 @@ const ElectricalPartsPage = () => {
     </div>
   );
 
-  const FileInput = ({ label, name, accept = "*", existingUrl }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-      <div className="relative group">
-        <input 
-          type="file" 
-          {...register(name)} 
-          accept={accept}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-        />
-        <div className="flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl group-hover:border-[var(--accent)] transition-all">
-          <div className="w-10 h-10 rounded-lg bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)]">
-            <FileUp size={18} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-bold text-[var(--text-main)] truncate">
-              {existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload'}
-            </p>
-            {existingUrl && (
-              <button 
-                type="button"
-                onClick={() => handleDownload(existingUrl)}
-                className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 mt-1 hover:underline relative z-20"
-              >
-                <Download size={10} /> Download File
-              </button>
-            )}
+  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
+    const selectedFile = watch(name);
+    const hasNewFile = selectedFile && selectedFile.length > 0;
+    
+    const fileName = hasNewFile 
+      ? selectedFile[0].name 
+      : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+        <div className="relative group">
+          <input 
+            type="file" 
+            {...register(name)} 
+            accept={accept}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+          />
+          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
+              <FileUp size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
+                {fileName}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                {existingUrl && !hasNewFile && (
+                  <>
+                    <button 
+                      type="button"
+                      onClick={() => handleDownload(existingUrl)}
+                      className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Download size={10} /> Download
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveFile(name)}
+                      className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Trash2 size={10} /> Delete
+                    </button>
+                  </>
+                )}
+                {hasNewFile && (
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
+                    className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                  >
+                    <X size={10} /> Clear Selection
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const DataSheetEntry = ({ label, value, icon: Icon }) => (
     <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">

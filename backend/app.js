@@ -32,10 +32,19 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadDir, {
-  setHeaders: (res) => {
+  setHeaders: (res, path) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Ensure files are viewed inline rather than downloaded automatically
+    const lowerPath = path.toLowerCase();
+    if (lowerPath.endsWith('.pdf') || lowerPath.endsWith('_pdf')) {
+      res.set('Content-Type', 'application/pdf');
+      res.set('Content-Disposition', 'inline');
+    } else if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg') || lowerPath.endsWith('.png')) {
+      res.set('Content-Disposition', 'inline');
+    }
   }
 }));
 

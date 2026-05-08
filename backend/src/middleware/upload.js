@@ -8,9 +8,9 @@ const storage = new CloudinaryStorage({
     const isImage = file.fieldname === 'image';
     return {
       folder: isImage ? 'products/images' : 'products/documents',
-      resource_type: isImage ? 'image' : 'raw',
+      resource_type: 'auto',
       allowed_formats: isImage ? ['jpg', 'jpeg', 'png', 'webp'] : ['pdf', 'doc', 'docx', 'xls', 'xlsx'],
-      public_id: `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9]/g, '_')}`,
+      public_id: `${file.originalname.split('.').slice(0, -1).join('.').replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
     };
   },
 });

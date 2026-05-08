@@ -10,6 +10,7 @@ export const updatePCB = (id, formData) => axiosInstance.put(`/inventory/pcb/${i
 });
 export const deletePCB = (id) => axiosInstance.delete(`/inventory/pcb/${id}`);
 export const deletePCBImage = (id, imageUrl) => axiosInstance.delete(`/inventory/pcb/${id}/image`, { data: { imageUrl } });
+export const deletePCBFile = (id, field) => axiosInstance.delete(`/inventory/pcb/${id}/file`, { data: { field } });
 
 export const getElectronicsParts = (params) => axiosInstance.get('/inventory/electronics', { params });
 export const getElectronicsPartById = (id) => axiosInstance.get(`/inventory/electronics/${id}`);
@@ -20,6 +21,7 @@ export const updateElectronicsPart = (id, formData) => axiosInstance.put(`/inven
     headers: { 'Content-Type': 'multipart/form-data' }
 });
 export const deleteElectronicsPart = (id) => axiosInstance.delete(`/inventory/electronics/${id}`);
+export const deleteElectronicsFile = (id, field) => axiosInstance.delete(`/inventory/electronics/${id}/file`, { data: { field } });
 
 export const getElectricalParts = (params) => axiosInstance.get('/inventory/electrical', { params });
 export const getElectricalPartById = (id) => axiosInstance.get(`/inventory/electrical/${id}`);
@@ -31,3 +33,4 @@ export const updateElectricalPart = (id, formData) => axiosInstance.put(`/invent
 });
 export const deleteElectricalPart = (id) => axiosInstance.delete(`/inventory/electrical/${id}`);
 export const deleteElectricalImage = (id, imageUrl) => axiosInstance.delete(`/inventory/electrical/${id}/image`, { data: { imageUrl } });
+export const deleteElectricalFile = (id, field) => axiosInstance.delete(`/inventory/electrical/${id}/file`, { data: { field } });

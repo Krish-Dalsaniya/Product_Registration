@@ -192,7 +192,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
       <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">
         {isAdmin && (
           <div className="mb-6">
-            <NavItem to="/admin/dashboard" label="Analytics Hub" icon={LayoutDashboard} />
+            <NavItem to="/admin/dashboard" label="Dashboard" icon={LayoutDashboard} />
           </div>
         )}
 
@@ -408,7 +408,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
             {isDesigner && <NavItem to="/designer/dashboard" label="Workstation" icon={Layers} />}
             {isSales && (
               <>
-                <NavItem to="/sales/dashboard" label="Analytics Hub" icon={LayoutDashboard} />
+                <NavItem to="/sales/dashboard" label="Dashboard" icon={LayoutDashboard} />
                 <NavItem to="/sales/opportunities" label="Pipeline" icon={ShoppingBag} />
               </>
             )}

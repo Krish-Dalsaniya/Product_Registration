@@ -320,11 +320,27 @@ const deleteElectricalImage = async (req, res, next) => {
     }
 };
 
+const deleteElectricalFile = async (req, res, next) => {
+    const { id } = req.params;
+    const { field } = req.body; // e.g., 'datasheet_url'
+    try {
+        const validFields = ['datasheet_url', 'wiring_diagram_url', 'installation_manual_url', 'test_report_url', 'calibration_cert_url', 'compliance_cert_url', 'warranty_doc_url', 'invoice_url'];
+        if (!validFields.includes(field)) {
+            return res.status(400).json({ success: false, error: { message: 'Invalid file field' } });
+        }
+        await db.query(`UPDATE electrical_files SET ${field} = NULL WHERE part_id = $1`, [id]);
+        sendSuccess(res, null, 'File removed successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getElectricalParts,
     getElectricalPartById,
     createElectricalPart,
     updateElectricalPart,
     deleteElectricalPart,
-    deleteElectricalImage
+    deleteElectricalImage,
+    deleteElectricalFile
 };

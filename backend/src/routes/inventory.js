@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    cb(null, file.originalname);
   }
 });
 
@@ -64,12 +64,14 @@ router.post('/pcb', upload.fields(pcbFiles), inventoryController.createPCB);
 router.put('/pcb/:id', upload.fields(pcbFiles), inventoryController.updatePCB);
 router.delete('/pcb/:id', inventoryController.deletePCB);
 router.delete('/pcb/:id/image', inventoryController.deletePCBImage);
+router.delete('/pcb/:id/file', inventoryController.deletePCBFile);
 
 router.get('/electronics', electronicsController.getElectronicsParts);
 router.get('/electronics/:id', electronicsController.getElectronicsPartById);
 router.post('/electronics', upload.fields(electronicsFiles), electronicsController.createElectronicsPart);
 router.put('/electronics/:id', upload.fields(electronicsFiles), electronicsController.updateElectronicsPart);
 router.delete('/electronics/:id', electronicsController.deleteElectronicsPart);
+router.delete('/electronics/:id/file', electronicsController.deleteElectronicsFile);
 
 router.get('/electrical', electricalController.getElectricalParts);
 router.get('/electrical/:id', electricalController.getElectricalPartById);
@@ -77,5 +79,6 @@ router.post('/electrical', upload.fields(electricalFiles), electricalController.
 router.put('/electrical/:id', upload.fields(electricalFiles), electricalController.updateElectricalPart);
 router.delete('/electrical/:id', electricalController.deleteElectricalPart);
 router.delete('/electrical/:id/image', electricalController.deleteElectricalImage);
+router.delete('/electrical/:id/file', electricalController.deleteElectricalFile);
 
 module.exports = router;

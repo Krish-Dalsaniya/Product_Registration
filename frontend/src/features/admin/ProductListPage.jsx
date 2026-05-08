@@ -365,6 +365,45 @@ const ProductListPage = () => {
     { key: 'created_at', label: 'Registration Date', render: (row) => new Date(row.created_at).toLocaleDateString() }
   ];
 
+  const FileInput = ({ label, name, accept = "*", icon: Icon }) => {
+    const selectedFile = watch(name);
+    const hasFile = selectedFile && selectedFile.length > 0;
+    const fileName = hasFile ? selectedFile[0].name : 'Select file to upload';
+
+    return (
+      <div className="space-y-3">
+        <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">{label}</label>
+        <div className="relative group">
+          <input 
+            type="file" 
+            {...register(name)} 
+            accept={accept} 
+            className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+          />
+          <div className={`w-full bg-[var(--input-bg)] border border-dashed rounded-2xl p-6 flex flex-col items-center justify-center gap-3 transition-all duration-300 ${
+            hasFile 
+              ? 'border-[var(--accent)] bg-[var(--accent)]/5 shadow-[0_0_20px_rgba(59,130,246,0.1)]' 
+              : 'border-[var(--text-dim)] group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5'
+          }`}>
+            <div className={`p-3 rounded-xl transition-all duration-300 ${
+              hasFile ? 'bg-[var(--accent)] text-white scale-110' : 'bg-[var(--bg-workspace)] text-[var(--accent)] shadow-sm'
+            }`}>
+              {hasFile ? <CheckCircle size={24} /> : <Icon size={24} />}
+            </div>
+            <div className="text-center">
+              <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${hasFile ? 'text-[var(--accent)]' : 'text-[var(--text-dim)]'}`}>
+                {hasFile ? 'File Attached' : label.replace('Upload New ', '')}
+              </p>
+              <p className={`text-[12px] font-bold truncate max-w-[200px] px-4 ${hasFile ? 'text-[var(--text-main)]' : 'text-[var(--text-dim)] opacity-40'}`}>
+                {fileName}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
       
@@ -636,12 +675,30 @@ const ProductListPage = () => {
                     </div>
                   )}
                   {activeTab === 'documents' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {(selectedProduct?.documents || [selectedProduct?.document_url]).filter(Boolean).map((docUrl, idx) => (
                         <div key={idx} className="flex items-center gap-4 p-5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-workspace)]/30 hover:border-[var(--accent)] transition-all group">
                           <div className="p-3 bg-[var(--nav-hover)] rounded-xl text-[var(--accent)]"><FileText size={22} /></div>
                           <div className="flex-1 min-w-0"><p className="text-[13px] font-black text-[var(--text-main)] truncate tracking-wider uppercase">{docUrl.split('/').pop()}</p></div>
-                          <a href={getFullUrl(docUrl)} target="_blank" className="p-2.5 bg-[var(--accent)] text-white rounded-xl shadow-lg opacity-0 group-hover:opacity-100 transition-all"><Download size={18} /></a>
+                          <div className="flex items-center gap-2.5 opacity-0 group-hover:opacity-100 transition-all">
+                            <a 
+                              href={getFullUrl(docUrl)} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="p-2.5 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
+                              title="View Document"
+                            >
+                              <Eye size={18} />
+                            </a>
+                            <a 
+                              href={getFullUrl(docUrl)} 
+                              download 
+                              className="p-2.5 bg-[var(--accent)] text-white rounded-xl shadow-lg hover:scale-105 transition-all"
+                              title="Download Document"
+                            >
+                              <Download size={18} />
+                            </a>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -745,8 +802,29 @@ const ProductListPage = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {(selectedProduct.documents && selectedProduct.documents.length > 0 ? selectedProduct.documents : [selectedProduct.document_url]).filter(Boolean).map((url, idx) => (
                                 <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] rounded-xl group hover:border-[var(--accent)]/50 transition-all">
-                                  <div className="flex items-center gap-3 truncate"><FileText size={16} className="text-[var(--accent)]" /><span className="text-[11px] font-bold text-[var(--text-main)] truncate uppercase tracking-wider">{url.split('/').pop()}</span></div>
-                                  <button type="button" onClick={() => handleRemoveAsset(url, 'documents')} className="p-1.5 text-rose-500/50 hover:text-rose-500 transition-colors"><Trash2 size={14} /></button>
+                                  <div className="flex items-center gap-3 truncate">
+                                    <FileText size={16} className="text-[var(--accent)]" />
+                                    <span className="text-[11px] font-bold text-[var(--text-main)] truncate uppercase tracking-wider">{url.split('/').pop()}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <a 
+                                      href={getFullUrl(url)} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="p-1.5 text-[var(--text-dim)] hover:text-[var(--accent)] transition-colors"
+                                      title="View"
+                                    >
+                                      <Eye size={14} />
+                                    </a>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => handleRemoveAsset(url, 'documents')} 
+                                      className="p-1.5 text-rose-500/50 hover:text-rose-500 transition-colors"
+                                      title="Delete"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -755,8 +833,8 @@ const ProductListPage = () => {
                       </div>
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Upload New Image</label><div className="relative group"><input type="file" {...register('image')} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" /><div className="w-full bg-[var(--input-bg)] border border-dashed border-[var(--text-dim)] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5 transition-all"><div className="p-3 bg-[var(--bg-workspace)] rounded-xl text-[var(--accent)]"><Plus size={24} /></div><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Select Visual Asset</p></div></div></div>
-                      <div className="space-y-3"><label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Upload New Datasheet</label><div className="relative group"><input type="file" {...register('document')} accept=".pdf,.doc,.docx,.xls,.xlsx" className="absolute inset-0 opacity-0 cursor-pointer z-10" /><div className="w-full bg-[var(--input-bg)] border border-dashed border-[var(--text-dim)] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)]/5 transition-all"><div className="p-3 bg-[var(--bg-workspace)] rounded-xl text-[var(--accent)]"><FileText size={24} /></div><p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest">Select Datasheet</p></div></div></div>
+                      <FileInput label="Upload New Image" name="image" accept="image/*" icon={Plus} />
+                      <FileInput label="Upload New Datasheet" name="document" accept=".pdf,.doc,.docx,.xls,.xlsx" icon={FileText} />
                     </div>
                   </div>
 

@@ -173,8 +173,8 @@ const getAdminStats = async (req, res, next) => {
 
     // New Inventory Counts
     const pcbCount = await db.query('SELECT COUNT(*) FROM pcb_master WHERE is_active = TRUE');
-    const electronicsCount = await db.query('SELECT COUNT(*) FROM electronic_part_detail');
-    const electricalCount = await db.query('SELECT COUNT(*) FROM electrical_part_detail');
+    const electronicsCount = await db.query('SELECT COUNT(*) FROM electronics_part_master WHERE is_active = TRUE');
+    const electricalCount = await db.query('SELECT COUNT(*) FROM electrical_part_master WHERE is_active = TRUE');
     const structuralCount = await db.query('SELECT COUNT(*) FROM structural_component_detail');
 
     const stats = {

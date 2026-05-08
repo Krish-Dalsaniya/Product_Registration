@@ -371,11 +371,27 @@ const deletePCBImage = async (req, res, next) => {
     }
 };
 
+const deletePCBFile = async (req, res, next) => {
+    const { id } = req.params;
+    const { field } = req.body; // e.g., 'processor_file_url'
+    try {
+        const validFields = ['processor_file_url', 'brd_file_url', 'sch_file_url', 'bom_file_url', 'stencil_file_url', 'panel_gerber_file_url', 'layer_stacking_file_url', 'production_instruction_url'];
+        if (!validFields.includes(field)) {
+            return res.status(400).json({ success: false, error: { message: 'Invalid file field' } });
+        }
+        await db.query(`UPDATE PCB_FILE_MASTER SET ${field} = NULL WHERE pcb_id = $1`, [id]);
+        sendSuccess(res, null, 'File removed successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
   getPCBs,
   getPCBById,
   createPCB,
   updatePCB,
   deletePCB,
-  deletePCBImage
+  deletePCBImage,
+  deletePCBFile
 };

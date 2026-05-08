@@ -91,14 +91,8 @@ const AdminDashboard = () => {
             <LayoutDashboard size={28} className="text-[var(--accent)]" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">Administrative Hub</h1>
-            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">System Overview & Analytics</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="px-5 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-black text-[var(--text-main)] uppercase tracking-widest">System Operational</span>
+            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight leading-none uppercase">Dashboard</h1>
+            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Inventory Overview & Business Analytics</p>
           </div>
         </div>
       </div>

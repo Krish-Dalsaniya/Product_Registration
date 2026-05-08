@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { getAdminStats } from '../../api/admin';
-import { getPCBs, createPCB, getPCBById, deletePCB, updatePCB, deletePCBImage } from '../../api/inventory';
+import { getPCBs, createPCB, getPCBById, deletePCB, updatePCB, deletePCBImage, deletePCBFile } from '../../api/inventory';
 import { 
   Search, 
   Plus, 
@@ -34,7 +34,8 @@ import {
   HardDrive,
   Eye,
   Calendar,
-  Fingerprint
+  Fingerprint,
+  X
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -66,7 +67,7 @@ const InventoryListPage = ({ type = '' }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalTab, setModalTab] = useState('general');
 
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
   });
 
@@ -174,31 +175,29 @@ const InventoryListPage = ({ type = '' }) => {
     setIsModalOpen(true);
   };
 
+  const loadPCBDetails = async (id, mode) => {
+      try {
+          const res = await getPCBById(id);
+          const fullData = res.data.data;
+          setSelectedItem(fullData);
+          reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
+          if (mode) setModalMode(mode);
+      } catch (error) {
+          toast.error('Failed to load PCB details');
+      }
+  };
+
   const handleView = async (item) => {
     setModalMode('view');
     setIsModalOpen(true);
-    try {
-        const res = await getPCBById(item.pcb_id);
-        const fullData = res.data.data;
-        setSelectedItem(fullData);
-        reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
-    } catch (error) {
-        toast.error('Failed to load PCB details');
-    }
+    await loadPCBDetails(item.pcb_id);
   };
 
   const handleEdit = async (item) => {
     setModalMode('edit');
     setModalTab('general');
     setIsModalOpen(true);
-    try {
-        const res = await getPCBById(item.pcb_id);
-        const fullData = res.data.data;
-        setSelectedItem(fullData);
-        reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
-    } catch (error) {
-        toast.error('Failed to load PCB details');
-    }
+    await loadPCBDetails(item.pcb_id);
   };
 
   const handleDelete = async (item) => {
@@ -219,13 +218,37 @@ const InventoryListPage = ({ type = '' }) => {
         try {
             await deletePCBImage(selectedItem.pcb_id, imageUrl);
             toast.success('Image removed successfully');
-            // Refresh the item data
-            const res = await getPCBById(selectedItem.pcb_id);
-            const fullData = res.data.data;
-            setSelectedItem(fullData);
-            reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
+            loadPCBDetails(selectedItem.pcb_id, 'edit');
         } catch (error) {
             toast.error('Failed to remove image');
+        }
+    }
+  };
+
+  const handleRemoveFile = async (fieldName) => {
+    if (!selectedItem) return;
+    
+    const fieldMapping = {
+        'file_gerber': 'processor_file_url',
+        'file_board': 'brd_file_url',
+        'file_schematic': 'sch_file_url',
+        'file_bom': 'bom_file_url',
+        'file_stencile': 'stencil_file_url',
+        'file_panel_gerber': 'panel_gerber_file_url',
+        'file_layer_stack': 'layer_stacking_file_url',
+        'file_production_note': 'production_instruction_url'
+    };
+
+    const dbField = fieldMapping[fieldName];
+    if (!dbField) return;
+
+    if (window.confirm('Are you sure you want to delete this file?')) {
+        try {
+            await deletePCBFile(selectedItem.pcb_id, dbField);
+            toast.success('File removed successfully');
+            loadPCBDetails(selectedItem.pcb_id, 'edit');
+        } catch (error) {
+            toast.error('Failed to remove file');
         }
     }
   };
@@ -279,38 +302,67 @@ const InventoryListPage = ({ type = '' }) => {
     </div>
   );
 
-  const FileInput = ({ label, name, accept = "*", existingUrl }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-      <div className="relative group">
-        <input 
-          type="file" 
-          {...register(name)} 
-          accept={accept}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-        />
-        <div className="flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl group-hover:border-[var(--accent)] transition-all">
-          <div className="w-10 h-10 rounded-lg bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)]">
-            <FileUp size={18} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-bold text-[var(--text-main)] truncate">
-              {existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload'}
-            </p>
-            {existingUrl && (
-              <button 
-                type="button"
-                onClick={() => handleDownload(existingUrl)}
-                className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 mt-1 hover:underline relative z-20"
-              >
-                <Download size={10} /> Download File
-              </button>
-            )}
+  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
+    const selectedFile = watch(name);
+    const hasNewFile = selectedFile && selectedFile.length > 0;
+    
+    const fileName = hasNewFile 
+      ? selectedFile[0].name 
+      : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+        <div className="relative group">
+          <input 
+            type="file" 
+            {...register(name)} 
+            accept={accept}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+          />
+          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
+              <FileUp size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
+                {fileName}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                {existingUrl && !hasNewFile && (
+                  <>
+                    <button 
+                      type="button"
+                      onClick={() => handleDownload(existingUrl)}
+                      className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Download size={10} /> Download
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveFile(name)}
+                      className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Trash2 size={10} /> Delete
+                    </button>
+                  </>
+                )}
+                {hasNewFile && (
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
+                    className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                  >
+                    <X size={10} /> Clear Selection
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
     <div className="space-y-2">
@@ -424,11 +476,11 @@ const InventoryListPage = ({ type = '' }) => {
 
       {/* Overview Stats */}
       {!type && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard title="PCB Units" count={stats.pcb} icon={Cpu} to="/admin/inventory/pcb" colorAccent="var(--accent)" />
-          <StatCard title="Electronics" count={stats.electronics} icon={CircuitBoard} to="/admin/inventory/electronics" colorAccent="#3b82f6" />
-          <StatCard title="Electrical" count={stats.electrical} icon={Plug} to="/admin/inventory/electrical" colorAccent="#f59e0b" />
-          <StatCard title="Structural" count={stats.structural} icon={Layers} to="/admin/inventory/structural" colorAccent="#10b981" />
+          <StatCard title="Electronic Parts" count={stats.electronics} icon={CircuitBoard} to="/admin/inventory/electronics" colorAccent="#3b82f6" />
+          <StatCard title="Electrical Parts" count={stats.electrical} icon={Plug} to="/admin/inventory/electrical" colorAccent="#f59e0b" />
+          <StatCard title="Structural Parts" count={stats.structural} icon={Layers} to="/admin/inventory/structural" colorAccent="#10b981" />
         </div>
       )}
 
