@@ -20,6 +20,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+const electronicsController = require('../controllers/electronicsController');
+
 const pcbFiles = [
     { name: 'file_gerber', maxCount: 1 },
     { name: 'file_board', maxCount: 1 },
@@ -32,10 +34,28 @@ const pcbFiles = [
     { name: 'pcb_images', maxCount: 10 }
 ];
 
+const electronicsFiles = [
+    { name: 'file_datasheet', maxCount: 1 },
+    { name: 'file_wiring', maxCount: 1 },
+    { name: 'file_manual', maxCount: 1 },
+    { name: 'file_test_report', maxCount: 1 },
+    { name: 'file_calib_cert', maxCount: 1 },
+    { name: 'file_warranty', maxCount: 1 },
+    { name: 'file_invoice', maxCount: 1 },
+    { name: 'part_images', maxCount: 10 }
+];
+
 router.get('/pcb', inventoryController.getPCBs);
 router.get('/pcb/:id', inventoryController.getPCBById);
 router.post('/pcb', upload.fields(pcbFiles), inventoryController.createPCB);
 router.put('/pcb/:id', upload.fields(pcbFiles), inventoryController.updatePCB);
 router.delete('/pcb/:id', inventoryController.deletePCB);
+router.delete('/pcb/:id/image', inventoryController.deletePCBImage);
+
+router.get('/electronics', electronicsController.getElectronicsParts);
+router.get('/electronics/:id', electronicsController.getElectronicsPartById);
+router.post('/electronics', upload.fields(electronicsFiles), electronicsController.createElectronicsPart);
+router.put('/electronics/:id', upload.fields(electronicsFiles), electronicsController.updateElectronicsPart);
+router.delete('/electronics/:id', electronicsController.deleteElectronicsPart);
 
 module.exports = router;

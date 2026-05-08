@@ -69,7 +69,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
         location.pathname === to
           ? 'font-black'
           : 'hover:bg-[var(--nav-hover)]'
-      } ${isSubItem ? 'px-10 py-2.5' : ''}`}
+      } ${isSubItem ? 'pl-10 pr-4 py-2.5' : ''}`}
       style={{
         color: location.pathname === to ? 'var(--primary)' : 'var(--text-muted)',
         background: location.pathname === to ? 'var(--nav-active)' : undefined,
@@ -97,7 +97,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
         )}
       </div>
       <span
-        className="text-[12px] font-black tracking-[0.1em] uppercase relative z-10 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)]"
+        className="text-[12px] font-black tracking-[0.1em] uppercase relative z-10 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--text-main)] whitespace-nowrap"
         style={{ fontSize: isSubItem ? '11px' : undefined }}
       >
         {label}
@@ -265,7 +265,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
 
                 {/* Designers row */}
                 <div
-                  className="flex items-center justify-between px-10 py-2.5 transition-all duration-300 relative group cursor-pointer"
+                  className="flex items-center justify-between pl-10 pr-4 py-2.5 transition-all duration-300 relative group cursor-pointer"
                   style={{
                     color: (location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams')) ? 'var(--accent)' : 'var(--text-muted)',
                     background: (location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams')) ? 'var(--nav-active)' : undefined,

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { getAdminStats } from '../../api/admin';
-import { getPCBs, createPCB, getPCBById, deletePCB, updatePCB } from '../../api/inventory';
+import { getPCBs, createPCB, getPCBById, deletePCB, updatePCB, deletePCBImage } from '../../api/inventory';
 import { 
   Search, 
   Plus, 
@@ -199,6 +199,22 @@ const InventoryListPage = ({ type = '' }) => {
       } catch (error) {
         toast.error('Failed to delete PCB');
       }
+    }
+  };
+
+  const handleRemoveImage = async (imageUrl) => {
+    if (window.confirm('Are you sure you want to remove this image?')) {
+        try {
+            await deletePCBImage(selectedItem.pcb_id, imageUrl);
+            toast.success('Image removed successfully');
+            // Refresh the item data
+            const res = await getPCBById(selectedItem.pcb_id);
+            const fullData = res.data.data;
+            setSelectedItem(fullData);
+            reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
+        } catch (error) {
+            toast.error('Failed to remove image');
+        }
     }
   };
 
@@ -659,10 +675,25 @@ const InventoryListPage = ({ type = '' }) => {
                         <FileInput label="Production Instruction File" name="file_production_note" existingUrl={selectedItem?.files?.production_instruction_url} />
                         <div className="md:col-span-2">
                         <div className="space-y-3 p-6 bg-[var(--nav-hover)]/30 border border-dashed border-[var(--border-color)] rounded-[24px]">
-                            <div className="flex items-center gap-3 mb-2">
-                            <ImageIcon size={18} className="text-[var(--accent)]" />
-                            <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">PCB Images Gallery</h4>
+                            <div className="flex items-center gap-3 mb-4">
+                                <ImageIcon size={18} className="text-[var(--accent)]" />
+                                <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">PCB Images Gallery</h4>
                             </div>
+
+                            {modalMode === 'edit' && selectedItem?.pcb_images && selectedItem.pcb_images.length > 0 && (
+                                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 mb-6">
+                                    {selectedItem.pcb_images.map((img, idx) => (
+                                        <div key={idx} className="relative aspect-square rounded-xl border border-[var(--border-color)] overflow-hidden group">
+                                            <img src={`${FILE_BASE_URL}/${img}`} alt="Part" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                                <a href={`${FILE_BASE_URL}/${img}`} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
+                                                <button type="button" onClick={() => handleRemoveImage(img)} className="text-rose-500 hover:text-white"><Trash2 size={16} /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="relative group">
                             <input type="file" multiple {...register('pcb_images')} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                             <div className="w-full bg-[var(--bg-workspace)]/50 border border-dashed border-[var(--text-dim)] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all">

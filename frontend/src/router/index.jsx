@@ -15,6 +15,7 @@ const ProductListPage = lazy(() => import('../features/admin/ProductListPage'));
 const CustomerListPage = lazy(() => import('../features/admin/CustomerListPage'));
 const FeatureMappingPage = lazy(() => import('../features/admin/FeatureMappingPage'));
 const InventoryListPage = lazy(() => import('../features/admin/InventoryListPage'));
+const ElectronicsPartsPage = lazy(() => import('../features/admin/ElectronicsPartsPage'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-[60vh]">
@@ -74,7 +75,7 @@ const Router = () => {
           <Route path="/admin/feature-mapping" element={<FeatureMappingPage />} />
           <Route path="/admin/inventory" element={<InventoryListPage />} />
           <Route path="/admin/inventory/pcb" element={<InventoryListPage type="PCB" />} />
-          <Route path="/admin/inventory/electronics" element={<InventoryListPage type="Electronic Part" />} />
+          <Route path="/admin/inventory/electronics" element={<ElectronicsPartsPage />} />
           <Route path="/admin/inventory/electrical" element={<InventoryListPage type="Electrical Part" />} />
           <Route path="/admin/inventory/structural" element={<InventoryListPage type="Structural Component" />} />
         </Route>

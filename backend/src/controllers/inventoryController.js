@@ -50,6 +50,10 @@ const getPCBById = async (req, res, next) => {
         // Fetch Files
         const filesResult = await db.query('SELECT * FROM PCB_FILE_MASTER WHERE pcb_id = $1', [id]);
         
+        // Fetch Images
+        const imagesResult = await db.query('SELECT image_url FROM pcb_images WHERE pcb_id = $1', [id]);
+        const pcb_images = imagesResult.rows.map(row => row.image_url);
+        
         // Fetch Firmware Mapping
         const mappingResult = await db.query(`
             SELECT 
@@ -72,7 +76,8 @@ const getPCBById = async (req, res, next) => {
         sendSuccess(res, {
             ...pcb,
             ...mapping,
-            files: filesResult.rows[0] || {}
+            files: filesResult.rows[0] || {},
+            pcb_images
         });
     } catch (error) {
         next(error);
@@ -189,6 +194,12 @@ const createPCB = async (req, res, next) => {
                 files['file_production_note'] ? files['file_production_note'][0].path : null
             ]
         );
+
+        // Handle PCB Images
+        if (files['pcb_images'] && files['pcb_images'].length > 0) {
+            const imageValues = files['pcb_images'].map(file => `(${pcb.pcb_id}, '${file.path}')`).join(', ');
+            await db.query(`INSERT INTO pcb_images (pcb_id, image_url) VALUES ${imageValues}`);
+        }
     }
 
     await db.query('COMMIT');
@@ -322,6 +333,12 @@ const updatePCB = async (req, res, next) => {
                 ]
               );
           }
+
+          // Handle PCB Images
+          if (files['pcb_images'] && files['pcb_images'].length > 0) {
+              const imageValues = files['pcb_images'].map(file => `(${id}, '${file.path}')`).join(', ');
+              await db.query(`INSERT INTO pcb_images (pcb_id, image_url) VALUES ${imageValues}`);
+          }
       }
   
       await db.query('COMMIT');
@@ -343,10 +360,22 @@ const deletePCB = async (req, res, next) => {
     }
 };
 
+const deletePCBImage = async (req, res, next) => {
+    const { id } = req.params;
+    const { imageUrl } = req.body;
+    try {
+        await db.query('DELETE FROM pcb_images WHERE pcb_id = $1 AND image_url = $2', [id, imageUrl]);
+        sendSuccess(res, null, 'Image removed successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
   getPCBs,
   getPCBById,
   createPCB,
   updatePCB,
-  deletePCB
+  deletePCB,
+  deletePCBImage
 };
