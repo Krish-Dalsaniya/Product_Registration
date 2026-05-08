@@ -19,17 +19,25 @@ const ElectronicsPartsPage = () => {
   const navigate = useNavigate();
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
   const buildFileUrl = (filePath) => {
-    if (!filePath) return "#";
+  if (!filePath) return "#";
 
-    if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+  if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+    try {
+      const parsedUrl = new URL(filePath);
+
+      if (parsedUrl.hostname === "localhost" || parsedUrl.hostname === "127.0.0.1") {
+        return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+      }
+
+      return filePath;
+    } catch {
       return filePath;
     }
+  }
 
-    const cleanPath = filePath.startsWith("/") ? filePath : `/${filePath}`;
-    const cleanBase = FILE_BASE_URL ? FILE_BASE_URL.replace(/\/$/, "") : "";
+  return filePath.startsWith("/") ? filePath : `/${filePath}`;
+};
 
-    return `${cleanBase}${cleanPath}`;
-  };
   const [items, setItems] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);

@@ -16,14 +16,22 @@ const buildFileUrl = (filePath) => {
   if (!filePath) return "#";
 
   if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
-    return filePath;
+    try {
+      const parsedUrl = new URL(filePath);
+
+      if (parsedUrl.hostname === "localhost" || parsedUrl.hostname === "127.0.0.1") {
+        return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+      }
+
+      return filePath;
+    } catch {
+      return filePath;
+    }
   }
 
-  const cleanPath = filePath.startsWith("/") ? filePath : `/${filePath}`;
-  const cleanBase = FILE_BASE_URL ? FILE_BASE_URL.replace(/\/$/, "") : "";
-
-  return `${cleanBase}${cleanPath}`;
+  return filePath.startsWith("/") ? filePath : `/${filePath}`;
 };
+
 
 const categoriesList = [
     'Pump',
