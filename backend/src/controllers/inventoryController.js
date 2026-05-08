@@ -184,20 +184,20 @@ const createPCB = async (req, res, next) => {
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
             [
                 pcb.pcb_id,
-                files['file_gerber'] ? files['file_gerber'][0].path : null,
-                files['file_board'] ? files['file_board'][0].path : null,
-                files['file_schematic'] ? files['file_schematic'][0].path : null,
-                files['file_bom'] ? files['file_bom'][0].path : null,
-                files['file_stencile'] ? files['file_stencile'][0].path : null,
-                files['file_panel_gerber'] ? files['file_panel_gerber'][0].path : null,
-                files['file_layer_stack'] ? files['file_layer_stack'][0].path : null,
-                files['file_production_note'] ? files['file_production_note'][0].path : null
+                files['file_gerber'] ? `/uploads/inventory/${files['file_gerber'][0].filename}` : null,
+                files['file_board'] ? `/uploads/inventory/${files['file_board'][0].filename}` : null,
+                files['file_schematic'] ? `/uploads/inventory/${files['file_schematic'][0].filename}` : null,
+                files['file_bom'] ? `/uploads/inventory/${files['file_bom'][0].filename}` : null,
+                files['file_stencile'] ? `/uploads/inventory/${files['file_stencile'][0].filename}` : null,
+                files['file_panel_gerber'] ? `/uploads/inventory/${files['file_panel_gerber'][0].filename}` : null,
+                files['file_layer_stack'] ? `/uploads/inventory/${files['file_layer_stack'][0].filename}` : null,
+                files['file_production_note'] ? `/uploads/inventory/${files['file_production_note'][0].filename}` : null
             ]
         );
 
         // Handle PCB Images
         if (files['pcb_images'] && files['pcb_images'].length > 0) {
-            const imageValues = files['pcb_images'].map(file => `(${pcb.pcb_id}, '${file.path}')`).join(', ');
+            const imageValues = files['pcb_images'].map(file => `(${pcb.pcb_id}, '/uploads/inventory/${file.filename}')`).join(', ');
             await db.query(`INSERT INTO pcb_images (pcb_id, image_url) VALUES ${imageValues}`);
         }
     }
@@ -302,12 +302,12 @@ const updatePCB = async (req, res, next) => {
                   file_production_note: 'production_instruction_url'
               };
 
-              Object.keys(mapping).forEach(field => {
-                  if (files[field]) {
-                      updateParts.push(`${mapping[field]} = $${idx++}`);
-                      params.push(files[field][0].path);
-                  }
-              });
+                Object.keys(mapping).forEach(field => {
+                    if (files[field]) {
+                        updateParts.push(`${mapping[field]} = $${idx++}`);
+                        params.push(`/uploads/inventory/${files[field][0].filename}`);
+                    }
+                });
 
               if (updateParts.length > 0) {
                   await db.query(`UPDATE PCB_FILE_MASTER SET ${updateParts.join(', ')} WHERE pcb_id = $1`, params);
@@ -322,21 +322,21 @@ const updatePCB = async (req, res, next) => {
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
                 [
                     id,
-                    files['file_gerber'] ? files['file_gerber'][0].path : null,
-                    files['file_board'] ? files['file_board'][0].path : null,
-                    files['file_schematic'] ? files['file_schematic'][0].path : null,
-                    files['file_bom'] ? files['file_bom'][0].path : null,
-                    files['file_stencile'] ? files['file_stencile'][0].path : null,
-                    files['file_panel_gerber'] ? files['file_panel_gerber'][0].path : null,
-                    files['file_layer_stack'] ? files['file_layer_stack'][0].path : null,
-                    files['file_production_note'] ? files['file_production_note'][0].path : null
+                    files['file_gerber'] ? `/uploads/inventory/${files['file_gerber'][0].filename}` : null,
+                    files['file_board'] ? `/uploads/inventory/${files['file_board'][0].filename}` : null,
+                    files['file_schematic'] ? `/uploads/inventory/${files['file_schematic'][0].filename}` : null,
+                    files['file_bom'] ? `/uploads/inventory/${files['file_bom'][0].filename}` : null,
+                    files['file_stencile'] ? `/uploads/inventory/${files['file_stencile'][0].filename}` : null,
+                    files['file_panel_gerber'] ? `/uploads/inventory/${files['file_panel_gerber'][0].filename}` : null,
+                    files['file_layer_stack'] ? `/uploads/inventory/${files['file_layer_stack'][0].filename}` : null,
+                    files['file_production_note'] ? `/uploads/inventory/${files['file_production_note'][0].filename}` : null
                 ]
               );
           }
 
           // Handle PCB Images
           if (files['pcb_images'] && files['pcb_images'].length > 0) {
-              const imageValues = files['pcb_images'].map(file => `(${id}, '${file.path}')`).join(', ');
+              const imageValues = files['pcb_images'].map(file => `(${id}, '/uploads/inventory/${file.filename}')`).join(', ');
               await db.query(`INSERT INTO pcb_images (pcb_id, image_url) VALUES ${imageValues}`);
           }
       }

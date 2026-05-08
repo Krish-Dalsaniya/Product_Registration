@@ -59,6 +59,14 @@ const createProduct = async (req, res, next) => {
     sub_company
   } = req.body;
 
+  const formatFilePath = (file) => {
+    if (!file) return null;
+    // If it's a Cloudinary URL or already starts with /, return as is
+    if (file.path.startsWith('http') || file.path.startsWith('/')) return file.path;
+    // Otherwise format local path
+    return `/uploads/${file.filename}`;
+  };
+
   // Fallback for removed UI fields
   const final_product_code = product_code || `PRD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const final_unit_price = unit_price || 0;
@@ -68,11 +76,11 @@ const createProduct = async (req, res, next) => {
   const imageFiles = req.files['image'] || [];
   const documentFiles = req.files['document'] || [];
   
-  const images = JSON.stringify(imageFiles.map(f => f.path));
-  const documents = JSON.stringify(documentFiles.map(f => f.path));
+  const images = JSON.stringify(imageFiles.map(f => formatFilePath(f)));
+  const documents = JSON.stringify(documentFiles.map(f => formatFilePath(f)));
   
-  const image_url = imageFiles.length > 0 ? imageFiles[0].path : null;
-  const document_url = documentFiles.length > 0 ? documentFiles[0].path : null;
+  const image_url = imageFiles.length > 0 ? formatFilePath(imageFiles[0]) : null;
+  const document_url = documentFiles.length > 0 ? formatFilePath(documentFiles[0]) : null;
 
   let faqs = [];
   try { if (req.body.faqs) faqs = JSON.parse(req.body.faqs); } catch(e) {}
@@ -158,11 +166,17 @@ const updateProduct = async (req, res, next) => {
     const oldImages = currentProduct.rows[0].images || [];
     const oldDocs = currentProduct.rows[0].documents || [];
 
+    const formatFilePath = (file) => {
+        if (!file) return null;
+        if (file.path.startsWith('http') || file.path.startsWith('/')) return file.path;
+        return `/uploads/${file.filename}`;
+    };
+
     const newImageFiles = req.files['image'] || [];
     const newDocFiles = req.files['document'] || [];
 
-    const newImageUrls = newImageFiles.map(f => f.path);
-    const newDocUrls = newDocFiles.map(f => f.path);
+    const newImageUrls = newImageFiles.map(f => formatFilePath(f));
+    const newDocUrls = newDocFiles.map(f => formatFilePath(f));
 
     const updatedImages = [...oldImages, ...newImageUrls];
     const updatedDocuments = [...oldDocs, ...newDocUrls];

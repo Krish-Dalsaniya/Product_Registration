@@ -107,13 +107,13 @@ const createElectronicsPart = async (req, res, next) => {
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                 [
                     partId,
-                    files['file_datasheet'] ? files['file_datasheet'][0].path : null,
-                    files['file_wiring'] ? files['file_wiring'][0].path : null,
-                    files['file_manual'] ? files['file_manual'][0].path : null,
-                    files['file_test_report'] ? files['file_test_report'][0].path : null,
-                    files['file_calib_cert'] ? files['file_calib_cert'][0].path : null,
-                    files['file_warranty'] ? files['file_warranty'][0].path : null,
-                    files['file_invoice'] ? files['file_invoice'][0].path : null
+                    files['file_datasheet'] ? `/uploads/inventory/${files['file_datasheet'][0].filename}` : null,
+                    files['file_wiring'] ? `/uploads/inventory/${files['file_wiring'][0].filename}` : null,
+                    files['file_manual'] ? `/uploads/inventory/${files['file_manual'][0].filename}` : null,
+                    files['file_test_report'] ? `/uploads/inventory/${files['file_test_report'][0].filename}` : null,
+                    files['file_calib_cert'] ? `/uploads/inventory/${files['file_calib_cert'][0].filename}` : null,
+                    files['file_warranty'] ? `/uploads/inventory/${files['file_warranty'][0].filename}` : null,
+                    files['file_invoice'] ? `/uploads/inventory/${files['file_invoice'][0].filename}` : null
                 ]
             );
 
@@ -122,7 +122,7 @@ const createElectronicsPart = async (req, res, next) => {
                 for (const img of files['part_images']) {
                     await db.query(
                         `INSERT INTO ELECTRONICS_IMAGES (part_id, image_url) VALUES ($1, $2)`,
-                        [partId, img.path]
+                        [partId, `/uploads/inventory/${img.filename}`]
                     );
                 }
             }
@@ -217,7 +217,7 @@ const updateElectronicsPart = async (req, res, next) => {
                 Object.keys(mapping).forEach(field => {
                     if (files[field]) {
                         updateParts.push(`${mapping[field]} = $${idx++}`);
-                        params.push(files[field][0].path);
+                        params.push(`/uploads/inventory/${files[field][0].filename}`);
                     }
                 });
 
@@ -231,13 +231,13 @@ const updateElectronicsPart = async (req, res, next) => {
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                     [
                         id,
-                        files['file_datasheet'] ? files['file_datasheet'][0].path : null,
-                        files['file_wiring'] ? files['file_wiring'][0].path : null,
-                        files['file_manual'] ? files['file_manual'][0].path : null,
-                        files['file_test_report'] ? files['file_test_report'][0].path : null,
-                        files['file_calib_cert'] ? files['file_calib_cert'][0].path : null,
-                        files['file_warranty'] ? files['file_warranty'][0].path : null,
-                        files['file_invoice'] ? files['file_invoice'][0].path : null
+                        files['file_datasheet'] ? `/uploads/inventory/${files['file_datasheet'][0].filename}` : null,
+                        files['file_wiring'] ? `/uploads/inventory/${files['file_wiring'][0].filename}` : null,
+                        files['file_manual'] ? `/uploads/inventory/${files['file_manual'][0].filename}` : null,
+                        files['file_test_report'] ? `/uploads/inventory/${files['file_test_report'][0].filename}` : null,
+                        files['file_calib_cert'] ? `/uploads/inventory/${files['file_calib_cert'][0].filename}` : null,
+                        files['file_warranty'] ? `/uploads/inventory/${files['file_warranty'][0].filename}` : null,
+                        files['file_invoice'] ? `/uploads/inventory/${files['file_invoice'][0].filename}` : null
                     ]
                 );
             }
@@ -249,7 +249,7 @@ const updateElectronicsPart = async (req, res, next) => {
                 for (const img of files['part_images']) {
                     await db.query(
                         `INSERT INTO ELECTRONICS_IMAGES (part_id, image_url) VALUES ($1, $2)`,
-                        [id, img.path]
+                        [id, `/uploads/inventory/${img.filename}`]
                     );
                 }
             }
