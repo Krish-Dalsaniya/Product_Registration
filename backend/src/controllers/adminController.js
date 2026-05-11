@@ -171,7 +171,7 @@ const getAdminStats = async (req, res, next) => {
         (SELECT COUNT(*) FROM pcb_master WHERE is_active = TRUE) as pcb,
         (SELECT COUNT(*) FROM electronics_part_master WHERE is_active = TRUE) as electronics,
         (SELECT COUNT(*) FROM electrical_part_master WHERE is_active = TRUE) as electrical,
-        (SELECT COUNT(*) FROM structural_component_detail) as structural
+        (SELECT COUNT(*) FROM STRUCTURAL_PART_MASTER WHERE is_active = TRUE) as structural
     `;
 
     const result = await db.query(queryText);

@@ -64,10 +64,6 @@ const structuralFiles = [
     { name: 'file_fabrication_drawing', maxCount: 1 },
     { name: 'file_assembly_drawing', maxCount: 1 },
     { name: 'file_cutting', maxCount: 1 },
-    { name: 'file_bend_drawing', maxCount: 1 },
-    { name: 'file_paint_spec', maxCount: 1 },
-    { name: 'file_qc_report', maxCount: 1 },
-    { name: 'file_invoice', maxCount: 1 },
     { name: 'part_images', maxCount: 10 }
 ];
 

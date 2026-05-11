@@ -52,7 +52,7 @@ const STRUCTURAL_SPEC_FIELDS = {
     { label: "Door Material", key: "door_material" },
     { label: "Door Opening Direction", key: "door_opening_direction" },
     { label: "Lock Type", key: "lock_type" },
-    { label: "Lock Count", key: "look_count", type: 'number' },
+    { label: "Lock Count", key: "lock_count", type: 'number' },
     { label: "Hinge Type", key: "hinge_type" },
     { label: "Hinge Count", key: "hinge_count", type: 'number' },
     { label: "Rubber Gasket Available", key: "rubber_gasket_available", isSelect: true, options: ['Yes', 'No'] },
@@ -768,6 +768,27 @@ const StructuralPartsPage = () => {
                 <FileCard label="Cutting File" url={selectedItem?.categoryData?.file_cutting} />
               </div>
             </div>
+
+            {/* Image Gallery */}
+            {selectedItem?.images && selectedItem.images.length > 0 && (
+              <div className="space-y-6 pt-4">
+                <div className="flex items-center gap-4 ml-4">
+                  <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-sm"><ImageIcon size={20} /></div>
+                  <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Part Visuals Gallery</h3>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                  {selectedItem.images.map((img, idx) => (
+                    <div key={idx} className="aspect-square rounded-[24px] border-2 border-[var(--border-color)] overflow-hidden bg-[var(--bg-workspace)] group relative cursor-pointer shadow-md">
+                      <img src={buildFileUrl(img)} alt="Part Visual" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                        <button type="button" onClick={() => { setActiveImageIdx(idx); }} title="Focus Image" className="p-3 bg-white/10 backdrop-blur-xl rounded-full text-white hover:bg-[var(--accent)] hover:scale-110 transition-all border border-white/20 shadow-lg"><Eye size={22} /></button>
+                        <button type="button" onClick={() => handleDownload(img)} title="Download Image" className="p-3 bg-white/10 backdrop-blur-xl rounded-full text-white hover:bg-[var(--accent)] hover:scale-110 transition-all border border-white/20 shadow-lg"><Download size={22} /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : !selectedCategory && modalMode === 'create' ? (
           /* Category Selection Landing Page */
