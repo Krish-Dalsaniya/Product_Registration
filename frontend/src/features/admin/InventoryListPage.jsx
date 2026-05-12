@@ -5,7 +5,7 @@ import Modal from '../../components/shared/Modal';
 import { getAdminStats } from '../../api/admin';
 import { 
   getPCBs, createPCB, getPCBById, deletePCB, updatePCB, deletePCBImage, deletePCBFile,
-  getElectronicsParts, getElectricalParts, getStructuralParts, deleteElectronicsPart, deleteElectricalPart, deleteStructuralPart
+  getElectronicsParts, getElectricalParts, getStructuralParts, deleteElectronicsPart, deleteElectricalPart, deleteStructuralPart, getElectronicsPartById, getElectricalPartById, getStructuralPartById
 } from '../../api/inventory';
 import { 
   Search, 
@@ -38,7 +38,9 @@ import {
   Eye,
   Calendar,
   Fingerprint,
-  X
+  X,
+  Factory,
+  Ruler
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -316,6 +318,39 @@ const buildFileUrl = (filePath) => {
       }
   };
 
+  const loadElectronicsDetails = async (id, mode) => {
+      try {
+          const res = await getElectronicsPartById(id);
+          const fullData = { ...res.data.data, category: 'Electronic Part' };
+          setSelectedItem(fullData);
+          if (mode) setModalMode(mode);
+      } catch (error) {
+          toast.error('Failed to load Electronics details');
+      }
+  };
+
+  const loadElectricalDetails = async (id, mode) => {
+      try {
+          const res = await getElectricalPartById(id);
+          const fullData = { ...res.data.data, category: 'Electrical Part' };
+          setSelectedItem(fullData);
+          if (mode) setModalMode(mode);
+      } catch (error) {
+          toast.error('Failed to load Electrical details');
+      }
+  };
+
+  const loadStructuralDetails = async (id, mode) => {
+      try {
+          const res = await getStructuralPartById(id);
+          const fullData = { ...res.data.data, category: 'Structural Part' };
+          setSelectedItem(fullData);
+          if (mode) setModalMode(mode);
+      } catch (error) {
+          toast.error('Failed to load Structural details');
+      }
+  };
+
   const handleView = async (item) => {
     setSelectedItem(item);
     setModalMode('view');
@@ -323,28 +358,52 @@ const buildFileUrl = (filePath) => {
     setActiveImageIdx(0);
     setIsModalOpen(true);
     setPendingImages([]);
-    if (item.pcb_id) {
-      await loadPCBDetails(item.pcb_id);
+    
+    const id = item.pcb_id;
+    const category = item.category || type || 'PCB';
+
+    if (id) {
+        if (category === 'PCB') {
+            await loadPCBDetails(id);
+        } else if (category === 'Electronic Part') {
+            await loadElectronicsDetails(id);
+        } else if (category === 'Electrical Part') {
+            await loadElectricalDetails(id);
+        } else if (category === 'Structural Part') {
+            await loadStructuralDetails(id);
+        }
     }
   };
 
   const handleEdit = async (item) => {
-    const itemType = item.category || 'PCB';
+    const itemType = item.category || type || 'PCB';
     
-    // If it's not a PCB, navigate to the specialized module
-    if (itemType !== 'PCB' && itemType !== 'Structural Part') {
-        const path = itemType === 'Electronic Part' ? '/admin/inventory/electronics' : '/admin/inventory/electrical';
-        navigate(path);
-        toast.success(`Redirecting to ${itemType} module...`);
-        return;
+    // Redirect non-PCB parts to their specialized modules for editing
+    if (itemType !== 'PCB') {
+        let path = '';
+        if (itemType === 'Electronic Part') path = '/admin/inventory/electronics';
+        else if (itemType === 'Electrical Part') path = '/admin/inventory/electrical';
+        else if (itemType === 'Structural Part') path = '/admin/inventory/structural';
+        
+        if (path) {
+            navigate(path, { state: { editId: item.pcb_id } });
+            toast.success(`Redirecting to ${itemType} module for editing...`);
+            return;
+        }
     }
 
     setModalMode('edit');
     setModalTab('general');
     setIsModalOpen(true);
     setPendingImages([]);
-    if (item.pcb_id) {
-      await loadPCBDetails(item.pcb_id);
+    
+    const id = item.pcb_id;
+    if (id) {
+        if (itemType === 'PCB') {
+            await loadPCBDetails(id);
+        } else if (itemType === 'Structural Part') {
+            await loadStructuralDetails(id);
+        }
     }
   };
 
@@ -548,6 +607,73 @@ const buildFileUrl = (filePath) => {
     </div>
   );
 
+  const renderTechnicalSpecs = () => {
+    const category = selectedItem?.category || type || 'PCB';
+    
+    if (category === 'PCB') {
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+           {/* Hardware Profile */}
+           <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
+              <div className="flex items-center gap-4 mb-7">
+                 <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Cpu size={22} /></div>
+                 <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Hardware Profile</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                 <DataSheetEntry label="Core Architecture" value={selectedItem?.processor_type} icon={Cpu} />
+                 <DataSheetEntry label="Component Part No" value={selectedItem?.processor_part_no} icon={HardDrive} />
+                 <div className="sm:col-span-2">
+                   <DataSheetEntry label="Technical Notes" value={selectedItem?.processor_desc} icon={Info} />
+                 </div>
+              </div>
+           </div>
+
+           {/* Firmware Profile */}
+           <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
+              <div className="flex items-center gap-4 mb-7">
+                 <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Binary size={22} /></div>
+                 <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Firmware Build</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                 <DataSheetEntry label="Active Branch" value={selectedItem?.firmware_branch} icon={Code} />
+                 <DataSheetEntry label="Version Spec" value={selectedItem?.firmware_version} icon={CheckCircle2} />
+                 <DataSheetEntry label="Primary Feature" value={selectedItem?.firmware_feature} icon={Zap} />
+                 <DataSheetEntry label="Release Context" value={selectedItem?.firmware_feature_desc} icon={Info} />
+              </div>
+           </div>
+        </div>
+      );
+    }
+
+    // For other categories, render a generic spec sheet
+    const specs = selectedItem?.techSpec || selectedItem || {};
+    const categoryData = selectedItem?.categoryData || selectedItem?.categorySpec?.spec_data || {};
+    
+    return (
+       <div className="space-y-10">
+          <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
+              <div className="flex items-center gap-4 mb-7">
+                 <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Settings size={22} /></div>
+                 <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Technical Specifications</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                 {/* Common Specs */}
+                 {specs.mounting_type && <DataSheetEntry label="Mounting" value={specs.mounting_type} icon={Layers} />}
+                 {specs.material && <DataSheetEntry label="Material" value={specs.material} icon={Box} />}
+                 {specs.dimensions && <DataSheetEntry label="Dimensions" value={specs.dimensions} icon={Ruler} />}
+                 {specs.weight && <DataSheetEntry label="Weight" value={specs.weight} icon={Activity} />}
+                 
+                 {/* Category Specific Specs */}
+                 {Object.entries(categoryData).map(([key, value]) => {
+                    if (typeof value === 'object' || !value) return null;
+                    return <DataSheetEntry key={key} label={key.replace(/_/g, ' ')} value={String(value)} icon={Activity} />;
+                 })}
+              </div>
+          </div>
+       </div>
+    );
+  };
+
   const DataSheetEntry = ({ label, value, icon: Icon }) => (
     <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">
       <div className="flex items-center gap-3 mb-1.5">
@@ -557,6 +683,58 @@ const buildFileUrl = (filePath) => {
       <p className="text-[15px] font-black text-[var(--text-main)] tracking-tight leading-snug">{value || 'Not Defined'}</p>
     </div>
   );
+
+  const renderDocumentationLibrary = () => {
+      const category = selectedItem?.category || type || 'PCB';
+      
+      if (category === 'PCB') {
+          return (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                 <FileCard label="Gerber File" url={selectedItem?.files?.processor_file_url} />
+                 <FileCard label="Board File" url={selectedItem?.files?.brd_file_url} />
+                 <FileCard label="Schematics" url={selectedItem?.files?.sch_file_url} />
+                 <FileCard label="BOM File" url={selectedItem?.files?.bom_file_url} />
+                 <FileCard label="Stencil Data" url={selectedItem?.files?.stencil_file_url} />
+                 <FileCard label="Panel Gerber" url={selectedItem?.files?.panel_gerber_file_url} />
+                 <FileCard label="Layer Stacking" url={selectedItem?.files?.layer_stacking_file_url} />
+                 <FileCard label="Production Note" url={selectedItem?.files?.production_instruction_url} />
+              </div>
+          );
+      }
+
+      // For others, we can map common file fields
+      const files = selectedItem?.files || selectedItem || {};
+      const fileFields = [];
+      
+      if (category === 'Electronic Part' || category === 'Electrical Part') {
+          if (files.datasheet_url) fileFields.push({ label: 'Datasheet', url: files.datasheet_url });
+          if (files.wiring_diagram_url) fileFields.push({ label: 'Wiring Diagram', url: files.wiring_diagram_url });
+          if (files.installation_manual_url) fileFields.push({ label: 'Manual', url: files.installation_manual_url });
+          if (files.test_report_url) fileFields.push({ label: 'Test Report', url: files.test_report_url });
+      } else if (category === 'Structural Part') {
+          const catData = selectedItem?.categoryData || {};
+          if (catData.file_2d_drawing) fileFields.push({ label: '2D Drawing', url: catData.file_2d_drawing });
+          if (catData.file_3d_model) fileFields.push({ label: '3D Model', url: catData.file_3d_model });
+          if (catData.file_fabrication_drawing) fileFields.push({ label: 'Fabrication Dwg', url: catData.file_fabrication_drawing });
+      }
+
+      if (fileFields.length === 0) {
+          return (
+              <div className="p-10 border-2 border-dashed border-[var(--border-color)] rounded-[32px] flex flex-col items-center justify-center text-[var(--text-dim)]">
+                  <FileText size={48} className="opacity-10 mb-4" />
+                  <p className="text-[10px] font-black uppercase tracking-widest">No Technical Documents Attached</p>
+              </div>
+          );
+      }
+
+      return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {fileFields.map((file, idx) => (
+                  <FileCard key={idx} label={file.label} url={file.url} />
+              ))}
+          </div>
+      );
+  };
 
   const FileCard = ({ label, url }) => (
     <div className="flex items-center justify-between p-4.5 bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] rounded-2xl group hover:border-[var(--accent)] transition-all relative overflow-hidden">
@@ -956,36 +1134,7 @@ const buildFileUrl = (filePath) => {
                </div>
 
                {/* Technical Specs Grid */}
-               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  {/* Hardware Profile */}
-                  <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
-                     <div className="flex items-center gap-4 mb-7">
-                        <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Cpu size={22} /></div>
-                        <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Hardware Profile</h3>
-                     </div>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <DataSheetEntry label="Core Architecture" value={selectedItem?.processor_type} icon={Cpu} />
-                        <DataSheetEntry label="Component Part No" value={selectedItem?.processor_part_no} icon={HardDrive} />
-                        <div className="sm:col-span-2">
-                          <DataSheetEntry label="Technical Notes" value={selectedItem?.processor_desc} icon={Info} />
-                        </div>
-                     </div>
-                  </div>
-
-                  {/* Firmware Profile */}
-                  <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
-                     <div className="flex items-center gap-4 mb-7">
-                        <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Binary size={22} /></div>
-                        <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Firmware Build</h3>
-                     </div>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <DataSheetEntry label="Active Branch" value={selectedItem?.firmware_branch} icon={Code} />
-                        <DataSheetEntry label="Version Spec" value={selectedItem?.firmware_version} icon={CheckCircle2} />
-                        <DataSheetEntry label="Primary Feature" value={selectedItem?.firmware_feature} icon={Zap} />
-                        <DataSheetEntry label="Release Context" value={selectedItem?.firmware_feature_desc} icon={Info} />
-                     </div>
-                  </div>
-               </div>
+               {renderTechnicalSpecs()}
 
                {/* Documentation Library */}
                <div className="space-y-6">
@@ -993,16 +1142,7 @@ const buildFileUrl = (filePath) => {
                      <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-sm"><FileUp size={20} /></div>
                      <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Documentation Library</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                     <FileCard label="Gerber File" url={selectedItem?.files?.processor_file_url} />
-                     <FileCard label="Board File" url={selectedItem?.files?.brd_file_url} />
-                     <FileCard label="Schematics" url={selectedItem?.files?.sch_file_url} />
-                     <FileCard label="BOM File" url={selectedItem?.files?.bom_file_url} />
-                     <FileCard label="Stencil Data" url={selectedItem?.files?.stencil_file_url} />
-                     <FileCard label="Panel Gerber" url={selectedItem?.files?.panel_gerber_file_url} />
-                     <FileCard label="Layer Stacking" url={selectedItem?.files?.layer_stacking_file_url} />
-                     <FileCard label="Production Note" url={selectedItem?.files?.production_instruction_url} />
-                  </div>
+                  {renderDocumentationLibrary()}
                </div>
             </div>
           ) : (

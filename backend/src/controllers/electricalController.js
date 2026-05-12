@@ -10,13 +10,13 @@ const getElectricalParts = async (req, res, next) => {
       let queryText = `
         SELECT p.*, 
         CASE 
-          WHEN p.part_category = 'Pump' THEN (SELECT part_images_gallery->>0 FROM pump_specs WHERE part_id = p.part_id)
-          WHEN p.part_category = 'Nozzle' THEN (SELECT part_images_gallery->>0 FROM nozzle_specs WHERE part_id = p.part_id)
-          WHEN p.part_category = 'Solenoid Valve' THEN (SELECT part_images_gallery->>0 FROM solenoid_valve_specs WHERE part_id = p.part_id)
-          WHEN p.part_category = 'Relay Box' THEN (SELECT part_images_gallery->>0 FROM relay_box_specs WHERE part_id = p.part_id)
-          WHEN p.part_category = 'Transformer' THEN (SELECT part_images_gallery->>0 FROM transformer_specs WHERE part_id = p.part_id)
-          WHEN p.part_category = 'RCCB' THEN (SELECT part_images_gallery->>0 FROM rccb_specs WHERE part_id = p.part_id)
-          WHEN p.part_category = 'SPD(Surge Protection Device)' THEN (SELECT part_images_gallery->>0 FROM spd_specs WHERE part_id = p.part_id)
+          WHEN p.part_category ILIKE 'Pump' THEN (SELECT part_images_gallery::jsonb->>0 FROM pump_specs WHERE part_id = p.part_id)
+          WHEN p.part_category ILIKE 'Nozzle' THEN (SELECT part_images_gallery::jsonb->>0 FROM nozzle_specs WHERE part_id = p.part_id)
+          WHEN p.part_category ILIKE 'Solenoid Valve' THEN (SELECT part_images_gallery::jsonb->>0 FROM solenoid_valve_specs WHERE part_id = p.part_id)
+          WHEN p.part_category ILIKE 'Relay Box' THEN (SELECT part_images_gallery::jsonb->>0 FROM relay_box_specs WHERE part_id = p.part_id)
+          WHEN p.part_category ILIKE 'Transformer' THEN (SELECT part_images_gallery::jsonb->>0 FROM transformer_specs WHERE part_id = p.part_id)
+          WHEN p.part_category ILIKE 'RCCB' THEN (SELECT part_images_gallery::jsonb->>0 FROM rccb_specs WHERE part_id = p.part_id)
+          WHEN p.part_category ILIKE 'SPD%' THEN (SELECT part_images_gallery::jsonb->>0 FROM spd_specs WHERE part_id = p.part_id)
           ELSE NULL
         END as image_url,
         COUNT(*) OVER() as total_count 

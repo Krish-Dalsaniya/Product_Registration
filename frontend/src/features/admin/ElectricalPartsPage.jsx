@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
 import { 
@@ -135,6 +136,8 @@ const CATEGORY_ICONS = {
 };
 
 const ElectricalPartsPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -229,6 +232,15 @@ const ElectricalPartsPage = () => {
   useEffect(() => {
       fetchProducts();
   }, []);
+
+  // Handle redirect from Inventory Overview for editing
+  useEffect(() => {
+    if (location.state?.editId) {
+        loadPartDetails(location.state.editId, 'edit');
+        // Clear state to avoid re-opening on refresh
+        navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);

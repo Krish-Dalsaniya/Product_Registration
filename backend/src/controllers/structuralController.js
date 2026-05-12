@@ -407,10 +407,63 @@ const deleteStructuralPart = async (req, res, next) => {
     }
 };
 
+const deleteStructuralImage = async (req, res, next) => {
+    const { id } = req.params;
+    const { imageUrl } = req.body;
+    try {
+        await db.query('DELETE FROM structural_images WHERE part_id = $1 AND image_url = $2', [id, imageUrl]);
+        sendSuccess(res, null, 'Image removed successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteStructuralFile = async (req, res, next) => {
+    const { id } = req.params;
+    const { field } = req.body;
+    try {
+        const validFields = ['file_2d_drawing', 'file_3d_model', 'file_fabrication_drawing', 'file_assembly_drawing', 'file_cutting'];
+        if (!validFields.includes(field)) {
+            return res.status(400).json({ success: false, error: { message: 'Invalid file field' } });
+        }
+
+        // We need to find which specialized table to update
+        const catResult = await db.query('SELECT category_name FROM structural_category_spec WHERE part_id = $1', [id]);
+        if (catResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: { message: 'Category not found for this part' } });
+        }
+
+        const tableMap = {
+            'Cabinet Body': 'cabinet_body_specs',
+            'Front Door': 'front_door_specs',
+            'Side Panel': 'side_panel_specs',
+            'Top Cover': 'top_cover_specs',
+            'Base Frame': 'base_frame_specs',
+            'Internal Mounting Plate': 'internal_mounting_plate_specs',
+            'Nozzle Holder': 'nozzle_holder_specs',
+            'Hose Entry Plate': 'hose_entry_plate_specs',
+            'Display': 'display_specs',
+            'Lock': 'lock_specs'
+        };
+
+        const tableName = tableMap[catResult.rows[0].category_name];
+        if (!tableName) {
+            return res.status(400).json({ success: false, error: { message: 'Specialized table not found' } });
+        }
+
+        await db.query(`UPDATE ${tableName} SET ${field} = NULL WHERE part_id = $1`, [id]);
+        sendSuccess(res, null, 'File removed successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getStructuralParts,
     getStructuralPartById,
     createStructuralPart,
     updateStructuralPart,
-    deleteStructuralPart
+    deleteStructuralPart,
+    deleteStructuralImage,
+    deleteStructuralFile
 };

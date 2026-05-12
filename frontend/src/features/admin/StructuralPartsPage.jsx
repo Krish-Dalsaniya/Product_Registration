@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import {
-  getStructuralParts, createStructuralPart, getStructuralPartById, deleteStructuralPart, updateStructuralPart, deleteStructuralFile
+  getStructuralParts, createStructuralPart, getStructuralPartById, deleteStructuralPart, updateStructuralPart, deleteStructuralFile, deleteStructuralImage
 } from '../../api/inventory';
 import { getProducts } from '../../api/products';
 import {
@@ -153,6 +153,7 @@ const STRUCTURAL_SPEC_FIELDS = {
 
 const StructuralPartsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
 
   const buildFileUrl = (filePath) => {
@@ -240,6 +241,15 @@ const StructuralPartsPage = () => {
     fetchProducts();
   }, []);
 
+  // Handle redirect from Inventory Overview for editing
+  useEffect(() => {
+    if (location.state?.editId) {
+        loadPartDetails(location.state.editId, 'edit');
+        // Clear state to avoid re-opening on refresh
+        navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
+
   useEffect(() => {
     const timer = setTimeout(() => fetchItems(), 300);
     return () => clearTimeout(timer);
@@ -304,6 +314,8 @@ const StructuralPartsPage = () => {
   };
 
   const loadPartDetails = async (id, mode) => {
+    if (mode) setModalMode(mode);
+    setIsModalOpen(true);
     try {
       const res = await getStructuralPartById(id);
       const fullData = res.data.data;
@@ -317,7 +329,6 @@ const StructuralPartsPage = () => {
         Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
       }
       reset(formData);
-      if (mode) setModalMode(mode);
     } catch (error) { toast.error('Failed to load details'); }
   }
 
@@ -366,6 +377,26 @@ const StructuralPartsPage = () => {
     }
   };
 
+  const handleDeleteFile = async (field) => {
+    if (window.confirm(`Are you sure you want to delete this file?`)) {
+      try {
+        await deleteStructuralFile(selectedItem.part_id, field);
+        toast.success('File deleted successfully');
+        await loadPartDetails(selectedItem.part_id); // Refresh modal data
+      } catch (error) { toast.error('Failed to delete file'); }
+    }
+  };
+
+  const handleDeleteImage = async (imageUrl) => {
+    if (window.confirm(`Are you sure you want to delete this image?`)) {
+      try {
+        await deleteStructuralImage(selectedItem.part_id, imageUrl);
+        toast.success('Image deleted successfully');
+        await loadPartDetails(selectedItem.part_id); // Refresh modal data
+      } catch (error) { toast.error('Failed to delete image'); }
+    }
+  };
+
   const FileInput = ({ label, name, accept = "*", existingUrl }) => {
     const selectedFile = watch(name);
     const hasNewFile = selectedFile && selectedFile.length > 0;
@@ -384,9 +415,14 @@ const StructuralPartsPage = () => {
               <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>{fileName}</p>
               <div className="flex items-center gap-3 mt-1">
                 {existingUrl && !hasNewFile && (
-                  <button type="button" onClick={() => window.open(buildFileUrl(existingUrl), '_blank')} className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20">
-                    <Download size={10} /> View Current
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={() => window.open(buildFileUrl(existingUrl), '_blank')} className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20">
+                      <Download size={10} /> View
+                    </button>
+                    <button type="button" onClick={() => handleDeleteFile(name)} className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20">
+                      <Trash2 size={10} /> Delete
+                    </button>
+                  </div>
                 )}
                 {hasNewFile && (
                   <button type="button" onClick={(e) => { e.stopPropagation(); setValue(name, null); }} className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20">
@@ -976,8 +1012,9 @@ const StructuralPartsPage = () => {
                         {selectedItem.images.map((url, idx) => (
                           <div key={idx} className="relative aspect-square rounded-xl border border-[var(--border-color)] overflow-hidden group">
                             <img src={buildFileUrl(url)} alt="Part" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <a href={buildFileUrl(url)} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                              <a href={buildFileUrl(url)} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)] transition-colors"><Eye size={18} /></a>
+                              <button type="button" onClick={() => handleDeleteImage(url)} className="text-rose-500 hover:text-rose-400 transition-colors"><Trash2 size={18} /></button>
                             </div>
                           </div>
                         ))}

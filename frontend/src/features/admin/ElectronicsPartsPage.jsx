@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { getElectronicsParts, createElectronicsPart, getElectronicsPartById, deleteElectronicsPart, updateElectronicsPart, deleteElectronicsFile } from '../../api/inventory';
@@ -106,6 +106,7 @@ const categoriesList = Object.keys(CATEGORY_CONFIG);
 
 const ElectronicsPartsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
   const ELECTRONICS_SPEC_FIELDS = {
   "Battery": [
@@ -352,6 +353,15 @@ const buildFileUrl = (filePath) => {
     }, 300);
     return () => clearTimeout(timer);
   }, [pagination.page, searchTerm]);
+  
+  // Handle redirect from Inventory Overview for editing
+  useEffect(() => {
+    if (location.state?.editId) {
+        loadPartDetails(location.state.editId, 'edit');
+        // Clear state to avoid re-opening on refresh
+        navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   const onSubmit = async (data) => {
     if (modalMode === 'view') return;
@@ -440,12 +450,13 @@ const buildFileUrl = (filePath) => {
 
   const loadPartDetails = async (id, mode) => {
       setSelectedItem(null); // Clear old state to prevent seeing stale data
+      if (mode) setModalMode(mode);
+      setIsModalOpen(true);
       try {
         const res = await getElectronicsPartById(id);
         const fullData = res.data.data;
         setSelectedItem(fullData);
         reset(mapDataToForm(fullData));
-        if (mode) setModalMode(mode);
       } catch (error) {
         toast.error('Failed to load details');
       }

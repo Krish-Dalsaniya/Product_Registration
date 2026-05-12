@@ -44,4 +44,5 @@ export const updateStructuralPart = (id, formData) => axiosInstance.put(`/invent
     headers: { 'Content-Type': 'multipart/form-data' }
 });
 export const deleteStructuralPart = (id) => axiosInstance.delete(`/inventory/structural/${id}`);
+export const deleteStructuralImage = (id, imageUrl) => axiosInstance.delete(`/inventory/structural/${id}/image`, { data: { imageUrl } });
 export const deleteStructuralFile = (id, field) => axiosInstance.delete(`/inventory/structural/${id}/file`, { data: { field } });

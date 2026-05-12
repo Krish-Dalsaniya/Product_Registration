@@ -95,5 +95,7 @@ router.get('/structural/:id', structuralController.getStructuralPartById);
 router.post('/structural', upload.fields(structuralFiles), structuralController.createStructuralPart);
 router.put('/structural/:id', upload.fields(structuralFiles), structuralController.updateStructuralPart);
 router.delete('/structural/:id', structuralController.deleteStructuralPart);
+router.delete('/structural/:id/image', structuralController.deleteStructuralImage);
+router.delete('/structural/:id/file', structuralController.deleteStructuralFile);
 
 module.exports = router;
