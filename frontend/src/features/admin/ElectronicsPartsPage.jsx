@@ -5,102 +5,13 @@ import Modal from '../../components/shared/Modal';
 import { getElectronicsParts, createElectronicsPart, getElectronicsPartById, deleteElectronicsPart, updateElectronicsPart, deleteElectronicsFile } from '../../api/inventory';
 import { getProducts } from '../../api/products';
 import { 
-  Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers, LayoutGrid, List
+  Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers, LayoutGrid, List, Pencil
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { ELECTRONICS_SPEC_FIELDS, ELECTRONICS_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
 
-
-const CATEGORY_CONFIG = {
-    'Battery': {
-        icon: Battery,
-        techSpecs: ['Chemistry', 'Cycle Life', 'Capacity', 'Internal Resistance', 'Charge Temp', 'Discharge Temp'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    },
-    'Flow Meter': {
-        icon: Gauge,
-        techSpecs: ['Flow Range', 'Pipe Diameter', 'Pulse Rate', 'Max Pressure', 'Fluid Type', 'Output Protocol'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    },
-    'SMPS': {
-        icon: Zap,
-        techSpecs: ['Output Voltage', 'Output Current', 'Efficiency', 'Ripple Noise', 'Cooling Method'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    },
-    'Printer': {
-        icon: Printer,
-        techSpecs: ['Print Method', 'Print Speed', 'Paper Size', 'Resolution'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    },
-    'Speaker': {
-        icon: Volume2,
-        techSpecs: ['Speaker Type', 'Impedance', 'Power Output', 'Frequency Response', 'Sensitivity'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    },
-    'Amplifier': {
-        icon: Speaker,
-        techSpecs: ['Amplifier Type', 'IC Chipset', 'Output Power', 'Channel Type', 'Speaker Impedance Support', 'Input Signal Type', 'Volume Control', 'Protection'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    },
-    'Temperature Sensor': {
-        icon: Thermometer,
-        techSpecs: ['Sensor Type', 'Sensor Model', 'Temperature Range', 'Accuracy', 'Probe Type', 'Cable Length', 'Calibration Required'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    },
-    'Quality Sensor': {
-        icon: FlaskConical,
-        techSpecs: ['Sensor Type', 'Measured Parameter', 'Measuring Range', 'Accuracy', 'Fluid Compatibility', 'Calibration Required'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    },
-    'Pressure Sensor': {
-        icon: Gauge,
-        techSpecs: ['Pressure Range', 'Pressure Type', 'Accuracy', 'Thread Size', 'Overload Pressure', 'Burst Pressure', 'Medium Compatibility'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    },
-    'EMI-EMC Filter': {
-        icon: ShieldCheck,
-        techSpecs: ['Filter Type', 'Frequency Range', 'Leakage Current', 'Filter Stage', 'Certification', 'Application'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    },
-    'DC Meter': {
-        icon: Binary,
-        techSpecs: ['Meter Type', 'Voltage Range', 'Current Range', 'Display Type', 'Accuracy Class', 'Shunt Required', 'Protocol'],
-        files: [
-            { id: 'file_datasheet', label: 'Datasheet File', icon: FileText },
-            { id: 'file_warranty', label: 'Warranty Document', icon: FileText }
-        ]
-    }
-};
+const CATEGORY_CONFIG = ELECTRONICS_CATEGORY_CONFIG;
 
 const categoriesList = Object.keys(CATEGORY_CONFIG);
 
@@ -108,134 +19,7 @@ const ElectronicsPartsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
-  const ELECTRONICS_SPEC_FIELDS = {
-  "Battery": [
-    { "label": "Battery Chemistry", "key": "battery_chemistry" },
-    { "label": "Battery Voltage", "key": "battery_voltage" },
-    { "label": "Battery Capacity", "key": "battery_capacity" },
-    { "label": "Cell Count", "key": "cell_count" },
-    { "label": "Rechargeable", "key": "rechargeable" },
-    { "label": "Charging Voltage", "key": "charging_voltage" },
-    { "label": "Max Charging Current", "key": "max_charging_current" },
-    { "label": "Max Discharge Current", "key": "max_discharge_current" },
-    { "label": "Backup Time", "key": "backup_time" },
-    { "label": "Battery Connector Type", "key": "battery_connector_type" },
-    { "label": "Cycle Life", "key": "cycle_life" },
-    { "label": "BMS Available", "key": "bms_available" }
-  ],
-  "Flow Meter": [
-    { "label": "Flow Meter Type", "key": "flow_meter_type" },
-    { "label": "Flow Range", "key": "flow_range" },
-    { "label": "Accuracy", "key": "accuracy" },
-    { "label": "Pulse Output", "key": "pulse_output" },
-    { "label": "Pulses Per Liter", "key": "pulses_per_liter" },
-    { "label": "K-Factor", "key": "k_factor" },
-    { "label": "Fluid Compatibility", "key": "fluid_compatibility" },
-    { "label": "Inlet Size", "key": "inlet_size" },
-    { "label": "Outlet Size", "key": "outlet_size" },
-    { "label": "Max Pressure", "key": "max_pressure" },
-    { "label": "Calibration Required", "key": "calibration_required" },
-    { "label": "Calibration Certificate Number", "key": "calibration_cert_no" }
-  ],
-  "SMPS": [
-    { "label": "Input Voltage Range", "key": "input_voltage_range" },
-    { "label": "Output Voltage", "key": "output_voltage" },
-    { "label": "Output Current", "key": "output_current" },
-    { "label": "Output Power", "key": "output_power" },
-    { "label": "Efficiency", "key": "efficiency" },
-    { "label": "Number of Outputs", "key": "num_outputs" },
-    { "label": "Protection", "key": "protection" },
-    { "label": "Cooling Type", "key": "cooling_type" },
-    { "label": "SMPS Type", "key": "smps_type" },
-    { "label": "Ripple Noise", "key": "ripple_noise" }
-  ],
-  "Printer": [
-    { "label": "Printer Type", "key": "printer_type" },
-    { "label": "Printer Model", "key": "printer_model" },
-    { "label": "Print Width", "key": "print_width" },
-    { "label": "Paper Roll Size", "key": "paper_roll_size" },
-    { "label": "Print Speed", "key": "print_speed" },
-    { "label": "Interface", "key": "interface" },
-    { "label": "Baud Rate", "key": "baud_rate" },
-    { "label": "Cutter Available", "key": "cutter_available" },
-    { "label": "Paper Sensor Available", "key": "paper_sensor_available" },
-    { "label": "Operating Voltage", "key": "operating_voltage" },
-    { "label": "Supported Language", "key": "supported_language" }
-  ],
-  "Speaker": [
-    { "label": "Speaker Type", "key": "speaker_type" },
-    { "label": "Power Rating", "key": "power_rating" },
-    { "label": "Impedance", "key": "impedance" },
-    { "label": "Frequency Range", "key": "frequency_range" },
-    { "label": "Sound Level", "key": "sound_level" },
-    { "label": "Operating Voltage", "key": "operating_voltage" },
-    { "label": "Connector Type", "key": "connector_type" },
-    { "label": "Mounting Type", "key": "mounting_type" }
-  ],
-  "Amplifier": [
-    { "label": "Amplifier Type", "key": "amplifier_type" },
-    { "label": "IC/Chipset", "key": "ic_chipset" },
-    { "label": "Input Voltage", "key": "input_voltage" },
-    { "label": "Output Power", "key": "output_power" },
-    { "label": "Channel Type", "key": "channel_type" },
-    { "label": "Speaker Impedance Support", "key": "speaker_impedance_support" },
-    { "label": "Input Signal Type", "key": "input_signal_type" },
-    { "label": "Volume Control", "key": "volume_control" },
-    { "label": "Protection", "key": "protection" }
-  ],
-  "Temperature Sensor": [
-    { "label": "Sensor Type", "key": "sensor_type" },
-    { "label": "Sensor Model", "key": "sensor_model" },
-    { "label": "Temperature Range", "key": "temperature_range" },
-    { "label": "Accuracy", "key": "accuracy" },
-    { "label": "Output Signal", "key": "output_signal" },
-    { "label": "Interface", "key": "interface" },
-    { "label": "Probe Type", "key": "probe_type" },
-    { "label": "Cable Length", "key": "cable_length" },
-    { "label": "Calibration Required", "key": "calibration_required" }
-  ],
-  "Quality Sensor": [
-    { "label": "Sensor Type", "key": "sensor_type" },
-    { "label": "Measured Parameter", "key": "measured_parameter" },
-    { "label": "Measuring Range", "key": "measuring_range" },
-    { "label": "Accuracy", "key": "accuracy" },
-    { "label": "Output Signal", "key": "output_signal" },
-    { "label": "Communication Protocol", "key": "communication_protocol" },
-    { "label": "Fluid Compatibility", "key": "fluid_compatibility" },
-    { "label": "Calibration Required", "key": "calibration_required" },
-    { "label": "Calibration Data", "key": "calibration_data" }
-  ],
-  "Pressure Sensor": [
-    { "label": "Pressure Range", "key": "pressure_range" },
-    { "label": "Pressure Type", "key": "pressure_type" },
-    { "label": "Output Signal", "key": "output_signal" },
-    { "label": "Accuracy", "key": "accuracy" },
-    { "label": "Thread Size", "key": "thread_size" },
-    { "label": "Overload Pressure", "key": "overload_pressure" },
-    { "label": "Burst Pressure", "key": "burst_pressure" },
-    { "label": "Medium Compatibility", "key": "medium_compatibility" },
-    { "label": "Operating Voltage", "key": "operating_voltage" }
-  ],
-  "EMI-EMC Filter": [
-    { "label": "Filter Type", "key": "filter_type" },
-    { "label": "Frequency Range", "key": "frequency_range" },
-    { "label": "Leakage Current", "key": "leakage_current" },
-    { "label": "Filter Stage", "key": "filter_stage" },
-    { "label": "Certification", "key": "certification" },
-    { "label": "Application", "key": "application" }
-  ],
-  "DC Meter": [
-    { "label": "Meter Type", "key": "meter_type" },
-    { "label": "Voltage Range", "key": "voltage_range" },
-    { "label": "Current Range", "key": "current_range" },
-    { "label": "Display Type", "key": "display_type" },
-    { "label": "Accuracy Class", "key": "accuracy_class" },
-    { "label": "Shunt Required", "key": "shunt_required" },
-    { "label": "Communication Interface", "key": "communication_interface" },
-    { "label": "Protocol", "key": "protocol" },
-    { "label": "Power Supply", "key": "power_supply" }
-  ]
-};
+const ELECTRONICS_FIELDS = ELECTRONICS_SPEC_FIELDS;
 
 const buildFileUrl = (filePath) => {
   if (!filePath || filePath === "#") return "#";
@@ -268,6 +52,114 @@ const buildFileUrl = (filePath) => {
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
   });
+
+  const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <input 
+        type={type}
+        {...register(name, { required: required ? `${label} is required` : false })}
+        placeholder={placeholder}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all placeholder:text-[var(--text-dim)] font-bold"
+      />
+      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
+    </div>
+  );
+  
+  const SelectField = ({ label, name, options, required = false }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <select 
+        {...register(name, { required: required ? `${label} is required` : false })}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold appearance-none cursor-pointer"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+      >
+        <option value="">Select {label}</option>
+        {options?.map(opt => (
+          <option key={opt.value || opt} value={opt.value || opt}>{opt.label || opt}</option>
+        ))}
+      </select>
+      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
+    </div>
+  );
+
+  const TextAreaField = ({ label, name, placeholder }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+      <textarea 
+        {...register(name)}
+        placeholder={placeholder}
+        rows={3}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dim)] font-bold resize-none"
+      />
+    </div>
+  );
+
+  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
+    const selectedFile = watch(name);
+    const hasNewFile = selectedFile && selectedFile.length > 0;
+    
+    const fileName = hasNewFile 
+      ? selectedFile[0].name 
+      : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+        <div className="relative group">
+          <input 
+            type="file" 
+            {...register(name)} 
+            accept={accept}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+          />
+          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
+              <FileUp size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
+                {fileName}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                {existingUrl && !hasNewFile && (
+                  <>
+                    <button 
+                      type="button"
+                      onClick={() => handleDownload(existingUrl)}
+                      className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Download size={10} /> Download
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveFile(name)}
+                      className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Trash2 size={10} /> Delete
+                    </button>
+                  </>
+                )}
+                {hasNewFile && (
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
+                    className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                  >
+                    <X size={10} /> Clear Selection
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const watchCategory = watch('category_name');
 
@@ -537,121 +429,22 @@ const buildFileUrl = (filePath) => {
     }
   };
 
-  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
-    const selectedFile = watch(name);
-    const hasNewFile = selectedFile && selectedFile.length > 0;
-    
-    const fileName = hasNewFile 
-      ? selectedFile[0].name 
-      : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
 
+
+
+
+  const DataSheetEntry = ({ label, value, icon: Icon }) => {
+    if (!value || value === 'Not Defined' || value === '0×0×0') return null;
     return (
-      <div className="space-y-2">
-        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-        <div className="relative group">
-          <input 
-            type="file" 
-            {...register(name)} 
-            accept={accept}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-          />
-          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
-              <FileUp size={18} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
-                {fileName}
-              </p>
-              <div className="flex items-center gap-3 mt-1">
-                {existingUrl && !hasNewFile && (
-                  <>
-                    <button 
-                      type="button"
-                      onClick={() => handleDownload(existingUrl)}
-                      className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
-                    >
-                      <Download size={10} /> Download
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => handleRemoveFile(name)}
-                      className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
-                    >
-                      <Trash2 size={10} /> Delete
-                    </button>
-                  </>
-                )}
-                {hasNewFile && (
-                  <button 
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
-                    className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
-                  >
-                    <X size={10} /> Clear Selection
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+      <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">
+        <div className="flex items-center gap-3 mb-1.5">
+          {Icon && <Icon size={14} className="text-[var(--accent)]" />}
+          <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em]">{label}</p>
         </div>
+        <p className="text-[15px] font-black text-[var(--text-main)] tracking-tight leading-snug">{value}</p>
       </div>
     );
   };
-
-  const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
-        {label} {required && <span className="text-rose-500">*</span>}
-      </label>
-      <input 
-        type={type}
-        {...register(name, { required: required ? `${label} is required` : false })}
-        placeholder={placeholder}
-        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all placeholder:text-[var(--text-dim)] font-bold"
-      />
-      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
-    </div>
-  );
-
-  const TextAreaField = ({ label, name, placeholder }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-      <textarea 
-        {...register(name)}
-        placeholder={placeholder}
-        rows={3}
-        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dim)] font-bold resize-none"
-      />
-    </div>
-  );
-
-  const SelectField = ({ label, name, options, required = false }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
-        {label} {required && <span className="text-rose-500">*</span>}
-      </label>
-      <select
-        {...register(name, { required: required ? `${label} is required` : false })}
-        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all font-bold appearance-none cursor-pointer"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em' }}
-      >
-        <option value="">Select {label}</option>
-        {options.map(opt => <option key={opt.value || opt} value={opt.value || opt}>{opt.label || opt}</option>)}
-      </select>
-      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
-    </div>
-  );
-
-  const DataSheetEntry = ({ label, value, icon: Icon }) => (
-    <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">
-      <div className="flex items-center gap-3 mb-1.5">
-        {Icon && <Icon size={14} className="text-[var(--accent)]" />}
-        <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em]">{label}</p>
-      </div>
-      <p className="text-[15px] font-black text-[var(--text-main)] tracking-tight leading-snug">{value || 'Not Defined'}</p>
-    </div>
-  );
 
   const FileCard = ({ label, url }) => (
     <div className="flex items-center justify-between p-4.5 bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] rounded-2xl group hover:border-[var(--accent)] transition-all relative overflow-hidden">
@@ -715,162 +508,17 @@ const buildFileUrl = (filePath) => {
 
   // Dynamic Fields Component based on category
   const renderCategoryFields = () => {
-    switch (selectedCategory) {
-        case 'Battery': return (
-            <>
-                <FormField label="Battery Chemistry" name="spec_battery_chemistry" />
-                <FormField label="Battery Voltage" name="spec_battery_voltage" />
-                <FormField label="Battery Capacity" name="spec_battery_capacity" />
-                <FormField label="Cell Count" name="spec_cell_count" type="number" />
-                <SelectField label="Rechargeable" name="spec_rechargeable" options={['Yes', 'No']} />
-                <FormField label="Charging Voltage" name="spec_charging_voltage" />
-                <FormField label="Max Charging Current" name="spec_max_charging_current" />
-                <FormField label="Max Discharge Current" name="spec_max_discharge_current" />
-                <FormField label="Backup Time" name="spec_backup_time" />
-                <FormField label="Battery Connector Type" name="spec_battery_connector_type" />
-                <FormField label="Cycle Life" name="spec_cycle_life" />
-                <SelectField label="BMS Available" name="spec_bms_available" options={['Yes', 'No']} />
-            </>
-        );
-        case 'Flow Meter': return (
-            <>
-                <FormField label="Flow Meter Type" name="spec_flow_meter_type" />
-                <FormField label="Flow Range" name="spec_flow_range" />
-                <FormField label="Accuracy" name="spec_accuracy" />
-                <SelectField label="Pulse Output" name="spec_pulse_output" options={['Yes', 'No']} />
-                <FormField label="Pulses Per Liter" name="spec_pulses_per_liter" type="number" />
-                <FormField label="K-Factor" name="spec_k_factor" />
-                <FormField label="Fluid Compatibility" name="spec_fluid_compatibility" />
-                <FormField label="Inlet Size" name="spec_inlet_size" />
-                <FormField label="Outlet Size" name="spec_outlet_size" />
-                <FormField label="Max Pressure" name="spec_max_pressure" />
-                <SelectField label="Calibration Required" name="spec_calibration_required" options={['Yes', 'No']} />
-                <FormField label="Calibration Certificate Number" name="spec_calibration_cert_no" />
-            </>
-        );
-        case 'SMPS': return (
-            <>
-                <FormField label="Input Voltage Range" name="spec_input_voltage_range" />
-                <FormField label="Output Voltage" name="spec_output_voltage" />
-                <FormField label="Output Current" name="spec_output_current" />
-                <FormField label="Output Power" name="spec_output_power" />
-                <FormField label="Efficiency" name="spec_efficiency" />
-                <FormField label="Number of Outputs" name="spec_num_outputs" type="number" />
-                <FormField label="Protection" name="spec_protection" />
-                <FormField label="Cooling Type" name="spec_cooling_type" />
-                <FormField label="SMPS Type" name="spec_smps_type" />
-                <FormField label="Ripple Noise" name="spec_ripple_noise" />
-            </>
-        );
-        case 'Printer': return (
-            <>
-                <FormField label="Printer Type" name="spec_printer_type" />
-                <FormField label="Printer Model" name="spec_printer_model" />
-                <FormField label="Print Width" name="spec_print_width" />
-                <FormField label="Paper Roll Size" name="spec_paper_roll_size" />
-                <FormField label="Print Speed" name="spec_print_speed" />
-                <FormField label="Interface" name="spec_interface" />
-                <FormField label="Baud Rate" name="spec_baud_rate" />
-                <SelectField label="Cutter Available" name="spec_cutter_available" options={['Yes', 'No']} />
-                <SelectField label="Paper Sensor Available" name="spec_paper_sensor_available" options={['Yes', 'No']} />
-                <FormField label="Operating Voltage" name="spec_operating_voltage" />
-                <FormField label="Supported Language" name="spec_supported_language" />
-            </>
-        );
-        case 'Speaker': return (
-            <>
-                <FormField label="Speaker Type" name="spec_speaker_type" />
-                <FormField label="Power Rating" name="spec_power_rating" />
-                <FormField label="Impedance" name="spec_impedance" />
-                <FormField label="Frequency Range" name="spec_frequency_range" />
-                <FormField label="Sound Level" name="spec_sound_level" />
-                <FormField label="Operating Voltage" name="spec_operating_voltage" />
-                <FormField label="Connector Type" name="spec_connector_type" />
-                <FormField label="Mounting Type" name="spec_mounting_type" />
-            </>
-        );
-        case 'Amplifier': return (
-            <>
-                <FormField label="Amplifier Type" name="spec_amplifier_type" />
-                <FormField label="IC/Chipset" name="spec_ic_chipset" />
-                <FormField label="Input Voltage" name="spec_input_voltage" />
-                <FormField label="Output Power" name="spec_output_power" />
-                <FormField label="Channel Type" name="spec_channel_type" />
-                <FormField label="Speaker Impedance Support" name="spec_speaker_impedance_support" />
-                <FormField label="Input Signal Type" name="spec_input_signal_type" />
-                <FormField label="Volume Control" name="spec_volume_control" />
-                <FormField label="Protection" name="spec_protection" />
-            </>
-        );
-        case 'Temperature Sensor': return (
-            <>
-                <FormField label="Sensor Type" name="spec_sensor_type" />
-                <FormField label="Sensor Model" name="spec_sensor_model" />
-                <FormField label="Temperature Range" name="spec_temperature_range" />
-                <FormField label="Accuracy" name="spec_accuracy" />
-                <FormField label="Output Signal" name="spec_output_signal" />
-                <FormField label="Interface" name="spec_interface" />
-                <FormField label="Probe Type" name="spec_probe_type" />
-                <FormField label="Cable Length" name="spec_cable_length" />
-                <SelectField label="Calibration Required" name="spec_calibration_required" options={['Yes', 'No']} />
-            </>
-        );
-        case 'Quality Sensor': return (
-            <>
-                <FormField label="Sensor Type" name="spec_sensor_type" />
-                <FormField label="Measured Parameter" name="spec_measured_parameter" />
-                <FormField label="Measuring Range" name="spec_measuring_range" />
-                <FormField label="Accuracy" name="spec_accuracy" />
-                <FormField label="Output Signal" name="spec_output_signal" />
-                <FormField label="Communication Protocol" name="spec_communication_protocol" />
-                <FormField label="Fluid Compatibility" name="spec_fluid_compatibility" />
-                <SelectField label="Calibration Required" name="spec_calibration_required" options={['Yes', 'No']} />
-                <FormField label="Calibration Data" name="spec_calibration_data" />
-            </>
-        );
-        case 'Pressure Sensor': return (
-            <>
-                <FormField label="Pressure Range" name="spec_pressure_range" />
-                <FormField label="Pressure Type" name="spec_pressure_type" />
-                <FormField label="Output Signal" name="spec_output_signal" />
-                <FormField label="Accuracy" name="spec_accuracy" />
-                <FormField label="Thread Size" name="spec_thread_size" />
-                <FormField label="Overload Pressure" name="spec_overload_pressure" />
-                <FormField label="Burst Pressure" name="spec_burst_pressure" />
-                <FormField label="Medium Compatibility" name="spec_medium_compatibility" />
-                <FormField label="Operating Voltage" name="spec_operating_voltage" />
-            </>
-        );
-        case 'EMI-EMC Filter': return (
-            <>
-                <FormField label="Filter Type" name="spec_filter_type" />
-                <FormField label="Rated Voltage" name="spec_rated_voltage" />
-                <FormField label="Rated Current" name="spec_rated_current" />
-                <FormField label="Frequency Range" name="spec_frequency_range" />
-                <FormField label="Leakage Current" name="spec_leakage_current" />
-                <FormField label="Filter Stage" name="spec_filter_stage" />
-                <FormField label="Mounting Type" name="spec_mounting_type" />
-                <FormField label="Certification" name="spec_certification" />
-                <FormField label="Application" name="spec_application" />
-            </>
-        );
-        case 'DC Meter': return (
-            <>
-                <FormField label="Meter Type" name="spec_meter_type" />
-                <FormField label="Voltage Range" name="spec_voltage_range" />
-                <FormField label="Current Range" name="spec_current_range" />
-                <FormField label="Display Type" name="spec_display_type" />
-                <FormField label="Accuracy Class" name="spec_accuracy_class" />
-                <SelectField label="Shunt Required" name="spec_shunt_required" options={['Yes', 'No']} />
-                <FormField label="Communication Interface" name="spec_communication_interface" />
-                <FormField label="Protocol" name="spec_protocol" />
-                <FormField label="Power Supply" name="spec_power_supply" />
-                <FormField label="Mounting Type" name="spec_mounting_type" />
-            </>
-        );
-        default: return null;
-    }
-  }
+    const fields = ELECTRONICS_SPEC_FIELDS[selectedCategory];
+    if (!fields) return null;
+
+    return fields.map(f => (
+        f.isSelect ? (
+            <SelectField key={f.key} label={f.label} name={`spec_${f.key}`} options={f.options} />
+        ) : (
+            <FormField key={f.key} label={f.label} name={`spec_${f.key}`} type={f.type || 'text'} />
+        )
+    ));
+  };
 
   // Display fields for view mode
   const renderViewCategorySpecs = () => {
@@ -1031,7 +679,7 @@ const buildFileUrl = (filePath) => {
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
-                         <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"><Settings size={14} /></button>
+                         <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" title="Edit"><Pencil size={14} /></button>
                          <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"><Trash2 size={14} /></button>
                       </div>
                     </div>
@@ -1067,6 +715,34 @@ const buildFileUrl = (filePath) => {
         {modalMode === 'view' ? (
           /* View Mode (Data Sheet) */
           <div className="space-y-12 pb-10 max-h-[82vh] overflow-y-auto custom-scrollbar pr-4">
+             {/* Breadcrumb Navigation */}
+             <div className="flex items-center gap-4 px-1">
+                <button 
+                  onClick={() => navigate('/admin/dashboard')}
+                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                >
+                  <span>Dashboard</span>
+                </button>
+                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                <button 
+                  onClick={() => navigate('/admin/inventory')}
+                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                >
+                  <span>Inventory</span>
+                </button>
+                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                >
+                  <span>Electronics</span>
+                </button>
+                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">
+                  <span>{selectedItem?.part_name}</span>
+                </div>
+             </div>
+
              {/* Premium Header Layout */}
              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 {/* Visual Reference Side */}
@@ -1439,7 +1115,7 @@ const buildFileUrl = (filePath) => {
                 {modalTab === 'files' && (
                     <div className="animate-in fade-in slide-in-from-left-4 duration-500">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                            {CATEGORY_CONFIG[selectedCategory] ? (
+                            {CATEGORY_CONFIG[selectedCategory]?.files ? (
                                 CATEGORY_CONFIG[selectedCategory].files.map(file => (
                                     <FileInput 
                                         key={file.id} 

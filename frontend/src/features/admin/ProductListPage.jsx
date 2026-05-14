@@ -4,7 +4,7 @@ import { getProducts, createProduct, updateProduct, removeAsset, deleteProduct }
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import CategoryModal from '../../components/shared/CategoryModal';
-import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download, X, Zap, Building2 } from 'lucide-react';
+import { Search, Plus, Loader2, Box, Tag, DollarSign, FileText, Check, Droplets, Flame, Fuel, Droplet, Activity, CheckCircle, ChevronRight, Trash2, LayoutGrid, List, Eye, Download, X, Zap, Building2, Pencil } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -549,7 +549,10 @@ const ProductListPage = () => {
                     <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
                     <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">{product.company_name || 'Generic'}</span>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); handleDelete(product); }} className="flex items-center gap-1.5 text-[9px] font-black text-rose-500/50 uppercase tracking-widest hover:text-rose-500 transition-all py-1.5 px-3 rounded-lg hover:bg-rose-500/10 group/del"><Trash2 size={12} />Delete</button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(product); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" title="Edit Product"><Pencil size={14} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(product); }} className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all" title="Delete Product"><Trash2 size={14} /></button>
+                  </div>
                 </div>
               </div>
             </div>

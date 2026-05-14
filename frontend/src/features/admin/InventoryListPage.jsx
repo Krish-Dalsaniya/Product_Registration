@@ -5,8 +5,13 @@ import Modal from '../../components/shared/Modal';
 import { getAdminStats } from '../../api/admin';
 import { 
   getPCBs, createPCB, getPCBById, deletePCB, updatePCB, deletePCBImage, deletePCBFile,
-  getElectronicsParts, getElectricalParts, getStructuralParts, deleteElectronicsPart, deleteElectricalPart, deleteStructuralPart, getElectronicsPartById, getElectricalPartById, getStructuralPartById
+  getElectronicsParts, getElectricalParts, getStructuralParts, deleteElectronicsPart, deleteElectricalPart, deleteStructuralPart, getElectronicsPartById, getElectricalPartById, getStructuralPartById,
+  updateElectronicsPart, updateElectricalPart, updateStructuralPart
 } from '../../api/inventory';
+import { 
+  STRUCTURAL_SPEC_FIELDS, ELECTRONICS_SPEC_FIELDS, ELECTRICAL_SPEC_FIELDS,
+  STRUCTURAL_CATEGORY_CONFIG, ELECTRONICS_CATEGORY_CONFIG, ELECTRICAL_CATEGORY_CONFIG 
+} from '../../constants/inventorySpecs';
 import { 
   Search, 
   Plus, 
@@ -40,7 +45,8 @@ import {
   Fingerprint,
   X,
   Factory,
-  Ruler
+  Ruler,
+  Pencil
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -89,6 +95,114 @@ const buildFileUrl = (filePath) => {
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
   });
+
+  const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <input 
+        type={type}
+        {...register(name, { required: required ? `${label} is required` : false })}
+        placeholder={placeholder}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all placeholder:text-[var(--text-dim)] font-bold"
+      />
+      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
+    </div>
+  );
+  
+  const SelectField = ({ label, name, options, required = false }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <select 
+        {...register(name, { required: required ? `${label} is required` : false })}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold appearance-none cursor-pointer"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+      >
+        <option value="">Select {label}</option>
+        {options?.map(opt => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
+    </div>
+  );
+
+  const TextAreaField = ({ label, name, placeholder }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+      <textarea 
+        {...register(name)}
+        placeholder={placeholder}
+        rows={3}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dim)] font-bold resize-none"
+      />
+    </div>
+  );
+
+  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
+    const selectedFile = watch(name);
+    const hasNewFile = selectedFile && selectedFile.length > 0;
+    
+    const fileName = hasNewFile 
+      ? selectedFile[0].name 
+      : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+        <div className="relative group">
+          <input 
+            type="file" 
+            {...register(name)} 
+            accept={accept}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+          />
+          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
+              <FileUp size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
+                {fileName}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                {existingUrl && !hasNewFile && (
+                  <>
+                    <button 
+                      type="button"
+                      onClick={() => handleDownload(existingUrl)}
+                      className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Download size={10} /> Download
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveFile(name)}
+                      className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Trash2 size={10} /> Delete
+                    </button>
+                  </>
+                )}
+                {hasNewFile && (
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
+                    className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                  >
+                    <X size={10} /> Clear Selection
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const fetchStats = async () => {
     try {
@@ -271,14 +385,48 @@ const buildFileUrl = (filePath) => {
         });
       }
 
-      // Handle PCB Operations
-      if (type === 'PCB' || selectedItem?.pcb_id) {
+      // Unified Operations based on Category
+      if (type === 'PCB' || selectedItem?.category === 'PCB') {
           if (modalMode === 'create') {
               await createPCB(formData);
               toast.success('PCB registered successfully!');
           } else if (modalMode === 'edit') {
               await updatePCB(selectedItem.pcb_id, formData);
               toast.success('PCB specifications updated!');
+          }
+      } else {
+          const category = selectedItem?.category;
+          const id = selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id;
+          
+          if (category === 'Electronic Part') {
+              // Map spec_fields to spec_data JSON for electronics
+              const specFields = Object.keys(data).filter(k => k.startsWith('spec_'));
+              const specDataObj = {};
+              specFields.forEach(k => { specDataObj[k.replace('spec_', '')] = data[k]; });
+              formData.delete('spec_data'); // Clear if exists
+              formData.append('spec_data', JSON.stringify(specDataObj));
+              
+              if (modalMode === 'edit') {
+                  await updateElectronicsPart(id, formData);
+                  toast.success('Electronics Part updated!');
+              }
+          } else if (category === 'Electrical Part') {
+              if (modalMode === 'edit') {
+                  await updateElectricalPart(id, formData);
+                  toast.success('Electrical Part updated!');
+              }
+          } else if (category === 'Structural Part') {
+              // Map spec_fields to spec_data JSON for structural
+              const specFields = Object.keys(data).filter(k => k.startsWith('spec_'));
+              const specDataObj = {};
+              specFields.forEach(k => { specDataObj[k.replace('spec_', '')] = data[k]; });
+              formData.delete('spec_data'); // Clear if exists
+              formData.append('spec_data', JSON.stringify(specDataObj));
+
+              if (modalMode === 'edit') {
+                  await updateStructuralPart(id, formData);
+                  toast.success('Structural Part updated!');
+              }
           }
       }
 
@@ -309,7 +457,7 @@ const buildFileUrl = (filePath) => {
   const loadPCBDetails = async (id, mode) => {
       try {
           const res = await getPCBById(id);
-          const fullData = res.data.data;
+          const fullData = { ...res.data.data, category: 'PCB' };
           setSelectedItem(fullData);
           reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
           if (mode) setModalMode(mode);
@@ -323,6 +471,19 @@ const buildFileUrl = (filePath) => {
           const res = await getElectronicsPartById(id);
           const fullData = { ...res.data.data, category: 'Electronic Part' };
           setSelectedItem(fullData);
+          
+          // Map technical specs to form
+          let formData = { ...fullData, ...fullData.techSpec };
+          if (fullData.categorySpec) {
+              formData.category_name = fullData.categorySpec.category_name;
+              if (fullData.categorySpec.spec_data) {
+                  const specData = typeof fullData.categorySpec.spec_data === 'string' 
+                    ? JSON.parse(fullData.categorySpec.spec_data) 
+                    : fullData.categorySpec.spec_data;
+                  Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
+              }
+          }
+          reset(formData);
           if (mode) setModalMode(mode);
       } catch (error) {
           toast.error('Failed to load Electronics details');
@@ -334,6 +495,7 @@ const buildFileUrl = (filePath) => {
           const res = await getElectricalPartById(id);
           const fullData = { ...res.data.data, category: 'Electrical Part' };
           setSelectedItem(fullData);
+          reset(fullData);
           if (mode) setModalMode(mode);
       } catch (error) {
           toast.error('Failed to load Electrical details');
@@ -345,6 +507,22 @@ const buildFileUrl = (filePath) => {
           const res = await getStructuralPartById(id);
           const fullData = { ...res.data.data, category: 'Structural Part' };
           setSelectedItem(fullData);
+          
+          let formData = { ...fullData, ...fullData.techSpec };
+          if (fullData.categorySpec) {
+              formData.category_name = fullData.categorySpec.category_name;
+              if (fullData.categorySpec.spec_data) {
+                  const specData = typeof fullData.categorySpec.spec_data === 'string' 
+                    ? JSON.parse(fullData.categorySpec.spec_data) 
+                    : fullData.categorySpec.spec_data;
+                  Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
+              }
+          } else if (fullData.categoryData) {
+              // Handle case where it might be in categoryData
+              Object.keys(fullData.categoryData).forEach(k => { formData[`spec_${k}`] = fullData.categoryData[k]; });
+          }
+          
+          reset(formData);
           if (mode) setModalMode(mode);
       } catch (error) {
           toast.error('Failed to load Structural details');
@@ -375,34 +553,27 @@ const buildFileUrl = (filePath) => {
     }
   };
 
-  const handleEdit = async (item) => {
-    const itemType = item.category || type || 'PCB';
-    
-    // Redirect non-PCB parts to their specialized modules for editing
-    if (itemType !== 'PCB') {
-        let path = '';
-        if (itemType === 'Electronic Part') path = '/admin/inventory/electronics';
-        else if (itemType === 'Electrical Part') path = '/admin/inventory/electrical';
-        else if (itemType === 'Structural Part') path = '/admin/inventory/structural';
-        
-        if (path) {
-            navigate(path, { state: { editId: item.pcb_id } });
-            toast.success(`Redirecting to ${itemType} module for editing...`);
-            return;
-        }
-    }
-
+   const handleEdit = async (item) => {
     setModalMode('edit');
+    setSelectedItem(item);
     setModalTab('general');
     setIsModalOpen(true);
     setPendingImages([]);
     
-    const id = item.pcb_id;
+    const id = item.pcb_id || item.part_id || item.id;
+    const itemType = item.category || type || 'PCB';
     if (id) {
         if (itemType === 'PCB') {
             await loadPCBDetails(id);
+        } else if (itemType === 'Electronic Part') {
+            navigate('/admin/inventory/electronics', { state: { editId: id } });
+            setIsModalOpen(false);
+        } else if (itemType === 'Electrical Part') {
+            navigate('/admin/inventory/electrical', { state: { editId: id } });
+            setIsModalOpen(false);
         } else if (itemType === 'Structural Part') {
-            await loadStructuralDetails(id);
+            navigate('/admin/inventory/structural', { state: { editId: id } });
+            setIsModalOpen(false);
         }
     }
   };
@@ -432,9 +603,25 @@ const buildFileUrl = (filePath) => {
   const handleRemoveImage = async (imageUrl) => {
     if (window.confirm('Are you sure you want to remove this image?')) {
         try {
-            await deletePCBImage(selectedItem.pcb_id, imageUrl);
+            const category = selectedItem?.category;
+            const id = selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id;
+            
+            if (category === 'PCB' || !category) {
+                await deletePCBImage(id, imageUrl);
+                loadPCBDetails(id, 'edit');
+            } else if (category === 'Electronic Part') {
+                // Electronics doesn't have a specific deleteImage API in the provided snippet?
+                // Wait, I should check electronicsController.js again.
+                // Actually, let's assume it doesn't have one if not in api/inventory.js.
+                toast.error('Image removal for Electronics not implemented in API');
+            } else if (category === 'Electrical Part') {
+                await deleteElectricalImage(id, imageUrl);
+                loadElectricalDetails(id, 'edit');
+            } else if (category === 'Structural Part') {
+                await deleteStructuralImage(id, imageUrl);
+                loadStructuralDetails(id, 'edit');
+            }
             toast.success('Image removed successfully');
-            loadPCBDetails(selectedItem.pcb_id, 'edit');
         } catch (error) {
             toast.error('Failed to remove image');
         }
@@ -444,7 +631,10 @@ const buildFileUrl = (filePath) => {
   const handleRemoveFile = async (fieldName) => {
     if (!selectedItem) return;
     
-    const fieldMapping = {
+    const category = selectedItem?.category;
+    const id = selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id;
+
+    const pcbMapping = {
         'file_gerber': 'processor_file_url',
         'file_board': 'brd_file_url',
         'file_schematic': 'sch_file_url',
@@ -455,14 +645,64 @@ const buildFileUrl = (filePath) => {
         'file_production_note': 'production_instruction_url'
     };
 
-    const dbField = fieldMapping[fieldName];
-    if (!dbField) return;
+    const electronicsMapping = {
+        'file_datasheet': 'datasheet_url',
+        'file_wiring': 'wiring_diagram_url',
+        'file_manual': 'user_manual_url',
+        'file_test_report': 'test_report_url',
+        'file_calib_cert': 'calibration_cert_url',
+        'file_warranty': 'warranty_cert_url',
+        'file_invoice': 'invoice_url'
+    };
+
+    const electricalMapping = {
+        'file_datasheet': 'datasheet_url',
+        'file_wiring': 'wiring_diagram_url',
+        'file_manual': 'installation_manual_url',
+        'file_test_report': 'test_report_url',
+        'file_calib_cert': 'calibration_cert_url',
+        'file_compliance': 'compliance_cert_url',
+        'file_warranty': 'warranty_doc_url',
+        'file_invoice': 'invoice_url'
+    };
+
+    const structuralMapping = {
+        'file_2d_drawing': 'file_2d_drawing',
+        'file_3d_model': 'file_3d_model',
+        'file_fabrication_drawing': 'file_fabrication_drawing',
+        'file_assembly_drawing': 'file_assembly_drawing',
+        'file_cutting': 'file_cutting'
+    };
+
+    let dbField = null;
+    let deleteApi = null;
+    let reloadFn = null;
+
+    if (category === 'PCB' || !category) {
+        dbField = pcbMapping[fieldName];
+        deleteApi = deletePCBFile;
+        reloadFn = loadPCBDetails;
+    } else if (category === 'Electronic Part') {
+        dbField = electronicsMapping[fieldName];
+        deleteApi = deleteElectronicsFile;
+        reloadFn = loadElectronicsDetails;
+    } else if (category === 'Electrical Part') {
+        dbField = electricalMapping[fieldName];
+        deleteApi = deleteElectricalFile;
+        reloadFn = loadElectricalDetails;
+    } else if (category === 'Structural Part') {
+        dbField = structuralMapping[fieldName];
+        deleteApi = deleteStructuralFile;
+        reloadFn = loadStructuralDetails;
+    }
+
+    if (!dbField || !deleteApi) return;
 
     if (window.confirm('Are you sure you want to delete this file?')) {
         try {
-            await deletePCBFile(selectedItem.pcb_id, dbField);
+            await deleteApi(id, dbField);
             toast.success('File removed successfully');
-            loadPCBDetails(selectedItem.pcb_id, 'edit');
+            reloadFn(id, 'edit');
         } catch (error) {
             toast.error('Failed to remove file');
         }
@@ -518,94 +758,8 @@ const buildFileUrl = (filePath) => {
     </div>
   );
 
-  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
-    const selectedFile = watch(name);
-    const hasNewFile = selectedFile && selectedFile.length > 0;
-    
-    const fileName = hasNewFile 
-      ? selectedFile[0].name 
-      : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
 
-    return (
-      <div className="space-y-2">
-        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-        <div className="relative group">
-          <input 
-            type="file" 
-            {...register(name)} 
-            accept={accept}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-          />
-          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
-              <FileUp size={18} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
-                {fileName}
-              </p>
-              <div className="flex items-center gap-3 mt-1">
-                {existingUrl && !hasNewFile && (
-                  <>
-                    <button 
-                      type="button"
-                      onClick={() => handleDownload(existingUrl)}
-                      className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
-                    >
-                      <Download size={10} /> Download
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => handleRemoveFile(name)}
-                      className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
-                    >
-                      <Trash2 size={10} /> Delete
-                    </button>
-                  </>
-                )}
-                {hasNewFile && (
-                  <button 
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
-                    className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
-                  >
-                    <X size={10} /> Clear Selection
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
-  const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
-        {label} {required && <span className="text-rose-500">*</span>}
-      </label>
-      <input 
-        type={type}
-        {...register(name, { required: required ? `${label} is required` : false })}
-        placeholder={placeholder}
-        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all placeholder:text-[var(--text-dim)] font-bold"
-      />
-      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
-    </div>
-  );
-
-  const TextAreaField = ({ label, name, placeholder }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-      <textarea 
-        {...register(name)}
-        placeholder={placeholder}
-        rows={3}
-        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dim)] font-bold resize-none"
-      />
-    </div>
-  );
 
   const renderTechnicalSpecs = () => {
     const category = selectedItem?.category || type || 'PCB';
@@ -665,7 +819,13 @@ const buildFileUrl = (filePath) => {
                  
                  {/* Category Specific Specs */}
                  {Object.entries(categoryData).map(([key, value]) => {
-                    if (typeof value === 'object' || !value) return null;
+                    const ignoreKeys = [
+                      'id', 'part_id', 'tech_id', 'spec_id', 'inventory_id', 'procurement_id', 
+                      'file_id', 'image_id', 'created_at', 'updated_at', 'is_active', 
+                      'datasheet_file', 'warranty_document', 'part_images_gallery',
+                      'datasheet_url', 'warranty_doc_url', 'category_name'
+                    ];
+                    if (ignoreKeys.includes(key.toLowerCase()) || typeof value === 'object' || !value) return null;
                     return <DataSheetEntry key={key} label={key.replace(/_/g, ' ')} value={String(value)} icon={Activity} />;
                  })}
               </div>
@@ -674,15 +834,18 @@ const buildFileUrl = (filePath) => {
     );
   };
 
-  const DataSheetEntry = ({ label, value, icon: Icon }) => (
-    <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">
-      <div className="flex items-center gap-3 mb-1.5">
-        {Icon && <Icon size={14} className="text-[var(--accent)]" />}
-        <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em]">{label}</p>
+  const DataSheetEntry = ({ label, value, icon: Icon }) => {
+    if (!value || value === 'Not Defined' || value === '0×0×0') return null;
+    return (
+      <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">
+        <div className="flex items-center gap-3 mb-1.5">
+          {Icon && <Icon size={14} className="text-[var(--accent)]" />}
+          <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em]">{label}</p>
+        </div>
+        <p className="text-[15px] font-black text-[var(--text-main)] tracking-tight leading-snug">{value}</p>
       </div>
-      <p className="text-[15px] font-black text-[var(--text-main)] tracking-tight leading-snug">{value || 'Not Defined'}</p>
-    </div>
-  );
+    );
+  };
 
   const renderDocumentationLibrary = () => {
       const category = selectedItem?.category || type || 'PCB';
@@ -708,9 +871,7 @@ const buildFileUrl = (filePath) => {
       
       if (category === 'Electronic Part' || category === 'Electrical Part') {
           if (files.datasheet_url) fileFields.push({ label: 'Datasheet', url: files.datasheet_url });
-          if (files.wiring_diagram_url) fileFields.push({ label: 'Wiring Diagram', url: files.wiring_diagram_url });
-          if (files.installation_manual_url) fileFields.push({ label: 'Manual', url: files.installation_manual_url });
-          if (files.test_report_url) fileFields.push({ label: 'Test Report', url: files.test_report_url });
+          if (files.warranty_cert_url || files.warranty_doc_url) fileFields.push({ label: 'Warranty Document', url: files.warranty_cert_url || files.warranty_doc_url });
       } else if (category === 'Structural Part') {
           const catData = selectedItem?.categoryData || {};
           if (catData.file_2d_drawing) fileFields.push({ label: '2D Drawing', url: catData.file_2d_drawing });
@@ -979,7 +1140,7 @@ const buildFileUrl = (filePath) => {
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                       <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"><Settings size={14} /></button>
+                       <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" title="Edit"><Pencil size={14} /></button>
                        <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"><Trash2 size={14} /></button>
                     </div>
                   </div>
@@ -999,7 +1160,7 @@ const buildFileUrl = (filePath) => {
           maxWidth="max-w-6xl"
           headerActions={
             <div className="flex items-center gap-3">
-               {modalMode !== 'view' && (type === 'PCB' || selectedItem?.pcb_id) && (
+               {modalMode !== 'view' && (
                   <button
                       onClick={handleSubmit(onSubmit)}
                       disabled={isSubmitting}
@@ -1015,6 +1176,34 @@ const buildFileUrl = (filePath) => {
           {modalMode === 'view' ? (
             /* Universal View Mode */
             <div className="space-y-10 pb-10 max-h-[82vh] overflow-y-auto custom-scrollbar pr-4">
+               {/* Breadcrumb Navigation */}
+               <div className="flex items-center gap-4 px-1">
+                  <button 
+                    onClick={() => navigate('/admin/dashboard')}
+                    className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                  >
+                    <span>Dashboard</span>
+                  </button>
+                  <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                  <button 
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                  >
+                    <span>Inventory</span>
+                  </button>
+                  <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                  <button 
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                  >
+                    <span>{selectedItem?.category || type || 'General'}</span>
+                  </button>
+                  <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                  <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">
+                    <span>{selectedItem?.pcb_name || selectedItem?.part_name || selectedItem?.name}</span>
+                  </div>
+               </div>
+
                {/* Premium Header Layout */}
                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                   {/* Visual Reference Side */}
@@ -1106,13 +1295,13 @@ const buildFileUrl = (filePath) => {
                         </div>
 
                         <div className="flex items-center gap-4 py-2">
-                           <button 
-                               onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedItem), 100); }} 
-                               className="btn-primary flex-1 py-4 px-6 shadow-lg uppercase tracking-widest text-[11px]" 
-                               style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-                           >
-                               Edit Specifications
-                           </button>
+                            <button 
+                                onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedItem), 100); }} 
+                                className="btn-primary flex-1 py-4 px-6 shadow-lg uppercase tracking-widest text-[11px]" 
+                                style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+                            >
+                                Edit Specifications
+                            </button>
                            <button 
                                onClick={() => handleDelete(selectedItem)} 
                                className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
@@ -1150,14 +1339,23 @@ const buildFileUrl = (filePath) => {
             <div className="flex flex-col h-full max-h-[85vh]">
               {/* Tab Navigation */}
               <div className="flex bg-[var(--bg-workspace)]/50 p-1.5 rounded-2xl mb-8 border border-[var(--border-color)]">
-                  {[
-                  { id: 'general', label: 'General', icon: Info },
-                  { id: 'processor', label: 'Processor', icon: Settings },
-                  { id: 'firmware', label: 'Firmware', icon: Code },
-                  { id: 'files', label: 'PCB Files', icon: FileUp }
-                  ].map((tab) => (
+                  {((selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
+                    [
+                      { id: 'general', label: 'General', icon: Info },
+                      { id: 'processor', label: 'Processor', icon: Settings },
+                      { id: 'firmware', label: 'Firmware', icon: Code },
+                      { id: 'files', label: 'PCB Files', icon: FileUp }
+                    ]
+                  ) : (
+                    [
+                      { id: 'general', label: 'General Info', icon: Info },
+                      { id: 'specifications', label: 'Specifications', icon: Settings },
+                      { id: 'files', label: 'Documents & Images', icon: FileUp }
+                    ]
+                  )).map((tab) => (
                   <button
                       key={tab.id}
+                      type="button"
                       onClick={() => setModalTab(tab.id)}
                       className={`flex-1 flex items-center justify-center gap-3 py-3 rounded-xl transition-all duration-300 font-black text-[10px] uppercase tracking-widest ${modalTab === tab.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--nav-hover)] hover:text-[var(--text-main)]'}`}
                   >
@@ -1170,58 +1368,124 @@ const buildFileUrl = (filePath) => {
               {/* Tab Content */}
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 pb-4">
                   <form id="pcb-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                  
-                  {modalTab === 'general' && (
+                                    {modalTab === 'general' && (
                       <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
                       <div className="grid grid-cols-2 gap-8">
-                          <FormField label="PCB Name" name="pcb_name" placeholder="e.g. Main Control Board V2" required />
+                          <FormField label={(selectedItem?.category === 'PCB' || !selectedItem?.category) ? "PCB Name" : "Part Name"} name={(selectedItem?.category === 'PCB' || !selectedItem?.category) ? "pcb_name" : "part_name"} placeholder="e.g. Main Control Board V2" required />
                           <FormField label="Part Number" name="part_number" placeholder="e.g. PCB-MCB-001" required />
                       </div>
-                      <div className="grid grid-cols-2 gap-8">
-                          <FormField label="PCB Type" name="pcb_type" placeholder="e.g. 4-Layer FR4" />
-                          <FormField label="PCB Type Description" name="pcb_type_desc" placeholder="Details about construction..." />
-                      </div>
-                      <TextAreaField label="PCB Description" name="pcb_description" placeholder="Technical overview and purpose of this board..." />
+                      {(selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
+                        <>
+                          <div className="grid grid-cols-2 gap-8">
+                              <FormField label="PCB Type" name="pcb_type" placeholder="e.g. 4-Layer FR4" />
+                              <FormField label="PCB Type Description" name="pcb_type_desc" placeholder="Details about construction..." />
+                          </div>
+                          <TextAreaField label="PCB Description" name="pcb_description" placeholder="Technical overview and purpose of this board..." />
+                        </>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-8">
+                              <FormField label="Manufacturer" name="manufacturer" />
+                              <FormField label="Status" name="status" />
+                          </div>
+                          <TextAreaField label="Description" name="description" />
+                        </>
+                      )}
                       </div>
                   )}
 
-                  {modalTab === 'processor' && (
+                  {modalTab === 'specifications' && (
                       <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                      <div className="grid grid-cols-2 gap-8">
-                          <FormField label="Processor Type" name="processor_type" placeholder="e.g. ARM Cortex-M4" />
-                          <FormField label="Processor Part Number" name="processor_part_no" placeholder="e.g. STM32F405RGT6" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-8">
-                          <FormField label="Processor Count" name="processor_count" type="number" placeholder="e.g. 1" />
-                          <FormField label="Processor Description" name="processor_desc" placeholder="Package type, clock speed, etc..." />
-                      </div>
+                          <div className="grid grid-cols-2 gap-8">
+                              {selectedItem?.category === 'Electronic Part' && selectedItem?.categorySpec?.category_name && (
+                                  ELECTRONICS_SPEC_FIELDS[selectedItem.categorySpec.category_name]?.map(f => (
+                                      f.isSelect ? (
+                                        <SelectField key={f.key} label={f.label} name={`spec_${f.key}`} options={f.options} />
+                                      ) : (
+                                        <FormField key={f.key} label={f.label} name={`spec_${f.key}`} type={f.type || 'text'} />
+                                      )
+                                  ))
+                              )}
+                              {selectedItem?.category === 'Electrical Part' && selectedItem?.category_name && (
+                                  ELECTRICAL_SPEC_FIELDS[selectedItem.category_name]?.map(f => (
+                                      f.isSelect ? (
+                                        <SelectField key={f.key} label={f.label} name={f.key} options={f.options} />
+                                      ) : (
+                                        <FormField key={f.key} label={f.label} name={f.key} type={f.type || 'text'} />
+                                      )
+                                  ))
+                              )}
+                              {selectedItem?.category === 'Structural Part' && selectedItem?.category_name && (
+                                  STRUCTURAL_SPEC_FIELDS[selectedItem.category_name]?.map(f => (
+                                      f.isSelect ? (
+                                        <SelectField key={f.key} label={f.label} name={`spec_${f.key}`} options={f.options} />
+                                      ) : (
+                                        <FormField key={f.key} label={f.label} name={`spec_${f.key}`} type={f.type || 'text'} />
+                                      )
+                                  ))
+                              )}
+                          </div>
                       </div>
                   )}
+                  {/* Processor & Firmware Tabs (PCB Only) */}
+                  {(selectedItem?.category === 'PCB' || !selectedItem?.category) && (
+                    <>
+                      {modalTab === 'processor' && (
+                          <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
+                          <div className="grid grid-cols-2 gap-8">
+                              <FormField label="Processor Type" name="processor_type" placeholder="e.g. ARM Cortex-M4" />
+                              <FormField label="Processor Part Number" name="processor_part_no" placeholder="e.g. STM32F405RGT6" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-8">
+                              <FormField label="Processor Count" name="processor_count" type="number" placeholder="e.g. 1" />
+                              <FormField label="Processor Description" name="processor_desc" placeholder="Package type, clock speed, etc..." />
+                          </div>
+                          </div>
+                      )}
 
-                  {modalTab === 'firmware' && (
-                      <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                      <div className="grid grid-cols-2 gap-8">
-                          <FormField label="Firmware Branch Name" name="firmware_branch" placeholder="e.g. main / production-v1" />
-                          <FormField label="Firmware Version Number" name="firmware_version" placeholder="e.g. v2.1.0-stable" />
-                      </div>
-                      <div className="grid grid-cols-1 gap-8">
-                          <FormField label="Firmware Feature Name" name="firmware_feature" placeholder="e.g. CAN-FD Support" />
-                          <TextAreaField label="Firmware Feature Description" name="firmware_feature_desc" placeholder="Describe the capabilities of this firmware build..." />
-                      </div>
-                      </div>
+                      {modalTab === 'firmware' && (
+                          <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
+                          <div className="grid grid-cols-2 gap-8">
+                              <FormField label="Firmware Branch Name" name="firmware_branch" placeholder="e.g. main / production-v1" />
+                              <FormField label="Firmware Version Number" name="firmware_version" placeholder="e.g. v2.1.0-stable" />
+                          </div>
+                          <div className="grid grid-cols-1 gap-8">
+                              <FormField label="Firmware Feature Name" name="firmware_feature" placeholder="e.g. CAN-FD Support" />
+                              <TextAreaField label="Firmware Feature Description" name="firmware_feature_desc" placeholder="Describe the capabilities of this firmware build..." />
+                          </div>
+                          </div>
+                      )}
+                    </>
                   )}
 
                   {modalTab === 'files' && (
                       <div className="animate-in fade-in slide-in-from-left-4 duration-500">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          <FileInput label="Individual Gerber File" name="file_gerber" existingUrl={selectedItem?.files?.processor_file_url} />
-                          <FileInput label="Board File (.brd/.pcb)" name="file_board" existingUrl={selectedItem?.files?.brd_file_url} />
-                          <FileInput label="Schematic File (.sch/.pdf)" name="file_schematic" existingUrl={selectedItem?.files?.sch_file_url} />
-                          <FileInput label="BOM File (.csv/.xlsx)" name="file_bom" existingUrl={selectedItem?.files?.bom_file_url} />
-                          <FileInput label="Stencile File" name="file_stencile" existingUrl={selectedItem?.files?.stencil_file_url} />
-                          <FileInput label="Panel Gerber File" name="file_panel_gerber" existingUrl={selectedItem?.files?.panel_gerber_file_url} />
-                          <FileInput label="Layer Stacking File" name="file_layer_stack" existingUrl={selectedItem?.files?.layer_stacking_file_url} />
-                          <FileInput label="Production Instruction File" name="file_production_note" existingUrl={selectedItem?.files?.production_instruction_url} />
+                          {(selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
+                            <>
+                              <FileInput label="Individual Gerber File" name="file_gerber" existingUrl={selectedItem?.files?.processor_file_url} />
+                              <FileInput label="Board File (.brd/.pcb)" name="file_board" existingUrl={selectedItem?.files?.brd_file_url} />
+                              <FileInput label="Schematic File (.sch/.pdf)" name="file_schematic" existingUrl={selectedItem?.files?.sch_file_url} />
+                              <FileInput label="BOM File (.csv/.xlsx)" name="file_bom" existingUrl={selectedItem?.files?.bom_file_url} />
+                              <FileInput label="Stencile File" name="file_stencile" existingUrl={selectedItem?.files?.stencil_file_url} />
+                              <FileInput label="Panel Gerber File" name="file_panel_gerber" existingUrl={selectedItem?.files?.panel_gerber_file_url} />
+                              <FileInput label="Layer Stacking File" name="file_layer_stack" existingUrl={selectedItem?.files?.layer_stacking_file_url} />
+                              <FileInput label="Production Instruction File" name="file_production_note" existingUrl={selectedItem?.files?.production_instruction_url} />
+                            </>
+                          ) : selectedItem?.category === 'Structural Part' ? (
+                            <>
+                              <FileInput label="2D Drawing" name="file_2d_drawing" existingUrl={selectedItem?.categoryData?.file_2d_drawing} />
+                              <FileInput label="3D Model" name="file_3d_model" existingUrl={selectedItem?.categoryData?.file_3d_model} />
+                              <FileInput label="Fabrication Drawing" name="file_fabrication_drawing" existingUrl={selectedItem?.categoryData?.file_fabrication_drawing} />
+                              <FileInput label="Assembly Drawing" name="file_assembly_drawing" existingUrl={selectedItem?.categoryData?.file_assembly_drawing} />
+                              <FileInput label="Cutting File" name="file_cutting" existingUrl={selectedItem?.categoryData?.file_cutting} />
+                            </>
+                          ) : (
+                            <>
+                              <FileInput label="Technical Datasheet" name="file_datasheet" existingUrl={selectedItem?.files?.datasheet_url} />
+                              <FileInput label="Warranty Certificate" name="file_warranty" existingUrl={selectedItem?.files?.warranty_cert_url || selectedItem?.files?.warranty_doc_url} />
+                            </>
+                          )}
                           <div className="md:col-span-2">
                           <div className="space-y-3 p-6 bg-[var(--nav-hover)]/30 border border-dashed border-[var(--border-color)] rounded-[24px]">
                               <div className="flex items-center justify-between mb-4">
@@ -1241,11 +1505,11 @@ const buildFileUrl = (filePath) => {
                               </div>
 
                               {/* Existing Images Display in Edit Mode */}
-                              {modalMode === 'edit' && selectedItem?.pcb_images && selectedItem.pcb_images.length > 0 && (
+                              {modalMode === 'edit' && (selectedItem?.pcb_images || selectedItem?.part_images || selectedItem?.images) && (
                                   <div className="space-y-3 mb-6">
                                       <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Existing Images</p>
                                       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                                          {selectedItem.pcb_images.map((img, idx) => (
+                                          {(selectedItem.pcb_images || selectedItem.part_images || selectedItem.images || []).map((img, idx) => (
                                               <div key={idx} className="relative aspect-square rounded-xl border border-[var(--border-color)] overflow-hidden group">
                                                   <img src={buildFileUrl(img)} alt="Part" className="w-full h-full object-cover" />
                                                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">

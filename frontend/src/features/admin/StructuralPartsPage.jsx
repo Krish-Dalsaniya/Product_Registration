@@ -9,147 +9,17 @@ import { getProducts } from '../../api/products';
 import {
   Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers, LayoutGrid, List,
   Plug, Factory, ShieldAlert, BatteryCharging, Wrench, Package, Shield, Scale, Banknote, ShoppingCart, CheckCircle2,
-  Maximize2, Move, BoxSelect, Frame, DoorOpen, Layout, Container
+  Maximize2, Move, BoxSelect, Frame, DoorOpen, Layout, Container, Pencil
 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { STRUCTURAL_SPEC_FIELDS, STRUCTURAL_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
 
-const CATEGORY_CONFIG = {
-  'Cabinet Body': { icon: Container, color: '#3b82f6' },
-  'Front Door': { icon: DoorOpen, color: '#10b981' },
-  'Side Panel': { icon: Layout, color: '#f59e0b' },
-  'Top Cover': { icon: Layers, color: '#ec4899' },
-  'Base Frame': { icon: Frame, color: '#8b5cf6' },
-  'Internal Mounting Plate': { icon: BoxSelect, color: '#06b6d4' },
-  'Nozzle Holder': { icon: Move, color: '#ef4444' },
-  'Hose Entry Plate': { icon: Maximize2, color: '#f97316' },
-  'Display': { icon: Radio, color: '#0ea5e9' },
-  'Lock': { icon: Shield, color: '#64748b' }
-};
+const CATEGORY_CONFIG = STRUCTURAL_CATEGORY_CONFIG;
 
 const categoriesList = Object.keys(CATEGORY_CONFIG);
 
-const STRUCTURAL_SPEC_FIELDS = {
-  "Cabinet Body": [
-    { label: "Cabinet Type", key: "cabinet_type" },
-    { label: "Cabinet Material", key: "cabinet_material" },
-    { label: "Cabinet Height", key: "cabinet_height" },
-    { label: "Cabinet Width", key: "cabinet_width" },
-    { label: "Cabinet Depth", key: "cabinet_depth" },
-    { label: "Door Opening Side", key: "door_opening_side" },
-    { label: "Ventilation Available", key: "ventilation_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Number of Vents", key: "number_of_vents", type: 'number' },
-    { label: "IP Protection Target", key: "ip_protection_target" },
-    { label: "Internal Mounting Plate Available", key: "internal_mounting_plate_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Base Stand Available", key: "base_stand_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Locking Arrangement", key: "locking_arrangement" },
-    { label: "Cable Entry Holes", key: "cable_entry_holes", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Hose Entry Hole", key: "hose_entry_hole", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Earthing Point Available", key: "earthing_point_available", isSelect: true, options: ['Yes', 'No'] }
-  ],
-  "Front Door": [
-    { label: "Door Type", key: "door_type" },
-    { label: "Door Material", key: "door_material" },
-    { label: "Door Opening Direction", key: "door_opening_direction" },
-    { label: "Lock Type", key: "lock_type" },
-    { label: "Lock Count", key: "lock_count", type: 'number' },
-    { label: "Hinge Type", key: "hinge_type" },
-    { label: "Hinge Count", key: "hinge_count", type: 'number' },
-    { label: "Rubber Gasket Available", key: "rubber_gasket_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Display Cutout Available", key: "display_cutout_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Printer Cutout Available", key: "printer_cutout_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Keypad Cutout Available", key: "keypad_cutout_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Sticker Area Available", key: "sticker_area_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Door Stopper Available", key: "door_stopper_available", isSelect: true, options: ['Yes', 'No'] }
-  ],
-  "Side Panel": [
-    { label: "Panel Side", key: "panel_side", isSelect: true, options: ['Left', 'Right'] },
-    { label: "Panel Type", key: "panel_type", isSelect: true, options: ['Fixed', 'Removable'] },
-    { label: "Ventilation Slot Available", key: "ventilation_slot_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Number of Vent Slots", key: "number_of_vent_slots", type: 'number' },
-    { label: "Access Opening Available", key: "access_opening_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Hose Pipe Opening Available", key: "hose_pipe_opening_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Nozzle Holder Mounting Available", key: "nozzle_holder_mounting_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Fastner Type", key: "fastner_type", isSelect: true, options: ['Screw', 'Rivet', 'Welded'] },
-    { label: "Panel Reinforcement Available", key: "panel_reinforcement_available", isSelect: true, options: ['Yes', 'No'] }
-  ],
-  "Top Cover": [
-    { label: "Cover Type", key: "cover_type", isSelect: true, options: ['Flat', 'Sloped', 'Removable'] },
-    { label: "Rain Protection Design", key: "rain_protection_design", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Overhang Available", key: "overhang_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Mounting Type", key: "mounting_type", isSelect: true, options: ['Screw Mounted', 'Welded'] },
-    { label: "Sealing Gasket Available", key: "sealing_gasket_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Cable Entry Available", key: "cable_entry_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Ventilation Available", key: "ventilation_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Branding Area Available", key: "branding_area_available", isSelect: true, options: ['Yes', 'No'] }
-  ],
-  "Base Frame": [
-    { label: "Base Type", key: "base_type", isSelect: true, options: ['Fixed Stand', 'Skid Base', 'Cabinet Base'] },
-    { label: "Base Material", key: "base_material", isSelect: true, options: ['MS Channel', 'MS Sheet', 'SS'] },
-    { label: "Load Capacity", key: "load_capacity" },
-    { label: "Foot Stand Count", key: "foot_stand_count", type: 'number' },
-    { label: "Floor Mounting Hole Available", key: "floor_mounting_hole_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Anchor Bolt Size", key: "anchor_bolt_size" },
-    { label: "Anti-vibration Pad Available", key: "anti_vibration_pad_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Leveling Foot Available", key: "leveling_foot_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Bottom Clearance", key: "bottom_clearance" },
-    { label: "Drain Hole Available", key: "drain_hole_available", isSelect: true, options: ['Yes', 'No'] }
-  ],
-  "Internal Mounting Plate": [
-    { label: "Plate Usage", key: "plate_usage", isSelect: true, options: ['PCB Mounting', 'Relay Box', 'SMPS', 'Wiring'] },
-    { label: "Plate Material", key: "plate_material", isSelect: true, options: ['MS', 'Aluminum', 'Acrylic'] },
-    { label: "Mounting Hole Pattern", key: "mounting_hole_pattern", isSelect: true, options: ['Custom', 'M4', 'M6'] },
-    { label: "Component Mounting Slots", key: "component_mounting_slots", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Cable Routing Holes", key: "cable_routing_holes", isSelect: true, options: ['Yes', 'No'] },
-    { label: "DIN Rail Mounting Available", key: "din_rail_mounting_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Earthing Stud Available", key: "earthing_stud_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Removable Plate", key: "removable_plate", isSelect: true, options: ['Yes', 'No'] }
-  ],
-  "Nozzle Holder": [
-    { label: "Holder Type", key: "holder_type", isSelect: true, options: ['External Holder', 'Recessed Pocket'] },
-    { label: "Nozzle Compatibility", key: "nozzle_compatibility", isSelect: true, options: ['Manual', 'Auto Nozzle'] },
-    { label: "Holder Material", key: "holder_material", isSelect: true, options: ['Plastic', 'MS', 'Aluminum'] },
-    { label: "Mounting Side", key: "mounting_side", isSelect: true, options: ['Left', 'Right', 'Front'] },
-    { label: "Nozzle Sensor Mount Available", key: "nozzle_sensor_mount_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Drain Hole Available", key: "drain_hole_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Locking Support Available", key: "locking_support_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Rubber Padding Available", key: "rubber_padding_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Cutout Size", key: "cutout_size" }
-  ],
-  "Hose Entry Plate": [
-    { label: "Hose Entry Type", key: "hose_entry_type", isSelect: true, options: ['Side Entry', 'Bottom Entry', 'Front Entry'] },
-    { label: "Hose Diameter Support", key: "hose_diameter_support", isSelect: true, options: ['3/4 inch', '1 inch'] },
-    { label: "Grommet Available", key: "grommet_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Pipe Clamp Mount Available", key: "pipe_clamp_mount_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Swivel Mount Support", key: "swivel_mount_support", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Hole Diameter", key: "hole_diameter" },
-    { label: "Reinforcement Plate Available", key: "reinforcement_plate_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Leak Drain Path Available", key: "leak_drain_path_available", isSelect: true, options: ['Yes', 'No'] }
-  ],
-  "Display": [
-    { label: "Panel Usage", key: "panel_usage", isSelect: true, options: ['Display', 'Keypad', 'Printer', 'Indicator'] },
-    { label: "Display Cutout Size", key: "display_cutout_size" },
-    { label: "Keypad Cutout Available", key: "keypad_cutout_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Printer Cutout Available", key: "printer_cutout_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Acrylic Window Available", key: "acrylic_window_available", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Window Material", key: "window_material", isSelect: true, options: ['Acrylic', 'Polycarbonate', 'Glass'] },
-    { label: "Window Thickness", key: "window_thickness", isSelect: true, options: ['2 mm', '3 mm'] },
-    { label: "Sticker / Branding Area", key: "sticker_branding_area", isSelect: true, options: ['Yes', 'No'] },
-    { label: "Button Hole Count", key: "button_hole_count", type: 'number' },
-    { label: "Indicator Hole Count", key: "indicator_hole_count", type: 'number' }
-  ],
-  "Lock": [
-    { label: "Hardware Type", key: "hardware_type", isSelect: true, options: ['Lock', 'Hinge', 'Handle', 'Bracket'] },
-    { label: "Material", key: "material", isSelect: true, options: ['SS', 'MS', 'Zinc Alloy'] },
-    { label: "Size", key: "size", isSelect: true, options: ['50 mm', '100 mm'] },
-    { label: "Load Capacity", key: "load_capacity", isSelect: true, options: ['20 kg'] },
-    { label: "Opening Angle", key: "opening_angle", isSelect: true, options: ['90°', '120°', '180°'] },
-    { label: "Fastener Size", key: "fastener_size", isSelect: true, options: ['M4', 'M5', 'M6'] },
-    { label: "Finish", key: "finish", isSelect: true, options: ['Chrome', 'Black', 'Powder Coated'] },
-    { label: "Quantity Per Dispenser", key: "quantity_per_dispenser", type: 'number' },
-    { label: "Replacement Required", key: "replacement_required", isSelect: true, options: ['Yes', 'No'] }
-  ]
-};
+// CATEGORY_CONFIG imported from constants
 
 const StructuralPartsPage = () => {
   const navigate = useNavigate();
@@ -183,6 +53,114 @@ const StructuralPartsPage = () => {
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
   });
+
+  const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <input 
+        type={type}
+        {...register(name, { required: required ? `${label} is required` : false })}
+        placeholder={placeholder}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all placeholder:text-[var(--text-dim)] font-bold"
+      />
+      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
+    </div>
+  );
+  
+  const SelectField = ({ label, name, options, required = false }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <select 
+        {...register(name, { required: required ? `${label} is required` : false })}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold appearance-none cursor-pointer"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+      >
+        <option value="">Select {label}</option>
+        {options?.map(opt => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
+    </div>
+  );
+
+  const TextAreaField = ({ label, name, placeholder }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+      <textarea 
+        {...register(name)}
+        placeholder={placeholder}
+        rows={3}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dim)] font-bold resize-none"
+      />
+    </div>
+  );
+
+  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
+    const selectedFile = watch(name);
+    const hasNewFile = selectedFile && selectedFile.length > 0;
+    
+    const fileName = hasNewFile 
+      ? selectedFile[0].name 
+      : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+        <div className="relative group">
+          <input 
+            type="file" 
+            {...register(name)} 
+            accept={accept}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+          />
+          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
+              <FileUp size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
+                {fileName}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                {existingUrl && !hasNewFile && (
+                  <>
+                    <button 
+                      type="button"
+                      onClick={() => handleDownload(existingUrl)}
+                      className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Download size={10} /> Download
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleDeleteFile(name)}
+                      className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Trash2 size={10} /> Delete
+                    </button>
+                  </>
+                )}
+                {hasNewFile && (
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
+                    className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                  >
+                    <X size={10} /> Clear Selection
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const watchCategory = watch('category_name');
 
@@ -397,86 +375,22 @@ const StructuralPartsPage = () => {
     }
   };
 
-  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
-    const selectedFile = watch(name);
-    const hasNewFile = selectedFile && selectedFile.length > 0;
-    const fileName = hasNewFile ? selectedFile[0].name : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
 
+
+
+
+  const DataSheetEntry = ({ label, value, icon: Icon }) => {
+    if (!value || value === 'Not Defined' || value === '0×0×0') return null;
     return (
-      <div className="space-y-2">
-        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-        <div className="relative group">
-          <input type="file" {...register(name)} accept={accept} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
-              <FileUp size={18} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>{fileName}</p>
-              <div className="flex items-center gap-3 mt-1">
-                {existingUrl && !hasNewFile && (
-                  <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => window.open(buildFileUrl(existingUrl), '_blank')} className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20">
-                      <Download size={10} /> View
-                    </button>
-                    <button type="button" onClick={() => handleDeleteFile(name)} className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20">
-                      <Trash2 size={10} /> Delete
-                    </button>
-                  </div>
-                )}
-                {hasNewFile && (
-                  <button type="button" onClick={(e) => { e.stopPropagation(); setValue(name, null); }} className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20">
-                    <X size={10} /> Clear Selection
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+      <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">
+        <div className="flex items-center gap-3 mb-1.5">
+          {Icon && <Icon size={14} className="text-[var(--accent)]" />}
+          <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em]">{label}</p>
         </div>
+        <p className="text-[15px] font-black text-[var(--text-main)] tracking-tight leading-snug">{value}</p>
       </div>
     );
   };
-
-  const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label} {required && <span className="text-rose-500">*</span>}</label>
-      <input type={type} {...register(name, { required: required ? `${label} is required` : false })} placeholder={placeholder} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all font-bold" />
-    </div>
-  );
-
-  const TextAreaField = ({ label, name, placeholder }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-      <textarea
-        {...register(name)}
-        placeholder={placeholder}
-        rows={3}
-        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dim)] font-bold resize-none"
-      />
-    </div>
-  );
-
-  const SelectField = ({ label, name, options, required = false }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label} {required && <span className="text-rose-500">*</span>}</label>
-      <select {...register(name, { required: required ? `${label} is required` : false })} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all font-bold appearance-none cursor-pointer">
-        <option value="">Select {label}</option>
-        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
-    </div>
-  );
-
-  const DataSheetEntry = ({ label, value, icon: Icon }) => (
-    <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">
-      <div className="flex items-center gap-3 mb-1.5">
-        {Icon && <Icon size={14} className="text-[var(--accent)]" />}
-        <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em]">{label}</p>
-      </div>
-      <p className="text-[15px] font-black text-[var(--text-main)] tracking-tight leading-snug">
-        {value !== undefined && value !== null && value !== '' ? value : 'Not Defined'}
-      </p>
-    </div>
-  );
 
   const FileCard = ({ label, url }) => (
     <div className="flex items-center justify-between p-4.5 bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] rounded-2xl group hover:border-[var(--accent)] transition-all relative overflow-hidden">
@@ -661,7 +575,7 @@ const StructuralPartsPage = () => {
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" title="Edit"><Settings size={14} /></button>
+                  <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" title="Edit"><Pencil size={14} /></button>
                   <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all" title="Delete"><Trash2 size={14} /></button>
                 </div>
               </div>
@@ -694,6 +608,34 @@ const StructuralPartsPage = () => {
       >
         {modalMode === 'view' ? (
           <div className="space-y-10 pb-10 max-h-[85vh] overflow-y-auto custom-scrollbar pr-4">
+            {/* Breadcrumb Navigation */}
+            <div className="flex items-center gap-4 px-1">
+              <button 
+                onClick={() => navigate('/admin/dashboard')}
+                className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+              >
+                <span>Dashboard</span>
+              </button>
+              <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+              <button 
+                onClick={() => navigate('/admin/inventory')}
+                className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+              >
+                <span>Inventory</span>
+              </button>
+              <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+              >
+                <span>Structural</span>
+              </button>
+              <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+              <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">
+                <span>{selectedItem?.part_name}</span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
               <div className="lg:col-span-5 space-y-6">
                 <div className="aspect-square bg-[var(--bg-workspace)] rounded-[40px] overflow-hidden border border-[var(--border-color)] shadow-inner flex items-center justify-center relative group">

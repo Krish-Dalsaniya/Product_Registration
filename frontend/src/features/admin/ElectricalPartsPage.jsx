@@ -5,12 +5,15 @@ import { toast } from 'react-hot-toast';
 import { 
   Search, Plus, Loader2, Plug, Zap, Info, Settings, 
   FileUp, ChevronRight, Eye, Download, Trash2, Box, Cpu,
-  Activity, ArrowLeft, ImageIcon, CheckCircle2, Layers, Factory, ShieldAlert, FileText, BatteryCharging, Wrench, Package, Shield, Scale, Ruler, Banknote, ShoppingCart, X, LayoutGrid, List, Fingerprint, Calendar
+  Activity, ArrowLeft, ImageIcon, CheckCircle2, Layers, Factory, ShieldAlert, FileText, BatteryCharging, Wrench, Package, Shield, Scale, Ruler, Banknote, ShoppingCart, X, LayoutGrid, List, Fingerprint, Calendar, Pencil
 } from 'lucide-react';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import { getElectricalParts, createElectricalPart, updateElectricalPart, deleteElectricalPart, getElectricalPartById, deleteElectricalImage, deleteElectricalFile } from '../../api/inventory';
 import { getProducts } from '../../api/products';
+import { ELECTRICAL_SPEC_FIELDS, ELECTRICAL_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
+
+const CATEGORY_CONFIG = ELECTRICAL_CATEGORY_CONFIG;
 
 const buildFileUrl = (filePath) => {
   if (!filePath || filePath === "#") return "#";
@@ -24,116 +27,9 @@ const buildFileUrl = (filePath) => {
 };
 
 
-const categoriesList = [
-    'Pump',
-    'Nozzle',
-    'Solenoid Valve',
-    'Relay Box',
-    'Transformer',
-    'RCCB',
-    'SPD(Surge Protection Device)'
-];
+const categoriesList = Object.keys(CATEGORY_CONFIG);
 
-const ELECTRICAL_SPEC_FIELDS = {
-  "Pump": [
-    { "label": "Pump Type", "key": "pump_type" },
-    { "label": "Motor Type", "key": "motor_type" },
-    { "label": "Flow Rate", "key": "flow_rate" },
-    { "label": "Max Pressure", "key": "max_pressure" },
-    { "label": "Suction Size", "key": "suction_size" },
-    { "label": "Outlet Size", "key": "outlet_size" },
-    { "label": "Fluid Compatibility", "key": "fluid_compatibility" },
-    { "label": "RPM", "key": "rpm" },
-    { "label": "Seal Type", "key": "seal_type" },
-    { "label": "Noise Level", "key": "noise_level" },
-    { "label": "Dry Run Protection", "key": "dry_run_protection" },
-    { "label": "Overload Protection", "key": "overload_protection" }
-  ],
-  "Nozzle": [
-    { "label": "Nozzle Type", "key": "nozzle_type" },
-    { "label": "Fuel Compatibility", "key": "fuel_compatibility" },
-    { "label": "Flow Rate Range", "key": "flow_rate_range" },
-    { "label": "Inlet Size", "key": "inlet_size" },
-    { "label": "Outlet Diameter", "key": "outlet_diameter" },
-    { "label": "Spout Type", "key": "spout_type" },
-    { "label": "Auto Cutoff", "key": "auto_cutoff_available" },
-    { "label": "Swivel Joint", "key": "swivel_joint_available" },
-    { "label": "Trigger Lock", "key": "trigger_lock_available" },
-    { "label": "Seal Material", "key": "seal_material" },
-    { "label": "Operating Pressure", "key": "operating_pressure" },
-    { "label": "Color Code", "key": "color_code" }
-  ],
-  "Solenoid Valve": [
-    { "label": "Valve Type", "key": "valve_type" },
-    { "label": "Operation Type", "key": "operation_type" },
-    { "label": "Coil Power", "key": "coil_power" },
-    { "label": "Port Size", "key": "port_size" },
-    { "label": "Number of Ports", "key": "number_of_ports" },
-    { "label": "Medium Compatibility", "key": "medium_compatibility" },
-    { "label": "Pressure Range", "key": "pressure_range" },
-    { "label": "Response Time", "key": "response_time" },
-    { "label": "Manual Override", "key": "manual_override" },
-    { "label": "Coil Protection Class", "key": "coil_protection_class" },
-    { "label": "Duty Cycle", "key": "duty_cycle" }
-  ],
-  "Relay Box": [
-    { "label": "Relay Box Type", "key": "relay_box_type" },
-    { "label": "Output Voltage", "key": "output_voltage" },
-    { "label": "Number of Relays", "key": "number_of_relays" },
-    { "label": "Relay Rating", "key": "relay_rating" },
-    { "label": "Relay Type", "key": "relay_type" },
-    { "label": "Control Signal Type", "key": "control_signal_type" },
-    { "label": "Terminal Type", "key": "terminal_type" },
-    { "label": "Enclosure Material", "key": "enclosure_material" },
-    { "label": "Fuse Available", "key": "fuse_available" },
-    { "label": "LED Indicator", "key": "led_indicator_available" },
-    { "label": "Manual Override", "key": "manual_override_available" },
-    { "label": "Communication Interface", "key": "communication_interface" }
-  ],
-  "Transformer": [
-    { "label": "Transformer Type", "key": "transformer_type" },
-    { "label": "Winding Material", "key": "winding_material" },
-    { "label": "Core Type", "key": "core_type" },
-    { "label": "Insulation Class", "key": "insulation_class" },
-    { "label": "Cooling Type", "key": "cooling_type" },
-    { "label": "Short Circuit Protection", "key": "short_circuit_protection" },
-    { "label": "Temperature Rise", "key": "temperature_rise" },
-    { "label": "Efficiency", "key": "efficiency" }
-  ],
-  "RCCB": [
-    { "label": "RCCB Type", "key": "rccb_type" },
-    { "label": "Sensitivity", "key": "sensitivity" },
-    { "label": "Breaking Capacity", "key": "breaking_capacity" },
-    { "label": "Trip Type", "key": "trip_type" },
-    { "label": "Number of Poles", "key": "number_of_poles" },
-    { "label": "Test Button", "key": "test_button_available" },
-    { "label": "Standards", "key": "standards" },
-    { "label": "Protection Purpose", "key": "protection_purpose" },
-    { "label": "Trip Indicator", "key": "trip_indicator_available" }
-  ],
-  "SPD(Surge Protection Device)": [
-    { "label": "SPD Type", "key": "spd_type" },
-    { "label": "Protection Mode", "key": "protection_mode" },
-    { "label": "Max Continuous Voltage", "key": "max_continuous_operating_voltage" },
-    { "label": "Nominal Discharge Current", "key": "nominal_discharge_current" },
-    { "label": "Max Discharge Current", "key": "max_discharge_current" },
-    { "label": "Voltage Protection Level", "key": "voltage_protection_level" },
-    { "label": "Status Indicator", "key": "status_indicator_available" },
-    { "label": "Replaceable Cartridge", "key": "replaceable_cartridge" },
-    { "label": "Remote Signal Contact", "key": "remote_signal_contact" },
-    { "label": "Standard Compliance", "key": "standard_compliance" }
-  ]
-};
-
-const CATEGORY_ICONS = {
-    'Pump': Activity,
-    'Nozzle': Wrench,
-    'Solenoid Valve': Settings,
-    'Relay Box': Box,
-    'Transformer': Zap,
-    'RCCB': Shield,
-    'SPD(Surge Protection Device)': ShieldAlert
-};
+// CATEGORY_CONFIG imported from constants
 
 const ElectricalPartsPage = () => {
   const navigate = useNavigate();
@@ -156,6 +52,114 @@ const ElectricalPartsPage = () => {
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
       defaultValues: { status: 'Active' }
   });
+
+  const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <input 
+        type={type}
+        {...register(name, { required: required ? `${label} is required` : false })}
+        placeholder={placeholder}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all placeholder:text-[var(--text-dim)] font-bold"
+      />
+      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
+    </div>
+  );
+  
+  const SelectField = ({ label, name, options, required = false }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      <select 
+        {...register(name, { required: required ? `${label} is required` : false })}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold appearance-none cursor-pointer"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+      >
+        <option value="">Select {label}</option>
+        {options?.map(opt => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
+    </div>
+  );
+
+  const TextAreaField = ({ label, name, placeholder }) => (
+    <div className="space-y-2">
+      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+      <textarea 
+        {...register(name)}
+        placeholder={placeholder}
+        rows={3}
+        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dim)] font-bold resize-none"
+      />
+    </div>
+  );
+
+  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
+    const selectedFile = watch(name);
+    const hasNewFile = selectedFile && selectedFile.length > 0;
+    
+    const fileName = hasNewFile 
+      ? selectedFile[0].name 
+      : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
+        <div className="relative group">
+          <input 
+            type="file" 
+            {...register(name)} 
+            accept={accept}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+          />
+          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
+              <FileUp size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
+                {fileName}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                {existingUrl && !hasNewFile && (
+                  <>
+                    <button 
+                      type="button"
+                      onClick={() => handleDownload(existingUrl)}
+                      className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Download size={10} /> Download
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveFile(name)}
+                      className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                    >
+                      <Trash2 size={10} /> Delete
+                    </button>
+                  </>
+                )}
+                {hasNewFile && (
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
+                    className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
+                  >
+                    <X size={10} /> Clear Selection
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const selectedCategory = watch('category_name');
 
@@ -408,133 +412,22 @@ const ElectricalPartsPage = () => {
     }
   };
 
-  const FormField = ({ label, name, placeholder, type = "text", required = false }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
-        {label} {required && <span className="text-rose-500">*</span>}
-      </label>
-      {type === 'checkbox' ? (
-          <input 
-            type="checkbox"
-            {...register(name)}
-            className="w-5 h-5 accent-[var(--accent)] rounded border-[var(--border-color)]"
-          />
-      ) : (
-          <input 
-            type={type}
-            {...register(name, { required: required ? `${label} is required` : false })}
-            placeholder={placeholder}
-            className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all placeholder:text-[var(--text-dim)] font-bold"
-          />
-      )}
-      {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
-    </div>
-  );
 
-  const SelectField = ({ label, name, options, required = false }) => (
-    <div className="space-y-2">
-        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
-            {label} {required && <span className="text-rose-500">*</span>}
-        </label>
-        <div className="relative">
-            <select
-                {...register(name, { required: required ? `${label} is required` : false })}
-                className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all font-bold appearance-none"
-            >
-                <option value="">Select Option...</option>
-                {options.map((opt, idx) => (
-                    <option key={idx} value={opt}>{opt}</option>
-                ))}
-            </select>
-            <ChevronRight size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--text-dim)] pointer-events-none rotate-90" />
-        </div>
-        {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
-    </div>
-  );
 
-  const TextAreaField = ({ label, name, placeholder }) => (
-    <div className="space-y-2">
-      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-      <textarea 
-        {...register(name)}
-        placeholder={placeholder}
-        rows={3}
-        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-[var(--text-dim)] font-bold resize-none"
-      />
-    </div>
-  );
 
-  const FileInput = ({ label, name, accept = "*", existingUrl }) => {
-    const selectedFile = watch(name);
-    const hasNewFile = selectedFile && selectedFile.length > 0;
-    
-    const fileName = hasNewFile 
-      ? selectedFile[0].name 
-      : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
 
+  const DataSheetEntry = ({ label, value, icon: Icon }) => {
+    if (!value || value === 'Not Defined' || value === '0×0×0') return null;
     return (
-      <div className="space-y-2">
-        <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-        <div className="relative group">
-          <input 
-            type="file" 
-            {...register(name)} 
-            accept={accept}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-          />
-          <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
-              <FileUp size={18} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-[12px] font-bold truncate ${hasNewFile ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
-                {fileName}
-              </p>
-              <div className="flex items-center gap-3 mt-1">
-                {existingUrl && !hasNewFile && (
-                  <>
-                    <button 
-                      type="button"
-                      onClick={() => handleDownload(existingUrl)}
-                      className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
-                    >
-                      <Download size={10} /> Download
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => handleRemoveFile(name)}
-                      className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
-                    >
-                      <Trash2 size={10} /> Delete
-                    </button>
-                  </>
-                )}
-                {hasNewFile && (
-                  <button 
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
-                    className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
-                  >
-                    <X size={10} /> Clear Selection
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+      <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">
+        <div className="flex items-center gap-3 mb-1.5">
+          {Icon && <Icon size={14} className="text-[var(--accent)]" />}
+          <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em]">{label}</p>
         </div>
+        <p className="text-[15px] font-bold text-[var(--text-main)] tracking-tight leading-snug">{value}</p>
       </div>
     );
   };
-
-  const DataSheetEntry = ({ label, value, icon: Icon }) => (
-    <div className="bg-[var(--bg-workspace)]/40 p-4 rounded-2xl border border-[var(--border-color)]/60 hover:border-[var(--accent)]/30 transition-all group">
-      <div className="flex items-center gap-3 mb-1.5">
-        {Icon && <Icon size={14} className="text-[var(--accent)]" />}
-        <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em]">{label}</p>
-      </div>
-      <p className="text-[15px] font-bold text-[var(--text-main)] tracking-tight leading-snug">{value || 'Not Defined'}</p>
-    </div>
-  );
 
   const FileCard = ({ label, url }) => (
     <div className="flex items-center justify-between p-4.5 bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] rounded-2xl group hover:border-[var(--accent)] transition-all relative overflow-hidden">
@@ -574,112 +467,16 @@ const ElectricalPartsPage = () => {
   );
 
   const renderCategoryFields = () => {
-    switch (selectedCategory) {
-        case 'Pump': return (
-            <>
-                <FormField label="Pump Type" name="pump_type" placeholder="e.g. Centrifugal" />
-                <FormField label="Motor Type" name="motor_type" placeholder="e.g. Induction" />
-                <FormField label="Flow Rate" name="flow_rate" placeholder="e.g. 50 L/min" />
-                <FormField label="Max Pressure" name="max_pressure" placeholder="e.g. 10 bar" />
-                <FormField label="Suction Size" name="suction_size" placeholder="e.g. 1 inch" />
-                <FormField label="Outlet Size" name="outlet_size" placeholder="e.g. 1 inch" />
-                <FormField label="Fluid Compatibility" name="fluid_compatibility" placeholder="e.g. Water, Oil" />
-                <FormField label="RPM" name="rpm" placeholder="e.g. 1440" />
-                <FormField label="Seal Type" name="seal_type" placeholder="e.g. Mechanical" />
-                <FormField label="Noise Level" name="noise_level" placeholder="e.g. 60 dB" />
-                <SelectField label="Dry Run Protection" name="dry_run_protection" options={['Yes', 'No']} />
-                <SelectField label="Overload Protection" name="overload_protection" options={['Yes', 'No']} />
-            </>
-        );
-        case 'Nozzle': return (
-            <>
-                <FormField label="Nozzle Type" name="nozzle_type" placeholder="e.g. Spray" />
-                <FormField label="Fuel Compatibility" name="fuel_compatibility" placeholder="e.g. Diesel, Petrol" />
-                <FormField label="Flow Rate Range" name="flow_rate_range" placeholder="e.g. 10-50 L/min" />
-                <FormField label="Inlet Size" name="inlet_size" placeholder="e.g. 3/4 inch" />
-                <FormField label="Outlet Diameter" name="outlet_diameter" placeholder="e.g. 10 mm" />
-                <FormField label="Spout Type" name="spout_type" placeholder="e.g. Straight" />
-                <SelectField label="Auto Cutoff" name="auto_cutoff_available" options={['Yes', 'No']} />
-                <SelectField label="Swivel Joint" name="swivel_joint_available" options={['Yes', 'No']} />
-                <SelectField label="Trigger Lock" name="trigger_lock_available" options={['Yes', 'No']} />
-                <FormField label="Seal Material" name="seal_material" placeholder="e.g. Viton" />
-                <FormField label="Operating Pressure" name="operating_pressure" placeholder="e.g. 3 bar" />
-                <FormField label="Color Code" name="color_code" placeholder="e.g. Red" />
-                <FormField label="Color Code" name="color_code" placeholder="e.g. Red" />
-            </>
-        );
-        case 'Solenoid Valve': return (
-            <>
-                <FormField label="Valve Type" name="valve_type" placeholder="e.g. Normally Closed" />
-                <FormField label="Operation Type" name="operation_type" placeholder="e.g. Direct Acting" />
-                <FormField label="Coil Power" name="coil_power" placeholder="e.g. 10W" />
-                <FormField label="Port Size" name="port_size" placeholder="e.g. 1/2 inch" />
-                <FormField label="Number of Ports" name="number_of_ports" placeholder="e.g. 2/2 Way" />
-                <FormField label="Medium Compatibility" name="medium_compatibility" placeholder="e.g. Air, Water, Gas" />
-                <FormField label="Pressure Range" name="pressure_range" placeholder="e.g. 0-10 bar" />
-                <FormField label="Response Time" name="response_time" placeholder="e.g. 20 ms" />
-                <SelectField label="Manual Override" name="manual_override" options={['Yes', 'No']} />
-                <FormField label="Coil Protection Class" name="coil_protection_class" placeholder="e.g. IP65" />
-                <FormField label="Duty Cycle" name="duty_cycle" placeholder="e.g. 100% ED" />
-            </>
-        );
-        case 'Relay Box': return (
-            <>
-                <FormField label="Relay Box Type" name="relay_box_type" placeholder="e.g. Multi-channel" />
-                <FormField label="Output Voltage" name="output_voltage" placeholder="e.g. 24V DC" />
-                <FormField label="Number of Relays" name="number_of_relays" placeholder="e.g. 8" />
-                <FormField label="Relay Rating" name="relay_rating" placeholder="e.g. 10A" />
-                <FormField label="Relay Type" name="relay_type" placeholder="e.g. SPDT" />
-                <FormField label="Control Signal Type" name="control_signal_type" placeholder="e.g. 0-10V, 4-20mA" />
-                <FormField label="Terminal Type" name="terminal_type" placeholder="e.g. Screw" />
-                <FormField label="Enclosure Material" name="enclosure_material" placeholder="e.g. ABS Plastic" />
-                <SelectField label="Fuse Available" name="fuse_available" options={['Yes', 'No']} />
-                <SelectField label="LED Indicator" name="led_indicator_available" options={['Yes', 'No']} />
-                <SelectField label="Manual Override" name="manual_override_available" options={['Yes', 'No']} />
-                <FormField label="Communication Interface" name="communication_interface" placeholder="e.g. RS485" />
-            </>
-        );
-        case 'Transformer': return (
-            <>
-                <FormField label="Transformer Type" name="transformer_type" placeholder="e.g. Step-down" />
-                <FormField label="Winding Material" name="winding_material" placeholder="e.g. Copper" />
-                <FormField label="Core Type" name="core_type" placeholder="e.g. Toroidal" />
-                <FormField label="Insulation Class" name="insulation_class" placeholder="e.g. Class F" />
-                <FormField label="Cooling Type" name="cooling_type" placeholder="e.g. Air Cooled" />
-                <SelectField label="Short Circuit Protection" name="short_circuit_protection" options={['Yes', 'No']} />
-                <FormField label="Temperature Rise" name="temperature_rise" placeholder="e.g. 50Â°C" />
-                <FormField label="Efficiency" name="efficiency" placeholder="e.g. 95%" />
-            </>
-        );
-        case 'RCCB': return (
-            <>
-                <FormField label="RCCB Type" name="rccb_type" placeholder="e.g. Type A" />
-                <FormField label="Sensitivity" name="sensitivity" placeholder="e.g. 30mA" />
-                <FormField label="Breaking Capacity" name="breaking_capacity" placeholder="e.g. 10kA" />
-                <FormField label="Trip Type" name="trip_type" placeholder="e.g. Electromagnetic" />
-                <FormField label="Number of Poles" name="number_of_poles" placeholder="e.g. 2P, 4P" />
-                <SelectField label="Test Button" name="test_button_available" options={['Yes', 'No']} />
-                <FormField label="Standards" name="standards" placeholder="e.g. IEC 61008-1" />
-                <FormField label="Protection Purpose" name="protection_purpose" placeholder="e.g. Earth Leakage" />
-                <SelectField label="Trip Indicator" name="trip_indicator_available" options={['Yes', 'No']} />
-            </>
-        );
-        case 'SPD(Surge Protection Device)': return (
-            <>
-                <FormField label="SPD Type" name="spd_type" placeholder="e.g. Type 2" />
-                <FormField label="Protection Mode" name="protection_mode" placeholder="e.g. L-N, N-PE" />
-                <FormField label="Max Continuous Voltage" name="max_continuous_operating_voltage" placeholder="e.g. 275V" />
-                <FormField label="Nominal Discharge Current" name="nominal_discharge_current" placeholder="e.g. 20kA" />
-                <FormField label="Max Discharge Current" name="max_discharge_current" placeholder="e.g. 40kA" />
-                <FormField label="Voltage Protection Level" name="voltage_protection_level" placeholder="e.g. < 1.5kV" />
-                <SelectField label="Status Indicator" name="status_indicator_available" options={['Yes', 'No']} />
-                <SelectField label="Replaceable Cartridge" name="replaceable_cartridge" options={['Yes', 'No']} />
-                <SelectField label="Remote Signal Contact" name="remote_signal_contact" options={['Yes', 'No']} />
-                <FormField label="Standard Compliance" name="standard_compliance" placeholder="e.g. IEC 61643-11" />
-            </>
-        );
-        default: return null;
-    }
+    const fields = ELECTRICAL_SPEC_FIELDS[selectedCategory];
+    if (!fields) return null;
+
+    return fields.map(f => (
+        f.isSelect ? (
+            <SelectField key={f.key} label={f.label} name={f.key} options={f.options} />
+        ) : (
+            <FormField key={f.key} label={f.label} name={f.key} type={f.type || 'text'} />
+        )
+    ));
   };
 
   const columns = [
@@ -824,7 +621,7 @@ const ElectricalPartsPage = () => {
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                       <button onClick={(e) => { e.stopPropagation(); loadPartDetails(item.part_id, 'edit'); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"><Settings size={14} /></button>
+                       <button onClick={(e) => { e.stopPropagation(); loadPartDetails(item.part_id, 'edit'); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" title="Edit"><Pencil size={14} /></button>
                        <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"><Trash2 size={14} /></button>
                     </div>
                   </div>
@@ -857,6 +654,34 @@ const ElectricalPartsPage = () => {
       >
         {modalMode === 'view' ? (
           <div className="space-y-12 pb-10 max-h-[82vh] overflow-y-auto custom-scrollbar pr-4">
+             {/* Breadcrumb Navigation */}
+             <div className="flex items-center gap-4 px-1">
+                <button 
+                  onClick={() => navigate('/admin/dashboard')}
+                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                >
+                  <span>Dashboard</span>
+                </button>
+                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                <button 
+                  onClick={() => navigate('/admin/inventory')}
+                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                >
+                  <span>Inventory</span>
+                </button>
+                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-[var(--accent)] transition-all cursor-pointer"
+                >
+                  <span>Electrical</span>
+                </button>
+                <ChevronRight size={14} className="text-[var(--text-dim)] opacity-30" />
+                <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">
+                  <span>{selectedItem?.part_name}</span>
+                </div>
+             </div>
+
              {/* Premium Header Layout */}
              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 {/* Visual Reference Side */}
@@ -1091,7 +916,7 @@ const ElectricalPartsPage = () => {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
                    {categoriesList.map((cat, idx) => {
-                      const Icon = CATEGORY_ICONS[cat] || Layers;
+                      const Icon = CATEGORY_CONFIG[cat]?.icon || Layers;
                       return (
                         <button 
                            key={cat}

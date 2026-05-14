@@ -52,15 +52,17 @@ const DataTable = ({ columns, data, loading, totalCount, filteredCount, currentP
                     >
                       <Eye size={18} strokeWidth={2} />
                     </button>
-                    <button
-                      onClick={() => onEdit(row)}
-                      className="text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl transition-all duration-200"
-                      style={{ background: 'transparent', border: '1.5px solid var(--accent)', color: 'var(--accent)' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      Update
-                    </button>
+                    {onEdit && (
+                      <button
+                        onClick={() => onEdit(row)}
+                        className="text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl transition-all duration-200"
+                        style={{ background: 'transparent', border: '1.5px solid var(--accent)', color: 'var(--accent)' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--nav-hover)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        Update
+                      </button>
+                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete && onDelete(row); }}
                       className="p-1.5 rounded-lg transition-all duration-200"
