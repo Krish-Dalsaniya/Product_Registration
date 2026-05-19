@@ -195,6 +195,17 @@ const FeatureMappingPage = () => {
         onClose={() => setIsModalOpen(false)}
         title={modalMode === 'create' ? 'Add New Feature Mapping' : modalMode === 'edit' ? 'Update Feature Mapping' : 'Mapping Details'}
         maxWidth="max-w-5xl"
+        headerActions={modalMode !== 'view' && (
+          <button
+            form="feature-mapping-form"
+            type="submit"
+            disabled={isSubmitting}
+            className="btn-primary py-2 px-6 shadow-md flex items-center gap-2 text-[9px] font-black uppercase tracking-widest"
+            style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
+          >
+            {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Create Mapping' : 'Update Mapping')}
+          </button>
+        )}
       >
         {modalMode === 'view' ? (
           <div className="space-y-8 py-4">
@@ -246,7 +257,7 @@ const FeatureMappingPage = () => {
              </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-4">
+          <form id="feature-mapping-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 py-4">
             <div className="space-y-6">
               <div>
                 <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Mapping Name</label>
@@ -319,12 +330,7 @@ const FeatureMappingPage = () => {
               </div>
             </div>
 
-            <div className="flex justify-end gap-4 pt-6 border-t border-[var(--border-color)]">
-              <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-3 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest hover:text-[var(--text-main)] transition-all">Cancel</button>
-              <button disabled={isSubmitting} type="submit" className="btn-primary px-10 py-3 shadow-xl text-[12px] uppercase tracking-[0.2em]">
-                {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (modalMode === 'create' ? 'Create Mapping' : 'Update Mapping')}
-              </button>
-            </div>
+            {/* Submit buttons moved to modal header */}
           </form>
         )}
       </Modal>

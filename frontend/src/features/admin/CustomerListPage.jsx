@@ -16,7 +16,14 @@ const CustomerListPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [techContacts, setTechContacts] = useState([]);
   const [salesContacts, setSalesContacts] = useState([]);
+  const [ownerContacts, setOwnerContacts] = useState([]);
+  const [accountsContacts, setAccountsContacts] = useState([]);
+  const [qaQcContacts, setQaQcContacts] = useState([]);
   const [addresses, setAddresses] = useState([]);
+  const [isPersonnelModalOpen, setIsPersonnelModalOpen] = useState(false);
+  const [personnelType, setPersonnelType] = useState('technical');
+  const [editingPersonnelIdx, setEditingPersonnelIdx] = useState(null);
+  const [tempPersonnel, setTempPersonnel] = useState(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddressIdx, setEditingAddressIdx] = useState(null);
   const [tempAddress, setTempAddress] = useState(null);
@@ -45,7 +52,10 @@ const CustomerListPage = () => {
     customer.customer_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.technical_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    customer.sales_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase()))
+    customer.sales_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    customer.owner_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    customer.accounts_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    customer.qa_qc_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const onSubmit = async (data) => {
@@ -53,8 +63,41 @@ const CustomerListPage = () => {
     try {
       const payload = {
         ...data,
-        technical_contacts: techContacts.filter(c => c.person.trim()),
-        sales_contacts: salesContacts.filter(c => c.person.trim()),
+        technical_contacts: techContacts.map(c => ({
+          person: c.name || c.person || '',
+          name: c.name || c.person || '',
+          mobile: c.mobile || '',
+          email: c.email || '',
+          designation: c.designation || ''
+        })).filter(c => c.name.trim()),
+        sales_contacts: salesContacts.map(c => ({
+          person: c.name || c.person || '',
+          name: c.name || c.person || '',
+          mobile: c.mobile || '',
+          email: c.email || '',
+          designation: c.designation || ''
+        })).filter(c => c.name.trim()),
+        owner_contacts: ownerContacts.map(c => ({
+          person: c.name || c.person || '',
+          name: c.name || c.person || '',
+          mobile: c.mobile || '',
+          email: c.email || '',
+          designation: c.designation || ''
+        })).filter(c => c.name.trim()),
+        accounts_contacts: accountsContacts.map(c => ({
+          person: c.name || c.person || '',
+          name: c.name || c.person || '',
+          mobile: c.mobile || '',
+          email: c.email || '',
+          designation: c.designation || ''
+        })).filter(c => c.name.trim()),
+        qa_qc_contacts: qaQcContacts.map(c => ({
+          person: c.name || c.person || '',
+          name: c.name || c.person || '',
+          mobile: c.mobile || '',
+          email: c.email || '',
+          designation: c.designation || ''
+        })).filter(c => c.name.trim()),
         addresses: addresses.filter(a => a.company_name?.trim())
       };
 
@@ -115,9 +158,87 @@ const CustomerListPage = () => {
     setIsAddressModalOpen(false);
   };
 
+  const handleOpenPersonnelModal = (type, idx = null) => {
+    setPersonnelType(type);
+    
+    let contactsList = [];
+    if (type === 'technical') contactsList = techContacts;
+    else if (type === 'sales') contactsList = salesContacts;
+    else if (type === 'owner') contactsList = ownerContacts;
+    else if (type === 'accounts') contactsList = accountsContacts;
+    else if (type === 'qa_qc') contactsList = qaQcContacts;
+
+    if (idx !== null) {
+      const contact = contactsList[idx];
+      setTempPersonnel({
+        name: contact.name || contact.person || '',
+        mobile: contact.mobile || '',
+        email: contact.email || '',
+        designation: contact.designation || ''
+      });
+      setEditingPersonnelIdx(idx);
+    } else {
+      setTempPersonnel({
+        name: '',
+        mobile: '',
+        email: '',
+        designation: ''
+      });
+      setEditingPersonnelIdx(null);
+    }
+    setIsPersonnelModalOpen(true);
+  };
+
+  const handleSavePersonnel = () => {
+    if (!tempPersonnel.name) {
+      toast.error('Please fill in the Name field');
+      return;
+    }
+
+    const newContact = {
+      person: tempPersonnel.name,
+      name: tempPersonnel.name,
+      mobile: tempPersonnel.mobile,
+      email: tempPersonnel.email,
+      designation: tempPersonnel.designation
+    };
+
+    if (personnelType === 'technical') {
+      let next = [...techContacts];
+      if (editingPersonnelIdx !== null) next[editingPersonnelIdx] = newContact;
+      else next.push(newContact);
+      setTechContacts(next);
+    } else if (personnelType === 'sales') {
+      let next = [...salesContacts];
+      if (editingPersonnelIdx !== null) next[editingPersonnelIdx] = newContact;
+      else next.push(newContact);
+      setSalesContacts(next);
+    } else if (personnelType === 'owner') {
+      let next = [...ownerContacts];
+      if (editingPersonnelIdx !== null) next[editingPersonnelIdx] = newContact;
+      else next.push(newContact);
+      setOwnerContacts(next);
+    } else if (personnelType === 'accounts') {
+      let next = [...accountsContacts];
+      if (editingPersonnelIdx !== null) next[editingPersonnelIdx] = newContact;
+      else next.push(newContact);
+      setAccountsContacts(next);
+    } else if (personnelType === 'qa_qc') {
+      let next = [...qaQcContacts];
+      if (editingPersonnelIdx !== null) next[editingPersonnelIdx] = newContact;
+      else next.push(newContact);
+      setQaQcContacts(next);
+    }
+
+    setIsPersonnelModalOpen(false);
+  };
+
   const handleOpenCreate = () => {
     setTechContacts([]);
     setSalesContacts([]);
+    setOwnerContacts([]);
+    setAccountsContacts([]);
+    setQaQcContacts([]);
     setAddresses([]);
     setModalMode('create');
     setSelectedCustomer(null);
@@ -142,6 +263,9 @@ const CustomerListPage = () => {
     reset(customer);
     setTechContacts(customer.technical_contacts || []);
     setSalesContacts(customer.sales_contacts || []);
+    setOwnerContacts(customer.owner_contacts || []);
+    setAccountsContacts(customer.accounts_contacts || []);
+    setQaQcContacts(customer.qa_qc_contacts || []);
     setAddresses(customer.addresses || []);
     setIsModalOpen(true);
   };
@@ -152,6 +276,9 @@ const CustomerListPage = () => {
     reset(customer);
     setTechContacts(customer.technical_contacts || []);
     setSalesContacts(customer.sales_contacts || []);
+    setOwnerContacts(customer.owner_contacts || []);
+    setAccountsContacts(customer.accounts_contacts || []);
+    setQaQcContacts(customer.qa_qc_contacts || []);
     setAddresses(customer.addresses || []);
     setIsModalOpen(true);
   };
@@ -337,29 +464,105 @@ const CustomerListPage = () => {
               </div>
 
               <div className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-3 opacity-80">Technical Personnel</label>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedCustomer?.technical_contacts?.map((c, i) => (
-                      <div key={i} className="px-3 py-1.5 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-lg flex flex-col min-w-[120px]">
-                        <span className="text-[11px] font-black uppercase text-[var(--text-main)]">{c.person}</span>
-                        <span className="text-[9px] font-bold text-[var(--accent)]">{c.mobile}</span>
-                      </div>
-                    ))}
+                {selectedCustomer?.technical_contacts && selectedCustomer.technical_contacts.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-3 opacity-80">Technical Personnel</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {selectedCustomer.technical_contacts.map((c, i) => (
+                        <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
+                          <div>
+                            <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
+                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                          </div>
+                          <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
+                            {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
+                            {c.email && <p className="flex items-center gap-1.5"><Mail size={10} className="text-[var(--accent)]" /> {c.email}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div>
-                  <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-3 opacity-80">Sales Personnel</label>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedCustomer?.sales_contacts?.map((c, i) => (
-                      <div key={i} className="px-3 py-1.5 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-lg flex flex-col min-w-[120px]">
-                        <span className="text-[11px] font-black uppercase text-[var(--text-main)]">{c.person}</span>
-                        <span className="text-[9px] font-bold text-[var(--accent)]">{c.mobile}</span>
-                      </div>
-                    ))}
+                {selectedCustomer?.sales_contacts && selectedCustomer.sales_contacts.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-3 opacity-80">Purchase Personnel</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {selectedCustomer.sales_contacts.map((c, i) => (
+                        <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
+                          <div>
+                            <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
+                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                          </div>
+                          <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
+                            {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
+                            {c.email && <p className="flex items-center gap-1.5"><Mail size={10} className="text-[var(--accent)]" /> {c.email}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {selectedCustomer?.owner_contacts && selectedCustomer.owner_contacts.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-3 opacity-80">Company Owner</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {selectedCustomer.owner_contacts.map((c, i) => (
+                        <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
+                          <div>
+                            <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
+                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                          </div>
+                          <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
+                            {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
+                            {c.email && <p className="flex items-center gap-1.5"><Mail size={10} className="text-[var(--accent)]" /> {c.email}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedCustomer?.accounts_contacts && selectedCustomer.accounts_contacts.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-3 opacity-80">Accounts</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {selectedCustomer.accounts_contacts.map((c, i) => (
+                        <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
+                          <div>
+                            <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
+                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                          </div>
+                          <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
+                            {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
+                            {c.email && <p className="flex items-center gap-1.5"><Mail size={10} className="text-[var(--accent)]" /> {c.email}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedCustomer?.qa_qc_contacts && selectedCustomer.qa_qc_contacts.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.15em] mb-3 opacity-80">QA/QC</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {selectedCustomer.qa_qc_contacts.map((c, i) => (
+                        <div key={i} className="p-3 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-xl flex flex-col justify-between">
+                          <div>
+                            <span className="text-[12px] font-black uppercase text-[var(--text-main)] block">{c.name || c.person}</span>
+                            {c.designation && <span className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest block mt-0.5">{c.designation}</span>}
+                          </div>
+                          <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-2">
+                            {c.mobile && <p className="flex items-center gap-1.5"><Phone size={10} className="text-[var(--accent)]" /> {c.mobile}</p>}
+                            {c.email && <p className="flex items-center gap-1.5"><Mail size={10} className="text-[var(--accent)]" /> {c.email}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -525,35 +728,148 @@ const CustomerListPage = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                    {/* Technical Personnel */}
                     <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Technical Personnel</span>
-                        <button type="button" onClick={() => setTechContacts([...techContacts, { person: '', mobile: '' }])} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('technical')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
                       </div>
-                      <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
-                        {techContacts.map((c, i) => (
-                          <div key={i} className="flex gap-2 items-center bg-[var(--bg-workspace)]/50 p-2 rounded-lg border border-[var(--border-color)] group hover:border-orange-500/30 transition-all">
-                            <input value={c.person} onChange={e => { const n = [...techContacts]; n[i].person = e.target.value; setTechContacts(n); }} placeholder="Name" className="w-1/2 bg-transparent outline-none text-[12px] font-bold" />
-                            <input value={c.mobile} onChange={e => { const n = [...techContacts]; n[i].mobile = e.target.value; setTechContacts(n); }} placeholder="Mobile" className="w-1/2 bg-transparent outline-none text-[12px] font-bold" />
-                            <button type="button" onClick={() => setTechContacts(techContacts.filter((_, idx) => idx !== i))} className="text-rose-500/30 hover:text-rose-500"><Trash2 size={12} /></button>
+                      <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                        {techContacts.map((c, idx) => (
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
+                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
+                              <button type="button" onClick={() => handleOpenPersonnelModal('technical', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => setTechContacts(techContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
+                            </div>
                           </div>
                         ))}
+                        {techContacts.length === 0 && (
+                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No technical personnel added</div>
+                        )}
                       </div>
                     </div>
 
+                    {/* Purchase Personnel */}
                     <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Sales Personnel</span>
-                        <button type="button" onClick={() => setSalesContacts([...salesContacts, { person: '', mobile: '' }])} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Purchase Personnel</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('sales')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
                       </div>
-                      <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
-                        {salesContacts.map((c, i) => (
-                          <div key={i} className="flex gap-2 items-center bg-[var(--bg-workspace)]/50 p-2 rounded-lg border border-[var(--border-color)] group hover:border-orange-500/30 transition-all">
-                            <input value={c.person} onChange={e => { const n = [...salesContacts]; n[i].person = e.target.value; setSalesContacts(n); }} placeholder="Name" className="w-1/2 bg-transparent outline-none text-[12px] font-bold" />
-                            <input value={c.mobile} onChange={e => { const n = [...salesContacts]; n[i].mobile = e.target.value; setSalesContacts(n); }} placeholder="Mobile" className="w-1/2 bg-transparent outline-none text-[12px] font-bold" />
-                            <button type="button" onClick={() => setSalesContacts(salesContacts.filter((_, idx) => idx !== i))} className="text-rose-500/30 hover:text-rose-500"><Trash2 size={12} /></button>
+                      <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                        {salesContacts.map((c, idx) => (
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
+                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
+                              <button type="button" onClick={() => handleOpenPersonnelModal('sales', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => setSalesContacts(salesContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
+                            </div>
                           </div>
                         ))}
+                        {salesContacts.length === 0 && (
+                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No purchase personnel added</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Company Owner */}
+                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Company Owner</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('owner')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                      </div>
+                      <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                        {ownerContacts.map((c, idx) => (
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
+                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
+                              <button type="button" onClick={() => handleOpenPersonnelModal('owner', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => setOwnerContacts(ownerContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
+                            </div>
+                          </div>
+                        ))}
+                        {ownerContacts.length === 0 && (
+                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No owner added</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Accounts */}
+                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">Accounts</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('accounts')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                      </div>
+                      <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                        {accountsContacts.map((c, idx) => (
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
+                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
+                              <button type="button" onClick={() => handleOpenPersonnelModal('accounts', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => setAccountsContacts(accountsContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
+                            </div>
+                          </div>
+                        ))}
+                        {accountsContacts.length === 0 && (
+                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No accounts added</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* QA/QC */}
+                    <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600">QA/QC</span>
+                        <button type="button" onClick={() => handleOpenPersonnelModal('qa_qc')} className="p-1 hover:bg-orange-500/10 rounded text-orange-600"><Plus size={14} /></button>
+                      </div>
+                      <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                        {qaQcContacts.map((c, idx) => (
+                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-orange-500/30 transition-all">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
+                              {c.designation && <p className="text-[9px] font-extrabold text-orange-600 uppercase tracking-widest truncate">{c.designation}</p>}
+                              <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
+                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-orange-600/60" /> {c.mobile}</p>}
+                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-orange-600/60" /> {c.email}</p>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
+                              <button type="button" onClick={() => handleOpenPersonnelModal('qa_qc', idx)} className="p-1.5 hover:bg-orange-500/10 text-[var(--text-dim)] hover:text-orange-600 rounded transition-all"><Edit2 size={13} /></button>
+                              <button type="button" onClick={() => setQaQcContacts(qaQcContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
+                            </div>
+                          </div>
+                        ))}
+                        {qaQcContacts.length === 0 && (
+                          <div className="py-4 text-center border border-dashed border-orange-500/20 rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-orange-600">No QA/QC added</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -627,6 +943,40 @@ const CustomerListPage = () => {
               <input type="checkbox" checked={tempAddress?.is_shipping} onChange={e => setTempAddress({ ...tempAddress, is_shipping: e.target.checked })} className="w-5 h-5 rounded-md border-2 border-[var(--border-color)] text-emerald-600 focus:ring-0 transition-all" />
               <span className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)] group-hover:text-emerald-600 transition-colors">Shipping</span>
             </label>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Personnel Modal */}
+      <Modal
+        isOpen={isPersonnelModalOpen}
+        onClose={() => setIsPersonnelModalOpen(false)}
+        title={editingPersonnelIdx !== null ? `Edit ${personnelType === 'technical' ? 'Technical' : personnelType === 'sales' ? 'Purchase' : personnelType === 'owner' ? 'Company Owner' : personnelType === 'accounts' ? 'Accounts' : 'QA/QC'} Personnel Details` : `Register New ${personnelType === 'technical' ? 'Technical' : personnelType === 'sales' ? 'Purchase' : personnelType === 'owner' ? 'Company Owner' : personnelType === 'accounts' ? 'Accounts' : 'QA/QC'} Personnel`}
+        maxWidth="max-w-xl"
+        headerActions={
+          <button onClick={handleSavePersonnel} className="px-5 py-2 bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 shadow-lg flex items-center gap-2">
+            <Check size={14} /> Save Personnel
+          </button>
+        }
+      >
+        <div className="space-y-6 py-2">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Full Name</label>
+            <input value={tempPersonnel?.name} onChange={e => setTempPersonnel({ ...tempPersonnel, name: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" placeholder="E.g. John Doe" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Designation</label>
+            <input value={tempPersonnel?.designation} onChange={e => setTempPersonnel({ ...tempPersonnel, designation: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" placeholder="E.g. Project Manager" />
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Contact Number</label>
+              <input value={tempPersonnel?.mobile} onChange={e => setTempPersonnel({ ...tempPersonnel, mobile: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" placeholder="Mobile number" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-1">Email Address</label>
+              <input value={tempPersonnel?.email} onChange={e => setTempPersonnel({ ...tempPersonnel, email: e.target.value })} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-3 px-4 font-bold text-[14px]" placeholder="email@company.com" />
+            </div>
           </div>
         </div>
       </Modal>

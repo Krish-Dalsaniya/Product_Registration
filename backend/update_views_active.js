@@ -9,6 +9,13 @@ const updateViews = async () => {
   try {
     console.log('Updating views to filter out inactive users...');
     
+    // Drop existing views to prevent "cannot drop columns from view" errors on schema changes
+    await pool.query('DROP VIEW IF EXISTS v_admin_user_panel CASCADE');
+    await pool.query('DROP VIEW IF EXISTS v_designer_project_overview CASCADE');
+    await pool.query('DROP VIEW IF EXISTS v_sales_product_overview CASCADE');
+    await pool.query('DROP VIEW IF EXISTS v_maintenance_overview CASCADE');
+    await pool.query('DROP VIEW IF EXISTS v_team_project_summary CASCADE');
+
     // 1. Update v_admin_user_panel
     await pool.query(`
       CREATE OR REPLACE VIEW v_admin_user_panel AS
@@ -18,10 +25,19 @@ const updateViews = async () => {
           u.email,
           r.role_name,
           u.is_active,
-          u.created_at
+          u.created_at,
+          COALESCE(
+            JSON_AGG(
+              JSON_BUILD_OBJECT('team_id', t.team_id, 'team_name', t.team_name)
+            ) FILTER (WHERE t.team_id IS NOT NULL),
+            '[]'::json
+          ) AS teams
       FROM users u
       JOIN roles r ON r.role_id = u.role_id
-      WHERE r.role_name <> 'Admin' AND u.is_active = TRUE;
+      LEFT JOIN team_members tm ON tm.user_id = u.user_id
+      LEFT JOIN teams t ON t.team_id = tm.team_id
+      WHERE r.role_name <> 'Admin' AND u.is_active = TRUE
+      GROUP BY u.user_id, u.full_name, u.email, r.role_name, u.is_active, u.created_at;
     `);
 
     // 2. Update v_designer_project_overview

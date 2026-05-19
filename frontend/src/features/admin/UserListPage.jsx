@@ -4,7 +4,7 @@ import { getUsers, createUser, updateUser, deleteUser, getAdminStats, getTeams }
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
-import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2 } from 'lucide-react';
+import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -25,6 +25,9 @@ const UserListPage = ({ initialRole = '' }) => {
   const [modalMode, setModalMode] = useState('create');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedTeamIds, setSelectedTeamIds] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [teamSearch, setTeamSearch] = useState('');
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
   const selectedRole = watch('role_name');
@@ -38,10 +41,17 @@ const UserListPage = ({ initialRole = '' }) => {
     try {
       const res = await getAdminStats();
       setStats(res.data.data);
+    } catch (error) {
+      console.error('Stats fetch error', error);
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
       const teamsRes = await getTeams();
       setTeams(teamsRes.data.data);
     } catch (error) {
-      console.error('Stats fetch error', error);
+      console.error('Teams fetch error', error);
     }
   };
 
@@ -49,6 +59,7 @@ const UserListPage = ({ initialRole = '' }) => {
     if (!initialRole) {
       fetchStats();
     }
+    fetchTeams();
   }, [initialRole]);
 
   const fetchUsers = async () => {
@@ -77,15 +88,22 @@ const UserListPage = ({ initialRole = '' }) => {
     if (modalMode === 'view') return;
     setIsSubmitting(true);
     try {
+      const payload = {
+        ...data,
+        team_ids: selectedTeamIds
+      };
       if (modalMode === 'create') {
-        await createUser(data);
+        await createUser(payload);
         toast.success('User created successfully!');
       } else {
-        await updateUser(selectedUser.user_id, data);
+        await updateUser(selectedUser.user_id, payload);
         toast.success('User updated successfully!');
       }
       setIsModalOpen(false);
       reset();
+      setSelectedTeamIds([]);
+      setIsDropdownOpen(false);
+      setTeamSearch('');
       fetchUsers();
     } catch (error) {
       toast.error(error.response?.data?.error?.message || 'Action failed');
@@ -97,7 +115,10 @@ const UserListPage = ({ initialRole = '' }) => {
   const handleOpenCreate = () => {
     setModalMode('create');
     setSelectedUser(null);
-    reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer', team_id: '' });
+    setSelectedTeamIds([]);
+    setIsDropdownOpen(false);
+    setTeamSearch('');
+    reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer' });
     setIsModalOpen(true);
   };
 
@@ -110,11 +131,14 @@ const UserListPage = ({ initialRole = '' }) => {
   const handleEdit = (user) => {
     setModalMode('edit');
     setSelectedUser(user);
+    const currentTeamIds = Array.isArray(user.teams) ? user.teams.map(t => t.team_id) : [];
+    setSelectedTeamIds(currentTeamIds);
+    setIsDropdownOpen(false);
+    setTeamSearch('');
     reset({
       full_name: user.full_name,
       email: user.email,
-      role_name: user.role_name,
-      team_id: user.team_id || ''
+      role_name: user.role_name
     });
     setIsModalOpen(true);
   };
@@ -137,6 +161,25 @@ const UserListPage = ({ initialRole = '' }) => {
       key: 'role_name',
       label: 'Role Assignment',
       render: (row) => <RoleBadge role={row.role_name} />
+    },
+    {
+      key: 'teams',
+      label: 'Assigned Teams',
+      render: (row) => {
+        const userTeams = Array.isArray(row.teams) ? row.teams : [];
+        if (userTeams.length === 0) {
+          return <span className="text-[11px] text-[var(--text-muted)] font-medium">No Teams</span>;
+        }
+        return (
+          <div className="flex flex-wrap gap-1 max-w-[300px]">
+            {userTeams.map(t => (
+              <span key={t.team_id} className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-[var(--nav-hover)] text-[var(--accent)] border border-[var(--border-color)]">
+                {t.team_name}
+              </span>
+            ))}
+          </div>
+        );
+      }
     },
   ];
 
@@ -293,6 +336,18 @@ const UserListPage = ({ initialRole = '' }) => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={modalMode === 'create' ? 'Add Personnel' : modalMode === 'edit' ? 'Update User Profile' : 'Personnel Details'}
+        maxWidth="max-w-2xl"
+        headerActions={modalMode !== 'view' && (
+          <button
+            form="user-form"
+            type="submit"
+            disabled={isSubmitting}
+            className="btn-primary py-2 px-6 shadow-md flex items-center gap-2 text-[9px] font-black uppercase tracking-widest"
+            style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
+          >
+            {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save User' : 'Update User')}
+          </button>
+        )}
       >
         {modalMode === 'view' ? (
           <div className="space-y-6">
@@ -338,7 +393,7 @@ const UserListPage = ({ initialRole = '' }) => {
                 </div>
               </div>
 
-              {selectedUser?.team_name && (
+              {selectedUser?.teams && selectedUser.teams.length > 0 && (
                 <div className="flex items-center gap-4 p-3 hover:bg-[var(--bg-workspace)] transition-colors rounded-xl group">
                   <div 
                     className="p-2.5 rounded-lg group-hover:scale-110 transition-transform"
@@ -347,8 +402,14 @@ const UserListPage = ({ initialRole = '' }) => {
                     <Users size={18} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Assigned Team</p>
-                    <p className="text-sm font-semibold text-[var(--text-main)]">{selectedUser.team_name}</p>
+                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Assigned Teams</p>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {selectedUser.teams.map(t => (
+                        <span key={t.team_id} className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--nav-hover)] text-[var(--accent)] border border-[var(--border-color)]">
+                          {t.team_name}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -365,7 +426,7 @@ const UserListPage = ({ initialRole = '' }) => {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form id="user-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
               <input {...register('full_name', { required: 'Name is required' })} autoComplete="off" className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)]" placeholder="e.g. John Doe" />
@@ -386,39 +447,117 @@ const UserListPage = ({ initialRole = '' }) => {
               </div>
             )}
 
-            {!initialRole && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Department</label>
-                  <select {...register('role_name', { required: 'Role is required' })} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] appearance-none text-[var(--text-main)] cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
-                    <option value="Designer">Designer Department</option>
-                    <option value="Sales">Sales Network</option>
-                    <option value="Maintenance">Maintenance Crew</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Assign to Team (Optional)</label>
-                  <select {...register('team_id')} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] appearance-none text-[var(--text-main)] cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
-                    <option value="">No Team Assignment</option>
-                    {teams
-                      .filter(t => !selectedRole || t.role_name === selectedRole)
-                      .map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)
-                    }
-                  </select>
+            {(!initialRole || initialRole === 'Designer' || initialRole === 'Sales') && (
+              <div className={!initialRole ? "grid grid-cols-1 md:grid-cols-2 gap-4" : ""}>
+                {!initialRole && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Department</label>
+                    <select {...register('role_name', { required: 'Role is required' })} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] appearance-none text-[var(--text-main)] cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
+                      <option value="Designer">Designer Department</option>
+                      <option value="Sales">Sales Network</option>
+                      <option value="Maintenance">Maintenance Crew</option>
+                    </select>
+                  </div>
+                )}
+                <div className="relative space-y-2">
+                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Assign to Teams</label>
+                  
+                  {/* Dropdown Toggle Trigger */}
+                  <div 
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="w-full min-h-[42px] bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2 outline-none focus-within:border-[var(--accent)] focus-within:ring-4 focus-within:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)] cursor-pointer flex items-center justify-between gap-2"
+                  >
+                    <div className="flex flex-wrap gap-1.5 max-w-[90%]">
+                      {selectedTeamIds.length === 0 ? (
+                        <span className="text-[var(--text-muted)] opacity-60">No Team Assignments</span>
+                      ) : (
+                        teams
+                          .filter(t => selectedTeamIds.includes(t.team_id))
+                          .map(t => (
+                            <span 
+                              key={t.team_id}
+                              className="px-2 py-0.5 rounded bg-[var(--nav-hover)] text-[var(--accent)] border border-[var(--border-color)] text-[10px] font-extrabold flex items-center gap-1 group"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTeamIds(selectedTeamIds.filter(id => id !== t.team_id));
+                              }}
+                            >
+                              {t.team_name}
+                              <span className="hover:text-red-400 font-normal transition-colors text-[9px] ml-0.5">×</span>
+                            </span>
+                          ))
+                      )}
+                    </div>
+                    <ChevronDown size={16} className={`text-[var(--text-muted)] transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} shrink-0`} />
+                  </div>
+
+                  {/* Dropdown Options Popup */}
+                  {isDropdownOpen && (
+                    <>
+                      {/* Invisible backdrop to capture clicks outside the dropdown */}
+                      <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+                      
+                      <div className="absolute left-0 right-0 bottom-full mb-1.5 bg-[var(--bg-card)] border-[0.5px] border-[var(--border-color)] rounded-lg shadow-2xl z-50 overflow-hidden animate-scale-in max-h-48 flex flex-col">
+                        {/* Search Box */}
+                        <div className="p-2 border-b border-[var(--border-color)] bg-[var(--input-bg)]">
+                          <input
+                            type="text"
+                            placeholder="Search teams..."
+                            value={teamSearch}
+                            onChange={(e) => setTeamSearch(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full bg-[var(--bg-workspace)] border-[0.5px] border-[var(--border-color)] rounded-md px-3 py-1.5 outline-none focus:border-[var(--accent)] text-xs text-[var(--text-main)] placeholder-[var(--text-muted)] placeholder-opacity-50"
+                          />
+                        </div>
+
+                        {/* Options List */}
+                        <div className="overflow-y-auto custom-scrollbar flex-1 py-1 bg-[var(--bg-card)]">
+                          {teams
+                            .filter(t => !selectedRole || t.role_name === selectedRole)
+                            .filter(t => t.team_name.toLowerCase().includes(teamSearch.toLowerCase()))
+                            .map(t => {
+                              const isChecked = selectedTeamIds.includes(t.team_id);
+                              return (
+                                <div
+                                  key={t.team_id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isChecked) {
+                                      setSelectedTeamIds(selectedTeamIds.filter(id => id !== t.team_id));
+                                    } else {
+                                      setSelectedTeamIds([...selectedTeamIds, t.team_id]);
+                                    }
+                                  }}
+                                  className="flex items-center justify-between px-3 py-2.5 hover:bg-[var(--nav-hover)] cursor-pointer text-xs font-semibold text-[var(--text-main)] transition-colors border-b border-[var(--border-color)] border-opacity-30 last:border-0"
+                                >
+                                  <span className="leading-tight">{t.team_name}</span>
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => {}} // Managed by row div click
+                                    className="accent-[var(--accent)] rounded border-[var(--border-color)] shrink-0"
+                                  />
+                                </div>
+                              );
+                            })
+                          }
+                          {teams
+                            .filter(t => !selectedRole || t.role_name === selectedRole)
+                            .filter(t => t.team_name.toLowerCase().includes(teamSearch.toLowerCase()))
+                            .length === 0 && (
+                            <div className="px-3 py-4 text-center text-xs text-[var(--text-muted)] opacity-60">
+                              No matches found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
 
-            <div className="pt-4">
-              <button 
-                disabled={isSubmitting} 
-                type="submit" 
-                className="btn-primary w-full py-3.5 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 text-[13px]"
-                style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-              >
-                {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : modalMode === 'create' ? 'REGISTER PERSONNEL' : 'UPDATE USER PROFILE'}
-              </button>
-            </div>
+            {/* Submit button moved to modal header */}
           </form>
         )}
       </Modal>

@@ -33,6 +33,8 @@ const Sidebar = ({ role, isOpen, onClose }) => {
   const [openMenus, setOpenMenus] = useState({
     users: false,
     designers: false,
+    sales: false,
+    maintenance: false,
     inventory: false
   });
 
@@ -60,6 +62,21 @@ const Sidebar = ({ role, isOpen, onClose }) => {
   
   const isInventorySection = (
     location.pathname.includes('/admin/inventory')
+  );
+
+  const isDesignersActive = (
+    location.pathname === '/admin/designers' ||
+    (location.pathname.includes('/admin/teams') && (location.search.includes('role=Designer') || (!location.search.includes('role=Sales') && !location.search.includes('role=Maintenance'))))
+  );
+
+  const isSalesActive = (
+    location.pathname === '/admin/sales' ||
+    (location.pathname.includes('/admin/teams') && location.search.includes('role=Sales'))
+  );
+
+  const isMaintenanceActive = (
+    location.pathname === '/admin/maintenance' ||
+    (location.pathname.includes('/admin/teams') && location.search.includes('role=Maintenance'))
   );
 
   const NavItem = ({ to, label, icon: Icon, isSubItem = false }) => (
@@ -258,8 +275,8 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                   <div
                     className="flex items-center justify-between pl-10 pr-4 py-2.5 transition-all duration-300 relative group cursor-pointer"
                     style={{
-                      color: (location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams')) ? 'var(--accent)' : 'var(--text-muted)',
-                      background: (location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams')) ? 'var(--nav-active)' : undefined,
+                      color: isDesignersActive ? 'var(--accent)' : 'var(--text-muted)',
+                      background: isDesignersActive ? 'var(--nav-active)' : undefined,
                       borderLeft: location.pathname === '/admin/designers' ? '3px solid var(--accent)' : '3px solid transparent',
                     }}
                     onMouseEnter={e => {
@@ -269,9 +286,8 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                       }
                     }}
                     onMouseLeave={e => {
-                      const isActive = location.pathname === '/admin/designers' || location.pathname.includes('/admin/teams');
-                      e.currentTarget.style.background = isActive ? 'var(--nav-active)' : '';
-                      e.currentTarget.style.color = isActive ? 'var(--accent)' : 'var(--text-muted)';
+                      e.currentTarget.style.background = isDesignersActive ? 'var(--nav-active)' : '';
+                      e.currentTarget.style.color = isDesignersActive ? 'var(--accent)' : 'var(--text-muted)';
                     }}
                   >
                     <div
@@ -311,8 +327,117 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                     </div>
                   </SubMenu>
 
-                  <NavItem to="/admin/maintenance" label="Maintenance" icon={Wrench} isSubItem />
-                  <NavItem to="/admin/sales" label="Sales" icon={ShoppingBag} isSubItem />
+                  {/* Maintenance row */}
+                  <div
+                    className="flex items-center justify-between pl-10 pr-4 py-2.5 transition-all duration-300 relative group cursor-pointer"
+                    style={{
+                      color: isMaintenanceActive ? 'var(--accent)' : 'var(--text-muted)',
+                      background: isMaintenanceActive ? 'var(--nav-active)' : undefined,
+                      borderLeft: location.pathname === '/admin/maintenance' ? '3px solid var(--accent)' : '3px solid transparent',
+                    }}
+                    onMouseEnter={e => {
+                      if (location.pathname !== '/admin/maintenance') {
+                        e.currentTarget.style.background = 'var(--nav-hover)';
+                        e.currentTarget.style.color = 'var(--text-main)';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = isMaintenanceActive ? 'var(--nav-active)' : '';
+                      e.currentTarget.style.color = isMaintenanceActive ? 'var(--accent)' : 'var(--text-muted)';
+                    }}
+                  >
+                    <div
+                      onClick={() => navigate('/admin/maintenance')}
+                      className="flex items-center gap-4 cursor-pointer flex-1"
+                    >
+                      <div className="w-6 flex justify-center">
+                        <Wrench
+                          size={18}
+                          className="transition-colors duration-300 group-hover:text-[var(--accent)]"
+                          style={{ color: location.pathname === '/admin/maintenance' ? 'var(--accent)' : 'var(--text-dim)' }}
+                        />
+                      </div>
+                      <span className="text-[12px] font-black tracking-[0.1em] uppercase transition-all duration-300 group-hover:text-[var(--text-main)] group-hover:translate-x-1">
+                        Maintenance
+                      </span>
+                    </div>
+                    <div
+                      onClick={(e) => { e.stopPropagation(); toggleMenu('maintenance'); }}
+                      className="cursor-pointer p-1 rounded-lg transition-all"
+                    >
+                      <ChevronDown
+                        size={12}
+                        className="transition-transform duration-500"
+                        style={{
+                          transform: openMenus.maintenance ? 'rotate(180deg)' : 'rotate(0deg)',
+                          color: openMenus.maintenance ? 'var(--accent)' : 'var(--text-dim)',
+                        }}
+                        strokeWidth={3}
+                      />
+                    </div>
+                  </div>
+
+                  <SubMenu isOpen={openMenus.maintenance}>
+                    <div className="space-y-0.5 mb-2">
+                      <NavItem to="/admin/teams?role=Maintenance" label="Teams" isSubItem />
+                    </div>
+                  </SubMenu>
+
+                  {/* Sales row */}
+                  <div
+                    className="flex items-center justify-between pl-10 pr-4 py-2.5 transition-all duration-300 relative group cursor-pointer"
+                    style={{
+                      color: isSalesActive ? 'var(--accent)' : 'var(--text-muted)',
+                      background: isSalesActive ? 'var(--nav-active)' : undefined,
+                      borderLeft: location.pathname === '/admin/sales' ? '3px solid var(--accent)' : '3px solid transparent',
+                    }}
+                    onMouseEnter={e => {
+                      if (location.pathname !== '/admin/sales') {
+                        e.currentTarget.style.background = 'var(--nav-hover)';
+                        e.currentTarget.style.color = 'var(--text-main)';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = isSalesActive ? 'var(--nav-active)' : '';
+                      e.currentTarget.style.color = isSalesActive ? 'var(--accent)' : 'var(--text-muted)';
+                    }}
+                  >
+                    <div
+                      onClick={() => navigate('/admin/sales')}
+                      className="flex items-center gap-4 cursor-pointer flex-1"
+                    >
+                      <div className="w-6 flex justify-center">
+                        <ShoppingBag
+                          size={18}
+                          className="transition-colors duration-300 group-hover:text-[var(--accent)]"
+                          style={{ color: location.pathname === '/admin/sales' ? 'var(--accent)' : 'var(--text-dim)' }}
+                        />
+                      </div>
+                      <span className="text-[12px] font-black tracking-[0.1em] uppercase transition-all duration-300 group-hover:text-[var(--text-main)] group-hover:translate-x-1">
+                        Sales
+                      </span>
+                    </div>
+                    <div
+                      onClick={(e) => { e.stopPropagation(); toggleMenu('sales'); }}
+                      className="cursor-pointer p-1 rounded-lg transition-all"
+                    >
+                      <ChevronDown
+                        size={12}
+                        className="transition-transform duration-500"
+                        style={{
+                          transform: openMenus.sales ? 'rotate(180deg)' : 'rotate(0deg)',
+                          color: openMenus.sales ? 'var(--accent)' : 'var(--text-dim)',
+                        }}
+                        strokeWidth={3}
+                      />
+                    </div>
+                  </div>
+
+                  <SubMenu isOpen={openMenus.sales}>
+                    <div className="space-y-0.5 mb-2">
+                      <NavItem to="/admin/teams?role=Sales" label="Teams" isSubItem />
+                    </div>
+                  </SubMenu>
                 </div>
               </SubMenu>
             </div>

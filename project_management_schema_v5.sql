@@ -123,10 +123,19 @@ SELECT
     u.email,
     r.role_name,
     u.is_active,
-    u.created_at
+    u.created_at,
+    COALESCE(
+      JSON_AGG(
+        JSON_BUILD_OBJECT('team_id', t.team_id, 'team_name', t.team_name)
+      ) FILTER (WHERE t.team_id IS NOT NULL),
+      '[]'::json
+    ) AS teams
 FROM users u
 JOIN roles r ON r.role_id = u.role_id
-WHERE r.role_name <> 'Admin';
+LEFT JOIN team_members tm ON tm.user_id = u.user_id
+LEFT JOIN teams t ON t.team_id = tm.team_id
+WHERE r.role_name <> 'Admin'
+GROUP BY u.user_id, u.full_name, u.email, r.role_name, u.is_active, u.created_at;
 
 -- ============================================================
 -- SEED DATA (INITIAL SETUP)

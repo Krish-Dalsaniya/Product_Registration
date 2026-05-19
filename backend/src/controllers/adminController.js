@@ -95,15 +95,33 @@ const getDesigners = async (req, res, next) => {
 const getTeams = async (req, res, next) => {
   const { role } = req.query;
   try {
-    let queryText = `SELECT * FROM v_team_project_summary`;
+    let queryText = `
+      SELECT 
+        v.*,
+        t.description,
+        t.product_name,
+        t.product_description,
+        t.team_lead_id,
+        t.client_handler_id,
+        COALESCE(
+          (
+            SELECT JSON_AGG(tm.user_id)
+            FROM team_members tm
+            WHERE tm.team_id = v.team_id
+          ),
+          '[]'::json
+        ) as member_ids
+      FROM v_team_project_summary v
+      JOIN teams t ON t.team_id = v.team_id
+    `;
     const params = [];
     
     if (role) {
-      queryText += ` WHERE role_name::text = $1`;
+      queryText += ` WHERE v.role_name::text = $1`;
       params.push(role);
     }
     
-    queryText += ` ORDER BY team_name`;
+    queryText += ` ORDER BY v.team_name`;
     const result = await db.query(queryText, params);
     sendSuccess(res, result.rows);
   } catch (error) {
@@ -202,7 +220,7 @@ const getAdminStats = async (req, res, next) => {
 const bcrypt = require('bcryptjs');
 
 const createUser = async (req, res, next) => {
-  const { full_name, email, password, role_name, team_id } = req.body;
+  const { full_name, email, password, role_name, team_id, team_ids } = req.body;
 
   try {
     // Get role_id
@@ -229,8 +247,17 @@ const createUser = async (req, res, next) => {
       await db.query('INSERT INTO maintenance_profiles (maintenance_id) VALUES ($1)', [userId]);
     }
 
-    // Assign to team if provided
-    if (team_id) {
+    // Assign to teams if provided
+    if (Array.isArray(team_ids) && team_ids.length > 0) {
+      for (const tId of team_ids) {
+        if (tId) {
+          await db.query(
+            'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
+            [tId, userId]
+          );
+        }
+      }
+    } else if (team_id) {
       await db.query(
         'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
         [team_id, userId]
@@ -248,7 +275,7 @@ const createUser = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   const { userId } = req.params;
-  const { full_name, email, role_name, team_id } = req.body;
+  const { full_name, email, role_name, team_id, team_ids } = req.body;
 
   try {
     // Get role_id
@@ -271,7 +298,16 @@ const updateUser = async (req, res, next) => {
 
     // Sync team assignment
     await db.query('DELETE FROM team_members WHERE user_id = $1', [userId]);
-    if (team_id) {
+    if (Array.isArray(team_ids) && team_ids.length > 0) {
+      for (const tId of team_ids) {
+        if (tId) {
+          await db.query(
+            'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
+            [tId, userId]
+          );
+        }
+      }
+    } else if (team_id) {
       await db.query(
         'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
         [team_id, userId]

@@ -11,7 +11,15 @@ const getDesignerTeams = async (req, res) => {
           FROM team_members tm
           JOIN users u ON u.user_id = tm.user_id
           WHERE tm.team_id = v.team_id
-        ) as member_names
+        ) as member_names,
+        COALESCE(
+          (
+            SELECT JSON_AGG(tm.user_id)
+            FROM team_members tm
+            WHERE tm.team_id = v.team_id
+          ),
+          '[]'::json
+        ) as member_ids
       FROM v_team_project_summary v
     `);
     res.json({ data: result.rows });
