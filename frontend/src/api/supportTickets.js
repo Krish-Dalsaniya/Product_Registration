@@ -1,0 +1,29 @@
+import axiosInstance from './axiosInstance';
+
+export const getSupportTickets = async () => {
+    return axiosInstance.get('/support-tickets');
+};
+
+export const getSupportTicketById = async (id) => {
+    return axiosInstance.get(`/support-tickets/${id}`);
+};
+
+export const createSupportTicket = async (formData) => {
+    return axiosInstance.post('/support-tickets', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+};
+
+export const updateSupportTicket = async (id, formData) => {
+    return axiosInstance.put(`/support-tickets/${id}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+};
+
+export const deleteSupportTicket = async (id) => {
+    return axiosInstance.delete(`/support-tickets/${id}`);
+};

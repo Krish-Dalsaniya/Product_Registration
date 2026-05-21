@@ -147,7 +147,7 @@ const ProductListPage = () => {
 
   const quillFormats = [
     'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet',
+    'list',
     'line-height',
     'link',
     'align'

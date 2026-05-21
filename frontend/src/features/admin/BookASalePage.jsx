@@ -440,7 +440,7 @@ const BookASalePage = () => {
             </select>
 
             {/* Show available qty badge */}
-            {selectedFG && (
+            {/* {selectedFG && (
               <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-xl">
                 <TrendingUp size={14} className="text-[var(--accent)]" />
                 <span className="text-[11px] font-black uppercase tracking-wider text-[var(--text-dim)]">
@@ -458,7 +458,7 @@ const BookASalePage = () => {
                   </span>
                 )}
               </div>
-            )}
+            )} */}
           </div>
 
           {/* Select Customer */}

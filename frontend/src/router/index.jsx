@@ -7,7 +7,7 @@ import Sidebar from '../components/shared/Sidebar';
 import Breadcrumbs from '../components/shared/Breadcrumbs';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package } from 'lucide-react';
+import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy } from 'lucide-react';
 
 const IconMap = {
   Home,
@@ -19,7 +19,8 @@ const IconMap = {
   Layers,
   Cpu,
   LayoutGrid,
-  Package
+  Package,
+  LifeBuoy
 };
 
 const getTabMetadata = (pathname, search) => {
@@ -64,6 +65,12 @@ const getTabMetadata = (pathname, search) => {
   if (pathname === '/admin/book-a-sale') {
     return { label: 'Book a Sale', iconType: 'ShoppingBag' };
   }
+  if (pathname === '/admin/support-tickets') {
+    return { label: 'Support Center', iconType: 'LifeBuoy' };
+  }
+  if (pathname.startsWith('/admin/support-tickets/')) {
+    return { label: 'Support Ticket', iconType: 'LifeBuoy' };
+  }
   if (pathname === '/admin/inventory') {
     return { label: 'Inventory', iconType: 'Box' };
   }
@@ -98,6 +105,8 @@ const ElectronicsPartsPage = lazy(() => import('../features/admin/ElectronicsPar
 const ElectricalPartsPage = lazy(() => import('../features/admin/ElectricalPartsPage'));
 const StructuralPartsPage = lazy(() => import('../features/admin/StructuralPartsPage'));
 const BookASalePage = lazy(() => import('../features/admin/BookASalePage'));
+const SupportTicketsPage = lazy(() => import('../features/admin/SupportTicketsPage'));
+const SupportTicketProfilePage = lazy(() => import('../features/admin/SupportTicketProfilePage'));
 
 
 const PageLoader = () => (
@@ -229,7 +238,7 @@ const DashboardLayout = () => {
           onClose={() => setIsSidebarOpen(false)} 
         />
         <main className={`flex-1 md:ml-64 px-4 md:px-8 pt-[60px] pb-8 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]`}>
-          {!location.pathname.match(/^\/admin\/products\/[^\/]+$/) && (
+          {!location.pathname.match(/^\/admin\/products\/[^\/]+$/) && !location.pathname.match(/^\/admin\/support-tickets\/[^\/]+$/) && (
             <div className="max-w-[1600px] mx-auto h-0 overflow-visible flex justify-end pt-0 relative z-20 pointer-events-none">
               <div className="pointer-events-auto">
                 <Breadcrumbs />
@@ -275,6 +284,8 @@ const Router = () => {
           <Route path="/admin/inventory/electrical" element={<ElectricalPartsPage />} />
           <Route path="/admin/inventory/structural" element={<StructuralPartsPage />} />
           <Route path="/admin/book-a-sale" element={<BookASalePage />} />
+          <Route path="/admin/support-tickets" element={<SupportTicketsPage />} />
+          <Route path="/admin/support-tickets/:id" element={<SupportTicketProfilePage />} />
 
         </Route>
 

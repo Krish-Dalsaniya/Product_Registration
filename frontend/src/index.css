@@ -360,6 +360,10 @@ table td {
   padding: 16px !important;
 }
 
+.ql-editor ul, .ql-editor ol {
+  padding-left: 1.5rem !important;
+}
+
 .ql-editor.ql-blank::before {
   color: var(--text-dim) !important;
   font-style: normal !important;

@@ -23,7 +23,8 @@ import {
   UserCog,
   Building2,
   CircuitBoard,
-  Plug
+  Plug,
+  LifeBuoy
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose }) => {
@@ -537,6 +538,9 @@ const Sidebar = ({ role, isOpen, onClose }) => {
             </div>
             <div className="animate-entrance-right" style={{ animationDelay: '700ms' }}>
               <NavItem to="/admin/book-a-sale" label="Book a Sale" icon={ShoppingBag} />
+            </div>
+            <div className="animate-entrance-right" style={{ animationDelay: '750ms' }}>
+              <NavItem to="/admin/support-tickets" label="Support Center" icon={LifeBuoy} />
             </div>
           </div>
         )}
