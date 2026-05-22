@@ -21,4 +21,10 @@ router.post('/messages', chatController.sendMessage);
 // Mark messages from a specific user as read
 router.put('/messages/read/:userId', chatController.markAsRead);
 
+// Delete a specific message
+router.delete('/messages/:messageId', chatController.deleteMessage);
+
+// Clear chat history with a specific user
+router.delete('/messages/user/:userId', chatController.clearChat);
+
 module.exports = router;

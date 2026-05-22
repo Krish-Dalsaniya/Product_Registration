@@ -21,6 +21,7 @@ export const updateElectronicsPart = (id, formData) => axiosInstance.put(`/inven
     headers: { 'Content-Type': 'multipart/form-data' }
 });
 export const deleteElectronicsPart = (id) => axiosInstance.delete(`/inventory/electronics/${id}`);
+export const deleteElectronicsImage = (id, image_url) => axiosInstance.delete(`/inventory/electronics/${id}/image`, { data: { image_url } });
 export const deleteElectronicsFile = (id, field) => axiosInstance.delete(`/inventory/electronics/${id}/file`, { data: { field } });
 
 export const getElectricalParts = (params) => axiosInstance.get('/inventory/electrical', { params });

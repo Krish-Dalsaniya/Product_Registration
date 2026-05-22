@@ -17,6 +17,7 @@ import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { STRUCTURAL_SPEC_FIELDS, STRUCTURAL_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
+import { getCustomCategories, saveCategoryFields, deleteCustomCategory } from '../../api/customCategories';
 
 const CATEGORY_CONFIG = STRUCTURAL_CATEGORY_CONFIG;
 
@@ -30,7 +31,7 @@ const StructuralPartsPage = () => {
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
 
   const buildFileUrl = (filePath) => {
-    if (!filePath || filePath === "#") return "#";
+    if (!filePath || filePath === "#") return null;
     if (filePath.startsWith("http://") || filePath.startsWith("https://")) return filePath;
     const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
     return `${baseUrl}/${filePath.startsWith('/') ? filePath.slice(1) : filePath}`;
@@ -54,7 +55,10 @@ const StructuralPartsPage = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [customCategories, setCustomCategories] = useState([]);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [editingCategoryName, setEditingCategoryName] = useState(null);
   const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [newCategoryFields, setNewCategoryFields] = useState([{ label: '' }]);
+  const [customFieldDefs, setCustomFieldDefs] = useState({});
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
@@ -225,6 +229,57 @@ const StructuralPartsPage = () => {
     fetchProducts();
   }, []);
 
+  // Load saved custom categories from DB on mount
+  useEffect(() => {
+    const loadCustomCategories = async () => {
+      try {
+        const res = await getCustomCategories('structural');
+        if (res.data && Array.isArray(res.data)) {
+          const names = res.data.map(r => r.category_name);
+          const defsMap = {};
+          res.data.forEach(r => { defsMap[r.category_name] = r.fields || []; });
+          setCustomCategories(names);
+          setCustomFieldDefs(defsMap);
+        }
+      } catch (e) { console.error('Failed to load custom categories', e); }
+    };
+    loadCustomCategories();
+  }, []);
+
+  const handleEditCategory = (catName) => {
+    setEditingCategoryName(catName);
+    setNewCategoryInput(catName);
+    const existingFields = customFieldDefs[catName] || [{ label: '' }];
+    setNewCategoryFields(existingFields);
+    setIsAddingCategory(true);
+  };
+
+  const handleDeleteCategory = async (catName) => {
+    const result = await Swal.fire({
+      title: 'Delete Custom Category?',
+      text: `Are you sure you want to delete "${catName}"? Parts using this category will retain data, but custom fields won't render.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Delete'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteCustomCategory('structural', catName);
+        toast.success(`Category "${catName}" deleted`);
+        setCustomCategories(prev => prev.filter(c => c !== catName));
+        const newDefs = { ...customFieldDefs };
+        delete newDefs[catName];
+        setCustomFieldDefs(newDefs);
+      } catch (e) {
+        toast.error('Failed to delete category');
+        console.error(e);
+      }
+    }
+  };
+
   // Handle redirect from Inventory Overview for editing
   useEffect(() => {
     if (location.state?.editId) {
@@ -245,7 +300,7 @@ const StructuralPartsPage = () => {
     try {
       const formData = new FormData();
       Object.keys(data).forEach(key => {
-        if (!key.startsWith('file_') && key !== 'part_images' && key !== 'spec_data') {
+        if (!key.startsWith('file_') && key !== 'part_images' && key !== 'spec_data' && key !== 'custom_params' && key !== 'files') {
           formData.append(key, data[key]);
         }
       });
@@ -255,6 +310,13 @@ const StructuralPartsPage = () => {
         const specDataObj = {};
         specFields.forEach(k => { specDataObj[k.replace('spec_', '')] = data[k]; });
         formData.append('spec_data', JSON.stringify(specDataObj));
+
+        // If custom category, send custom_params
+        if (!STRUCTURAL_SPEC_FIELDS[data.category_name] && customFieldDefs[data.category_name]) {
+          const customParams = {};
+          customFieldDefs[data.category_name].forEach(f => { customParams[f.key] = data[f.key] || ''; });
+          formData.append('custom_params', JSON.stringify(customParams));
+        }
       }
 
       const fileFields = [
@@ -311,6 +373,14 @@ const StructuralPartsPage = () => {
         setSelectedCategory(fullData.categorySpec.category_name);
         const specData = fullData.categoryData || {};
         Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
+      }
+      if (fullData.custom_params) {
+        const customParams = typeof fullData.custom_params === 'string'
+          ? JSON.parse(fullData.custom_params)
+          : fullData.custom_params;
+        Object.keys(customParams).forEach(k => {
+          formData[k] = customParams[k];
+        });
       }
       reset(formData);
     } catch (error) { toast.error('Failed to load details'); }
@@ -685,7 +755,7 @@ const StructuralPartsPage = () => {
 
                   <div className="flex items-center gap-4 py-2">
                     <button onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedItem), 100); }} className="btn-primary flex-1 py-4 px-6 shadow-lg shadow-[var(--accent)]/20 uppercase tracking-widest text-[11px]">Edit Specifications</button>
-                    <button onClick={() => handleDelete(selectedItem)} className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"><Trash2 size={18} /></button>
+                    <button onClick={() => handleDelete(selectedItem)} className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-50 hover:text-white transition-all shadow-sm"><Trash2 size={18} /></button>
                   </div>
 
                   <div className="p-8 bg-[var(--bg-workspace)]/50 rounded-[32px] border border-[var(--border-color)] shadow-inner relative">
@@ -775,25 +845,34 @@ const StructuralPartsPage = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
                 {[...BASE_CATEGORIES, ...customCategories].map((cat, idx) => {
                   const Icon = CATEGORY_CONFIG[cat]?.icon || Layers;
+                  const isCustom = customCategories.includes(cat);
                   return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => {
-                        setValue('category_name', cat, { shouldValidate: true });
-                        setSelectedCategory(cat);
-                        setModalTab('general');
-                      }}
-                      style={{ animationDelay: `${idx * 40}ms` }}
-                      className="p-4 bg-white/40 backdrop-blur-md border border-white/20 rounded-[28px] hover:border-[var(--accent)] hover:bg-white/60 transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-4"
-                    >
-                      <div className="w-12 h-12 bg-gradient-to-br from-white to-[var(--nav-hover)] rounded-[16px] flex items-center justify-center shadow-sm group-hover:shadow-[var(--accent)]/20 transition-all duration-500 group-hover:scale-110 relative z-10">
-                        <Icon size={24} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors duration-500" />
-                      </div>
-                      <span className="text-[11px] font-black uppercase tracking-wider text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors duration-500 text-center relative z-10">{cat}</span>
-                      {/* Decorative background element */}
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-[var(--accent)]/5 rounded-full -mr-8 -mt-8 transition-transform duration-700 group-hover:scale-[3]" />
-                    </button>
+                    <div key={cat} className="relative group/cat animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 40}ms` }}>
+                        <button 
+                           type="button"
+                           onClick={() => { 
+                               setValue('category_name', cat, { shouldValidate: true }); 
+                               setSelectedCategory(cat); 
+                               setModalTab('general'); 
+                           }}
+                           className="p-5 w-full bg-white/40 backdrop-blur-md border border-[var(--border-color)] rounded-[28px] hover:border-[var(--accent)] hover:bg-[var(--nav-hover)] transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden"
+                        >
+                           <div className="w-10 h-10 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-[14px] flex items-center justify-center shadow-sm group-hover:border-[var(--accent)] transition-all duration-500 group-hover:scale-110 relative z-10">
+                               <Icon size={20} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors duration-500" />
+                           </div>
+                           <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors duration-500 text-center relative z-10">{cat}</span>
+                        </button>
+                        {isCustom && (
+                            <div className="absolute top-3 right-3 flex flex-col gap-1.5 opacity-0 group-hover/cat:opacity-100 transition-opacity z-20">
+                                <button onClick={(e) => { e.stopPropagation(); handleEditCategory(cat); }} title="Edit Category Fields" className="p-1.5 bg-white shadow-sm border border-[var(--border-color)] rounded-xl text-blue-500 hover:bg-blue-50 hover:border-blue-200 transition-colors">
+                                    <Pencil size={12} strokeWidth={3} />
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat); }} title="Delete Custom Category" className="p-1.5 bg-white shadow-sm border border-[var(--border-color)] rounded-xl text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition-colors">
+                                    <Trash2 size={12} strokeWidth={3} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                   );
                 })}
 
@@ -803,45 +882,66 @@ const StructuralPartsPage = () => {
             {/* Add New Category Popup */}
             {isAddingCategory && (
                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center rounded-[32px] p-4">
-                  <div className="bg-[var(--bg-card)] border border-[var(--accent)]/30 p-6 rounded-[24px] shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-300">
-                     <h4 className="text-[14px] font-black uppercase text-[var(--text-main)] mb-4 flex items-center gap-2"><Plus size={16} className="text-[var(--accent)]"/> Add Custom Category</h4>
+                  <div className="bg-[var(--bg-card)] border border-[var(--accent)]/30 p-6 rounded-[24px] shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-300 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                     <h4 className="text-[14px] font-black uppercase text-[var(--text-main)] mb-4 flex items-center gap-2"><Plus size={16} className="text-[var(--accent)]"/> {editingCategoryName ? 'Edit Custom Category' : 'Add Custom Category'}</h4>
+                     
+                     <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1.5">Category Name</label>
                      <input
                         autoFocus
                         type="text"
+                        readOnly={!!editingCategoryName}
                         value={newCategoryInput}
                         onChange={e => setNewCategoryInput(e.target.value)}
-                        onKeyDown={e => {
-                           if (e.key === 'Enter') {
-                              const trimmed = newCategoryInput.trim();
-                              if (trimmed && ![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) {
-                                 setCustomCategories(prev => [...prev, trimmed]);
-                              }
-                              if (trimmed) {
-                                 setValue('category_name', trimmed, { shouldValidate: true });
-                                 setSelectedCategory(trimmed);
-                                 setModalTab('general');
-                              }
-                              setIsAddingCategory(false);
-                              setNewCategoryInput('');
-                           }
-                           if (e.key === 'Escape') { setIsAddingCategory(false); setNewCategoryInput(''); }
-                        }}
                         placeholder="Category name..."
-                        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] px-4 py-3 rounded-xl outline-none focus:border-[var(--accent)] text-[12px] font-black uppercase text-[var(--text-main)] mb-4"
+                        className={`w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] px-4 py-3 rounded-xl outline-none focus:border-[var(--accent)] text-[12px] font-black uppercase text-[var(--text-main)] mb-5 ${editingCategoryName ? 'opacity-50 cursor-not-allowed' : ''}`}
                      />
-                     <div className="flex justify-end gap-3">
-                        <button onClick={() => { setIsAddingCategory(false); setNewCategoryInput(''); }} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors">Cancel</button>
-                        <button onClick={() => {
+
+                     <div className="mb-4">
+                       <div className="flex items-center justify-between mb-3">
+                         <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Custom Fields</label>
+                         <button type="button" onClick={() => setNewCategoryFields(prev => [...prev, { label: '' }])} className="flex items-center gap-1 text-[10px] font-black text-[var(--accent)] uppercase hover:underline">
+                           <Plus size={12} /> Add Field
+                         </button>
+                       </div>
+                       <div className="space-y-2">
+                         {newCategoryFields.map((field, idx) => (
+                           <div key={idx} className="flex items-center gap-2">
+                             <div className="flex-1 relative">
+                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest">#{idx + 1}</span>
+                               <input type="text" value={field.label}
+                                 onChange={e => setNewCategoryFields(prev => prev.map((f, i) => i === idx ? { label: e.target.value } : f))}
+                                 placeholder={`Field name (e.g. Sheet Thickness)`}
+                                 className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] pl-9 pr-4 py-2.5 rounded-xl outline-none focus:border-[var(--accent)] text-[11px] font-bold text-[var(--text-main)]"
+                               />
+                             </div>
+                             {newCategoryFields.length > 1 && (
+                               <button type="button" onClick={() => setNewCategoryFields(prev => prev.filter((_, i) => i !== idx))} className="p-2 text-rose-400 hover:text-rose-600 rounded-lg transition-all">
+                                 <X size={14} />
+                               </button>
+                             )}
+                           </div>
+                         ))}
+                       </div>
+                       <p className="text-[9px] text-[var(--text-dim)] mt-2 opacity-60">These fields appear in Specialized Parameters when registering a part.</p>
+                     </div>
+
+                     <div className="flex justify-end gap-3 mt-4">
+                        <button onClick={() => { setIsAddingCategory(false); setEditingCategoryName(null); setNewCategoryInput(''); setNewCategoryFields([{ label: '' }]); }} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">Cancel</button>
+                        <button onClick={async () => {
                            const trimmed = newCategoryInput.trim();
-                           if (trimmed && ![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) setCustomCategories(prev => [...prev, trimmed]);
-                           if (trimmed) {
-                              setValue('category_name', trimmed, { shouldValidate: true });
-                              setSelectedCategory(trimmed);
-                              setModalTab('general');
-                           }
+                           if (!trimmed) return;
+                           const validFields = newCategoryFields.filter(f => f.label.trim()).map(f => ({ label: f.label.trim(), key: f.label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') }));
+                           try { await saveCategoryFields('structural', trimmed, validFields); toast.success(`Category "${trimmed}" saved`); } catch(e) { toast.error('Failed to save category fields'); }
+                           if (![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) setCustomCategories(prev => [...prev, trimmed]);
+                           setCustomFieldDefs(prev => ({ ...prev, [trimmed]: validFields }));
+                           setValue('category_name', trimmed, { shouldValidate: true });
+                           setSelectedCategory(trimmed);
+                           setModalTab('general');
                            setIsAddingCategory(false);
+                           setEditingCategoryName(null);
                            setNewCategoryInput('');
-                        }} className="px-4 py-2 bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-80 transition-all shadow-md">Add Category</button>
+                           setNewCategoryFields([{ label: '' }]);
+                        }} className="px-4 py-2 bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-80 transition-all shadow-md">Save & Select</button>
                      </div>
                   </div>
                </div>
@@ -885,7 +985,7 @@ const StructuralPartsPage = () => {
             <div className="pb-10">
               {modalTab === 'general' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4">
-                  <input type="hidden" {...register('category_name')} value={selectedCategory} />
+                  <input type="hidden" {...register('category_name')} />
                   <FormField label="Part Name" name="part_name" placeholder="e.g. Front Door Assembly" required />
                   <FormField label="Part Number / Model Number" name="part_number" placeholder="STR-FD-001" />
                   <FormField label="Internal Part Code / SKU" name="internal_part_code" placeholder="STR-CAB-001" />
@@ -950,13 +1050,20 @@ const StructuralPartsPage = () => {
                       <div className="md:col-span-3 border-b border-[var(--border-color)] pb-2 mb-2 pt-4">
                         <h4 className="text-[11px] font-black text-[var(--accent)] uppercase tracking-[0.2em]">Specialized {selectedCategory} Parameters</h4>
                       </div>
-                      {STRUCTURAL_SPEC_FIELDS[selectedCategory]?.map(field => (
-                        field.isSelect ? (
-                          <SelectField key={field.key} label={field.label} name={`spec_${field.key}`} options={field.options} />
-                        ) : (
-                          <FormField key={field.key} label={field.label} name={`spec_${field.key}`} type={field.type} />
-                        )
-                      ))}
+                      {STRUCTURAL_SPEC_FIELDS[selectedCategory]
+                        ? STRUCTURAL_SPEC_FIELDS[selectedCategory].map(field => (
+                            field.isSelect ? (
+                              <SelectField key={field.key} label={field.label} name={`spec_${field.key}`} options={field.options} />
+                            ) : (
+                              <FormField key={field.key} label={field.label} name={`spec_${field.key}`} type={field.type} />
+                            )
+                          ))
+                        : (customFieldDefs[selectedCategory] && customFieldDefs[selectedCategory].length > 0)
+                          ? customFieldDefs[selectedCategory].map(f => (
+                              <FormField key={f.key} label={f.label} name={f.key} placeholder={`Enter ${f.label}`} />
+                            ))
+                          : <p className="text-[11px] text-[var(--text-muted)] col-span-3 opacity-60">No specialized fields defined for this category.</p>
+                      }
                     </div>
                   )}
                 </div>

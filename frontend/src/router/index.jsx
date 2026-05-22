@@ -218,6 +218,7 @@ const DashboardLayout = () => {
       setTabs([dashboardTab]);
       localStorage.setItem('admin_workspace_tabs', JSON.stringify([dashboardTab]));
       navigate(dashboardTab.fullPath);
+      toast.success('All tabs cleared');
     }
   };
 

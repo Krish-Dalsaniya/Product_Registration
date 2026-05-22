@@ -16,11 +16,13 @@ import Modal from '../../components/shared/Modal';
 import { getElectricalParts, createElectricalPart, updateElectricalPart, deleteElectricalPart, getElectricalPartById, deleteElectricalImage, deleteElectricalFile } from '../../api/inventory';
 import { getProducts } from '../../api/products';
 import { ELECTRICAL_SPEC_FIELDS, ELECTRICAL_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
+import { getCustomCategories, getCategoryFields, saveCategoryFields, deleteCustomCategory } from '../../api/customCategories';
+import Swal from 'sweetalert2';
 
 const CATEGORY_CONFIG = ELECTRICAL_CATEGORY_CONFIG;
 
 const buildFileUrl = (filePath) => {
-  if (!filePath || filePath === "#") return "#";
+  if (!filePath || filePath === "#") return null;
 
   if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
     return filePath;
@@ -54,7 +56,10 @@ const ElectricalPartsPage = () => {
   const [products, setProducts] = useState([]);
   const [customCategories, setCustomCategories] = useState([]);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [editingCategoryName, setEditingCategoryName] = useState(null);
   const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [newCategoryFields, setNewCategoryFields] = useState([{ label: '' }]);
+  const [customFieldDefs, setCustomFieldDefs] = useState({}); // { categoryName: [{ label, key }] }
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
       defaultValues: { status: 'Active' }
@@ -244,6 +249,60 @@ const ElectricalPartsPage = () => {
       fetchProducts();
   }, []);
 
+  // Load saved custom categories from DB on mount
+  useEffect(() => {
+    const loadCustomCategories = async () => {
+      try {
+        const cats = await getCustomCategories('electrical');
+        const names = cats.data.map(c => c.category_name);
+        setCustomCategories(names);
+        
+        const defs = {};
+        cats.data.forEach(c => {
+          defs[c.category_name] = typeof c.fields === 'string' ? JSON.parse(c.fields) : c.fields;
+        });
+        setCustomFieldDefs(defs);
+      } catch (err) {
+        console.error('Failed to load custom categories', err);
+      }
+    };
+    loadCustomCategories();
+  }, []);
+
+  const handleEditCategory = (catName) => {
+    setEditingCategoryName(catName);
+    setNewCategoryInput(catName);
+    const existingFields = customFieldDefs[catName] || [{ label: '' }];
+    setNewCategoryFields(existingFields);
+    setIsAddingCategory(true);
+  };
+
+  const handleDeleteCategory = async (catName) => {
+    const result = await Swal.fire({
+      title: 'Delete Custom Category?',
+      text: `Are you sure you want to delete "${catName}"? Parts using this category will retain data, but custom fields won't render.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Delete'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteCustomCategory('electrical', catName);
+        toast.success(`Category "${catName}" deleted`);
+        setCustomCategories(prev => prev.filter(c => c !== catName));
+        const newDefs = { ...customFieldDefs };
+        delete newDefs[catName];
+        setCustomFieldDefs(newDefs);
+      } catch (e) {
+        toast.error('Failed to delete category');
+        console.error(e);
+      }
+    }
+  };
+
   // Handle redirect from Inventory Overview for editing
   useEffect(() => {
     if (location.state?.editId) {
@@ -260,12 +319,23 @@ const ElectricalPartsPage = () => {
       
       // Append all text fields
       Object.keys(data).forEach(key => {
-          if (key !== 'file_datasheet' && key !== 'file_wiring' && key !== 'file_manual' && key !== 'file_test_report' && key !== 'file_calib_cert' && key !== 'file_compliance' && key !== 'file_warranty' && key !== 'file_invoice' && key !== 'part_images') {
+          if (key !== 'file_datasheet' && key !== 'file_wiring' && key !== 'file_manual' && key !== 'file_test_report' && key !== 'file_calib_cert' && key !== 'file_compliance' && key !== 'file_warranty' && key !== 'file_invoice' && key !== 'part_images' && key !== 'custom_params' && key !== 'files') {
               if (data[key] !== undefined && data[key] !== null) {
                   formData.append(key, data[key]);
               }
           }
       });
+
+      // If this is a custom category, collect custom field values and send as custom_params
+      const catName = data.category_name || selectedCategory;
+      const isCustomCat = catName && !ELECTRICAL_SPEC_FIELDS[catName];
+      if (isCustomCat && customFieldDefs[catName]) {
+        const customParams = {};
+        customFieldDefs[catName].forEach(f => {
+          customParams[f.key] = data[f.key] || '';
+        });
+        formData.append('custom_params', JSON.stringify(customParams));
+      }
 
       // Append single files
       const singleFiles = [
@@ -336,6 +406,15 @@ const ElectricalPartsPage = () => {
                       formattedData[dateField] = new Date(formattedData[dateField]).toISOString().split('T')[0];
                   }
               });
+              // Flatten custom_params into the root so dynamic inputs are properly controlled
+              if (fullData.custom_params) {
+                  const customParams = typeof fullData.custom_params === 'string' 
+                      ? JSON.parse(fullData.custom_params) 
+                      : fullData.custom_params;
+                  Object.keys(customParams).forEach(k => {
+                      formattedData[k] = customParams[k];
+                  });
+              }
               // Restore category state so the form renders correctly
               if (fullData.category_name) {
                   setValue('category_name', fullData.category_name);
@@ -911,22 +990,33 @@ const ElectricalPartsPage = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
                    {[...BASE_CATEGORIES, ...customCategories].map((cat, idx) => {
                       const Icon = CATEGORY_CONFIG[cat]?.icon || Layers;
+                       const isCustom = customCategories.includes(cat);
                       return (
-                        <button 
-                           key={cat}
-                           type="button"
-                           onClick={() => { 
-                               setValue('category_name', cat, { shouldValidate: true }); 
-                               setModalTab('general'); 
-                           }}
-                           style={{ animationDelay: `${idx * 40}ms` }}
-                           className="p-5 bg-white/40 backdrop-blur-md border border-white/20 rounded-[28px] hover:border-[#f59e0b] hover:bg-white/60 transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-2"
-                        >
-                           <div className="w-10 h-10 bg-gradient-to-br from-white to-[var(--nav-hover)] rounded-[14px] flex items-center justify-center shadow-sm group-hover:shadow-[#f59e0b]/10 transition-all duration-500 group-hover:scale-110 relative z-10">
-                               <Icon size={20} className="text-[var(--text-dim)] group-hover:text-[#f59e0b] transition-colors duration-500" />
-                           </div>
-                           <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-main)] group-hover:text-[#f59e0b] transition-colors duration-500 text-center relative z-10">{cat}</span>
-                        </button>
+                        <div key={cat} className="relative group/cat animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 40}ms` }}>
+                            <button 
+                               type="button"
+                               onClick={() => { 
+                                   setValue('category_name', cat, { shouldValidate: true }); 
+                                   setModalTab('general'); 
+                               }}
+                               className="p-5 w-full bg-white/40 backdrop-blur-md border border-white/20 rounded-[28px] hover:border-[#f59e0b] hover:bg-white/60 transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden"
+                            >
+                               <div className="w-10 h-10 bg-gradient-to-br from-white to-[var(--nav-hover)] rounded-[14px] flex items-center justify-center shadow-sm group-hover:shadow-[#f59e0b]/10 transition-all duration-500 group-hover:scale-110 relative z-10">
+                                   <Icon size={20} className="text-[var(--text-dim)] group-hover:text-[#f59e0b] transition-colors duration-500" />
+                               </div>
+                               <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-main)] group-hover:text-[#f59e0b] transition-colors duration-500 text-center relative z-10">{cat}</span>
+                            </button>
+                            {isCustom && (
+                                <div className="absolute top-3 right-3 flex flex-col gap-1.5 opacity-0 group-hover/cat:opacity-100 transition-opacity z-20">
+                                    <button onClick={(e) => { e.stopPropagation(); handleEditCategory(cat); }} title="Edit Category Fields" className="p-1.5 bg-white shadow-sm border border-[var(--border-color)] rounded-xl text-blue-500 hover:bg-blue-50 hover:border-blue-200 transition-colors">
+                                        <Pencil size={12} strokeWidth={3} />
+                                    </button>
+                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat); }} title="Delete Custom Category" className="p-1.5 bg-white shadow-sm border border-[var(--border-color)] rounded-xl text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition-colors">
+                                        <Trash2 size={12} strokeWidth={3} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                       );
                    })}
 
@@ -936,47 +1026,89 @@ const ElectricalPartsPage = () => {
              {/* Add New Category Popup */}
              {isAddingCategory && (
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center rounded-[32px] p-4">
-                   <div className="bg-[var(--bg-card)] border border-[#f59e0b]/30 p-6 rounded-[24px] shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-300">
-                      <h4 className="text-[14px] font-black uppercase text-[var(--text-main)] mb-4 flex items-center gap-2"><Plus size={16} className="text-[#f59e0b]"/> Add Custom Category</h4>
+                   <div className="bg-[var(--bg-card)] border border-[#f59e0b]/30 p-6 rounded-[24px] shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-300 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                      <h4 className="text-[14px] font-black uppercase text-[var(--text-main)] mb-4 flex items-center gap-2"><Plus size={16} className="text-[#f59e0b]"/> {editingCategoryName ? 'Edit Custom Category' : 'Add Custom Category'}</h4>
+                      
+                      {/* Category Name */}
+                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1.5">Category Name</label>
                       <input
                          autoFocus
                          type="text"
+                         readOnly={!!editingCategoryName}
                          value={newCategoryInput}
                          onChange={e => setNewCategoryInput(e.target.value)}
-                         onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                               const trimmed = newCategoryInput.trim();
-                               if (trimmed && ![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) {
-                                  setCustomCategories(prev => [...prev, trimmed]);
-                               }
-                               if (trimmed) {
-                                  setValue('category_name', trimmed, { shouldValidate: true });
-                                  setModalTab('general');
-                               }
-                               setIsAddingCategory(false);
-                               setNewCategoryInput('');
-                            }
-                            if (e.key === 'Escape') { setIsAddingCategory(false); setNewCategoryInput(''); }
-                         }}
                          placeholder="Category name..."
-                         className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] px-4 py-3 rounded-xl outline-none focus:border-[#f59e0b] text-[12px] font-black uppercase text-[var(--text-main)] mb-4"
+                         className={`w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] px-4 py-3 rounded-xl outline-none focus:border-[#f59e0b] text-[12px] font-black uppercase text-[var(--text-main)] mb-5 ${editingCategoryName ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
-                      <div className="flex justify-end gap-3">
-                         <button onClick={() => { setIsAddingCategory(false); setNewCategoryInput(''); }} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors">Cancel</button>
-                         <button onClick={() => {
+
+                      {/* Field Definitions */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Custom Fields (Specialized Parameters)</label>
+                          <button
+                            type="button"
+                            onClick={() => setNewCategoryFields(prev => [...prev, { label: '' }])}
+                            className="flex items-center gap-1 text-[10px] font-black text-[#f59e0b] uppercase hover:underline"
+                          >
+                            <Plus size={12} /> Add Field
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {newCategoryFields.map((field, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <div className="flex-1 relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest">#{idx + 1}</span>
+                                <input
+                                  type="text"
+                                  value={field.label}
+                                  onChange={e => setNewCategoryFields(prev => prev.map((f, i) => i === idx ? { label: e.target.value } : f))}
+                                  placeholder={`Field name (e.g. Wire Gauge)`}
+                                  className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] pl-9 pr-4 py-2.5 rounded-xl outline-none focus:border-[#f59e0b] text-[11px] font-bold text-[var(--text-main)]"
+                                />
+                              </div>
+                              {newCategoryFields.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setNewCategoryFields(prev => prev.filter((_, i) => i !== idx))}
+                                  className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-[9px] text-[var(--text-dim)] mt-2 opacity-60">These fields will appear in the Specialized Parameters section when you register a part under this category.</p>
+                      </div>
+
+                      <div className="flex justify-end gap-3 mt-4">
+                         <button onClick={() => { setIsAddingCategory(false); setEditingCategoryName(null); setNewCategoryInput(''); setNewCategoryFields([{ label: '' }]); }} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">Cancel</button>
+                         <button onClick={async () => {
                             const trimmed = newCategoryInput.trim();
-                            if (trimmed && ![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) setCustomCategories(prev => [...prev, trimmed]);
-                            if (trimmed) {
-                               setValue('category_name', trimmed, { shouldValidate: true });
-                               setModalTab('general');
+                            if (!trimmed) return;
+                            const validFields = newCategoryFields
+                              .filter(f => f.label.trim())
+                              .map(f => ({ label: f.label.trim(), key: f.label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') }));
+                            try {
+                              await saveCategoryFields('electrical', trimmed, validFields);
+                              toast.success(`Category "${trimmed}" saved`);
+                            } catch(e) { toast.error('Failed to save category fields'); }
+                            if (![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) {
+                              setCustomCategories(prev => [...prev, trimmed]);
                             }
+                            setCustomFieldDefs(prev => ({ ...prev, [trimmed]: validFields }));
+                            setValue('category_name', trimmed, { shouldValidate: true });
+                            setModalTab('general');
                             setIsAddingCategory(false);
+                            setEditingCategoryName(null);
                             setNewCategoryInput('');
-                         }} className="px-4 py-2 bg-[#f59e0b] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-80 transition-all shadow-md">Add Category</button>
+                            setNewCategoryFields([{ label: '' }]);
+                         }} className="px-4 py-2 bg-[#f59e0b] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-80 transition-all shadow-md">Save & Select</button>
                       </div>
                    </div>
                 </div>
              )}
+
           </div>
 
         ) : (
@@ -1024,7 +1156,7 @@ const ElectricalPartsPage = () => {
                 {modalTab === 'general' && (
                     <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <input type="hidden" {...register('category_name')} value={selectedCategory} />
+                            <input type="hidden" {...register('category_name')} />
                             <FormField label="Part Category" name="part_category" placeholder="e.g. Pump" required />
                             <FormField label="Part Name" name="part_name" placeholder="e.g. Water Circulation Pump" required />
                         </div>
@@ -1076,7 +1208,14 @@ const ElectricalPartsPage = () => {
                                     <Activity size={14} /> Specialized {selectedCategory} Parameters
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                                    {renderCategoryFields()}
+                                    {ELECTRICAL_SPEC_FIELDS[selectedCategory]
+                                      ? renderCategoryFields()
+                                      : (customFieldDefs[selectedCategory] && customFieldDefs[selectedCategory].length > 0)
+                                        ? customFieldDefs[selectedCategory].map(f => (
+                                            <FormField key={f.key} label={f.label} name={f.key} placeholder={`Enter ${f.label}`} />
+                                          ))
+                                        : <p className="text-[11px] text-[var(--text-muted)] col-span-3 opacity-60">No specialized fields defined for this category. Add fields by recreating the category.</p>
+                                    }
                                 </div>
                             </div>
                         )}

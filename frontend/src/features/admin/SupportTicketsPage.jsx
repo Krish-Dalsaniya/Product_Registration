@@ -307,7 +307,7 @@ const SupportTicketsPage = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title={isEditing ? 'Update Ticket' : 'Create New Ticket'} 
-        maxWidth="max-w-[1000px]"
+        maxWidth="max-w-4xl"
         headerActions={
           <button form="ticket-form" type="submit" disabled={isSubmitting} className="btn-primary py-2 px-6 shadow-md flex items-center gap-2 text-[9px] font-black uppercase tracking-widest">
             {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (isEditing ? 'Update Ticket' : 'Create Ticket')}

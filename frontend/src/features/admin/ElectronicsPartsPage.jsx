@@ -4,7 +4,7 @@ import DataTable from '../../components/shared/DataTable';
 import InventoryCard from '../../components/shared/InventoryCard';
 import Modal from '../../components/shared/Modal';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
-import { getElectronicsParts, createElectronicsPart, getElectronicsPartById, deleteElectronicsPart, updateElectronicsPart, deleteElectronicsFile } from '../../api/inventory';
+import { getElectronicsParts, createElectronicsPart, getElectronicsPartById, deleteElectronicsPart, updateElectronicsPart, deleteElectronicsFile, deleteElectronicsImage } from '../../api/inventory';
 import { getProducts } from '../../api/products';
 import { 
   Search, Plus, Loader2, CircuitBoard, ChevronRight, FileText, Activity, ArrowLeft, Info, Settings, FileUp, Image as ImageIcon, Download, Eye, Zap, HardDrive, Binary, Code, Calendar, Fingerprint, Box, Tag, Thermometer, Battery, Speaker, Zap as AmpIcon, Radio, X, Trash2, ShieldCheck, Ruler, Printer, Volume2, FlaskConical, Gauge, Filter, Layers, LayoutGrid, List, Pencil, Package
@@ -12,6 +12,8 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { ELECTRONICS_SPEC_FIELDS, ELECTRONICS_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
+import { getCustomCategories, saveCategoryFields, deleteCustomCategory } from '../../api/customCategories';
+import Swal from 'sweetalert2';
 
 const CATEGORY_CONFIG = ELECTRONICS_CATEGORY_CONFIG;
 
@@ -24,7 +26,7 @@ const ElectronicsPartsPage = () => {
 const ELECTRONICS_FIELDS = ELECTRONICS_SPEC_FIELDS;
 
 const buildFileUrl = (filePath) => {
-  if (!filePath || filePath === "#") return "#";
+  if (!filePath || filePath === "#") return null;
 
   if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
     return filePath;
@@ -52,7 +54,10 @@ const buildFileUrl = (filePath) => {
   const [viewMode, setViewMode] = useState('grid');
   const [customCategories, setCustomCategories] = useState([]);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [editingCategoryName, setEditingCategoryName] = useState(null);
   const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [newCategoryFields, setNewCategoryFields] = useState([{ label: '' }]);
+  const [customFieldDefs, setCustomFieldDefs] = useState({});
 
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm({
     mode: 'onChange'
@@ -206,6 +211,30 @@ const buildFileUrl = (filePath) => {
     }
   };
 
+  const handleRemoveImage = async (imageUrl) => {
+    try {
+        const result = await Swal.fire({
+            title: 'Remove Image?',
+            text: "This image will be permanently deleted from the database.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f43f5e',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, remove it',
+            background: 'var(--bg-card)',
+            color: 'var(--text-main)'
+        });
+
+        if (result.isConfirmed) {
+            await deleteElectronicsImage(selectedItem.part_id, imageUrl);
+            toast.success('Image removed successfully');
+            loadPartDetails(selectedItem.part_id, 'edit');
+        }
+    } catch (error) {
+        toast.error('Failed to remove image');
+    }
+  };
+
   const removePendingImage = (index) => {
     setPendingImages(prev => prev.filter((_, i) => i !== index));
   };
@@ -244,6 +273,57 @@ const buildFileUrl = (filePath) => {
     fetchProducts();
   }, []);
 
+  // Load saved custom categories from DB on mount
+  useEffect(() => {
+    const loadCustomCategories = async () => {
+      try {
+        const res = await getCustomCategories('electronics');
+        if (res.data && Array.isArray(res.data)) {
+          const names = res.data.map(r => r.category_name);
+          const defsMap = {};
+          res.data.forEach(r => { defsMap[r.category_name] = r.fields || []; });
+          setCustomCategories(names);
+          setCustomFieldDefs(defsMap);
+        }
+      } catch (e) { console.error('Failed to load custom categories', e); }
+    };
+    loadCustomCategories();
+  }, []);
+
+  const handleEditCategory = (catName) => {
+    setEditingCategoryName(catName);
+    setNewCategoryInput(catName);
+    const existingFields = customFieldDefs[catName] || [{ label: '' }];
+    setNewCategoryFields(existingFields);
+    setIsAddingCategory(true);
+  };
+
+  const handleDeleteCategory = async (catName) => {
+    const result = await Swal.fire({
+      title: 'Delete Custom Category?',
+      text: `Are you sure you want to delete "${catName}"? Parts using this category will retain data, but custom fields won't render.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Delete'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteCustomCategory('electronics', catName);
+        toast.success(`Category "${catName}" deleted`);
+        setCustomCategories(prev => prev.filter(c => c !== catName));
+        const newDefs = { ...customFieldDefs };
+        delete newDefs[catName];
+        setCustomFieldDefs(newDefs);
+      } catch (e) {
+        toast.error('Failed to delete category');
+        console.error(e);
+      }
+    }
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
         fetchItems();
@@ -266,20 +346,24 @@ const buildFileUrl = (filePath) => {
     try {
       const formData = new FormData();
       Object.keys(data).forEach(key => {
-        if (!key.startsWith('file_') && key !== 'part_images' && key !== 'spec_data') {
+        if (!key.startsWith('file_') && key !== 'part_images' && key !== 'spec_data' && key !== 'custom_params' && key !== 'files') {
            formData.append(key, data[key]);
         }
       });
 
       // Append spec_data separately as JSON
       if (data.category_name) {
-          // Extract only fields that start with spec_
           const specFields = Object.keys(data).filter(k => k.startsWith('spec_'));
           const specDataObj = {};
-          specFields.forEach(k => {
-              specDataObj[k.replace('spec_', '')] = data[k];
-          });
+          specFields.forEach(k => { specDataObj[k.replace('spec_', '')] = data[k]; });
           formData.append('spec_data', JSON.stringify(specDataObj));
+
+          // If custom category, also send custom_params
+          if (!ELECTRONICS_SPEC_FIELDS[data.category_name] && customFieldDefs[data.category_name]) {
+            const customParams = {};
+            customFieldDefs[data.category_name].forEach(f => { customParams[f.key] = data[f.key] || ''; });
+            formData.append('custom_params', JSON.stringify(customParams));
+          }
       }
 
       const fileFields = [
@@ -341,6 +425,14 @@ const buildFileUrl = (filePath) => {
                   formData[`spec_${k}`] = specData[k];
               });
           }
+      }
+      if (fullData.custom_params) {
+          const customParams = typeof fullData.custom_params === 'string'
+            ? JSON.parse(fullData.custom_params)
+            : fullData.custom_params;
+          Object.keys(customParams).forEach(k => {
+              formData[k] = customParams[k];
+          });
       }
       return formData;
   }
@@ -532,37 +624,36 @@ const buildFileUrl = (filePath) => {
 
   // Dynamic Fields Component based on category
   const renderCategoryFields = () => {
-    const fields = ELECTRONICS_SPEC_FIELDS[selectedCategory];
+    const fields = ELECTRONICS_SPEC_FIELDS[selectedCategory] || customFieldDefs[selectedCategory];
     if (!fields) return null;
 
     return fields.map(f => (
         f.isSelect ? (
             <SelectField key={f.key} label={f.label} name={`spec_${f.key}`} options={f.options} />
         ) : (
-            <FormField key={f.key} label={f.label} name={`spec_${f.key}`} type={f.type || 'text'} />
+            <FormField key={f.key} label={f.label} name={f.key || `spec_${f.key}`} type={f.type || 'text'} />
         )
     ));
   };
 
   // Display fields for view mode
   const renderViewCategorySpecs = () => {
-      if (!selectedItem?.categorySpec?.spec_data) return null;
-      const catName = selectedItem.categorySpec.category_name;
-      const fields = ELECTRONICS_SPEC_FIELDS[catName];
+      const specData = selectedItem?.categorySpec?.spec_data ? (typeof selectedItem.categorySpec.spec_data === 'string' ? JSON.parse(selectedItem.categorySpec.spec_data) : selectedItem.categorySpec.spec_data) : {};
+      const customData = selectedItem?.categorySpec?.custom_params ? (typeof selectedItem.categorySpec.custom_params === 'string' ? JSON.parse(selectedItem.categorySpec.custom_params) : selectedItem.categorySpec.custom_params) : {};
       
-      let specData = selectedItem.categorySpec.spec_data;
-      if (typeof specData === 'string') {
-          try { specData = JSON.parse(specData); } catch (e) {}
-      }
+      const combined = { ...specData, ...customData };
+      if (Object.keys(combined).length === 0) return null;
+
+      const catName = selectedItem.categorySpec.category_name;
+      const fields = ELECTRONICS_SPEC_FIELDS[catName] || customFieldDefs[catName];
 
       if (!fields) {
-          // Fallback if category not in config (safety)
           return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {Object.keys(specData)
+                {Object.keys(combined)
                   .filter(k => !['id', 'created_at', 'updated_at', 'file_datasheet', 'file_warranty', 'part_images_gallery', 'spec_id', 'tech_id', 'part_id', 'datasheet_file', 'warranty_document', 'is_active', 'category_name', 'rated_voltage', 'rated_current', 'power_rating', 'input_type', 'output_type', 'connector_type', 'communication_iface', 'mounting_type', 'operating_temp', 'protection_rating', 'dimensions', 'weight'].includes(k))
                   .map(k => (
-                    <DataSheetEntry key={k} label={k.replace(/_/g, ' ')} value={(specData[k] !== null && specData[k] !== undefined && specData[k] !== '') ? specData[k] : 'Not Defined'} icon={Settings} />
+                    <DataSheetEntry key={k} label={k.replace(/_/g, ' ')} value={(combined[k] !== null && combined[k] !== undefined && combined[k] !== '') ? combined[k] : 'Not Defined'} icon={Settings} />
                 ))}
             </div>
           );
@@ -574,7 +665,7 @@ const buildFileUrl = (filePath) => {
                 <DataSheetEntry 
                     key={f.key} 
                     label={f.label} 
-                    value={(specData[f.key] !== null && specData[f.key] !== undefined && specData[f.key] !== '') ? specData[f.key] : 'Not Defined'} 
+                    value={(combined[f.key] !== null && combined[f.key] !== undefined && combined[f.key] !== '') ? combined[f.key] : 'Not Defined'} 
                     icon={Settings} 
                 />
             ))}
@@ -938,23 +1029,34 @@ const buildFileUrl = (filePath) => {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
                    {[...BASE_CATEGORIES, ...customCategories].map((cat, idx) => {
                       const Icon = CATEGORY_CONFIG[cat]?.icon || Layers;
+                      const isCustom = customCategories.includes(cat);
                       return (
-                        <button 
-                           key={cat}
-                           type="button"
-                           onClick={() => { 
-                               setValue('category_name', cat, { shouldValidate: true }); 
-                               setSelectedCategory(cat); 
-                               setModalTab('general'); 
-                           }}
-                           style={{ animationDelay: `${idx * 40}ms` }}
-                           className="p-5 bg-white/40 backdrop-blur-md border border-white/20 rounded-[28px] hover:border-[var(--accent)] hover:bg-white/60 transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-2"
-                        >
-                           <div className="w-10 h-10 bg-gradient-to-br from-white to-[var(--nav-hover)] rounded-[14px] flex items-center justify-center shadow-sm group-hover:shadow-[var(--accent)]/10 transition-all duration-500 group-hover:scale-110 relative z-10">
-                               <Icon size={20} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors duration-500" />
-                           </div>
-                           <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors duration-500 text-center relative z-10">{cat}</span>
-                        </button>
+                        <div key={cat} className="relative group/cat animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 40}ms` }}>
+                            <button 
+                               type="button"
+                               onClick={() => { 
+                                   setValue('category_name', cat, { shouldValidate: true }); 
+                                   setSelectedCategory(cat); 
+                                   setModalTab('general'); 
+                               }}
+                               className="p-5 w-full bg-white/40 backdrop-blur-md border border-white/20 rounded-[28px] hover:border-[#3b82f6] hover:bg-white/60 transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden"
+                            >
+                               <div className="w-10 h-10 bg-gradient-to-br from-white to-[var(--nav-hover)] rounded-[14px] flex items-center justify-center shadow-sm group-hover:shadow-[#3b82f6]/10 transition-all duration-500 group-hover:scale-110 relative z-10">
+                                   <Icon size={20} className="text-[var(--text-dim)] group-hover:text-[#3b82f6] transition-colors duration-500" />
+                               </div>
+                               <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-main)] group-hover:text-[#3b82f6] transition-colors duration-500 text-center relative z-10">{cat}</span>
+                            </button>
+                            {isCustom && (
+                                <div className="absolute top-3 right-3 flex flex-col gap-1.5 opacity-0 group-hover/cat:opacity-100 transition-opacity z-20">
+                                    <button onClick={(e) => { e.stopPropagation(); handleEditCategory(cat); }} title="Edit Category Fields" className="p-1.5 bg-white shadow-sm border border-[var(--border-color)] rounded-xl text-blue-500 hover:bg-blue-50 hover:border-blue-200 transition-colors">
+                                        <Pencil size={12} strokeWidth={3} />
+                                    </button>
+                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat); }} title="Delete Custom Category" className="p-1.5 bg-white shadow-sm border border-[var(--border-color)] rounded-xl text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition-colors">
+                                        <Trash2 size={12} strokeWidth={3} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                       );
                    })}
 
@@ -964,45 +1066,68 @@ const buildFileUrl = (filePath) => {
              {/* Add New Category Popup */}
              {isAddingCategory && (
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center rounded-[32px] p-4">
-                   <div className="bg-[var(--bg-card)] border border-[var(--accent)]/30 p-6 rounded-[24px] shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-300">
-                      <h4 className="text-[14px] font-black uppercase text-[var(--text-main)] mb-4 flex items-center gap-2"><Plus size={16} className="text-[var(--accent)]"/> Add Custom Category</h4>
+                   <div className="bg-[var(--bg-card)] border border-[#3b82f6]/30 p-6 rounded-[24px] shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-300 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                      <h4 className="text-[14px] font-black uppercase text-[var(--text-main)] mb-4 flex items-center gap-2"><Plus size={16} className="text-[#3b82f6]"/> {editingCategoryName ? 'Edit Custom Category' : 'Add Custom Category'}</h4>
+                      
+                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1.5">Category Name</label>
                       <input
                          autoFocus
                          type="text"
+                         readOnly={!!editingCategoryName}
                          value={newCategoryInput}
                          onChange={e => setNewCategoryInput(e.target.value)}
-                         onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                               const trimmed = newCategoryInput.trim();
-                               if (trimmed && ![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) {
-                                  setCustomCategories(prev => [...prev, trimmed]);
-                               }
-                               if (trimmed) {
-                                  setValue('category_name', trimmed, { shouldValidate: true });
-                                  setSelectedCategory(trimmed);
-                                  setModalTab('general');
-                               }
-                               setIsAddingCategory(false);
-                               setNewCategoryInput('');
-                            }
-                            if (e.key === 'Escape') { setIsAddingCategory(false); setNewCategoryInput(''); }
-                         }}
                          placeholder="Category name..."
-                         className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] px-4 py-3 rounded-xl outline-none focus:border-[var(--accent)] text-[12px] font-black uppercase text-[var(--text-main)] mb-4"
+                         className={`w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] px-4 py-3 rounded-xl outline-none focus:border-[#3b82f6] text-[12px] font-black uppercase text-[var(--text-main)] mb-5 ${editingCategoryName ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
-                      <div className="flex justify-end gap-3">
-                         <button onClick={() => { setIsAddingCategory(false); setNewCategoryInput(''); }} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-white transition-colors">Cancel</button>
-                         <button onClick={() => {
+
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Custom Fields</label>
+                          <button type="button" onClick={() => setNewCategoryFields(prev => [...prev, { label: '' }])} className="flex items-center gap-1 text-[10px] font-black text-[var(--accent)] uppercase hover:underline">
+                            <Plus size={12} /> Add Field
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {newCategoryFields.map((field, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <div className="flex-1 relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest">#{idx + 1}</span>
+                                <input
+                                  type="text"
+                                  value={field.label}
+                                  onChange={e => setNewCategoryFields(prev => prev.map((f, i) => i === idx ? { label: e.target.value } : f))}
+                                  placeholder={`Field name (e.g. Chip Model)`}
+                                  className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] pl-9 pr-4 py-2.5 rounded-xl outline-none focus:border-[var(--accent)] text-[11px] font-bold text-[var(--text-main)]"
+                                />
+                              </div>
+                              {newCategoryFields.length > 1 && (
+                                <button type="button" onClick={() => setNewCategoryFields(prev => prev.filter((_, i) => i !== idx))} className="p-2 text-rose-400 hover:text-rose-600 rounded-lg transition-all">
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-[9px] text-[var(--text-dim)] mt-2 opacity-60">These fields appear in Specialized Parameters when registering a part.</p>
+                      </div>
+
+                      <div className="flex justify-end gap-3 mt-4">
+                         <button onClick={() => { setIsAddingCategory(false); setEditingCategoryName(null); setNewCategoryInput(''); setNewCategoryFields([{ label: '' }]); }} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">Cancel</button>
+                         <button onClick={async () => {
                             const trimmed = newCategoryInput.trim();
-                            if (trimmed && ![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) setCustomCategories(prev => [...prev, trimmed]);
-                            if (trimmed) {
-                               setValue('category_name', trimmed, { shouldValidate: true });
-                               setSelectedCategory(trimmed);
-                               setModalTab('general');
-                            }
+                            if (!trimmed) return;
+                            const validFields = newCategoryFields.filter(f => f.label.trim()).map(f => ({ label: f.label.trim(), key: f.label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') }));
+                            try { await saveCategoryFields('electronics', trimmed, validFields); toast.success(`Category "${trimmed}" saved`); } catch(e) { toast.error('Failed to save category fields'); }
+                            if (![...BASE_CATEGORIES, ...customCategories].includes(trimmed)) setCustomCategories(prev => [...prev, trimmed]);
+                            setCustomFieldDefs(prev => ({ ...prev, [trimmed]: validFields }));
+                            setValue('category_name', trimmed, { shouldValidate: true });
+                            setSelectedCategory(trimmed);
+                            setModalTab('general');
                             setIsAddingCategory(false);
+                            setEditingCategoryName(null);
                             setNewCategoryInput('');
-                         }} className="px-4 py-2 bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-80 transition-all shadow-md">Add Category</button>
+                            setNewCategoryFields([{ label: '' }]);
+                         }} className="px-4 py-2 bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-80 transition-all shadow-md">Save & Select</button>
                       </div>
                    </div>
                 </div>
@@ -1055,7 +1180,7 @@ const buildFileUrl = (filePath) => {
                 {modalTab === 'general' && (
                     <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <input type="hidden" {...register('category_name')} value={selectedCategory} />
+                            <input type="hidden" {...register('category_name')} />
                             <FormField label="Part Category" name="part_category" placeholder="e.g. Sensors" required />
                             <FormField label="Part Name" name="part_name" placeholder="e.g. Laser Distance Sensor" required />
                         </div>
@@ -1114,7 +1239,14 @@ const buildFileUrl = (filePath) => {
                                     <Activity size={14} /> Specialized {selectedCategory} Parameters
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
-                                    {renderCategoryFields()}
+                                    {ELECTRONICS_SPEC_FIELDS[selectedCategory]
+                                      ? renderCategoryFields()
+                                      : (customFieldDefs[selectedCategory] && customFieldDefs[selectedCategory].length > 0)
+                                        ? customFieldDefs[selectedCategory].map(f => (
+                                            <FormField key={f.key} label={f.label} name={f.key} placeholder={`Enter ${f.label}`} />
+                                          ))
+                                        : <p className="text-[11px] text-[var(--text-muted)] col-span-3 opacity-60">No specialized fields defined for this category.</p>
+                                    }
                                 </div>
                             </div>
                         )}
@@ -1123,7 +1255,7 @@ const buildFileUrl = (filePath) => {
 
                 {modalTab === 'categories' && (
                     <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                        <input type="hidden" {...register('category_name', { required: 'Category is required' })} value={selectedCategory} />
+                        <input type="hidden" {...register('category_name', { required: 'Category is required' })} />
                         {errors.category_name && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors.category_name.message}</p>}
                         
                         {!selectedCategory && (
@@ -1193,7 +1325,14 @@ const buildFileUrl = (filePath) => {
                                                     <img src={buildFileUrl(img)} alt="Part" className="w-full h-full object-cover" />
                                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                                                         <a href={buildFileUrl(img)} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
-                                                        {/* Delete functionality for existing images can be added here if needed */}
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => handleRemoveImage(img)}
+                                                            className="text-white hover:text-rose-500 transition-colors"
+                                                            title="Delete Image"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
                                                     </div>
                                                 </div>
                                             ))}

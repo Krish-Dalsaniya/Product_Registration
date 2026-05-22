@@ -70,7 +70,7 @@ const SupportTicketProfilePage = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
       
       {/* Breadcrumbs Row */}
-      <div className="flex justify-end -mb-4 relative z-10">
+      <div className="flex justify-end mb-2 relative z-10">
         <Breadcrumbs items={breadcrumbItems} />
       </div>
       

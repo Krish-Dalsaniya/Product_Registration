@@ -58,7 +58,7 @@ const InventoryListPage = ({ type = '' }) => {
   const navigate = useNavigate();
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
 const buildFileUrl = (filePath) => {
-  if (!filePath || filePath === "#") return "#";
+  if (!filePath || filePath === "#") return null;
 
   if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
     return filePath;

@@ -17,7 +17,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', header
 
       {/* Modal Content */}
       <Draggable nodeRef={nodeRef} handle=".modal-header" bounds="parent">
-        <div ref={nodeRef} className="w-full" style={{ maxWidth: maxWidth === 'max-w-lg' ? '32rem' : maxWidth === 'max-w-xl' ? '36rem' : maxWidth === 'max-w-2xl' ? '42rem' : maxWidth === 'max-w-4xl' ? '56rem' : maxWidth === 'max-w-6xl' ? '72rem' : '100%' }}>
+        <div ref={nodeRef} className="w-full" style={{ maxWidth: maxWidth === 'max-w-sm' ? '24rem' : maxWidth === 'max-w-md' ? '28rem' : maxWidth === 'max-w-lg' ? '32rem' : maxWidth === 'max-w-xl' ? '36rem' : maxWidth === 'max-w-2xl' ? '42rem' : maxWidth === 'max-w-4xl' ? '56rem' : maxWidth === 'max-w-6xl' ? '72rem' : '100%' }}>
           <div
             className={`relative w-full rounded-2xl shadow-2xl p-0 overflow-hidden animate-scale-in flex flex-col max-h-[90vh] bg-[var(--bg-card)]`}
             style={{

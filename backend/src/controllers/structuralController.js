@@ -142,7 +142,8 @@ const getStructuralPartById = async (req, res, next) => {
             techSpec,
             categorySpec,
             categoryData,
-            images
+            images,
+            custom_params: part.custom_params || {}
         });
     } catch (error) {
         console.error(`--- CRITICAL ERROR IN getStructuralPartById FOR ID ${id} ---`, error);
@@ -242,7 +243,24 @@ const createStructuralPart = async (req, res, next) => {
                     throw err;
                 }
             }
+        } else if (category_name) {
+            // Custom category — just record the category name
+            try {
+                await db.query(
+                    `INSERT INTO STRUCTURAL_CATEGORY_SPEC (part_id, category_name, spec_data) VALUES ($1, $2, $3)`,
+                    [partId, category_name, '{}']
+                );
+            } catch (err) { console.error('--- ERROR INSERTING CUSTOM CATEGORY SPEC ---', err); }
         }
+
+        // Save custom_params for custom categories
+        if (body.custom_params) {
+            try {
+                const parsedCustom = typeof body.custom_params === 'string' ? body.custom_params : JSON.stringify(body.custom_params);
+                await db.query(`UPDATE STRUCTURAL_PART_MASTER SET custom_params = $1 WHERE part_id = $2`, [parsedCustom, partId]);
+            } catch (err) { console.error('--- ERROR SAVING CUSTOM PARAMS ---', err); }
+        }
+
     } catch (err) {
         console.error('--- ERROR IN MASTER TRANSACTION ---', err);
         throw err;
@@ -372,6 +390,14 @@ const updateStructuralPart = async (req, res, next) => {
                     throw err;
                 }
             }
+        }
+
+        // Update custom_params for custom categories
+        if (body.custom_params !== undefined) {
+            try {
+                const parsedCustom = typeof body.custom_params === 'string' ? body.custom_params : JSON.stringify(body.custom_params || {});
+                await db.query(`UPDATE STRUCTURAL_PART_MASTER SET custom_params = $1 WHERE part_id = $2`, [parsedCustom, id]);
+            } catch (err) { console.error('--- ERROR UPDATING CUSTOM PARAMS ---', err); }
         }
 
         // 4. Handle Images for Master Gallery (New Images)

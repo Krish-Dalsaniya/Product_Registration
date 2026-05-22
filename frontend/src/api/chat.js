@@ -29,5 +29,17 @@ export const chatApi = {
   markAsRead: async (userId) => {
     const response = await api.put(`/chat/messages/read/${userId}`);
     return response.data;
+  },
+
+  // Delete a specific message
+  deleteMessage: async (messageId) => {
+    const response = await api.delete(`/chat/messages/${messageId}`);
+    return response.data;
+  },
+
+  // Clear chat history with a specific user
+  clearChat: async (userId) => {
+    const response = await api.delete(`/chat/messages/user/${userId}`);
+    return response.data;
   }
 };

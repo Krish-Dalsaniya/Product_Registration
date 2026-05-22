@@ -82,7 +82,8 @@ const getElectronicsPartById = async (req, res, next) => {
             techSpec: techSpecResult.rows[0] || {},
             categorySpec: categoryData,
             files: filesResult.rows[0] || {},
-            part_images: imagesResult.rows.map(row => row.image_url)
+            part_images: imagesResult.rows.map(row => row.image_url),
+            custom_params: part.custom_params || {}
         });
     } catch (error) {
         next(error);
@@ -156,6 +157,18 @@ const createElectronicsPart = async (req, res, next) => {
                 const values = [partId, ...columns.map(col => parsedData[col]), datasheetUrl, warrantyUrl, imagesGallery];
                 await db.query(`INSERT INTO ${table} (${colNames.join(', ')}) VALUES (${placeholders})`, values);
             }
+        } else if (category_name) {
+            // Custom category - store category_name only
+            await db.query(
+                `INSERT INTO ELECTRONICS_CATEGORY_SPEC (part_id, category_name) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                [partId, category_name]
+            );
+        }
+
+        // Save custom_params for custom categories
+        if (req.body.custom_params) {
+            const parsedCustom = typeof req.body.custom_params === 'string' ? req.body.custom_params : JSON.stringify(req.body.custom_params);
+            await db.query(`UPDATE ELECTRONICS_PART_MASTER SET custom_params = $1 WHERE part_id = $2`, [parsedCustom, partId]);
         }
 
         // 4. Files
@@ -296,6 +309,20 @@ const updateElectronicsPart = async (req, res, next) => {
                     await db.query(`INSERT INTO ${table} (${colNames.join(', ')}) VALUES (${placeholders})`, values);
                 }
             }
+        } else if (category_name) {
+            // Custom category - just update category name
+            const existingCatSpec = await db.query('SELECT cat_spec_id FROM ELECTRONICS_CATEGORY_SPEC WHERE part_id = $1', [id]);
+            if (existingCatSpec.rows.length > 0) {
+                await db.query(`UPDATE ELECTRONICS_CATEGORY_SPEC SET category_name = $1 WHERE part_id = $2`, [category_name, id]);
+            } else {
+                await db.query(`INSERT INTO ELECTRONICS_CATEGORY_SPEC (part_id, category_name) VALUES ($1, $2)`, [id, category_name]);
+            }
+        }
+
+        // Update custom_params for custom categories
+        if (req.body.custom_params !== undefined) {
+            const parsedCustom = typeof req.body.custom_params === 'string' ? req.body.custom_params : JSON.stringify(req.body.custom_params || {});
+            await db.query(`UPDATE ELECTRONICS_PART_MASTER SET custom_params = $1 WHERE part_id = $2`, [parsedCustom, id]);
         }
 
         // 4. Files
@@ -393,11 +420,23 @@ const deleteElectronicsFile = async (req, res, next) => {
     }
 };
 
+const deleteElectronicsImage = async (req, res, next) => {
+    const { id } = req.params;
+    const { image_url } = req.body;
+    try {
+        await db.query('DELETE FROM ELECTRONICS_IMAGES WHERE part_id = $1 AND image_url = $2', [id, image_url]);
+        sendSuccess(res, null, 'Image deleted successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
   getElectronicsParts,
   getElectronicsPartById,
   createElectronicsPart,
   updateElectronicsPart,
   deleteElectronicsPart,
-  deleteElectronicsFile
+  deleteElectronicsFile,
+  deleteElectronicsImage
 };

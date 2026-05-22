@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { chatApi } from '../../api/chat';
-import { Search, Send, User, MessageSquare, Circle, CheckCheck, Loader2 } from 'lucide-react';
+import { Search, Send, User, MessageSquare, Circle, CheckCheck, Loader2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const ChatPage = () => {
   const { user } = useAuth();
@@ -105,18 +106,62 @@ const ChatPage = () => {
     }
   };
 
+  const handleDeleteMessage = async (messageId) => {
+    const result = await Swal.fire({
+      title: 'Delete Message?',
+      text: 'Are you sure you want to delete this message?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const response = await chatApi.deleteMessage(messageId);
+      if (response.success) {
+        setMessages(messages.filter(m => m.message_id !== messageId));
+        toast.success('Message deleted');
+      }
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+      toast.error('Failed to delete message');
+    }
+  };
+
+  const handleClearChat = async () => {
+    if (!selectedUser) return;
+    
+    const result = await Swal.fire({
+      title: 'Clear Conversation?',
+      text: `Are you sure you want to clear the entire chat history with ${selectedUser.full_name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, clear it!'
+    });
+
+    if (!result.isConfirmed) return;
+    
+    try {
+      const response = await chatApi.clearChat(selectedUser.user_id);
+      if (response.success) {
+        setMessages([]);
+        toast.success('Chat cleared');
+      }
+    } catch (error) {
+      console.error('Failed to clear chat:', error);
+      toast.error('Failed to clear chat');
+    }
+  };
+
   const filteredUsers = users.filter(u => 
     u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     u.role_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Group users by role
-  const usersByRole = filteredUsers.reduce((acc, current) => {
-    const role = current.role_name;
-    if (!acc[role]) acc[role] = [];
-    acc[role].push(current);
-    return acc;
-  }, {});
 
   const formatTime = (dateString) => {
     const options = { hour: '2-digit', minute: '2-digit' };
@@ -163,44 +208,46 @@ const ChatPage = () => {
               <div className="flex justify-center items-center h-32">
                 <Loader2 className="animate-spin text-[var(--accent)]" size={24} />
               </div>
-            ) : Object.keys(usersByRole).length > 0 ? (
-              Object.keys(usersByRole).map(role => (
-                <div key={role} className="mb-4">
-                  <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest px-3 mb-2">
-                    {role}
-                  </h3>
-                  {usersByRole[role].map(u => (
-                    <div 
-                      key={u.user_id}
-                      onClick={() => setSelectedUser(u)}
-                      className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
-                        selectedUser?.user_id === u.user_id 
-                          ? 'bg-[var(--accent)] text-white shadow-md' 
-                          : 'hover:bg-[var(--nav-hover)] text-[var(--text-main)]'
-                      }`}
-                    >
-                      <div className="relative">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${
-                          selectedUser?.user_id === u.user_id ? 'bg-white/20' : 'bg-[var(--bg-elevated)] border border-[var(--border-color)]'
-                        }`}>
-                          {u.full_name.charAt(0).toUpperCase()}
-                        </div>
-                        {u.unread_count > 0 && selectedUser?.user_id !== u.user_id && (
-                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm border-2 border-[var(--bg-workspace)]">
-                            {u.unread_count > 9 ? '9+' : u.unread_count}
-                          </div>
-                        )}
+            ) : filteredUsers.length > 0 ? (
+              <div className="space-y-1">
+                {filteredUsers.map(u => (
+                  <div 
+                    key={u.user_id}
+                    onClick={() => setSelectedUser(u)}
+                    className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border ${
+                      selectedUser?.user_id === u.user_id 
+                        ? 'bg-[var(--nav-active)] border-[var(--accent)]/30 text-[var(--text-main)] shadow-sm' 
+                        : 'border-transparent hover:bg-[var(--nav-hover)] text-[var(--text-main)]'
+                    }`}
+                  >
+                    <div className="relative">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${
+                        selectedUser?.user_id === u.user_id ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-elevated)] border border-[var(--border-color)]'
+                      }`}>
+                        {u.full_name.charAt(0).toUpperCase()}
                       </div>
-                      <div className="flex-1 overflow-hidden">
-                        <h4 className="font-bold text-sm truncate">{u.full_name}</h4>
-                        <p className={`text-xs truncate ${selectedUser?.user_id === u.user_id ? 'text-white/80' : 'text-[var(--text-secondary)]'}`}>
+                      {u.unread_count > 0 && selectedUser?.user_id !== u.user_id && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm border-2 border-[var(--bg-workspace)]">
+                          {u.unread_count > 9 ? '9+' : u.unread_count}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <h4 className={`font-bold text-sm truncate ${selectedUser?.user_id === u.user_id ? 'text-[var(--accent)]' : ''}`}>{u.full_name}</h4>
+                      <div className="flex justify-between items-center mt-0.5">
+                        <p className={`text-[11px] font-medium truncate ${selectedUser?.user_id === u.user_id ? 'text-[var(--text-main)] opacity-70' : 'text-[var(--text-secondary)]'}`}>
                           {u.role_name}
                         </p>
+                        {u.last_message_at && (
+                          <span className={`text-[10px] ${selectedUser?.user_id === u.user_id ? 'text-[var(--accent)]/70' : 'text-[var(--text-dim)]'}`}>
+                            {formatDate(u.last_message_at)}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              ))
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="text-center p-6 text-[var(--text-muted)] text-sm">
                 No users found.
@@ -213,15 +260,23 @@ const ChatPage = () => {
         <div className="w-2/3 flex flex-col bg-[var(--bg-elevated)] relative">
           {selectedUser ? (
             <>
-              {/* Chat Header */}
-              <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-workspace)]/50 backdrop-blur-md flex items-center gap-4 sticky top-0 z-10">
-                <div className="w-12 h-12 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-color)] flex items-center justify-center font-bold text-lg text-[var(--accent)] shadow-sm">
-                  {selectedUser.full_name.charAt(0).toUpperCase()}
+              <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-workspace)]/50 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-color)] flex items-center justify-center font-bold text-lg text-[var(--accent)] shadow-sm">
+                    {selectedUser.full_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="font-black text-lg text-[var(--text-main)]">{selectedUser.full_name}</h2>
+                    <p className="text-sm text-[var(--accent)] font-medium">{selectedUser.role_name}</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-black text-lg text-[var(--text-main)]">{selectedUser.full_name}</h2>
-                  <p className="text-sm text-[var(--accent)] font-medium">{selectedUser.role_name}</p>
-                </div>
+                <button 
+                  onClick={handleClearChat}
+                  className="p-2.5 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all"
+                  title="Clear Conversation"
+                >
+                  <Trash2 size={20} />
+                </button>
               </div>
 
               {/* Chat Messages */}
@@ -244,15 +299,26 @@ const ChatPage = () => {
                             </span>
                           </div>
                         )}
-                        <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                          <div 
-                            className={`max-w-[70%] px-5 py-3 rounded-2xl shadow-sm ${
-                              isMe 
-                                ? 'bg-[var(--accent)] text-white rounded-br-sm' 
-                                : 'bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] rounded-bl-sm'
-                            }`}
-                          >
-                            <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">{msg.message}</p>
+                        <div className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}>
+                          <div className={`flex items-center gap-2 max-w-[70%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <div 
+                              className={`px-5 py-3 rounded-2xl shadow-sm ${
+                                isMe 
+                                  ? 'bg-[var(--accent)] text-white rounded-br-sm' 
+                                  : 'bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] rounded-bl-sm'
+                              }`}
+                            >
+                              <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">{msg.message}</p>
+                            </div>
+                            {isMe && (
+                              <button 
+                                onClick={() => handleDeleteMessage(msg.message_id)}
+                                className="opacity-0 group-hover:opacity-100 p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-all rounded-lg shrink-0"
+                                title="Delete Message"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
                           </div>
                           <div className="flex items-center gap-1 mt-1 px-1">
                             <span className="text-[11px] text-[var(--text-dim)] font-medium">

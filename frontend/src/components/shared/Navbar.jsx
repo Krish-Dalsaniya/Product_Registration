@@ -90,10 +90,10 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
                 onClick={() => onTabClick(tab.fullPath)}
                 className={`flex items-center gap-2.5 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border transition-all duration-300 flex-shrink-0 group ${
                   isActive
-                    ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-md shadow-[var(--border-glow)]'
+                    ? 'text-white border-transparent shadow-md shadow-[var(--border-glow)]'
                     : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--accent)]/40 hover:text-[var(--text-main)]'
                 }`}
-                style={isActive ? { boxShadow: '0 4px 12px -2px var(--border-glow)' } : {}}
+                style={isActive ? { background: 'var(--grad-button)', boxShadow: '0 4px 12px -2px var(--border-glow)' } : {}}
               >
                 <Icon size={12} className={isActive ? 'text-white' : 'text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors'} />
                 <span>{tab.label}</span>

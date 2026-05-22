@@ -20,11 +20,16 @@ const getChatUsers = async (req, res, next) => {
              AND cm.receiver_id = $1 
              AND cm.is_read = FALSE), 
           0
-        )::int as unread_count
+        )::int as unread_count,
+        (SELECT MAX(created_at) 
+         FROM chat_messages cm 
+         WHERE (cm.sender_id = u.user_id AND cm.receiver_id = $1)
+            OR (cm.sender_id = $1 AND cm.receiver_id = u.user_id)
+        ) as last_message_at
       FROM users u
       JOIN roles r ON u.role_id = r.role_id
       WHERE u.user_id != $1 AND u.is_active = TRUE
-      ORDER BY r.role_name, u.full_name
+      ORDER BY last_message_at DESC NULLS LAST, r.role_name, u.full_name
     `;
 
     const result = await db.query(query, [currentUserId]);
@@ -123,10 +128,54 @@ const getUnreadCount = async (req, res, next) => {
   }
 };
 
+// Delete a specific message
+const deleteMessage = async (req, res, next) => {
+  try {
+    const currentUserId = req.user.user_id;
+    const { messageId } = req.params;
+
+    const query = `
+      DELETE FROM chat_messages 
+      WHERE message_id = $1 AND sender_id = $2
+      RETURNING message_id
+    `;
+    const result = await db.query(query, [messageId, currentUserId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: { message: 'Message not found or unauthorized' } });
+    }
+
+    sendSuccess(res, null, 'Message deleted');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Clear entire chat history with a specific user
+const clearChat = async (req, res, next) => {
+  try {
+    const currentUserId = req.user.user_id;
+    const { userId: otherUserId } = req.params;
+
+    const query = `
+      DELETE FROM chat_messages 
+      WHERE (sender_id = $1 AND receiver_id = $2)
+         OR (sender_id = $2 AND receiver_id = $1)
+    `;
+    await db.query(query, [currentUserId, otherUserId]);
+
+    sendSuccess(res, null, 'Chat history cleared');
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getChatUsers,
   getChatHistory,
   sendMessage,
   markAsRead,
-  getUnreadCount
+  getUnreadCount,
+  deleteMessage,
+  clearChat
 };

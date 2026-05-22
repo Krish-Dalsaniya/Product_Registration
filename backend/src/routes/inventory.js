@@ -4,6 +4,7 @@ const inventoryController = require('../controllers/inventoryController');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const customCategoryController = require('../controllers/customCategoryController');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -66,6 +67,12 @@ const structuralFiles = [
     { name: 'file_cutting', maxCount: 1 },
     { name: 'part_images', maxCount: 10 }
 ];
+// Custom Category Fields routes (shared for all 3 modules)
+router.get('/:module/custom-categories', customCategoryController.getCustomCategories);
+router.get('/:module/categories/:categoryName/fields', customCategoryController.getCategoryFields);
+router.post('/:module/categories/:categoryName/fields', customCategoryController.saveCategoryFields);
+router.delete('/:module/categories/:categoryName', customCategoryController.deleteCustomCategory);
+
 
 router.get('/pcb', inventoryController.getPCBs);
 router.get('/pcb/:id', inventoryController.getPCBById);
@@ -80,6 +87,7 @@ router.get('/electronics/:id', electronicsController.getElectronicsPartById);
 router.post('/electronics', upload.fields(electronicsFiles), electronicsController.createElectronicsPart);
 router.put('/electronics/:id', upload.fields(electronicsFiles), electronicsController.updateElectronicsPart);
 router.delete('/electronics/:id', electronicsController.deleteElectronicsPart);
+router.delete('/electronics/:id/image', electronicsController.deleteElectronicsImage);
 router.delete('/electronics/:id/file', electronicsController.deleteElectronicsFile);
 
 router.get('/electrical', electricalController.getElectricalParts);
@@ -97,5 +105,7 @@ router.put('/structural/:id', upload.fields(structuralFiles), structuralControll
 router.delete('/structural/:id', structuralController.deleteStructuralPart);
 router.delete('/structural/:id/image', structuralController.deleteStructuralImage);
 router.delete('/structural/:id/file', structuralController.deleteStructuralFile);
+
+
 
 module.exports = router;

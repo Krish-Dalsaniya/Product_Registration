@@ -9,16 +9,7 @@ const getElectricalParts = async (req, res, next) => {
     try {
       let queryText = `
         SELECT p.*, 
-        CASE 
-          WHEN p.part_category ILIKE 'Pump' THEN (SELECT part_images_gallery::jsonb->>0 FROM pump_specs WHERE part_id = p.part_id)
-          WHEN p.part_category ILIKE 'Nozzle' THEN (SELECT part_images_gallery::jsonb->>0 FROM nozzle_specs WHERE part_id = p.part_id)
-          WHEN p.part_category ILIKE 'Solenoid Valve' THEN (SELECT part_images_gallery::jsonb->>0 FROM solenoid_valve_specs WHERE part_id = p.part_id)
-          WHEN p.part_category ILIKE 'Relay Box' THEN (SELECT part_images_gallery::jsonb->>0 FROM relay_box_specs WHERE part_id = p.part_id)
-          WHEN p.part_category ILIKE 'Transformer' THEN (SELECT part_images_gallery::jsonb->>0 FROM transformer_specs WHERE part_id = p.part_id)
-          WHEN p.part_category ILIKE 'RCCB' THEN (SELECT part_images_gallery::jsonb->>0 FROM rccb_specs WHERE part_id = p.part_id)
-          WHEN p.part_category ILIKE 'SPD%' THEN (SELECT part_images_gallery::jsonb->>0 FROM spd_specs WHERE part_id = p.part_id)
-          ELSE NULL
-        END as image_url,
+        (SELECT image_url FROM electrical_images WHERE part_id = p.part_id LIMIT 1) as image_url,
         COUNT(*) OVER() as total_count 
         FROM electrical_part_master p
         WHERE p.is_active = TRUE
@@ -83,10 +74,16 @@ const getElectricalPartById = async (req, res, next) => {
             }
         }
 
+        // Fetch all images from electrical_images table
+        const imagesResult = await db.query('SELECT image_url FROM electrical_images WHERE part_id = $1', [id]);
+        const part_images = imagesResult.rows.map(r => r.image_url);
+
         sendSuccess(res, {
             ...master,
             ...techResult.rows[0],
-            ...category_spec
+            ...category_spec,
+            custom_params: master.custom_params || {},
+            part_images: part_images.length > 0 ? part_images : (category_spec.part_images || [])
         });
     } catch (error) {
         next(error);
@@ -117,6 +114,12 @@ const createElectricalPart = async (req, res, next) => {
         // 5. Insert Category Record
         if (body.category_name) {
             await db.query(`INSERT INTO electrical_category_spec (part_id, category_name) VALUES ($1, $2)`, [part_id, body.category_name]);
+        }
+
+        // 5.5 Save custom_params for custom categories
+        if (body.custom_params) {
+            const parsedCustom = typeof body.custom_params === 'string' ? body.custom_params : JSON.stringify(body.custom_params);
+            await db.query(`UPDATE electrical_part_master SET custom_params = $1 WHERE part_id = $2`, [parsedCustom, part_id]);
         }
 
         // 6. Specialized Table & Files
@@ -184,6 +187,12 @@ const updateElectricalPart = async (req, res, next) => {
                 `UPDATE electrical_category_spec SET category_name = $1 WHERE part_id = $2`,
                 [body.category_name, id]
             );
+        }
+
+        // 4.6 Update custom_params for custom categories
+        if (body.custom_params !== undefined) {
+            const parsedCustom = typeof body.custom_params === 'string' ? body.custom_params : JSON.stringify(body.custom_params || {});
+            await db.query(`UPDATE electrical_part_master SET custom_params = $1 WHERE part_id = $2`, [parsedCustom, id]);
         }
 
         // 5. Update Category specialized table
