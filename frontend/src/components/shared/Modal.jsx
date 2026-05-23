@@ -1,9 +1,21 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import Draggable from 'react-draggable';
 
 const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', headerActions }) => {
   const nodeRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (

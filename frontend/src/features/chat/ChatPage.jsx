@@ -173,8 +173,8 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="animate-fade-in space-y-6 max-w-[1600px] mx-auto pb-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="animate-fade-in flex flex-col h-[calc(100vh-92px)] max-w-[1600px] mx-auto pb-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-3 shrink-0">
         <div>
           <h1 className="text-[28px] font-black tracking-tight text-[var(--text-main)] flex items-center gap-3">
             <MessageSquare className="text-[var(--accent)]" size={32} />
@@ -186,7 +186,7 @@ const ChatPage = () => {
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-220px)] min-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-[var(--border-color)] bg-[var(--bg-elevated)]">
+      <div className="flex flex-1 min-h-[500px] rounded-2xl overflow-hidden shadow-2xl border border-[var(--border-color)] bg-[var(--bg-elevated)]">
         
         {/* Left Pane - Contacts List */}
         <div className="w-1/3 min-w-[300px] border-r border-[var(--border-color)] flex flex-col bg-[var(--bg-workspace)]">

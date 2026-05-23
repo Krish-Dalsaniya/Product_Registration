@@ -275,14 +275,20 @@ const SupportTicketsPage = () => {
             <div key={ticket.id} onClick={() => handleView(ticket)} className="workspace-card p-5 group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer">
               <div className="flex justify-between items-start mb-3">
                 <span className="text-[13px] font-black text-[var(--accent)] tracking-widest">{ticket.ticket_id}</span>
-                <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${ticket.status === 'Solved' ? 'bg-emerald-500/10 text-emerald-500' : ticket.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                  {ticket.status}
-                </span>
+                <div className="flex gap-2">
+                  <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${ticket.priority === 'High' ? 'bg-rose-500/10 text-rose-500' : ticket.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                    {ticket.priority || 'Normal'}
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${ticket.status === 'Solved' ? 'bg-emerald-500/10 text-emerald-500' : ticket.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                    {ticket.status}
+                  </span>
+                </div>
               </div>
               <h3 className="text-[15px] font-black text-[var(--text-main)] mb-2 line-clamp-1">{ticket.query_type || 'General Query'}</h3>
-              <p className="text-[12px] text-[var(--text-muted)] line-clamp-2 mb-4 flex-1">
-                {(ticket.query_description || '').replace(/<[^>]*>?/gm, '')}
-              </p>
+              <p 
+                className="text-[12px] text-[var(--text-muted)] line-clamp-2 mb-4 flex-1"
+                dangerouslySetInnerHTML={{ __html: (ticket.query_description || '').replace(/<[^>]*>?/gm, '') }}
+              />
               <div className="flex items-center justify-between pt-3 border-t border-[var(--border-color)]">
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest">Reporter</span>

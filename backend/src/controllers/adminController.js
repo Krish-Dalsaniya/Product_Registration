@@ -191,7 +191,12 @@ const getAdminStats = async (req, res, next) => {
         (SELECT COUNT(*) FROM pcb_master WHERE is_active = TRUE) as pcb,
         (SELECT COUNT(*) FROM electronics_part_master WHERE is_active = TRUE) as electronics,
         (SELECT COUNT(*) FROM electrical_part_master WHERE is_active = TRUE) as electrical,
-        (SELECT COUNT(*) FROM STRUCTURAL_PART_MASTER WHERE is_active = TRUE) as structural
+        (SELECT COUNT(*) FROM STRUCTURAL_PART_MASTER WHERE is_active = TRUE) as structural,
+        (SELECT COALESCE(SUM(quantity), 0) FROM finished_goods) as finished_goods_qty,
+        (SELECT COUNT(*) FROM book_a_sale) as book_a_sale_count,
+        (SELECT COALESCE(SUM(quantity), 0) FROM book_a_sale) as book_a_sale_qty,
+        (SELECT COUNT(*) FROM support_tickets) as support_tickets_total,
+        (SELECT COUNT(*) FROM support_tickets WHERE status IN ('Pending', 'In Progress')) as support_tickets_active
     `;
 
     const result = await db.query(queryText);
@@ -207,6 +212,11 @@ const getAdminStats = async (req, res, next) => {
       teams: parseInt(row.designer_teams) + parseInt(row.sales_teams) + parseInt(row.maintenance_teams),
       products: parseInt(row.products),
       customers: parseInt(row.customers),
+      finishedGoodsQty: parseInt(row.finished_goods_qty),
+      bookASaleCount: parseInt(row.book_a_sale_count),
+      bookASaleQty: parseInt(row.book_a_sale_qty),
+      supportTicketsTotal: parseInt(row.support_tickets_total),
+      supportTicketsActive: parseInt(row.support_tickets_active),
       inventory: {
         pcb: parseInt(row.pcb),
         electronics: parseInt(row.electronics),

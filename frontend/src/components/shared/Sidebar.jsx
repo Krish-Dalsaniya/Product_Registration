@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -30,6 +31,25 @@ import {
 
 const Sidebar = ({ role, isOpen, onClose }) => {
   const { user, logout } = useAuth();
+  
+  const handleLogout = () => {
+    Swal.fire({
+      title: 'Sign Out?',
+      text: 'Are you sure you want to log out?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#f06532',
+      cancelButtonColor: '#a89b96',
+      confirmButtonText: 'Yes, sign out',
+      background: 'var(--bg-card)',
+      color: 'var(--text-main)',
+      iconColor: '#f06532'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        logout();
+      }
+    });
+  };
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -585,7 +605,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
       <div className="py-5 px-6" style={{ borderTop: '1px solid var(--border-color)', background: 'var(--bg-elevated)' }}>
         <div className="flex items-center justify-between gap-4">
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="flex-1 flex items-center gap-3 py-2.5 transition-all text-[10px] font-black uppercase tracking-[0.2em] group"
             style={{ color: 'var(--text-secondary)' }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; }}

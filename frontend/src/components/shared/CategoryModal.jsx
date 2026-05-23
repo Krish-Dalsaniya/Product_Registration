@@ -50,6 +50,17 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
 
   useEffect(() => {
     if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
       if (initialCategory) {
         setSelectedCategory(initialCategory);
         fetchSubCategories(initialCategory.id);

@@ -83,6 +83,9 @@ const SupportTicketProfilePage = () => {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight leading-none">{ticket.ticket_id}</h1>
+              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${ticket.priority === 'High' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : ticket.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'}`}>
+                {ticket.priority || 'Normal'}
+              </span>
               <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${ticket.status === 'Solved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : ticket.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
                 {ticket.status}
               </span>
@@ -135,10 +138,14 @@ const SupportTicketProfilePage = () => {
               {/* Query Details */}
               <div className="space-y-4">
                 <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">Query Details</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
                     <p className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest mb-1">Query Type</p>
                     <p className="text-[13px] font-bold text-[var(--text-main)]">{ticket.query_type}</p>
+                  </div>
+                  <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
+                    <p className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest mb-1">Priority</p>
+                    <p className="text-[13px] font-bold text-[var(--text-main)]">{ticket.priority || 'Normal'}</p>
                   </div>
                   <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
                     <p className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest mb-1">Steps Followed</p>

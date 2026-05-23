@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, Zap, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import ErrorBanner from '../../components/shared/ErrorBanner';
 import loginBg from '../../assets/login-bg2.png';
 
@@ -45,7 +46,16 @@ const LoginPage = () => {
         localStorage.removeItem('rememberedEmail');
       }
 
-      toast.success(`Access Granted. Welcome back, ${loggedUser.full_name}.`);
+      await Swal.fire({
+        title: 'Login Successful',
+        text: `Welcome back, ${loggedUser.full_name}.`,
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        background: 'var(--bg-card)',
+        color: 'var(--text-main)',
+        iconColor: '#10b981'
+      });
       
       const roleRoutes = {
         Admin: '/admin/dashboard',

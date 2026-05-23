@@ -50,6 +50,17 @@ const CompanyModal = ({ isOpen, onClose, onSelect, onSelectCompany, initialCompa
 
   useEffect(() => {
     if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
       if (initialCompany) {
         setSelectedCompany(initialCompany);
         fetchSubCompanies(initialCompany.id);
