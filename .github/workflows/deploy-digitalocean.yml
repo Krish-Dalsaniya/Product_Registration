@@ -37,6 +37,10 @@ jobs:
             test -f backend/.env
             test -f frontend/.env
 
+            echo "Cleaning local changes..."
+            git reset --hard
+            git clean -fd
+
             echo "Pulling latest code from GitHub..."
             git fetch origin "$BRANCH"
             git checkout "$BRANCH"
@@ -44,6 +48,7 @@ jobs:
 
             echo "Installing backend dependencies..."
             cd "$APP_DIR/backend"
+
             if [ -f package-lock.json ]; then
               npm ci
             else
@@ -52,14 +57,21 @@ jobs:
 
             echo "Installing frontend dependencies..."
             cd "$APP_DIR/frontend"
-            npm install
+
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
 
             echo "Building frontend..."
             npm run build
 
             echo "Restarting backend with PM2..."
             cd "$APP_DIR/backend"
-            NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 restart product-registration-backend --update-env || NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 start npm --name product-registration-backend -- start
+
+            NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 restart product-registration-backend --update-env || \
+            NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 start npm --name product-registration-backend -- start
 
             echo "Saving PM2 process list..."
             pm2 save
