@@ -3,10 +3,11 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const ThemeContext = createContext();
 
 export const AVAILABLE_THEMES = [
-  { id: 'dark', name: 'Dark (Default)' },
   { id: 'light', name: 'Light (Default)' },
+  { id: 'dark', name: 'Dark (Default)' },
   { id: 'cyberpunk', name: 'Cyberpunk' },
   { id: 'retro', name: 'Retro' },
+  { id: 'modified-retro', name: 'Modified Retro' },
   { id: 'forest', name: 'Forest' },
   { id: 'rose-gold', name: 'Rose Gold' },
   { id: 'ocean', name: 'Ocean' },
@@ -18,7 +19,7 @@ export const AVAILABLE_THEMES = [
 ];
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setThemeState] = useState(localStorage.getItem('theme') || 'dark');
+  const [theme, setThemeState] = useState(localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
     // dark is the default :root styling, so we don't necessarily need a data-theme="dark", 

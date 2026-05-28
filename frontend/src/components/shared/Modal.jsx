@@ -22,8 +22,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', header
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 animate-in fade-in duration-300"
-        style={{ background: 'var(--border-glow, rgba(5, 15, 25, 0.8))' }}
+        className="absolute inset-0 bg-black/10 animate-in fade-in duration-300"
         onClick={onClose}
       />
 

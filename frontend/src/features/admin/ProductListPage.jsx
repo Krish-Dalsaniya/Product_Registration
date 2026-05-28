@@ -994,7 +994,7 @@ const ProductListPage = () => {
                   </div>
 
                   {/* Tab Content */}
-                  <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-workspace)]/30">
+                  <div className="border border-[var(--border-color)] rounded-2xl overflow-hidden bg-[var(--bg-workspace)]">
                     {[
                       { type: 'pcb', label: 'PCB' },
                       { type: 'electrical', label: 'Electrical Parts' },
