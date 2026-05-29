@@ -16,14 +16,37 @@ jobs:
     steps:
       - name: Setup SSH
         run: |
+          set -x
+
           mkdir -p ~/.ssh
-          echo "${{ secrets.DO_SSH_KEY }}" > ~/.ssh/do_key
+
+          cat > ~/.ssh/do_key << 'EOF'
+          ${{ secrets.DO_SSH_KEY }}
+          EOF
+
+          echo "SSH directory:"
+          ls -la ~/.ssh
+
+          echo "Key line count:"
+          wc -l ~/.ssh/do_key
+
+          echo "Validating key format:"
+          ssh-keygen -l -f ~/.ssh/do_key
+
           chmod 600 ~/.ssh/do_key
+
+          echo "Testing ssh-keyscan..."
           ssh-keyscan -p "${{ secrets.DO_PORT }}" -H "${{ secrets.DO_HOST }}" >> ~/.ssh/known_hosts
+
+          echo "SSH setup complete"
 
       - name: Deploy on DigitalOcean
         run: |
-          ssh -i ~/.ssh/do_key -p "${{ secrets.DO_PORT }}" "${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}" << 'EOF'
+          ssh -i ~/.ssh/do_key \
+              -o StrictHostKeyChecking=yes \
+              -p "${{ secrets.DO_PORT }}" \
+              "${{ secrets.DO_USER }}@${{ secrets.DO_HOST }}" << 'EOF'
+
             set -e
 
             APP_DIR="/var/www/product-registration-app"
@@ -41,7 +64,7 @@ jobs:
             git reset --hard
             git clean -fd
 
-            echo "Pulling latest code from GitHub..."
+            echo "Pulling latest code..."
             git fetch origin "$BRANCH"
             git checkout "$BRANCH"
             git pull --ff-only origin "$BRANCH"
@@ -62,19 +85,15 @@ jobs:
             echo "Building frontend..."
             npm run build
 
-            echo "Restarting backend with PM2..."
+            echo "Restarting backend..."
             cd "$APP_DIR/backend"
 
             NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 restart product-registration-backend --update-env || \
             NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 start npm --name product-registration-backend -- start
 
-            echo "Saving PM2 process list..."
             pm2 save
 
-            echo "Testing Nginx..."
             nginx -t
-
-            echo "Reloading Nginx..."
             systemctl reload nginx
 
             echo "Deployment completed successfully."
