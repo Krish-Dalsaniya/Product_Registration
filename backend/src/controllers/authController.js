@@ -50,20 +50,21 @@ const login = async (req, res, next) => {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     await db.query('UPDATE users SET refresh_token = $1 WHERE user_id = $2', [hashedRefreshToken, user.user_id]);
 
-    // Ensure we use secure cookies in deployed environments even if NODE_ENV is forgotten
-    const isProduction = env.NODE_ENV === 'production' || (env.FRONTEND_URL && env.FRONTEND_URL.includes('https://'));
+    // If deploying over HTTP (e.g. DigitalOcean without SSL), we MUST NOT use Secure/SameSite=None.
+    // We only use Secure cookies if the frontend URL indicates HTTPS.
+    const useSecureCookies = env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false;
 
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      secure: useSecureCookies,
+      sameSite: useSecureCookies ? 'none' : 'lax',
       maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      secure: useSecureCookies,
+      sameSite: useSecureCookies ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -117,13 +118,13 @@ const refresh = async (req, res, next) => {
       { expiresIn: '15m' }
     );
 
-    // Ensure we use secure cookies in deployed environments even if NODE_ENV is forgotten
-    const isProduction = env.NODE_ENV === 'production' || (env.FRONTEND_URL && env.FRONTEND_URL.includes('https://'));
+    // If deploying over HTTP (e.g. DigitalOcean without SSL), we MUST NOT use Secure/SameSite=None.
+    const useSecureCookies = env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false;
 
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      secure: useSecureCookies,
+      sameSite: useSecureCookies ? 'none' : 'lax',
       maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
@@ -137,11 +138,11 @@ const { redisClient } = require('../config/redis');
 
 const logout = async (req, res) => {
   // Clear cookies
-  const isProduction = env.NODE_ENV === 'production' || (env.FRONTEND_URL && env.FRONTEND_URL.includes('https://'));
+  const useSecureCookies = env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false;
   const cookieOptions = {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
+    secure: useSecureCookies,
+    sameSite: useSecureCookies ? 'none' : 'lax',
   };
 
   const refreshToken = req.cookies?.refreshToken;
