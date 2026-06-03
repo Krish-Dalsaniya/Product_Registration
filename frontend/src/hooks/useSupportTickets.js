@@ -6,7 +6,8 @@ import {
   updateSupportTicket,
   deleteSupportTicket,
   getSupportTicketMessages,
-  addSupportTicketMessage
+  addSupportTicketMessage,
+  deleteSupportTicketMessage
 } from '../api/supportTickets';
 
 // --- Support Tickets Hooks ---
@@ -82,6 +83,16 @@ export const useAddSupportTicketMessage = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, message }) => addSupportTicketMessage(id, message),
+    onSuccess: (data, variables) => {
+      return queryClient.invalidateQueries({ queryKey: ['supportTicketMessages', variables.id] });
+    },
+  });
+};
+
+export const useDeleteSupportTicketMessage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, messageId }) => deleteSupportTicketMessage(id, messageId),
     onSuccess: (data, variables) => {
       return queryClient.invalidateQueries({ queryKey: ['supportTicketMessages', variables.id] });
     },

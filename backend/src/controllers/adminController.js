@@ -169,63 +169,68 @@ let statsCache = {
   timestamp: 0
 };
 
+const fetchAdminStatsData = async () => {
+  const now = Date.now();
+  // 10-second cache to prevent DB hammering from multiple simultaneous sessions
+  if (statsCache.data && (now - statsCache.timestamp < 10000)) {
+    return statsCache.data;
+  }
+
+  // Consolidate separate queries into 1 single multi-count query for speed
+  const queryText = `
+    SELECT
+      (SELECT COUNT(*) FROM designer_profiles dp JOIN users u ON dp.designer_id = u.user_id WHERE u.is_active = TRUE) as designers,
+      (SELECT COUNT(*) FROM sales_profiles sp JOIN users u ON sp.sales_id = u.user_id WHERE u.is_active = TRUE) as sales,
+      (SELECT COUNT(*) FROM maintenance_profiles mp JOIN users u ON mp.maintenance_id = u.user_id WHERE u.is_active = TRUE) as maintenance,
+      (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Designer') as designer_teams,
+      (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Sales') as sales_teams,
+      (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Maintenance') as maintenance_teams,
+      (SELECT COUNT(*) FROM products WHERE is_active = TRUE) as products,
+      (SELECT COUNT(*) FROM customers) as customers,
+      (SELECT COUNT(*) FROM pcb_master WHERE is_active = TRUE) as pcb,
+      (SELECT COUNT(*) FROM electronics_part_master WHERE is_active = TRUE) as electronics,
+      (SELECT COUNT(*) FROM electrical_part_master WHERE is_active = TRUE) as electrical,
+      (SELECT COUNT(*) FROM STRUCTURAL_PART_MASTER WHERE is_active = TRUE) as structural,
+      (SELECT COALESCE(SUM(quantity), 0) FROM finished_goods) as finished_goods_qty,
+      (SELECT COUNT(*) FROM book_a_sale) as book_a_sale_count,
+      (SELECT COALESCE(SUM(quantity), 0) FROM book_a_sale) as book_a_sale_qty,
+      (SELECT COUNT(*) FROM support_tickets) as support_tickets_total,
+      (SELECT COUNT(*) FROM support_tickets WHERE status IN ('Pending', 'In Progress')) as support_tickets_active
+  `;
+
+  const result = await db.query(queryText);
+  const row = result.rows[0];
+
+  const stats = {
+    designers: parseInt(row.designers),
+    sales: parseInt(row.sales),
+    maintenance: parseInt(row.maintenance),
+    designerTeams: parseInt(row.designer_teams),
+    salesTeams: parseInt(row.sales_teams),
+    maintenanceTeams: parseInt(row.maintenance_teams),
+    teams: parseInt(row.designer_teams) + parseInt(row.sales_teams) + parseInt(row.maintenance_teams),
+    products: parseInt(row.products),
+    customers: parseInt(row.customers),
+    finishedGoodsQty: parseInt(row.finished_goods_qty),
+    bookASaleCount: parseInt(row.book_a_sale_count),
+    bookASaleQty: parseInt(row.book_a_sale_qty),
+    supportTicketsTotal: parseInt(row.support_tickets_total),
+    supportTicketsActive: parseInt(row.support_tickets_active),
+    inventory: {
+      pcb: parseInt(row.pcb),
+      electronics: parseInt(row.electronics),
+      electrical: parseInt(row.electrical),
+      structural: parseInt(row.structural)
+    }
+  };
+
+  statsCache = { data: stats, timestamp: now };
+  return stats;
+};
+
 const getAdminStats = async (req, res, next) => {
   try {
-    const now = Date.now();
-    // 10-second cache to prevent DB hammering from multiple simultaneous sessions
-    if (statsCache.data && (now - statsCache.timestamp < 10000)) {
-      return sendSuccess(res, statsCache.data);
-    }
-
-    // Consolidate separate queries into 1 single multi-count query for speed
-    const queryText = `
-      SELECT
-        (SELECT COUNT(*) FROM designer_profiles dp JOIN users u ON dp.designer_id = u.user_id WHERE u.is_active = TRUE) as designers,
-        (SELECT COUNT(*) FROM sales_profiles sp JOIN users u ON sp.sales_id = u.user_id WHERE u.is_active = TRUE) as sales,
-        (SELECT COUNT(*) FROM maintenance_profiles mp JOIN users u ON mp.maintenance_id = u.user_id WHERE u.is_active = TRUE) as maintenance,
-        (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Designer') as designer_teams,
-        (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Sales') as sales_teams,
-        (SELECT COUNT(*) FROM teams t JOIN roles r ON t.role_id = r.role_id WHERE r.role_name = 'Maintenance') as maintenance_teams,
-        (SELECT COUNT(*) FROM products WHERE is_active = TRUE) as products,
-        (SELECT COUNT(*) FROM customers) as customers,
-        (SELECT COUNT(*) FROM pcb_master WHERE is_active = TRUE) as pcb,
-        (SELECT COUNT(*) FROM electronics_part_master WHERE is_active = TRUE) as electronics,
-        (SELECT COUNT(*) FROM electrical_part_master WHERE is_active = TRUE) as electrical,
-        (SELECT COUNT(*) FROM STRUCTURAL_PART_MASTER WHERE is_active = TRUE) as structural,
-        (SELECT COALESCE(SUM(quantity), 0) FROM finished_goods) as finished_goods_qty,
-        (SELECT COUNT(*) FROM book_a_sale) as book_a_sale_count,
-        (SELECT COALESCE(SUM(quantity), 0) FROM book_a_sale) as book_a_sale_qty,
-        (SELECT COUNT(*) FROM support_tickets) as support_tickets_total,
-        (SELECT COUNT(*) FROM support_tickets WHERE status IN ('Pending', 'In Progress')) as support_tickets_active
-    `;
-
-    const result = await db.query(queryText);
-    const row = result.rows[0];
-
-    const stats = {
-      designers: parseInt(row.designers),
-      sales: parseInt(row.sales),
-      maintenance: parseInt(row.maintenance),
-      designerTeams: parseInt(row.designer_teams),
-      salesTeams: parseInt(row.sales_teams),
-      maintenanceTeams: parseInt(row.maintenance_teams),
-      teams: parseInt(row.designer_teams) + parseInt(row.sales_teams) + parseInt(row.maintenance_teams),
-      products: parseInt(row.products),
-      customers: parseInt(row.customers),
-      finishedGoodsQty: parseInt(row.finished_goods_qty),
-      bookASaleCount: parseInt(row.book_a_sale_count),
-      bookASaleQty: parseInt(row.book_a_sale_qty),
-      supportTicketsTotal: parseInt(row.support_tickets_total),
-      supportTicketsActive: parseInt(row.support_tickets_active),
-      inventory: {
-        pcb: parseInt(row.pcb),
-        electronics: parseInt(row.electronics),
-        electrical: parseInt(row.electrical),
-        structural: parseInt(row.structural)
-      }
-    };
-
-    statsCache = { data: stats, timestamp: now };
+    const stats = await fetchAdminStatsData();
     sendSuccess(res, stats);
   } catch (error) {
     next(error);
@@ -391,6 +396,7 @@ module.exports = {
   getSales,
   getMaintenance,
   getAdminStats,
+  fetchAdminStatsData,
   createUser,
   updateUser,
   deleteUser

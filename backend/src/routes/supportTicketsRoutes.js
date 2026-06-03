@@ -16,5 +16,7 @@ router.delete('/:id', supportTicketController.deleteTicket);
 // Message routes
 router.get('/:id/messages', supportTicketController.getTicketMessages);
 router.post('/:id/messages', supportTicketController.addTicketMessage);
+router.delete('/:id/messages/:messageId', supportTicketController.deleteTicketMessage);
 
 module.exports = router;
+

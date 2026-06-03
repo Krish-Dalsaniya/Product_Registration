@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useOutletContext, useLocation } from 'react-router-dom';
-import { useSupportTicket, useSupportTicketMessages, useAddSupportTicketMessage } from '../../hooks/useSupportTickets';
-import { ArrowLeft, Loader2, LifeBuoy, Clock, Calendar, Check, Box, MessageSquareOff, User, Download, Send } from 'lucide-react';
+import { useSupportTicket, useSupportTicketMessages, useAddSupportTicketMessage, useDeleteSupportTicketMessage } from '../../hooks/useSupportTickets';
+import { ArrowLeft, Loader2, LifeBuoy, Clock, Calendar, Check, Box, MessageSquareOff, User, Download, Send, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
 
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
@@ -32,6 +33,7 @@ const SupportTicketProfilePage = () => {
   const { data: messagesResponse, isLoading: loadingMessages } = useSupportTicketMessages(id);
   const messages = messagesResponse?.data || [];
   const addMessageMutation = useAddSupportTicketMessage();
+  const deleteMessageMutation = useDeleteSupportTicketMessage();
   const [newMessage, setNewMessage] = useState('');
   const chatEndRef = React.useRef(null);
 
@@ -51,6 +53,27 @@ const SupportTicketProfilePage = () => {
         onSuccess: () => setNewMessage('')
       }
     );
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    const result = await Swal.fire({
+      title: 'Delete Message?',
+      text: 'Are you sure you want to delete this message?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await deleteMessageMutation.mutateAsync({ id, messageId });
+      toast.success('Message deleted');
+    } catch (error) {
+      toast.error('Failed to delete message');
+    }
   };
 
   useEffect(() => {
@@ -258,15 +281,26 @@ const SupportTicketProfilePage = () => {
                 messages.map((msg) => {
                   const isMe = msg.sender_id === user?.user_id;
                   return (
-                    <div key={msg.message_id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                    <div key={msg.message_id} className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}>
                       {!isMe && (
                         <div className="flex items-center gap-2 mb-1 pl-1">
                           <span className="text-[10px] font-bold text-[var(--text-main)]">{msg.sender_name}</span>
                           <span className="text-[9px] font-black uppercase text-[var(--text-dim)] tracking-wider px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)]">{msg.sender_role}</span>
                         </div>
                       )}
-                      <div className={`max-w-[85%] p-3 rounded-2xl ${isMe ? 'bg-[var(--accent)] text-white rounded-tr-sm' : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-tl-sm'}`}>
-                        <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                      <div className={`flex items-center gap-2 max-w-[85%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <div className={`p-3 rounded-2xl ${isMe ? 'bg-[var(--accent)] text-white rounded-tr-sm' : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-tl-sm'}`}>
+                          <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                        </div>
+                        {isMe && (
+                          <button 
+                            onClick={() => handleDeleteMessage(msg.message_id)}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-all rounded-lg shrink-0"
+                            title="Delete Message"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                       <span className="text-[9px] font-medium text-[var(--text-dim)] mt-1 px-1">
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

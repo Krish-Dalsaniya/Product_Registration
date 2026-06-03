@@ -1,0 +1,6185 @@
+{
+  "schema": {
+    "sales_products": [
+      {
+        "column_name": "sales_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "product_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "assigned_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "is_primary",
+        "data_type": "boolean",
+        "is_nullable": "NO"
+      }
+    ],
+    "audit_log": [
+      {
+        "column_name": "log_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "actor_id",
+        "data_type": "uuid",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "action",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "table_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "record_id",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "old_data",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "new_data",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "logged_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      }
+    ],
+    "roles": [
+      {
+        "column_name": "role_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "role_name",
+        "data_type": "USER-DEFINED",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      }
+    ],
+    "role_permissions": [
+      {
+        "column_name": "role_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "permission_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "granted_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      }
+    ],
+    "permissions": [
+      {
+        "column_name": "permission_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "permission_key",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      }
+    ],
+    "teams": [
+      {
+        "column_name": "team_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "team_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "role_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_name",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "team_lead_id",
+        "data_type": "uuid",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "client_handler_id",
+        "data_type": "uuid",
+        "is_nullable": "YES"
+      }
+    ],
+    "users": [
+      {
+        "column_name": "user_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "role_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "full_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "email",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "password_hash",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "refresh_token",
+        "data_type": "text",
+        "is_nullable": "YES"
+      }
+    ],
+    "designer_profiles": [
+      {
+        "column_name": "designer_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "specialty",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "portfolio_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "availability",
+        "data_type": "boolean",
+        "is_nullable": "NO"
+      }
+    ],
+    "team_members": [
+      {
+        "column_name": "team_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "user_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "joined_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "is_lead",
+        "data_type": "boolean",
+        "is_nullable": "NO"
+      }
+    ],
+    "support_ticket_messages": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "ticket_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sender_id",
+        "data_type": "uuid",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "message",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "projects": [
+      {
+        "column_name": "project_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "team_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "project_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "status",
+        "data_type": "USER-DEFINED",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "start_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "end_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      }
+    ],
+    "sales_opportunities": [
+      {
+        "column_name": "opportunity_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "sales_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "product_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "client_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "deal_value",
+        "data_type": "numeric",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "stage",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "expected_close",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "closed_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      }
+    ],
+    "sales_profiles": [
+      {
+        "column_name": "sales_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "region",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "target_revenue",
+        "data_type": "numeric",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hire_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      }
+    ],
+    "maintenance_tasks": [
+      {
+        "column_name": "task_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "record_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "maintenance_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "task_title",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "priority",
+        "data_type": "USER-DEFINED",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "status",
+        "data_type": "USER-DEFINED",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "due_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "completed_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      }
+    ],
+    "maintenance_profiles": [
+      {
+        "column_name": "maintenance_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "certification",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hire_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      }
+    ],
+    "maintenance_records": [
+      {
+        "column_name": "record_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "product_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "record_title",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "scheduled_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "completed_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      }
+    ],
+    "designer_projects": [
+      {
+        "column_name": "designer_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "project_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "role_in_project",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "assigned_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      }
+    ],
+    "customers": [
+      {
+        "column_name": "customer_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "customer_code",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "customer_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "company_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "customer_site_location",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "email",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "gst_no",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "status",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "technical_contact_person",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "technical_contact_mobile",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "accounts_contact_person",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "accounts_contact_mobile",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "udyam_aadhar_no",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "first_name",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "middle_name",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "last_name",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "technical_contacts",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sales_contacts",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "company_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "addresses",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "owner_contacts",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "accounts_contacts",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "qa_qc_contacts",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "other_contacts",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_promoted",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_inquired",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_quoted",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_sampled",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_purchased",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      }
+    ],
+    "product_categories": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "product_sub_categories": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "category_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "product_companies": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "product_sub_companies": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "company_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "products": [
+      {
+        "column_name": "product_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "product_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "product_code",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "unit_price",
+        "data_type": "numeric",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "category",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sub_category",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "specification",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "feature",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "image_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "document_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "faqs",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "images",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "documents",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "company_name",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sub_company",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pcb_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "electrical_part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "electronics_part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "structural_part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      }
+    ],
+    "feature_mappings": [
+      {
+        "column_name": "mapping_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "mapping_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "hardware_features",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "software_features",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "pcb_type_master": [
+      {
+        "column_name": "pcb_type_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "type_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "type_description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "pcb_file_master": [
+      {
+        "column_name": "pcb_file_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "pcb_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "processor_file_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "brd_file_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sch_file_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "bom_file_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "stencil_file_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "panel_gerber_file_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "layer_stacking_file_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "production_instruction_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "pcb_master": [
+      {
+        "column_name": "pcb_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "pcb_type_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_no",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "requires_firmware",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "processor_count",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pcb_name",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "stock_quantity",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      }
+    ],
+    "processor_master": [
+      {
+        "column_name": "processor_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "processor_type",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_no",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "firmware_master": [
+      {
+        "column_name": "firmware_master_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "processor_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "firmware_branch_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "current_firmware_version",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "firmware_version_master": [
+      {
+        "column_name": "firmware_version_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "firmware_master_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "firmware_version",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "release_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "firmware_file_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "checksum",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "firmware_feature_master": [
+      {
+        "column_name": "firmware_feature_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "firmware_master_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "feature_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "feature_description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "pcb_firmware_mapping": [
+      {
+        "column_name": "pcb_firmware_mapping_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "pcb_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "processor_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "firmware_master_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "firmware_version_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_default",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "product_version_master": [
+      {
+        "column_name": "product_version_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "product_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "version_no",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "version_name",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "version_description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "release_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "pcb_product_mapping": [
+      {
+        "column_name": "pcb_product_mapping_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "pcb_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_version_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "electronic_part_detail": [
+      {
+        "column_name": "electronic_part_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_no",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "item_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "manufacturer",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "stock_qty",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "electrical_part_detail": [
+      {
+        "column_name": "electrical_part_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_no",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "item_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "manufacturer",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "stock_qty",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "structural_component_detail": [
+      {
+        "column_name": "structural_component_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_no",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "item_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "manufacturer",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "stock_qty",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "electronics_tech_spec": [
+      {
+        "column_name": "spec_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rated_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rated_current",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "power_rating",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "input_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "connector_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "communication_iface",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "mounting_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "operating_temp",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "protection_rating",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "dimensions",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "weight",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      }
+    ],
+    "electronics_part_master": [
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_category",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_number",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "internal_sku",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "manufacturer",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "used_in_product",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "status",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "stock_quantity",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "custom_params",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "electronics_category_spec": [
+      {
+        "column_name": "cat_spec_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "category_name",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "spec_data",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "electronics_files": [
+      {
+        "column_name": "file_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "wiring_diagram_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "user_manual_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "test_report_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "calibration_cert_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_cert_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "invoice_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      }
+    ],
+    "electronics_images": [
+      {
+        "column_name": "image_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "image_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      }
+    ],
+    "pcb_images": [
+      {
+        "column_name": "image_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "pcb_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "image_url",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      }
+    ],
+    "electrical_tech_spec": [
+      {
+        "column_name": "tech_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rated_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rated_current",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "power_rating",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "phase_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "frequency",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "input_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "connector_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "mounting_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "protection_rating",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "operating_temperature",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "dimensions",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "weight",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "electrical_inventory": [
+      {
+        "column_name": "inventory_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "serial_number",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "batch_number",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "quantity_available",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "minimum_stock_level",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "unit_of_measurement",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "storage_location",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "condition",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_damaged",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "damage_description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_assigned",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "assigned_device_id",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "last_inspection_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "next_inspection_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      }
+    ],
+    "electrical_procurement": [
+      {
+        "column_name": "procurement_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "supplier_name",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "supplier_contact",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "purchase_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "purchase_order_number",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "invoice_number",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "purchase_price",
+        "data_type": "numeric",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_period",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_start_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_end_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_status",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "gst_number",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "remarks",
+        "data_type": "text",
+        "is_nullable": "YES"
+      }
+    ],
+    "electrical_part_master": [
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_category",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_number",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "manufacturer",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "used_in_product",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "status",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "stock_quantity",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "custom_params",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "electrical_category_spec": [
+      {
+        "column_name": "spec_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "category_name",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "parameters",
+        "data_type": "jsonb",
+        "is_nullable": "NO"
+      }
+    ],
+    "electrical_files": [
+      {
+        "column_name": "file_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "wiring_diagram_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "installation_manual_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "test_report_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "calibration_cert_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "compliance_cert_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_doc_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "invoice_url",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      }
+    ],
+    "electrical_images": [
+      {
+        "column_name": "image_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "bigint",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "image_url",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      }
+    ],
+    "battery_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "chemistry",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cycle_life",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "nominal_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "capacity",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "internal_resistance",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "charge_temp",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "discharge_temp",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "battery_chemistry",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "battery_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "battery_capacity",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cell_count",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rechargeable",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "charging_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "max_charging_current",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "max_discharge_current",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "backup_time",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "battery_connector_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "bms_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      }
+    ],
+    "flow_meter_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "flow_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pipe_diameter",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pulse_rate",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "max_pressure",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "fluid_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_protocol",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "flow_meter_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "accuracy",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pulse_output",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pulses_per_liter",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "k_factor",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "fluid_compatibility",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "inlet_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "outlet_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "calibration_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "calibration_cert_no",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      }
+    ],
+    "speaker_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "speaker_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "impedance",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "power_output",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "frequency_response",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sensitivity",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "dimensions",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "power_rating",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "frequency_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sound_level",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "operating_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "connector_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "mounting_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      }
+    ],
+    "smps_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "input_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_current",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "efficiency",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "ripple_noise",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cooling_method",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "input_voltage_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_power",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "num_outputs",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "protection",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cooling_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "smps_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      }
+    ],
+    "amplifier_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "amplifier_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "ic_chipset",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "input_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_power",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "channel_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "speaker_impedance_support",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "input_signal_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "volume_control",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "protection",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "temperature_sensor_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sensor_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sensor_model",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "temperature_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "accuracy",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_signal",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "interface",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "probe_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cable_length",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "calibration_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "quality_sensor_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sensor_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "measured_parameter",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "measuring_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "accuracy",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_signal",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "communication_protocol",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "fluid_compatibility",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "calibration_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "calibration_data",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "printer_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "print_method",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "print_speed",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "paper_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "interface",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "resolution",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "printer_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "printer_model",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "print_width",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "paper_roll_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "baud_rate",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cutter_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "paper_sensor_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "operating_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "supported_language",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      }
+    ],
+    "pressure_sensor_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pressure_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pressure_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_signal",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "accuracy",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "thread_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "overload_pressure",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "burst_pressure",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "medium_compatibility",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "operating_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "emi_emc_filter_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "filter_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rated_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rated_current",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "frequency_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "leakage_current",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "filter_stage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "mounting_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "certification",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "application",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "transformer_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "transformer_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "winding_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "core_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "insulation_class",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cooling_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "short_circuit_protection",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "temperature_rise",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "efficiency",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "dc_meter_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "meter_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "voltage_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "current_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "display_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "accuracy_class",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "shunt_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "communication_interface",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "protocol",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "power_supply",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "mounting_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "pump_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pump_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "motor_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "flow_rate",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "max_pressure",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "suction_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "outlet_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "fluid_compatibility",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pump_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rpm",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "seal_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "noise_level",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "dry_run_protection",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "overload_protection",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "nozzle_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "nozzle_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "fuel_compatibility",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "flow_rate_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "inlet_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "outlet_diameter",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "spout_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "auto_cutoff_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "swivel_joint_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "trigger_lock_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "seal_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "operating_pressure",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "color_code",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "nozzle_weight",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "solenoid_valve_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "valve_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "operation_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "coil_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "coil_power",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "port_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "number_of_ports",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "body_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "medium_compatibility",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pressure_range",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "response_time",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "manual_override",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "coil_protection_class",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "duty_cycle",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "relay_box_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "relay_box_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "input_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "output_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "number_of_relays",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "relay_rating",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "relay_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "control_signal_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "terminal_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "enclosure_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "fuse_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "led_indicator_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "manual_override_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "communication_interface",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "rccb_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rccb_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sensitivity",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "breaking_capacity",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "trip_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "number_of_poles",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "test_button_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "standards",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "protection_purpose",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "trip_indicator_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "front_door_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "door_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "door_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "door_opening_direction",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "lock_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "look_count",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hinge_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hinge_count",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rubber_gasket_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "display_cutout_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "printer_cutout_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "keypad_cutout_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sticker_area_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "door_stopper_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_2d_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_3d_model",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_fabrication_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_assembly_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_cutting",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_bend_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_paint_spec",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_qc_report",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_invoice",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "spd_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "spd_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "protection_mode",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "max_continuous_operating_voltage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "nominal_discharge_current",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "max_discharge_current",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "voltage_protection_level",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "status_indicator_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "replaceable_cartridge",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "remote_signal_contact",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "standard_compliance",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "datasheet_file",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "warranty_document",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "structural_tech_spec": [
+      {
+        "column_name": "tech_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "material_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "material_grade",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sheet_thickness",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "surface_finish",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "paint_coating_color",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "coating_thickness",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "corrosion_protection",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rust_proof_treatment",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "welding_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "bending_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "laser_cutting_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cnc_cutting_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "edge_finish",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "waterproof_sealing_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rubber_gasket_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "length",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "width",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "height",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "thickness",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "weight",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "tolerance",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hole_count",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hole_diameter",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cutout_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cutout_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cutout_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "bend_angle",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "bend_count",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "mounting_hole_pattern",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "structural_category_spec": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "category_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "spec_data",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "cabinet_body_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cabinet_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cabinet_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cabinet_height",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cabinet_width",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cabinet_depth",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "door_opening_side",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "ventilation_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "number_of_vents",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "ip_protection_target",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "internal_mounting_plate_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "base_stand_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "locking_arrangement",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cable_entry_holes",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hose_entry_hole",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "earthing_point_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_2d_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_3d_model",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_fabrication_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_assembly_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_cutting",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_bend_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_paint_spec",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_qc_report",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_invoice",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "structural_part_master": [
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_category",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_number",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "internal_part_code",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "compatible_dispenser_model",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "assembly_group",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_position",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "manufacturer_fabricator",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "brand",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "status",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "stock_quantity",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "custom_params",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "side_panel_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "panel_side",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "panel_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "ventilation_slot_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "number_of_vent_slots",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "access_opening_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hose_pipe_opening_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "nozzle_holder_mounting_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "fastner_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "panel_reinforcement_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_2d_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_3d_model",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_fabrication_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_assembly_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_cutting",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_bend_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_paint_spec",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_qc_report",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_invoice",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "top_cover_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cover_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rain_protection_design",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "overhang_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "mounting_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sealing_gasket_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cable_entry_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "ventilation_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "branding_area_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_2d_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_3d_model",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_fabrication_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_assembly_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_cutting",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_bend_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_paint_spec",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_qc_report",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_invoice",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "base_frame_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "base_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "base_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "load_capacity",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "foot_stand_count",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "floor_mounting_hole_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "anchor_bolt_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "anti_vibration_pad_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "leveling_foot_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "bottom_clearance",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "drain_hole_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_2d_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_3d_model",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_fabrication_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_assembly_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_cutting",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_bend_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_paint_spec",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_qc_report",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_invoice",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "internal_mounting_plate_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "plate_usage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "plate_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "mounting_hole_pattern",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "component_mounting_slots",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cable_routing_holes",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "din_rail_mounting_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "earthing_stud_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "removable_plate",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_2d_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_3d_model",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_fabrication_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_assembly_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_cutting",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_bend_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_paint_spec",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_qc_report",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_invoice",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "nozzle_holder_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "holder_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "nozzle_compatibility",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "holder_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "mounting_side",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "nozzle_sensor_mount_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "drain_hole_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "locking_support_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rubber_padding_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cutout_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_2d_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_3d_model",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_fabrication_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_assembly_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_cutting",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_bend_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_paint_spec",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_qc_report",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_invoice",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "hose_entry_plate_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hose_entry_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hose_diameter_support",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "grommet_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pipe_clamp_mount_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "swivel_mount_support",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hole_diameter",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "reinforcement_plate_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "leak_drain_path_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_2d_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_3d_model",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_fabrication_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_assembly_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_cutting",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_bend_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_paint_spec",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_qc_report",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_invoice",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "display_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "panel_usage",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "display_cutout_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "keypad_cutout_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "printer_cutout_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "acrylic_window_available",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "window_material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "window_thickness",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sticker_branding_area",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "button_hole_count",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "indicator_hole_count",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_2d_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_3d_model",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_fabrication_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_assembly_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_cutting",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_bend_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_paint_spec",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_qc_report",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_invoice",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "lock_specs": [
+      {
+        "column_name": "spec_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "hardware_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "material",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "load_capacity",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "opening_angle",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "fastener_size",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "finish",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "quantity_per_dispenser",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "replacement_required",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_2d_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_3d_model",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_fabrication_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_assembly_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_cutting",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_bend_drawing",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_paint_spec",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_qc_report",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "file_invoice",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "part_images_gallery",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "structural_images": [
+      {
+        "column_name": "image_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "part_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "image_url",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "software_features": [
+      {
+        "column_name": "software_feature_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "feature_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "version",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "support_tickets": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "ticket_id",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "creator_id",
+        "data_type": "uuid",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "creator_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "query_date",
+        "data_type": "date",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "last_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "resolved_date",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "query_type",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "query_description",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "troubleshooting_steps",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "steps_followed",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "priority",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "status",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "assigned_to",
+        "data_type": "character varying",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "attachments",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "product_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      }
+    ],
+    "finished_goods_hardware": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "finished_good_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "component_type",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "component_id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "finished_goods_software": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "finished_good_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "feature_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "finished_goods_serials": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "finished_good_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "serial_number",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "product_bom": [
+      {
+        "column_name": "bom_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "product_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "component_type",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "component_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "quantity",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "notes",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "book_a_sale": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "finished_good_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "customer_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "quantity",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "sale_date",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "finished_goods": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "product_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "quantity",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_iot",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "power_controller",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "motherboard_id",
+        "data_type": "integer",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "communication_details",
+        "data_type": "jsonb",
+        "is_nullable": "YES"
+      }
+    ],
+    "chat_messages": [
+      {
+        "column_name": "message_id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "sender_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "receiver_id",
+        "data_type": "uuid",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "message",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "is_read",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ],
+    "inventory_custom_category_fields": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "module",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "category_name",
+        "data_type": "character varying",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "fields",
+        "data_type": "jsonb",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp without time zone",
+        "is_nullable": "YES"
+      }
+    ]
+  },
+  "foreignKeys": [
+    {
+      "table_name": "session",
+      "column_name": "userId",
+      "foreign_table_name": "user",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "account",
+      "column_name": "userId",
+      "foreign_table_name": "user",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "member",
+      "column_name": "organizationId",
+      "foreign_table_name": "organization",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "member",
+      "column_name": "userId",
+      "foreign_table_name": "user",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "invitation",
+      "column_name": "organizationId",
+      "foreign_table_name": "organization",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "invitation",
+      "column_name": "inviterId",
+      "foreign_table_name": "user",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "role_permissions",
+      "column_name": "role_id",
+      "foreign_table_name": "roles",
+      "foreign_column_name": "role_id"
+    },
+    {
+      "table_name": "role_permissions",
+      "column_name": "permission_id",
+      "foreign_table_name": "permissions",
+      "foreign_column_name": "permission_id"
+    },
+    {
+      "table_name": "users",
+      "column_name": "role_id",
+      "foreign_table_name": "roles",
+      "foreign_column_name": "role_id"
+    },
+    {
+      "table_name": "designer_profiles",
+      "column_name": "designer_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    },
+    {
+      "table_name": "team_members",
+      "column_name": "team_id",
+      "foreign_table_name": "teams",
+      "foreign_column_name": "team_id"
+    },
+    {
+      "table_name": "projects",
+      "column_name": "team_id",
+      "foreign_table_name": "teams",
+      "foreign_column_name": "team_id"
+    },
+    {
+      "table_name": "projects",
+      "column_name": "product_id",
+      "foreign_table_name": "products",
+      "foreign_column_name": "product_id"
+    },
+    {
+      "table_name": "designer_projects",
+      "column_name": "designer_id",
+      "foreign_table_name": "designer_profiles",
+      "foreign_column_name": "designer_id"
+    },
+    {
+      "table_name": "designer_projects",
+      "column_name": "project_id",
+      "foreign_table_name": "projects",
+      "foreign_column_name": "project_id"
+    },
+    {
+      "table_name": "sales_profiles",
+      "column_name": "sales_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    },
+    {
+      "table_name": "sales_products",
+      "column_name": "sales_id",
+      "foreign_table_name": "sales_profiles",
+      "foreign_column_name": "sales_id"
+    },
+    {
+      "table_name": "sales_products",
+      "column_name": "product_id",
+      "foreign_table_name": "products",
+      "foreign_column_name": "product_id"
+    },
+    {
+      "table_name": "sales_opportunities",
+      "column_name": "sales_id",
+      "foreign_table_name": "sales_profiles",
+      "foreign_column_name": "sales_id"
+    },
+    {
+      "table_name": "sales_opportunities",
+      "column_name": "product_id",
+      "foreign_table_name": "products",
+      "foreign_column_name": "product_id"
+    },
+    {
+      "table_name": "maintenance_profiles",
+      "column_name": "maintenance_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    },
+    {
+      "table_name": "maintenance_records",
+      "column_name": "product_id",
+      "foreign_table_name": "products",
+      "foreign_column_name": "product_id"
+    },
+    {
+      "table_name": "maintenance_tasks",
+      "column_name": "record_id",
+      "foreign_table_name": "maintenance_records",
+      "foreign_column_name": "record_id"
+    },
+    {
+      "table_name": "maintenance_tasks",
+      "column_name": "maintenance_id",
+      "foreign_table_name": "maintenance_profiles",
+      "foreign_column_name": "maintenance_id"
+    },
+    {
+      "table_name": "audit_log",
+      "column_name": "actor_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    },
+    {
+      "table_name": "teams",
+      "column_name": "role_id",
+      "foreign_table_name": "roles",
+      "foreign_column_name": "role_id"
+    },
+    {
+      "table_name": "product_sub_categories",
+      "column_name": "category_id",
+      "foreign_table_name": "product_categories",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "teams",
+      "column_name": "team_lead_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    },
+    {
+      "table_name": "teams",
+      "column_name": "client_handler_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    },
+    {
+      "table_name": "team_members",
+      "column_name": "user_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    },
+    {
+      "table_name": "product_sub_companies",
+      "column_name": "company_id",
+      "foreign_table_name": "product_companies",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "pcb_master",
+      "column_name": "pcb_type_id",
+      "foreign_table_name": "pcb_type_master",
+      "foreign_column_name": "pcb_type_id"
+    },
+    {
+      "table_name": "pcb_file_master",
+      "column_name": "pcb_id",
+      "foreign_table_name": "pcb_master",
+      "foreign_column_name": "pcb_id"
+    },
+    {
+      "table_name": "firmware_master",
+      "column_name": "processor_id",
+      "foreign_table_name": "processor_master",
+      "foreign_column_name": "processor_id"
+    },
+    {
+      "table_name": "firmware_version_master",
+      "column_name": "firmware_master_id",
+      "foreign_table_name": "firmware_master",
+      "foreign_column_name": "firmware_master_id"
+    },
+    {
+      "table_name": "firmware_feature_master",
+      "column_name": "firmware_master_id",
+      "foreign_table_name": "firmware_master",
+      "foreign_column_name": "firmware_master_id"
+    },
+    {
+      "table_name": "pcb_firmware_mapping",
+      "column_name": "pcb_id",
+      "foreign_table_name": "pcb_master",
+      "foreign_column_name": "pcb_id"
+    },
+    {
+      "table_name": "pcb_firmware_mapping",
+      "column_name": "processor_id",
+      "foreign_table_name": "processor_master",
+      "foreign_column_name": "processor_id"
+    },
+    {
+      "table_name": "pcb_firmware_mapping",
+      "column_name": "firmware_master_id",
+      "foreign_table_name": "firmware_master",
+      "foreign_column_name": "firmware_master_id"
+    },
+    {
+      "table_name": "pcb_firmware_mapping",
+      "column_name": "firmware_version_id",
+      "foreign_table_name": "firmware_version_master",
+      "foreign_column_name": "firmware_version_id"
+    },
+    {
+      "table_name": "product_version_master",
+      "column_name": "product_id",
+      "foreign_table_name": "products",
+      "foreign_column_name": "product_id"
+    },
+    {
+      "table_name": "pcb_product_mapping",
+      "column_name": "pcb_id",
+      "foreign_table_name": "pcb_master",
+      "foreign_column_name": "pcb_id"
+    },
+    {
+      "table_name": "pcb_product_mapping",
+      "column_name": "product_id",
+      "foreign_table_name": "products",
+      "foreign_column_name": "product_id"
+    },
+    {
+      "table_name": "pcb_product_mapping",
+      "column_name": "product_version_id",
+      "foreign_table_name": "product_version_master",
+      "foreign_column_name": "product_version_id"
+    },
+    {
+      "table_name": "electronics_tech_spec",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "electronics_category_spec",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "electronics_files",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "electronics_images",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "pcb_images",
+      "column_name": "pcb_id",
+      "foreign_table_name": "pcb_master",
+      "foreign_column_name": "pcb_id"
+    },
+    {
+      "table_name": "electrical_tech_spec",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "electrical_inventory",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "electrical_procurement",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "electrical_category_spec",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "electrical_files",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "electrical_images",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "battery_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "flow_meter_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "smps_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "printer_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "speaker_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "amplifier_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "temperature_sensor_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "quality_sensor_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "pressure_sensor_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "emi_emc_filter_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "dc_meter_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electronics_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "pump_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "nozzle_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "solenoid_valve_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "relay_box_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "transformer_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "rccb_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "spd_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "electrical_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "structural_tech_spec",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "structural_category_spec",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "cabinet_body_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "front_door_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "side_panel_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "top_cover_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "base_frame_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "internal_mounting_plate_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "nozzle_holder_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "hose_entry_plate_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "display_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "lock_specs",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "structural_images",
+      "column_name": "part_id",
+      "foreign_table_name": "structural_part_master",
+      "foreign_column_name": "part_id"
+    },
+    {
+      "table_name": "finished_goods",
+      "column_name": "product_id",
+      "foreign_table_name": "products",
+      "foreign_column_name": "product_id"
+    },
+    {
+      "table_name": "finished_goods_hardware",
+      "column_name": "finished_good_id",
+      "foreign_table_name": "finished_goods",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "finished_goods_software",
+      "column_name": "finished_good_id",
+      "foreign_table_name": "finished_goods",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "finished_goods_serials",
+      "column_name": "finished_good_id",
+      "foreign_table_name": "finished_goods",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "product_bom",
+      "column_name": "product_id",
+      "foreign_table_name": "products",
+      "foreign_column_name": "product_id"
+    },
+    {
+      "table_name": "book_a_sale",
+      "column_name": "finished_good_id",
+      "foreign_table_name": "finished_goods",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "book_a_sale",
+      "column_name": "customer_id",
+      "foreign_table_name": "customers",
+      "foreign_column_name": "customer_id"
+    },
+    {
+      "table_name": "finished_goods",
+      "column_name": "motherboard_id",
+      "foreign_table_name": "pcb_master",
+      "foreign_column_name": "pcb_id"
+    },
+    {
+      "table_name": "support_tickets",
+      "column_name": "creator_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    },
+    {
+      "table_name": "chat_messages",
+      "column_name": "sender_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    },
+    {
+      "table_name": "chat_messages",
+      "column_name": "receiver_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    },
+    {
+      "table_name": "support_tickets",
+      "column_name": "product_id",
+      "foreign_table_name": "products",
+      "foreign_column_name": "product_id"
+    },
+    {
+      "table_name": "support_ticket_messages",
+      "column_name": "ticket_id",
+      "foreign_table_name": "support_tickets",
+      "foreign_column_name": "id"
+    },
+    {
+      "table_name": "support_ticket_messages",
+      "column_name": "sender_id",
+      "foreign_table_name": "users",
+      "foreign_column_name": "user_id"
+    }
+  ]
+}

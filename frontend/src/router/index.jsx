@@ -5,6 +5,7 @@ import RoleGuard from '../features/auth/RoleGuard';
 import Navbar from '../components/shared/Navbar';
 import Sidebar from '../components/shared/Sidebar';
 import Breadcrumbs from '../components/shared/Breadcrumbs';
+import AssistantPanel from '../components/shared/AssistantPanel';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -119,6 +120,7 @@ const PageLoader = () => (
 const DashboardLayout = () => {
   const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -248,7 +250,9 @@ const DashboardLayout = () => {
           role={user?.role_name} 
           isOpen={isSidebarOpen} 
           onClose={() => setIsSidebarOpen(false)} 
+          onToggleAssistant={() => setIsAssistantOpen(!isAssistantOpen)}
         />
+        <AssistantPanel isOpen={isAssistantOpen} onClose={() => setIsAssistantOpen(false)} />
         <main className={`flex-1 md:ml-64 px-4 md:px-8 pt-[60px] pb-8 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]`}>
           {!location.pathname.match(/^\/admin\/products\/[^\/]+$/) && !location.pathname.match(/^\/admin\/support-tickets\/[^\/]+$/) && (
             <div className="max-w-[1600px] mx-auto h-0 overflow-visible flex justify-end pt-0 relative z-20 pointer-events-none">

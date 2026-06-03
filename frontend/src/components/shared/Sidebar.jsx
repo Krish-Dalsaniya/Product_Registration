@@ -26,10 +26,11 @@ import {
   CircuitBoard,
   Plug,
   LifeBuoy,
-  MessageSquare
+  MessageSquare,
+  Bot
 } from 'lucide-react';
 
-const Sidebar = ({ role, isOpen, onClose }) => {
+const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
   const { user, logout } = useAuth();
   
   const handleLogout = () => {
@@ -109,9 +110,16 @@ const Sidebar = ({ role, isOpen, onClose }) => {
 
   const isMaintenanceActive = location.pathname === '/admin/maintenance';
 
-  const NavItem = ({ to, label, icon: Icon, isSubItem = false }) => (
+  const NavItem = ({ to, label, icon: Icon, isSubItem = false, onClick }) => (
     <button
-      onClick={() => handleNavigate(to)}
+      onClick={() => {
+        if (onClick) {
+          onClick();
+          if (onClose) onClose();
+        } else {
+          handleNavigate(to);
+        }
+      }}
       className={`w-full flex items-center gap-4 px-8 py-3.5 transition-all duration-300 relative group ${
         location.pathname === to
           ? 'font-bold'
@@ -455,6 +463,9 @@ const Sidebar = ({ role, isOpen, onClose }) => {
             <div className="animate-entrance-right" style={{ animationDelay: '800ms' }}>
               <NavItem to="/admin/chat" label="Chat" icon={MessageSquare} />
             </div>
+            <div className="animate-entrance-right" style={{ animationDelay: '850ms' }}>
+              <NavItem to="#" label="AI Assistant" icon={Bot} onClick={onToggleAssistant} />
+            </div>
           </div>
         )}
 
@@ -471,6 +482,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                 <NavItem to="/designer/dashboard" label="Workstation" icon={Layers} />
                 <NavItem to="/designer/support-tickets" label="Support Center" icon={LifeBuoy} />
                 <NavItem to="/designer/chat" label="Chat" icon={MessageSquare} />
+                <NavItem to="#" label="AI Assistant" icon={Bot} onClick={onToggleAssistant} />
               </>
             )}
             {isSales && (
@@ -479,6 +491,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                 {/* <NavItem to="/sales/opportunities" label="Pipeline" icon={ShoppingBag} /> */}
                 <NavItem to="/sales/support-tickets" label="Support Center" icon={LifeBuoy} />
                 <NavItem to="/sales/chat" label="Chat" icon={MessageSquare} />
+                <NavItem to="#" label="AI Assistant" icon={Bot} onClick={onToggleAssistant} />
               </>
             )}
             {isMaintenance && (
@@ -486,6 +499,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                 <NavItem to="/maintenance/dashboard" label="Service Console" icon={Wrench} />
                 <NavItem to="/maintenance/support-tickets" label="Support Center" icon={LifeBuoy} />
                 <NavItem to="/maintenance/chat" label="Chat" icon={MessageSquare} />
+                <NavItem to="#" label="AI Assistant" icon={Bot} onClick={onToggleAssistant} />
               </>
             )}
           </div>

@@ -64,7 +64,11 @@ const createTicket = async (req, res, next) => {
         }
 
         // Generate Ticket ID
-        const maxIdResult = await db.query('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM support_tickets');
+        const maxIdResult = await db.query(`
+            SELECT COALESCE(MAX(CAST(SUBSTRING(ticket_id FROM 5) AS INTEGER)), 0) + 1 AS next_id
+            FROM support_tickets
+            WHERE ticket_id ~ '^TCK-[0-9]+$'
+        `);
         const nextId = maxIdResult.rows[0].next_id;
         const ticket_id = `TCK-${String(nextId).padStart(3, '0')}`;
 
@@ -244,6 +248,37 @@ const addTicketMessage = async (req, res, next) => {
     }
 };
 
+const deleteTicketMessage = async (req, res, next) => {
+    const { id, messageId } = req.params;
+    const currentUserId = req.user.user_id;
+
+    try {
+        let ticketId = id;
+        if (isNaN(id)) {
+             const ticketRes = await db.query('SELECT id FROM support_tickets WHERE ticket_id = $1', [id]);
+             if (ticketRes.rows.length === 0) {
+                 return sendError(res, 'NOT_FOUND', 'Support ticket not found', 404);
+             }
+             ticketId = ticketRes.rows[0].id;
+        }
+
+        const query = `
+            DELETE FROM support_ticket_messages 
+            WHERE id = $1 AND ticket_id = $2 AND sender_id = $3
+            RETURNING id
+        `;
+        const result = await db.query(query, [messageId, ticketId, currentUserId]);
+
+        if (result.rows.length === 0) {
+            return sendError(res, 'NOT_FOUND', 'Message not found or unauthorized', 404);
+        }
+
+        return sendSuccess(res, null, 'Message deleted successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getTickets,
     getTicketById,
@@ -251,5 +286,6 @@ module.exports = {
     updateTicket,
     deleteTicket,
     getTicketMessages,
-    addTicketMessage
+    addTicketMessage,
+    deleteTicketMessage
 };

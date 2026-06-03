@@ -1,0 +1,1456 @@
+erDiagram
+  sales_products {
+    uuid sales_id
+    integer product_id
+    timestamp_with_time_zone assigned_at
+    boolean is_primary
+  }
+
+  audit_log {
+    bigint log_id
+    uuid actor_id
+    varchar action
+    varchar table_name
+    text record_id
+    jsonb old_data
+    jsonb new_data
+    timestamp_with_time_zone logged_at
+  }
+
+  roles {
+    integer role_id
+    USER-DEFINED role_name
+    text description
+    timestamp_with_time_zone created_at
+  }
+
+  role_permissions {
+    integer role_id
+    integer permission_id
+    timestamp_with_time_zone granted_at
+  }
+
+  permissions {
+    integer permission_id
+    varchar permission_key
+    text description
+    timestamp_with_time_zone created_at
+  }
+
+  teams {
+    integer team_id
+    varchar team_name
+    text description
+    timestamp_with_time_zone created_at
+    integer role_id
+    varchar product_name
+    text product_description
+    uuid team_lead_id
+    uuid client_handler_id
+  }
+
+  users {
+    uuid user_id
+    integer role_id
+    varchar full_name
+    varchar email
+    text password_hash
+    boolean is_active
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+    text refresh_token
+  }
+
+  designer_profiles {
+    uuid designer_id
+    varchar specialty
+    text portfolio_url
+    boolean availability
+  }
+
+  team_members {
+    integer team_id
+    uuid user_id
+    timestamp_with_time_zone joined_at
+    boolean is_lead
+  }
+
+  support_ticket_messages {
+    integer id
+    integer ticket_id
+    uuid sender_id
+    text message
+    timestamp created_at
+  }
+
+  projects {
+    integer project_id
+    integer team_id
+    integer product_id
+    varchar project_name
+    text description
+    USER-DEFINED status
+    date start_date
+    date end_date
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+  }
+
+  sales_opportunities {
+    integer opportunity_id
+    uuid sales_id
+    integer product_id
+    varchar client_name
+    numeric deal_value
+    varchar stage
+    date expected_close
+    timestamp_with_time_zone closed_at
+    timestamp_with_time_zone created_at
+  }
+
+  sales_profiles {
+    uuid sales_id
+    varchar region
+    numeric target_revenue
+    date hire_date
+  }
+
+  maintenance_tasks {
+    integer task_id
+    integer record_id
+    uuid maintenance_id
+    varchar task_title
+    text description
+    USER-DEFINED priority
+    USER-DEFINED status
+    date due_date
+    timestamp_with_time_zone completed_at
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+  }
+
+  maintenance_profiles {
+    uuid maintenance_id
+    varchar certification
+    date hire_date
+  }
+
+  maintenance_records {
+    integer record_id
+    integer product_id
+    varchar record_title
+    text description
+    date scheduled_date
+    timestamp_with_time_zone completed_at
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+  }
+
+  designer_projects {
+    uuid designer_id
+    integer project_id
+    varchar role_in_project
+    timestamp_with_time_zone assigned_at
+  }
+
+  customers {
+    uuid customer_id
+    varchar customer_code
+    varchar customer_name
+    varchar company_name
+    text customer_site_location
+    varchar email
+    varchar gst_no
+    varchar status
+    timestamp created_at
+    timestamp updated_at
+    varchar technical_contact_person
+    varchar technical_contact_mobile
+    varchar accounts_contact_person
+    varchar accounts_contact_mobile
+    varchar udyam_aadhar_no
+    varchar first_name
+    varchar middle_name
+    varchar last_name
+    jsonb technical_contacts
+    jsonb sales_contacts
+    varchar company_type
+    jsonb addresses
+    jsonb owner_contacts
+    jsonb accounts_contacts
+    jsonb qa_qc_contacts
+    jsonb other_contacts
+    varchar product
+    boolean product_promoted
+    boolean product_inquired
+    boolean product_quoted
+    boolean product_sampled
+    boolean product_purchased
+  }
+
+  product_categories {
+    integer id
+    varchar name
+    timestamp created_at
+  }
+
+  product_sub_categories {
+    integer id
+    integer category_id
+    varchar name
+    timestamp created_at
+  }
+
+  product_companies {
+    integer id
+    varchar name
+    timestamp created_at
+  }
+
+  product_sub_companies {
+    integer id
+    integer company_id
+    varchar name
+    timestamp created_at
+  }
+
+  products {
+    integer product_id
+    varchar product_name
+    varchar product_code
+    text description
+    numeric unit_price
+    boolean is_active
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+    varchar category
+    varchar sub_category
+    text specification
+    text feature
+    text image_url
+    text document_url
+    jsonb faqs
+    jsonb images
+    jsonb documents
+    varchar company_name
+    varchar sub_company
+    integer pcb_id
+    integer electrical_part_id
+    integer electronics_part_id
+    integer structural_part_id
+  }
+
+  feature_mappings {
+    uuid mapping_id
+    varchar mapping_name
+    jsonb hardware_features
+    jsonb software_features
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  pcb_type_master {
+    bigint pcb_type_id
+    varchar type_name
+    text type_description
+    boolean is_active
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+  }
+
+  pcb_file_master {
+    bigint pcb_file_id
+    bigint pcb_id
+    text processor_file_url
+    text brd_file_url
+    text sch_file_url
+    text bom_file_url
+    text stencil_file_url
+    text panel_gerber_file_url
+    text layer_stacking_file_url
+    text production_instruction_url
+    timestamp_with_time_zone created_at
+  }
+
+  pcb_master {
+    bigint pcb_id
+    bigint pcb_type_id
+    varchar part_no
+    boolean requires_firmware
+    integer processor_count
+    text description
+    boolean is_active
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+    varchar pcb_name
+    integer stock_quantity
+  }
+
+  processor_master {
+    bigint processor_id
+    varchar processor_type
+    varchar part_no
+    text description
+    boolean is_active
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+  }
+
+  firmware_master {
+    bigint firmware_master_id
+    bigint processor_id
+    varchar firmware_branch_name
+    varchar current_firmware_version
+    text description
+    boolean is_active
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+  }
+
+  firmware_version_master {
+    bigint firmware_version_id
+    bigint firmware_master_id
+    varchar firmware_version
+    date release_date
+    text firmware_file_url
+    varchar checksum
+    boolean is_active
+    timestamp_with_time_zone created_at
+  }
+
+  firmware_feature_master {
+    bigint firmware_feature_id
+    bigint firmware_master_id
+    varchar feature_name
+    text feature_description
+    boolean is_active
+    timestamp_with_time_zone created_at
+  }
+
+  pcb_firmware_mapping {
+    bigint pcb_firmware_mapping_id
+    bigint pcb_id
+    bigint processor_id
+    bigint firmware_master_id
+    bigint firmware_version_id
+    boolean is_default
+    boolean is_active
+    timestamp_with_time_zone created_at
+  }
+
+  product_version_master {
+    bigint product_version_id
+    integer product_id
+    varchar version_no
+    varchar version_name
+    text version_description
+    date release_date
+    boolean is_active
+    timestamp_with_time_zone created_at
+  }
+
+  pcb_product_mapping {
+    bigint pcb_product_mapping_id
+    bigint pcb_id
+    integer product_id
+    bigint product_version_id
+    boolean is_active
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+  }
+
+  electronic_part_detail {
+    bigint electronic_part_id
+    varchar part_no
+    varchar item_name
+    varchar manufacturer
+    integer stock_qty
+    text description
+    timestamp_with_time_zone created_at
+  }
+
+  electrical_part_detail {
+    bigint electrical_part_id
+    varchar part_no
+    varchar item_name
+    varchar manufacturer
+    integer stock_qty
+    text description
+    timestamp_with_time_zone created_at
+  }
+
+  structural_component_detail {
+    bigint structural_component_id
+    varchar part_no
+    varchar item_name
+    varchar manufacturer
+    integer stock_qty
+    text description
+    timestamp_with_time_zone created_at
+  }
+
+  electronics_tech_spec {
+    bigint spec_id
+    bigint part_id
+    varchar rated_voltage
+    varchar rated_current
+    varchar power_rating
+    varchar input_type
+    varchar output_type
+    varchar connector_type
+    varchar communication_iface
+    varchar mounting_type
+    varchar operating_temp
+    varchar protection_rating
+    varchar dimensions
+    varchar weight
+  }
+
+  electronics_part_master {
+    bigint part_id
+    varchar part_category
+    varchar part_name
+    varchar part_number
+    varchar internal_sku
+    varchar manufacturer
+    varchar part_type
+    text part_description
+    text used_in_product
+    varchar status
+    boolean is_active
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+    integer stock_quantity
+    jsonb custom_params
+  }
+
+  electronics_category_spec {
+    bigint cat_spec_id
+    bigint part_id
+    varchar category_name
+    jsonb spec_data
+  }
+
+  electronics_files {
+    bigint file_id
+    bigint part_id
+    varchar datasheet_url
+    varchar wiring_diagram_url
+    varchar user_manual_url
+    varchar test_report_url
+    varchar calibration_cert_url
+    varchar warranty_cert_url
+    varchar invoice_url
+  }
+
+  electronics_images {
+    bigint image_id
+    bigint part_id
+    varchar image_url
+  }
+
+  pcb_images {
+    bigint image_id
+    bigint pcb_id
+    varchar image_url
+  }
+
+  electrical_tech_spec {
+    bigint tech_id
+    bigint part_id
+    varchar rated_voltage
+    varchar rated_current
+    varchar power_rating
+    varchar phase_type
+    varchar frequency
+    varchar input_type
+    varchar output_type
+    varchar connector_type
+    varchar mounting_type
+    varchar protection_rating
+    varchar operating_temperature
+    varchar dimensions
+    varchar weight
+    timestamp_with_time_zone updated_at
+  }
+
+  electrical_inventory {
+    bigint inventory_id
+    bigint part_id
+    varchar serial_number
+    varchar batch_number
+    integer quantity_available
+    integer minimum_stock_level
+    varchar unit_of_measurement
+    varchar storage_location
+    varchar condition
+    boolean is_damaged
+    text damage_description
+    boolean is_assigned
+    varchar assigned_device_id
+    date last_inspection_date
+    date next_inspection_date
+  }
+
+  electrical_procurement {
+    bigint procurement_id
+    bigint part_id
+    varchar supplier_name
+    varchar supplier_contact
+    date purchase_date
+    varchar purchase_order_number
+    varchar invoice_number
+    numeric purchase_price
+    varchar warranty_period
+    date warranty_start_date
+    date warranty_end_date
+    varchar warranty_status
+    varchar gst_number
+    text remarks
+  }
+
+  electrical_part_master {
+    bigint part_id
+    varchar part_category
+    varchar part_name
+    varchar part_number
+    varchar manufacturer
+    varchar part_type
+    text description
+    varchar used_in_product
+    varchar material
+    varchar status
+    boolean is_active
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+    integer stock_quantity
+    jsonb custom_params
+  }
+
+  electrical_category_spec {
+    bigint spec_id
+    bigint part_id
+    varchar category_name
+    jsonb parameters
+  }
+
+  electrical_files {
+    bigint file_id
+    bigint part_id
+    varchar datasheet_url
+    varchar wiring_diagram_url
+    varchar installation_manual_url
+    varchar test_report_url
+    varchar calibration_cert_url
+    varchar compliance_cert_url
+    varchar warranty_doc_url
+    varchar invoice_url
+  }
+
+  electrical_images {
+    bigint image_id
+    bigint part_id
+    varchar image_url
+  }
+
+  battery_specs {
+    integer spec_id
+    integer part_id
+    varchar chemistry
+    varchar cycle_life
+    varchar nominal_voltage
+    varchar capacity
+    varchar internal_resistance
+    varchar charge_temp
+    varchar discharge_temp
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    varchar battery_chemistry
+    varchar battery_voltage
+    varchar battery_capacity
+    varchar cell_count
+    varchar rechargeable
+    varchar charging_voltage
+    varchar max_charging_current
+    varchar max_discharge_current
+    varchar backup_time
+    varchar battery_connector_type
+    varchar bms_available
+  }
+
+  flow_meter_specs {
+    integer spec_id
+    integer part_id
+    varchar flow_range
+    varchar pipe_diameter
+    varchar pulse_rate
+    varchar max_pressure
+    varchar fluid_type
+    varchar output_protocol
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    varchar flow_meter_type
+    varchar accuracy
+    varchar pulse_output
+    varchar pulses_per_liter
+    varchar k_factor
+    varchar fluid_compatibility
+    varchar inlet_size
+    varchar outlet_size
+    varchar calibration_required
+    varchar calibration_cert_no
+  }
+
+  speaker_specs {
+    integer spec_id
+    integer part_id
+    varchar speaker_type
+    varchar impedance
+    varchar power_output
+    varchar frequency_response
+    varchar sensitivity
+    varchar dimensions
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    varchar power_rating
+    varchar frequency_range
+    varchar sound_level
+    varchar operating_voltage
+    varchar connector_type
+    varchar mounting_type
+  }
+
+  smps_specs {
+    integer spec_id
+    integer part_id
+    varchar input_voltage
+    varchar output_voltage
+    varchar output_current
+    varchar efficiency
+    varchar ripple_noise
+    varchar cooling_method
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    varchar input_voltage_range
+    varchar output_power
+    varchar num_outputs
+    varchar protection
+    varchar cooling_type
+    varchar smps_type
+  }
+
+  amplifier_specs {
+    integer spec_id
+    integer part_id
+    varchar amplifier_type
+    varchar ic_chipset
+    varchar input_voltage
+    varchar output_power
+    varchar channel_type
+    varchar speaker_impedance_support
+    varchar input_signal_type
+    varchar volume_control
+    varchar protection
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+  }
+
+  temperature_sensor_specs {
+    integer spec_id
+    integer part_id
+    varchar sensor_type
+    varchar sensor_model
+    varchar temperature_range
+    varchar accuracy
+    varchar output_signal
+    varchar interface
+    varchar probe_type
+    varchar cable_length
+    varchar calibration_required
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+  }
+
+  quality_sensor_specs {
+    integer spec_id
+    integer part_id
+    varchar sensor_type
+    varchar measured_parameter
+    varchar measuring_range
+    varchar accuracy
+    varchar output_signal
+    varchar communication_protocol
+    varchar fluid_compatibility
+    varchar calibration_required
+    text calibration_data
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+  }
+
+  printer_specs {
+    integer spec_id
+    integer part_id
+    varchar print_method
+    varchar print_speed
+    varchar paper_size
+    varchar interface
+    varchar resolution
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    varchar printer_type
+    varchar printer_model
+    varchar print_width
+    varchar paper_roll_size
+    varchar baud_rate
+    varchar cutter_available
+    varchar paper_sensor_available
+    varchar operating_voltage
+    varchar supported_language
+  }
+
+  pressure_sensor_specs {
+    integer spec_id
+    integer part_id
+    varchar pressure_range
+    varchar pressure_type
+    varchar output_signal
+    varchar accuracy
+    varchar thread_size
+    varchar overload_pressure
+    varchar burst_pressure
+    varchar medium_compatibility
+    varchar operating_voltage
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+  }
+
+  emi_emc_filter_specs {
+    integer spec_id
+    integer part_id
+    varchar filter_type
+    varchar rated_voltage
+    varchar rated_current
+    varchar frequency_range
+    varchar leakage_current
+    varchar filter_stage
+    varchar mounting_type
+    varchar certification
+    varchar application
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+  }
+
+  transformer_specs {
+    integer spec_id
+    integer part_id
+    varchar transformer_type
+    varchar winding_material
+    varchar core_type
+    varchar insulation_class
+    varchar cooling_type
+    varchar short_circuit_protection
+    varchar temperature_rise
+    varchar efficiency
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  dc_meter_specs {
+    integer spec_id
+    integer part_id
+    varchar meter_type
+    varchar voltage_range
+    varchar current_range
+    varchar display_type
+    varchar accuracy_class
+    varchar shunt_required
+    varchar communication_interface
+    varchar protocol
+    varchar power_supply
+    varchar mounting_type
+    timestamp created_at
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+  }
+
+  pump_specs {
+    integer spec_id
+    integer part_id
+    varchar pump_type
+    varchar motor_type
+    varchar flow_rate
+    varchar max_pressure
+    varchar suction_size
+    varchar outlet_size
+    varchar fluid_compatibility
+    varchar pump_material
+    varchar rpm
+    varchar seal_type
+    varchar noise_level
+    varchar dry_run_protection
+    varchar overload_protection
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  nozzle_specs {
+    integer spec_id
+    integer part_id
+    varchar nozzle_type
+    varchar fuel_compatibility
+    varchar flow_rate_range
+    varchar inlet_size
+    varchar outlet_diameter
+    varchar spout_type
+    varchar auto_cutoff_available
+    varchar swivel_joint_available
+    varchar trigger_lock_available
+    varchar seal_material
+    varchar operating_pressure
+    varchar color_code
+    varchar nozzle_weight
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  solenoid_valve_specs {
+    integer spec_id
+    integer part_id
+    varchar valve_type
+    varchar operation_type
+    varchar coil_voltage
+    varchar coil_power
+    varchar port_size
+    varchar number_of_ports
+    varchar body_material
+    varchar medium_compatibility
+    varchar pressure_range
+    varchar response_time
+    varchar manual_override
+    varchar coil_protection_class
+    varchar duty_cycle
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  relay_box_specs {
+    integer spec_id
+    integer part_id
+    varchar relay_box_type
+    varchar input_voltage
+    varchar output_voltage
+    varchar number_of_relays
+    varchar relay_rating
+    varchar relay_type
+    varchar control_signal_type
+    varchar terminal_type
+    varchar enclosure_material
+    varchar fuse_available
+    varchar led_indicator_available
+    varchar manual_override_available
+    varchar communication_interface
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  rccb_specs {
+    integer spec_id
+    integer part_id
+    varchar rccb_type
+    varchar sensitivity
+    varchar breaking_capacity
+    varchar trip_type
+    varchar number_of_poles
+    varchar test_button_available
+    varchar standards
+    varchar protection_purpose
+    varchar trip_indicator_available
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  front_door_specs {
+    integer spec_id
+    integer part_id
+    varchar door_type
+    varchar door_material
+    varchar door_opening_direction
+    varchar lock_type
+    integer look_count
+    varchar hinge_type
+    integer hinge_count
+    varchar rubber_gasket_available
+    varchar display_cutout_available
+    varchar printer_cutout_available
+    varchar keypad_cutout_available
+    varchar sticker_area_available
+    varchar door_stopper_available
+    text file_2d_drawing
+    text file_3d_model
+    text file_fabrication_drawing
+    text file_assembly_drawing
+    text file_cutting
+    text file_bend_drawing
+    text file_paint_spec
+    text file_qc_report
+    text file_invoice
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  spd_specs {
+    integer spec_id
+    integer part_id
+    varchar spd_type
+    varchar protection_mode
+    varchar max_continuous_operating_voltage
+    varchar nominal_discharge_current
+    varchar max_discharge_current
+    varchar voltage_protection_level
+    varchar status_indicator_available
+    varchar replaceable_cartridge
+    varchar remote_signal_contact
+    varchar standard_compliance
+    varchar datasheet_file
+    varchar warranty_document
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  structural_tech_spec {
+    integer tech_id
+    integer part_id
+    varchar material_type
+    varchar material_grade
+    varchar sheet_thickness
+    varchar surface_finish
+    varchar paint_coating_color
+    varchar coating_thickness
+    varchar corrosion_protection
+    varchar rust_proof_treatment
+    varchar welding_required
+    varchar bending_required
+    varchar laser_cutting_required
+    varchar cnc_cutting_required
+    varchar edge_finish
+    varchar waterproof_sealing_required
+    varchar rubber_gasket_required
+    varchar length
+    varchar width
+    varchar height
+    varchar thickness
+    varchar weight
+    varchar tolerance
+    integer hole_count
+    varchar hole_diameter
+    varchar cutout_available
+    varchar cutout_type
+    varchar cutout_size
+    varchar bend_angle
+    integer bend_count
+    varchar mounting_hole_pattern
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  structural_category_spec {
+    integer spec_id
+    integer part_id
+    varchar category_name
+    jsonb spec_data
+  }
+
+  cabinet_body_specs {
+    integer spec_id
+    integer part_id
+    varchar cabinet_type
+    varchar cabinet_material
+    varchar cabinet_height
+    varchar cabinet_width
+    varchar cabinet_depth
+    varchar door_opening_side
+    varchar ventilation_available
+    integer number_of_vents
+    varchar ip_protection_target
+    varchar internal_mounting_plate_available
+    varchar base_stand_available
+    varchar locking_arrangement
+    varchar cable_entry_holes
+    varchar hose_entry_hole
+    varchar earthing_point_available
+    text file_2d_drawing
+    text file_3d_model
+    text file_fabrication_drawing
+    text file_assembly_drawing
+    text file_cutting
+    text file_bend_drawing
+    text file_paint_spec
+    text file_qc_report
+    text file_invoice
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  structural_part_master {
+    integer part_id
+    varchar part_category
+    varchar part_name
+    varchar part_number
+    varchar internal_part_code
+    varchar compatible_dispenser_model
+    varchar assembly_group
+    varchar part_position
+    text part_description
+    varchar manufacturer_fabricator
+    varchar brand
+    varchar status
+    boolean is_active
+    timestamp created_at
+    timestamp updated_at
+    integer stock_quantity
+    jsonb custom_params
+  }
+
+  side_panel_specs {
+    integer spec_id
+    integer part_id
+    varchar panel_side
+    varchar panel_type
+    varchar ventilation_slot_available
+    integer number_of_vent_slots
+    varchar access_opening_available
+    varchar hose_pipe_opening_available
+    varchar nozzle_holder_mounting_available
+    varchar fastner_type
+    varchar panel_reinforcement_available
+    text file_2d_drawing
+    text file_3d_model
+    text file_fabrication_drawing
+    text file_assembly_drawing
+    text file_cutting
+    text file_bend_drawing
+    text file_paint_spec
+    text file_qc_report
+    text file_invoice
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  top_cover_specs {
+    integer spec_id
+    integer part_id
+    varchar cover_type
+    varchar rain_protection_design
+    varchar overhang_available
+    varchar mounting_type
+    varchar sealing_gasket_available
+    varchar cable_entry_available
+    varchar ventilation_available
+    varchar branding_area_available
+    text file_2d_drawing
+    text file_3d_model
+    text file_fabrication_drawing
+    text file_assembly_drawing
+    text file_cutting
+    text file_bend_drawing
+    text file_paint_spec
+    text file_qc_report
+    text file_invoice
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  base_frame_specs {
+    integer spec_id
+    integer part_id
+    varchar base_type
+    varchar base_material
+    varchar load_capacity
+    integer foot_stand_count
+    varchar floor_mounting_hole_available
+    varchar anchor_bolt_size
+    varchar anti_vibration_pad_available
+    varchar leveling_foot_available
+    varchar bottom_clearance
+    varchar drain_hole_available
+    text file_2d_drawing
+    text file_3d_model
+    text file_fabrication_drawing
+    text file_assembly_drawing
+    text file_cutting
+    text file_bend_drawing
+    text file_paint_spec
+    text file_qc_report
+    text file_invoice
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  internal_mounting_plate_specs {
+    integer spec_id
+    integer part_id
+    varchar plate_usage
+    varchar plate_material
+    varchar mounting_hole_pattern
+    varchar component_mounting_slots
+    varchar cable_routing_holes
+    varchar din_rail_mounting_available
+    varchar earthing_stud_available
+    varchar removable_plate
+    text file_2d_drawing
+    text file_3d_model
+    text file_fabrication_drawing
+    text file_assembly_drawing
+    text file_cutting
+    text file_bend_drawing
+    text file_paint_spec
+    text file_qc_report
+    text file_invoice
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  nozzle_holder_specs {
+    integer spec_id
+    integer part_id
+    varchar holder_type
+    varchar nozzle_compatibility
+    varchar holder_material
+    varchar mounting_side
+    varchar nozzle_sensor_mount_available
+    varchar drain_hole_available
+    varchar locking_support_available
+    varchar rubber_padding_available
+    varchar cutout_size
+    text file_2d_drawing
+    text file_3d_model
+    text file_fabrication_drawing
+    text file_assembly_drawing
+    text file_cutting
+    text file_bend_drawing
+    text file_paint_spec
+    text file_qc_report
+    text file_invoice
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  hose_entry_plate_specs {
+    integer spec_id
+    integer part_id
+    varchar hose_entry_type
+    varchar hose_diameter_support
+    varchar grommet_available
+    varchar pipe_clamp_mount_available
+    varchar swivel_mount_support
+    varchar hole_diameter
+    varchar reinforcement_plate_available
+    varchar leak_drain_path_available
+    text file_2d_drawing
+    text file_3d_model
+    text file_fabrication_drawing
+    text file_assembly_drawing
+    text file_cutting
+    text file_bend_drawing
+    text file_paint_spec
+    text file_qc_report
+    text file_invoice
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  display_specs {
+    integer spec_id
+    integer part_id
+    varchar panel_usage
+    varchar display_cutout_size
+    varchar keypad_cutout_available
+    varchar printer_cutout_available
+    varchar acrylic_window_available
+    varchar window_material
+    varchar window_thickness
+    varchar sticker_branding_area
+    integer button_hole_count
+    integer indicator_hole_count
+    text file_2d_drawing
+    text file_3d_model
+    text file_fabrication_drawing
+    text file_assembly_drawing
+    text file_cutting
+    text file_bend_drawing
+    text file_paint_spec
+    text file_qc_report
+    text file_invoice
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  lock_specs {
+    integer spec_id
+    integer part_id
+    varchar hardware_type
+    varchar material
+    varchar size
+    varchar load_capacity
+    varchar opening_angle
+    varchar fastener_size
+    varchar finish
+    integer quantity_per_dispenser
+    varchar replacement_required
+    text file_2d_drawing
+    text file_3d_model
+    text file_fabrication_drawing
+    text file_assembly_drawing
+    text file_cutting
+    text file_bend_drawing
+    text file_paint_spec
+    text file_qc_report
+    text file_invoice
+    jsonb part_images_gallery
+    timestamp created_at
+  }
+
+  structural_images {
+    integer image_id
+    integer part_id
+    text image_url
+    timestamp created_at
+  }
+
+  software_features {
+    bigint software_feature_id
+    varchar feature_name
+    text description
+    varchar version
+    boolean is_active
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+  }
+
+  support_tickets {
+    integer id
+    varchar ticket_id
+    uuid creator_id
+    varchar creator_name
+    date query_date
+    date last_date
+    date resolved_date
+    varchar query_type
+    text query_description
+    text troubleshooting_steps
+    boolean steps_followed
+    varchar priority
+    varchar status
+    varchar assigned_to
+    jsonb attachments
+    timestamp created_at
+    timestamp updated_at
+    integer product_id
+  }
+
+  finished_goods_hardware {
+    integer id
+    integer finished_good_id
+    varchar component_type
+    bigint component_id
+    timestamp_with_time_zone created_at
+  }
+
+  finished_goods_software {
+    integer id
+    integer finished_good_id
+    varchar feature_name
+    timestamp_with_time_zone created_at
+  }
+
+  finished_goods_serials {
+    integer id
+    integer finished_good_id
+    varchar serial_number
+    timestamp_with_time_zone created_at
+  }
+
+  product_bom {
+    integer bom_id
+    integer product_id
+    varchar component_type
+    integer component_id
+    integer quantity
+    text notes
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+  }
+
+  book_a_sale {
+    integer id
+    integer finished_good_id
+    uuid customer_id
+    integer quantity
+    timestamp_with_time_zone sale_date
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+  }
+
+  finished_goods {
+    integer id
+    integer product_id
+    integer quantity
+    timestamp_with_time_zone created_at
+    timestamp_with_time_zone updated_at
+    boolean is_iot
+    boolean power_controller
+    integer motherboard_id
+    jsonb communication_details
+  }
+
+  chat_messages {
+    integer message_id
+    uuid sender_id
+    uuid receiver_id
+    text message
+    boolean is_read
+    timestamp created_at
+  }
+
+  inventory_custom_category_fields {
+    integer id
+    varchar module
+    varchar category_name
+    jsonb fields
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  user ||--o{ session : "userId -> id"
+  user ||--o{ account : "userId -> id"
+  organization ||--o{ member : "organizationId -> id"
+  user ||--o{ member : "userId -> id"
+  organization ||--o{ invitation : "organizationId -> id"
+  user ||--o{ invitation : "inviterId -> id"
+  roles ||--o{ role_permissions : "role_id -> role_id"
+  permissions ||--o{ role_permissions : "permission_id -> permission_id"
+  roles ||--o{ users : "role_id -> role_id"
+  users ||--o{ designer_profiles : "designer_id -> user_id"
+  teams ||--o{ team_members : "team_id -> team_id"
+  teams ||--o{ projects : "team_id -> team_id"
+  products ||--o{ projects : "product_id -> product_id"
+  designer_profiles ||--o{ designer_projects : "designer_id -> designer_id"
+  projects ||--o{ designer_projects : "project_id -> project_id"
+  users ||--o{ sales_profiles : "sales_id -> user_id"
+  sales_profiles ||--o{ sales_products : "sales_id -> sales_id"
+  products ||--o{ sales_products : "product_id -> product_id"
+  sales_profiles ||--o{ sales_opportunities : "sales_id -> sales_id"
+  products ||--o{ sales_opportunities : "product_id -> product_id"
+  users ||--o{ maintenance_profiles : "maintenance_id -> user_id"
+  products ||--o{ maintenance_records : "product_id -> product_id"
+  maintenance_records ||--o{ maintenance_tasks : "record_id -> record_id"
+  maintenance_profiles ||--o{ maintenance_tasks : "maintenance_id -> maintenance_id"
+  users ||--o{ audit_log : "actor_id -> user_id"
+  roles ||--o{ teams : "role_id -> role_id"
+  product_categories ||--o{ product_sub_categories : "category_id -> id"
+  users ||--o{ teams : "team_lead_id -> user_id"
+  users ||--o{ teams : "client_handler_id -> user_id"
+  users ||--o{ team_members : "user_id -> user_id"
+  product_companies ||--o{ product_sub_companies : "company_id -> id"
+  pcb_type_master ||--o{ pcb_master : "pcb_type_id -> pcb_type_id"
+  pcb_master ||--o{ pcb_file_master : "pcb_id -> pcb_id"
+  processor_master ||--o{ firmware_master : "processor_id -> processor_id"
+  firmware_master ||--o{ firmware_version_master : "firmware_master_id -> firmware_master_id"
+  firmware_master ||--o{ firmware_feature_master : "firmware_master_id -> firmware_master_id"
+  pcb_master ||--o{ pcb_firmware_mapping : "pcb_id -> pcb_id"
+  processor_master ||--o{ pcb_firmware_mapping : "processor_id -> processor_id"
+  firmware_master ||--o{ pcb_firmware_mapping : "firmware_master_id -> firmware_master_id"
+  firmware_version_master ||--o{ pcb_firmware_mapping : "firmware_version_id -> firmware_version_id"
+  products ||--o{ product_version_master : "product_id -> product_id"
+  pcb_master ||--o{ pcb_product_mapping : "pcb_id -> pcb_id"
+  products ||--o{ pcb_product_mapping : "product_id -> product_id"
+  product_version_master ||--o{ pcb_product_mapping : "product_version_id -> product_version_id"
+  electronics_part_master ||--o{ electronics_tech_spec : "part_id -> part_id"
+  electronics_part_master ||--o{ electronics_category_spec : "part_id -> part_id"
+  electronics_part_master ||--o{ electronics_files : "part_id -> part_id"
+  electronics_part_master ||--o{ electronics_images : "part_id -> part_id"
+  pcb_master ||--o{ pcb_images : "pcb_id -> pcb_id"
+  electrical_part_master ||--o{ electrical_tech_spec : "part_id -> part_id"
+  electrical_part_master ||--o{ electrical_inventory : "part_id -> part_id"
+  electrical_part_master ||--o{ electrical_procurement : "part_id -> part_id"
+  electrical_part_master ||--o{ electrical_category_spec : "part_id -> part_id"
+  electrical_part_master ||--o{ electrical_files : "part_id -> part_id"
+  electrical_part_master ||--o{ electrical_images : "part_id -> part_id"
+  electronics_part_master ||--o{ battery_specs : "part_id -> part_id"
+  electronics_part_master ||--o{ flow_meter_specs : "part_id -> part_id"
+  electronics_part_master ||--o{ smps_specs : "part_id -> part_id"
+  electronics_part_master ||--o{ printer_specs : "part_id -> part_id"
+  electronics_part_master ||--o{ speaker_specs : "part_id -> part_id"
+  electronics_part_master ||--o{ amplifier_specs : "part_id -> part_id"
+  electronics_part_master ||--o{ temperature_sensor_specs : "part_id -> part_id"
+  electronics_part_master ||--o{ quality_sensor_specs : "part_id -> part_id"
+  electronics_part_master ||--o{ pressure_sensor_specs : "part_id -> part_id"
+  electronics_part_master ||--o{ emi_emc_filter_specs : "part_id -> part_id"
+  electronics_part_master ||--o{ dc_meter_specs : "part_id -> part_id"
+  electrical_part_master ||--o{ pump_specs : "part_id -> part_id"
+  electrical_part_master ||--o{ nozzle_specs : "part_id -> part_id"
+  electrical_part_master ||--o{ solenoid_valve_specs : "part_id -> part_id"
+  electrical_part_master ||--o{ relay_box_specs : "part_id -> part_id"
+  electrical_part_master ||--o{ transformer_specs : "part_id -> part_id"
+  electrical_part_master ||--o{ rccb_specs : "part_id -> part_id"
+  electrical_part_master ||--o{ spd_specs : "part_id -> part_id"
+  structural_part_master ||--o{ structural_tech_spec : "part_id -> part_id"
+  structural_part_master ||--o{ structural_category_spec : "part_id -> part_id"
+  structural_part_master ||--o{ cabinet_body_specs : "part_id -> part_id"
+  structural_part_master ||--o{ front_door_specs : "part_id -> part_id"
+  structural_part_master ||--o{ side_panel_specs : "part_id -> part_id"
+  structural_part_master ||--o{ top_cover_specs : "part_id -> part_id"
+  structural_part_master ||--o{ base_frame_specs : "part_id -> part_id"
+  structural_part_master ||--o{ internal_mounting_plate_specs : "part_id -> part_id"
+  structural_part_master ||--o{ nozzle_holder_specs : "part_id -> part_id"
+  structural_part_master ||--o{ hose_entry_plate_specs : "part_id -> part_id"
+  structural_part_master ||--o{ display_specs : "part_id -> part_id"
+  structural_part_master ||--o{ lock_specs : "part_id -> part_id"
+  structural_part_master ||--o{ structural_images : "part_id -> part_id"
+  products ||--o{ finished_goods : "product_id -> product_id"
+  finished_goods ||--o{ finished_goods_hardware : "finished_good_id -> id"
+  finished_goods ||--o{ finished_goods_software : "finished_good_id -> id"
+  finished_goods ||--o{ finished_goods_serials : "finished_good_id -> id"
+  products ||--o{ product_bom : "product_id -> product_id"
+  finished_goods ||--o{ book_a_sale : "finished_good_id -> id"
+  customers ||--o{ book_a_sale : "customer_id -> customer_id"
+  pcb_master ||--o{ finished_goods : "motherboard_id -> pcb_id"
+  users ||--o{ support_tickets : "creator_id -> user_id"
+  users ||--o{ chat_messages : "sender_id -> user_id"
+  users ||--o{ chat_messages : "receiver_id -> user_id"
+  products ||--o{ support_tickets : "product_id -> product_id"
+  support_tickets ||--o{ support_ticket_messages : "ticket_id -> id"
+  users ||--o{ support_ticket_messages : "sender_id -> user_id"
