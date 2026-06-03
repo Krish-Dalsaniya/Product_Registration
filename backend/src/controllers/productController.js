@@ -5,6 +5,14 @@ const { sendSuccess } = require('../utils/response');
 const { parsePagination } = require('../utils/pagination');
 const { uploadQueue, queueEvents } = require('../queues/uploadQueue');
 
+/**
+ * Uploads an array of files to Cloudinary via a BullMQ background queue.
+ * Handles both new file uploads and existing remote URLs.
+ * 
+ * @param {Array<Object|string>} files - Array of multer file objects or string URLs
+ * @param {'image'|'document'} type - Type of asset being uploaded
+ * @returns {Promise<Array<string>>} Promise resolving to an array of uploaded file URLs
+ */
 const processUploads = async (files, type) => {
   if (!files || files.length === 0) return [];
   
@@ -33,34 +41,38 @@ const getProducts = async (req, res, next) => {
   const { search, category, company } = req.query;
 
   try {
-    let queryText = `SELECT *, COUNT(*) OVER() as total_count FROM products WHERE is_active = TRUE`;
-    const params = [limit, offset];
-    let paramIdx = 3;
+    let baseQuery = `FROM products WHERE is_active = TRUE`;
+    const params = [];
+    let paramIdx = 1;
 
     if (search) {
-      queryText += ` AND (product_name ILIKE $${paramIdx} OR product_code ILIKE $${paramIdx} OR company_name ILIKE $${paramIdx})`;
+      baseQuery += ` AND (product_name ILIKE $${paramIdx} OR product_code ILIKE $${paramIdx} OR company_name ILIKE $${paramIdx})`;
       params.push(`%${search}%`);
       paramIdx++;
     }
 
     if (category) {
-      queryText += ` AND category = $${paramIdx}`;
+      baseQuery += ` AND category = $${paramIdx}`;
       params.push(category);
       paramIdx++;
     }
     
     if (company) {
-      queryText += ` AND company_name = $${paramIdx}`;
+      baseQuery += ` AND company_name = $${paramIdx}`;
       params.push(company);
       paramIdx++;
     }
 
-    queryText += ` ORDER BY created_at DESC LIMIT $1 OFFSET $2`;
+    const countQuery = `SELECT COUNT(*) ${baseQuery}`;
+    const countResult = await db.query(countQuery, params);
+    const total = parseInt(countResult.rows[0].count);
 
-    const result = await db.query(queryText, params);
-    const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
+    const dataQuery = `SELECT * ${baseQuery} ORDER BY created_at DESC LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
+    const dataParams = [...params, limit, offset];
 
-    sendSuccess(res, result.rows.map(({ total_count, ...rest }) => rest), { page, limit, total });
+    const result = await db.query(dataQuery, dataParams);
+
+    sendSuccess(res, result.rows, { page, limit, total });
   } catch (error) {
     next(error);
   }
@@ -80,7 +92,6 @@ const getProductById = async (req, res, next) => {
 };
 
 const createProduct = async (req, res, next) => {
-  console.log('DEBUG: createProduct Body:', req.body);
   const { 
     product_name, 
     product_code, 
@@ -185,7 +196,6 @@ const createProduct = async (req, res, next) => {
 };
 
 const updateProduct = async (req, res, next) => {
-  console.log('DEBUG: updateProduct Body:', req.body);
   const { id } = req.params;
   const { 
     product_name, 

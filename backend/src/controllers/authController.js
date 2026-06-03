@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const db = require('../config/db');
 const env = require('../config/env');
@@ -47,12 +48,13 @@ const login = async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    const sha256Token = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const hashedRefreshToken = await bcrypt.hash(sha256Token, 10);
     await db.query('UPDATE users SET refresh_token = $1 WHERE user_id = $2', [hashedRefreshToken, user.user_id]);
 
-    // If deploying over HTTP (e.g. DigitalOcean without SSL), we MUST NOT use Secure/SameSite=None.
-    // We only use Secure cookies if the frontend URL indicates HTTPS.
-    const useSecureCookies = env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false;
+    // Secure cookies dynamically based on connection protocol
+    const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    const useSecureCookies = isHttps && (env.NODE_ENV === 'production' || (env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false));
 
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
@@ -106,7 +108,8 @@ const refresh = async (req, res, next) => {
       return sendError(res, 'UNAUTHORIZED', 'User not found, inactive, or logged out', 401);
     }
 
-    const isMatch = await bcrypt.compare(refreshToken, user.refresh_token);
+    const sha256Token = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const isMatch = await bcrypt.compare(sha256Token, user.refresh_token);
     if (!isMatch) {
       // Possible token reuse / stolen token
       return sendError(res, 'UNAUTHORIZED', 'Invalid refresh token', 401);
@@ -118,8 +121,9 @@ const refresh = async (req, res, next) => {
       { expiresIn: '15m' }
     );
 
-    // If deploying over HTTP (e.g. DigitalOcean without SSL), we MUST NOT use Secure/SameSite=None.
-    const useSecureCookies = env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false;
+    // Secure cookies dynamically based on connection protocol
+    const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    const useSecureCookies = isHttps && (env.NODE_ENV === 'production' || (env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false));
 
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
@@ -138,7 +142,8 @@ const { redisClient } = require('../config/redis');
 
 const logout = async (req, res) => {
   // Clear cookies
-  const useSecureCookies = env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false;
+  const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  const useSecureCookies = isHttps && (env.NODE_ENV === 'production' || (env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false));
   const cookieOptions = {
     httpOnly: true,
     secure: useSecureCookies,

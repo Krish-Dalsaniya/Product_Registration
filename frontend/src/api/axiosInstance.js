@@ -20,7 +20,7 @@ axiosInstance.interceptors.response.use(
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.dispatchEvent(new Event('unauthorized'));
       }
     }
     // Transform error for easier UI consumption

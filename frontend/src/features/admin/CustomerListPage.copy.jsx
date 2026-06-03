@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '../../hooks/useCustomers';
+import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
-import CustomerTable from './CustomerTable';
-import CustomerFilters from './CustomerFilters';
 import { Search, Plus, Loader2, Users, Mail, Phone, MapPin, Building, Globe, Hash, ShieldCheck, Trash2, Edit3, Edit2, Check, Eye, FileText, Briefcase, CreditCard, PenTool, ChevronRight } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
@@ -350,6 +349,26 @@ const CustomerListPage = () => {
     }
   };
 
+  const columns = [
+    { key: 'customer_code', label: 'Code' },
+    { key: 'customer_name', label: 'Customer Name' },
+    { key: 'company_name', label: 'Company' },
+    { key: 'company_type', label: 'Type' },
+    { key: 'product', label: 'Product', render: (row) => row.product || 'N/A' },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (row) => (
+        <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${row.status === 'Active'
+          ? 'bg-emerald-500/10 text-emerald-500'
+          : 'bg-rose-500/10 text-rose-500'
+          }`}>
+          {row.status}
+        </span>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
 
@@ -360,6 +379,7 @@ const CustomerListPage = () => {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">Customer Management</h1>
+            {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Directory of registered clients and companies</p> */}
           </div>
         </div>
 
@@ -373,18 +393,30 @@ const CustomerListPage = () => {
         </button>
       </div>
 
-      <CustomerFilters 
-        searchTerm={searchTerm} 
-        setSearchTerm={setSearchTerm} 
-        totalCount={customers.length} 
-      />
+      <div className="workspace-card p-3 flex flex-col md:flex-row gap-4 items-center">
+        <div className="relative flex-1 group w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
+          <input
+            type="text"
+            placeholder="Search by name, code or company details..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl py-2 pl-12 pr-32 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
+          />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40 pointer-events-none hidden sm:block">
+            {customers.length} Records Listed
+          </div>
+        </div>
+      </div>
 
-      <CustomerTable
+      <DataTable
+        columns={columns}
         data={filteredCustomers}
         loading={loading}
         onView={handleView}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        rowKey="customer_id"
       />
 
       <Modal
