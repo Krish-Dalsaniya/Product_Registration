@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useOutletContext, useLocation } from 'react-router-dom';
-import { useSupportTicket } from '../../hooks/useSupportTickets';
-import { ArrowLeft, Loader2, LifeBuoy, Clock, Calendar, Check, Box, MessageSquareOff, User, Download } from 'lucide-react';
+import { useSupportTicket, useSupportTicketMessages, useAddSupportTicketMessage } from '../../hooks/useSupportTickets';
+import { ArrowLeft, Loader2, LifeBuoy, Clock, Calendar, Check, Box, MessageSquareOff, User, Download, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 
@@ -28,6 +28,30 @@ const SupportTicketProfilePage = () => {
 
   const { data: ticketData, isLoading: loading, isError } = useSupportTicket(id);
   const ticket = ticketData?.data;
+
+  const { data: messagesResponse, isLoading: loadingMessages } = useSupportTicketMessages(id);
+  const messages = messagesResponse?.data || [];
+  const addMessageMutation = useAddSupportTicketMessage();
+  const [newMessage, setNewMessage] = useState('');
+  const chatEndRef = React.useRef(null);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || addMessageMutation.isPending) return;
+    
+    addMessageMutation.mutate(
+      { id, message: newMessage },
+      {
+        onSuccess: () => setNewMessage('')
+      }
+    );
+  };
 
   useEffect(() => {
     if (isError) {
@@ -201,7 +225,7 @@ const SupportTicketProfilePage = () => {
           </div>
         </div>
 
-        {/* Right Column: Support Chat Placeholder */}
+        {/* Right Column: Support Chat */}
         <div className="lg:col-span-4 h-full">
           <div className="workspace-card h-[600px] lg:h-full flex flex-col border border-[var(--border-color)] bg-[var(--bg-card)] rounded-[24px] overflow-hidden sticky top-6">
             <div className="p-5 border-b border-[var(--border-color)] bg-[var(--bg-workspace)]">
@@ -211,26 +235,67 @@ const SupportTicketProfilePage = () => {
                 </div>
                 <div>
                   <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-widest">Support Chat</h3>
-                  <p className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Support Agent Online</p>
                 </div>
               </div>
             </div>
             
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[var(--bg-workspace)]/50">
-              <div className="w-20 h-20 rounded-full bg-[var(--border-color)]/30 flex items-center justify-center text-[var(--text-dim)] mb-4">
-                <MessageSquareOff size={32} />
-              </div>
-              <h4 className="text-[15px] font-black text-[var(--text-main)] mb-2">Chat Unavailable</h4>
-              <p className="text-[12px] text-[var(--text-muted)] font-medium max-w-[250px]">
-                Live chat will be available after the ticket is assigned to a support agent. Check back later.
-              </p>
+            <div className="flex-1 overflow-y-auto p-4 bg-[var(--bg-workspace)]/50 space-y-4">
+              {loadingMessages ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-6 h-6 animate-spin text-[var(--accent)]" />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <div className="w-16 h-16 rounded-full bg-[var(--border-color)]/30 flex items-center justify-center text-[var(--text-dim)] mb-4">
+                    <MessageSquareOff size={24} />
+                  </div>
+                  <h4 className="text-[13px] font-black text-[var(--text-main)] mb-1">No Messages Yet</h4>
+                  <p className="text-[11px] text-[var(--text-muted)] font-medium max-w-[200px]">
+                    Send a message below to start the conversation.
+                  </p>
+                </div>
+              ) : (
+                messages.map((msg) => {
+                  const isMe = msg.sender_id === user?.user_id;
+                  return (
+                    <div key={msg.message_id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                      {!isMe && (
+                        <div className="flex items-center gap-2 mb-1 pl-1">
+                          <span className="text-[10px] font-bold text-[var(--text-main)]">{msg.sender_name}</span>
+                          <span className="text-[9px] font-black uppercase text-[var(--text-dim)] tracking-wider px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)]">{msg.sender_role}</span>
+                        </div>
+                      )}
+                      <div className={`max-w-[85%] p-3 rounded-2xl ${isMe ? 'bg-[var(--accent)] text-white rounded-tr-sm' : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-tl-sm'}`}>
+                        <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                      </div>
+                      <span className="text-[9px] font-medium text-[var(--text-dim)] mt-1 px-1">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
             </div>
 
             <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-workspace)]">
-              <div className="flex items-center gap-2 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl p-2 opacity-50 cursor-not-allowed">
-                <input type="text" placeholder="Type a message..." disabled className="flex-1 bg-transparent border-none outline-none text-[13px] px-2 text-[var(--text-main)]" />
-                <button disabled className="p-2 text-[var(--text-dim)]"><Download size={16} /></button>
-              </div>
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2 bg-[var(--input-bg)] border border-[var(--border-color)] focus-within:border-[var(--accent)] focus-within:ring-1 focus-within:ring-[var(--accent)] rounded-xl p-2 transition-all">
+                <input 
+                  type="text" 
+                  placeholder="Type a message..." 
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  disabled={addMessageMutation.isPending}
+                  className="flex-1 bg-transparent border-none outline-none text-[13px] px-2 text-[var(--text-main)] placeholder-[var(--text-dim)]" 
+                />
+                <button 
+                  type="submit" 
+                  disabled={!newMessage.trim() || addMessageMutation.isPending}
+                  className={`p-2 rounded-lg flex items-center justify-center transition-all ${newMessage.trim() && !addMessageMutation.isPending ? 'bg-[var(--accent)] text-white hover:opacity-90 shadow-md shadow-[var(--accent)]/20' : 'bg-transparent text-[var(--text-dim)]'}`}
+                >
+                  {addMessageMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} className={newMessage.trim() ? "translate-x-[1px] -translate-y-[1px]" : ""} />}
+                </button>
+              </form>
             </div>
           </div>
         </div>

@@ -13,4 +13,8 @@ router.post('/', upload.fields([{ name: 'attachments', maxCount: 5 }]), supportT
 router.put('/:id', upload.fields([{ name: 'attachments', maxCount: 5 }]), supportTicketController.updateTicket);
 router.delete('/:id', supportTicketController.deleteTicket);
 
+// Message routes
+router.get('/:id/messages', supportTicketController.getTicketMessages);
+router.post('/:id/messages', supportTicketController.addTicketMessage);
+
 module.exports = router;

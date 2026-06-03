@@ -160,10 +160,96 @@ const deleteTicket = async (req, res, next) => {
     }
 };
 
+const getTicketMessages = async (req, res, next) => {
+    const { id } = req.params;
+    try {
+        // Fetch messages for a specific ticket, joining with users and roles
+        // We handle id being either numeric or string ticket_id
+        let ticketId = id;
+        if (isNaN(id)) {
+             const ticketRes = await db.query('SELECT id FROM support_tickets WHERE ticket_id = $1', [id]);
+             if (ticketRes.rows.length === 0) {
+                 return sendError(res, 'NOT_FOUND', 'Support ticket not found', 404);
+             }
+             ticketId = ticketRes.rows[0].id;
+        }
+
+        const query = `
+            SELECT 
+                stm.id as message_id,
+                stm.message,
+                stm.created_at,
+                u.user_id as sender_id,
+                u.full_name as sender_name,
+                r.role_name as sender_role
+            FROM support_ticket_messages stm
+            JOIN users u ON stm.sender_id = u.user_id
+            JOIN roles r ON u.role_id = r.role_id
+            WHERE stm.ticket_id = $1
+            ORDER BY stm.created_at ASC
+        `;
+        const result = await db.query(query, [ticketId]);
+        
+        return sendSuccess(res, result.rows, 'Ticket messages retrieved successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+const addTicketMessage = async (req, res, next) => {
+    const { id } = req.params;
+    const { message } = req.body;
+    const sender_id = req.user.user_id;
+
+    if (!message || !message.trim()) {
+        return sendError(res, 'BAD_REQUEST', 'Message content is required', 400);
+    }
+
+    try {
+        let ticketId = id;
+        if (isNaN(id)) {
+             const ticketRes = await db.query('SELECT id FROM support_tickets WHERE ticket_id = $1', [id]);
+             if (ticketRes.rows.length === 0) {
+                 return sendError(res, 'NOT_FOUND', 'Support ticket not found', 404);
+             }
+             ticketId = ticketRes.rows[0].id;
+        }
+
+        const query = `
+            INSERT INTO support_ticket_messages (ticket_id, sender_id, message)
+            VALUES ($1, $2, $3)
+            RETURNING *
+        `;
+        const result = await db.query(query, [ticketId, sender_id, message.trim()]);
+        
+        // Also fetch the sender info to return a complete message object
+        const completeMessageQuery = `
+            SELECT 
+                stm.id as message_id,
+                stm.message,
+                stm.created_at,
+                u.user_id as sender_id,
+                u.full_name as sender_name,
+                r.role_name as sender_role
+            FROM support_ticket_messages stm
+            JOIN users u ON stm.sender_id = u.user_id
+            JOIN roles r ON u.role_id = r.role_id
+            WHERE stm.id = $1
+        `;
+        const completeMessageResult = await db.query(completeMessageQuery, [result.rows[0].id]);
+
+        return sendSuccess(res, completeMessageResult.rows[0], 'Message added successfully', 201);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getTickets,
     getTicketById,
     createTicket,
     updateTicket,
-    deleteTicket
+    deleteTicket,
+    getTicketMessages,
+    addTicketMessage
 };

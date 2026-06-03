@@ -27,3 +27,12 @@ export const updateSupportTicket = async (id, formData) => {
 export const deleteSupportTicket = async (id) => {
     return axiosInstance.delete(`/support-tickets/${id}`);
 };
+
+// --- Messages ---
+export const getSupportTicketMessages = async (id) => {
+    return axiosInstance.get(`/support-tickets/${id}/messages`);
+};
+
+export const addSupportTicketMessage = async (id, message) => {
+    return axiosInstance.post(`/support-tickets/${id}/messages`, { message });
+};
