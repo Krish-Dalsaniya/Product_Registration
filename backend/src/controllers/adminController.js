@@ -240,7 +240,17 @@ const getAdminStats = async (req, res, next) => {
 const bcrypt = require('bcryptjs');
 
 const createUser = async (req, res, next) => {
+  console.log('--- CREATE USER REQUEST ---');
+  console.log('Body:', req.body);
+  console.log('File:', req.file);
   const { full_name, email, password, role_name, team_id, team_ids } = req.body;
+
+  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+  let parsedTeamIds = team_ids;
+  if (typeof team_ids === 'string') {
+    try { parsedTeamIds = JSON.parse(team_ids); } 
+    catch(e) { parsedTeamIds = [team_ids]; }
+  }
 
   try {
     const result = await db.withTransaction(async (client) => {
@@ -253,9 +263,9 @@ const createUser = async (req, res, next) => {
 
         const password_hash = await bcrypt.hash(password, 10);
         const insertResult = await client.query(
-          `INSERT INTO users (full_name, email, password_hash, role_id) 
-           VALUES ($1, $2, $3, $4) RETURNING user_id, full_name, email`,
-          [full_name, email, password_hash, role_id]
+          `INSERT INTO users (full_name, email, password_hash, role_id, image_url) 
+           VALUES ($1, $2, $3, $4, $5) RETURNING user_id, full_name, email, image_url`,
+          [full_name, email, password_hash, role_id, image_url]
         );
 
         // Create profile based on role
@@ -269,8 +279,8 @@ const createUser = async (req, res, next) => {
         }
 
         // Assign to teams if provided
-        if (Array.isArray(team_ids) && team_ids.length > 0) {
-          for (const tId of team_ids) {
+        if (Array.isArray(parsedTeamIds) && parsedTeamIds.length > 0) {
+          for (const tId of parsedTeamIds) {
             if (tId) {
               await client.query(
                 'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
@@ -303,6 +313,13 @@ const updateUser = async (req, res, next) => {
   const { userId } = req.params;
   const { full_name, email, role_name, team_id, team_ids } = req.body;
 
+  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+  let parsedTeamIds = team_ids;
+  if (typeof team_ids === 'string') {
+    try { parsedTeamIds = JSON.parse(team_ids); } 
+    catch(e) { parsedTeamIds = [team_ids]; }
+  }
+
   try {
     const result = await db.withTransaction(async (client) => {
         // Get role_id
@@ -312,12 +329,22 @@ const updateUser = async (req, res, next) => {
         }
         const role_id = roleResult.rows[0].role_id;
 
-        const updateResult = await client.query(
-          `UPDATE users 
-           SET full_name = $1, email = $2, role_id = $3 
-           WHERE user_id = $4 RETURNING user_id, full_name, email`,
-          [full_name, email, role_id, userId]
-        );
+        let updateResult;
+        if (image_url) {
+          updateResult = await client.query(
+            `UPDATE users 
+             SET full_name = $1, email = $2, role_id = $3, image_url = $4
+             WHERE user_id = $5 RETURNING user_id, full_name, email, image_url`,
+            [full_name, email, role_id, image_url, userId]
+          );
+        } else {
+          updateResult = await client.query(
+            `UPDATE users 
+             SET full_name = $1, email = $2, role_id = $3 
+             WHERE user_id = $4 RETURNING user_id, full_name, email, image_url`,
+            [full_name, email, role_id, userId]
+          );
+        }
 
         if (updateResult.rows.length === 0) {
           throw new Error('User not found');
@@ -325,8 +352,8 @@ const updateUser = async (req, res, next) => {
 
         // Sync team assignment
         await client.query('DELETE FROM team_members WHERE user_id = $1', [userId]);
-        if (Array.isArray(team_ids) && team_ids.length > 0) {
-          for (const tId of team_ids) {
+        if (Array.isArray(parsedTeamIds) && parsedTeamIds.length > 0) {
+          for (const tId of parsedTeamIds) {
             if (tId) {
               await client.query(
                 'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',

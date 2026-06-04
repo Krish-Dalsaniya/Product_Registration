@@ -8,6 +8,16 @@ const UserGridView = ({
   onEdit,
   onDelete
 }) => {
+  const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+  const assetBaseURL = rawApiUrl.replace(/\/api$/, '');
+  
+  const getFullUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+    const base = assetBaseURL.endsWith('/') ? assetBaseURL.slice(0, -1) : assetBaseURL;
+    return `${base}/${cleanUrl}`;
+  };
   if (!users || users.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center border border-[var(--border-color)] rounded-2xl bg-[var(--bg-card)]">
@@ -22,7 +32,10 @@ const UserGridView = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
       {users.map((user) => {
-        const avatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.full_name)}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
+        const defaultAvatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.full_name)}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
+        const avatarUrl = (user.image_url || user.profile_image_url) 
+          ? (getFullUrl ? getFullUrl(user.image_url || user.profile_image_url) : (user.image_url || user.profile_image_url))
+          : defaultAvatarUrl;
         const userTeams = Array.isArray(user.teams) ? user.teams : [];
 
         return (

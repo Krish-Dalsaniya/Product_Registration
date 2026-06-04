@@ -99,6 +99,12 @@ app.use('/api/chatbot', chatbotRoutes);
 app.get('/health', (req, res) => res.json({ status: 'OK' }));
 
 // Error handling
+app.use((err, req, res, next) => {
+  if (err.status === 400 || err.statusCode === 400) {
+    console.error('--- 400 ERROR CAUGHT IN APP.JS ---', err);
+  }
+  next(err);
+});
 app.use(errorHandler);
 
 module.exports = app;

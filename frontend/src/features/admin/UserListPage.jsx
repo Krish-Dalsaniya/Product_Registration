@@ -55,6 +55,8 @@ const UserListPage = ({ initialRole = '' }) => {
   const [selectedTeamIds, setSelectedTeamIds] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [teamSearch, setTeamSearch] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
   const selectedRole = watch('role_name');
@@ -89,15 +91,24 @@ const UserListPage = ({ initialRole = '' }) => {
     if (modalMode === 'view') return;
     setIsSubmitting(true);
     try {
-      const payload = {
-        ...data,
-        team_ids: selectedTeamIds
-      };
+      const formData = new FormData();
+      formData.append('full_name', data.full_name);
+      formData.append('email', data.email);
+      if (data.password) formData.append('password', data.password);
+      
+      const finalRoleName = data.role_name || (modalMode === 'edit' ? selectedUser?.role_name : (initialRole || 'Designer'));
+      formData.append('role_name', finalRoleName);
+      
+      formData.append('team_ids', JSON.stringify(selectedTeamIds));
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+
       if (modalMode === 'create') {
-        await createUserMutation.mutateAsync(payload);
+        await createUserMutation.mutateAsync(formData);
         toast.success('User created successfully!');
       } else {
-        await updateUserMutation.mutateAsync({ id: selectedUser.user_id, data: payload });
+        await updateUserMutation.mutateAsync({ id: selectedUser.user_id, data: formData });
         toast.success('User updated successfully!');
       }
       setIsModalOpen(false);
@@ -108,8 +119,11 @@ const UserListPage = ({ initialRole = '' }) => {
       setSelectedTeamIds([]);
       setIsDropdownOpen(false);
       setTeamSearch('');
+      setImageFile(null);
+      setImagePreview(null);
     } catch (error) {
-      toast.error(error.response?.data?.error?.message || 'Action failed');
+      console.error(error);
+      toast.error(error.message || 'Action failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -121,6 +135,8 @@ const UserListPage = ({ initialRole = '' }) => {
     setSelectedTeamIds([]);
     setIsDropdownOpen(false);
     setTeamSearch('');
+    setImageFile(null);
+    setImagePreview(null);
     
     const draftId = 'user_create';
     const draft = store.getState().drafts[draftId];
@@ -146,6 +162,13 @@ const UserListPage = ({ initialRole = '' }) => {
     setSelectedTeamIds(currentTeamIds);
     setIsDropdownOpen(false);
     setTeamSearch('');
+    setImageFile(null);
+    if (user.image_url || user.profile_image_url) {
+       const u = user.image_url || user.profile_image_url;
+       setImagePreview(u.startsWith('http') ? u : `${import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:3000'}/${u.startsWith('/') ? u.substring(1) : u}`);
+    } else {
+       setImagePreview(null);
+    }
     const resetData = {
       full_name: user.full_name,
       email: user.email,
@@ -396,11 +419,22 @@ const UserListPage = ({ initialRole = '' }) => {
                 className="w-16 h-16 rounded-full flex items-center justify-center border-2 overflow-hidden transition-all bg-[var(--bg-card)] shadow-sm group"
                 style={{ borderColor: 'var(--border-color)' }}
               >
-                <img 
-                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(selectedUser?.full_name)}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`} 
-                  alt={selectedUser?.full_name} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                />
+                {(() => {
+                  const defaultAvatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(selectedUser?.full_name)}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
+                  const avatarUrl = (selectedUser?.image_url || selectedUser?.profile_image_url)
+                    ? (selectedUser.image_url || selectedUser.profile_image_url).startsWith('http') 
+                        ? (selectedUser.image_url || selectedUser.profile_image_url) 
+                        : `${import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:3000'}/${(selectedUser.image_url || selectedUser.profile_image_url).startsWith('/') ? (selectedUser.image_url || selectedUser.profile_image_url).substring(1) : (selectedUser.image_url || selectedUser.profile_image_url)}`
+                    : defaultAvatarUrl;
+                  
+                  return (
+                    <img 
+                      src={avatarUrl} 
+                      alt={selectedUser?.full_name} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                  );
+                })()}
               </div>
               <div>
                 <h4 className="text-xl font-black text-[var(--text-main)] tracking-tight">{selectedUser?.full_name}</h4>
@@ -471,6 +505,34 @@ const UserListPage = ({ initialRole = '' }) => {
           </div>
         ) : (
           <form id="user-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="flex flex-col items-center mb-4">
+              <div className="relative w-24 h-24 rounded-full border-2 border-dashed border-[var(--border-color)] overflow-hidden flex items-center justify-center bg-[var(--bg-workspace)] mb-2 group">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="text-[var(--text-muted)] opacity-50" size={32} />
+                )}
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-white text-[10px] font-bold uppercase tracking-widest text-center px-2">Click to Upload</span>
+                </div>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setImageFile(file);
+                      const reader = new FileReader();
+                      reader.onloadend = () => setImagePreview(reader.result);
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </div>
+              <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Profile Picture</p>
+            </div>
+
             <div>
               <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
               <input {...register('full_name', { required: 'Name is required' })} autoComplete="off" className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)]" placeholder="e.g. John Doe" />

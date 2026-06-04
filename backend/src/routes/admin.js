@@ -3,6 +3,7 @@ const adminController = require('../controllers/adminController');
 const { verifyToken } = require('../middleware/auth');
 const { requireRole } = require('../middleware/rbac');
 const cache = require('../middleware/cache');
+const upload = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -14,8 +15,8 @@ const adminTeamController = require('../controllers/adminTeamController');
 
 router.get('/stats', cache(60), adminController.getAdminStats);
 router.get('/users', adminController.getUsers);
-router.post('/users', adminController.createUser);
-router.put('/users/:userId', adminController.updateUser);
+router.post('/users', upload.single('image'), adminController.createUser);
+router.put('/users/:userId', upload.single('image'), adminController.updateUser);
 router.get('/users/:userId', adminController.getUserById);
 router.delete('/users/:userId', adminController.deleteUser);
 router.get('/designers', adminController.getDesigners);
