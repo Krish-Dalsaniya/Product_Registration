@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUsers, createUser, updateUser, deleteUser, getAdminStats } from '../api/admin';
+import { getUsers, createUser, updateUser, deleteUser, getAdminStats, removeUserImage } from '../api/admin';
 
 export const useUsers = (params) => {
   return useQuery({
@@ -54,6 +54,16 @@ export const useDeleteUser = () => {
         queryClient.invalidateQueries({ queryKey: ['users'] }),
         queryClient.invalidateQueries({ queryKey: ['adminStats'] })
       ]);
+    },
+  });
+};
+
+export const useRemoveUserImage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: removeUserImage,
+    onSuccess: () => {
+      return queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 };

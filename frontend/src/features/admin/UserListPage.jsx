@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUsers, useAdminStats, useCreateUser, useUpdateUser, useDeleteUser } from '../../hooks/useUsers';
+import { useUsers, useAdminStats, useCreateUser, useUpdateUser, useDeleteUser, useRemoveUserImage } from '../../hooks/useUsers';
 import { useTeams } from '../../hooks/useTeams';
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
@@ -35,6 +35,7 @@ const UserListPage = ({ initialRole = '' }) => {
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+  const removeUserImageMutation = useRemoveUserImage();
 
   const users = usersData?.data || [];
   const loading = usersLoading;
@@ -183,6 +184,32 @@ const UserListPage = ({ initialRole = '' }) => {
     }
     
     setIsModalOpen(true);
+  };
+
+  const handleRemoveImage = async () => {
+    if (!selectedUser?.user_id) return;
+    
+    const confirm = await Swal.fire({
+      title: 'Remove Profile Picture?',
+      text: "This will permanently delete the current profile picture.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'Yes, remove it!'
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        await removeUserImageMutation.mutateAsync(selectedUser.user_id);
+        setImagePreview(null);
+        setImageFile(null);
+        setSelectedUser(prev => ({ ...prev, image_url: null }));
+        toast.success('Image removed successfully');
+      } catch (error) {
+        toast.error(error.message || 'Failed to remove image');
+      }
+    }
   };
 
   const handleDelete = async (user) => {
@@ -530,7 +557,18 @@ const UserListPage = ({ initialRole = '' }) => {
                   }}
                 />
               </div>
-              <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Profile Picture</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Profile Picture</p>
+                {modalMode === 'edit' && selectedUser?.image_url && (
+                  <button 
+                    type="button" 
+                    onClick={handleRemoveImage}
+                    className="text-red-500 hover:text-red-600 bg-red-500/10 hover:bg-red-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase transition-colors"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
 
             <div>

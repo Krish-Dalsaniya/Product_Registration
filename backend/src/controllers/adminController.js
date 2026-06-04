@@ -238,14 +238,28 @@ const getAdminStats = async (req, res, next) => {
 };
 
 const bcrypt = require('bcryptjs');
+const cloudinary = require('../config/cloudinary');
+const fs = require('fs');
+const path = require('path');
 
 const createUser = async (req, res, next) => {
-  console.log('--- CREATE USER REQUEST ---');
-  console.log('Body:', req.body);
-  console.log('File:', req.file);
   const { full_name, email, password, role_name, team_id, team_ids } = req.body;
 
-  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+  let image_url = null;
+  if (req.file) {
+    try {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'users/avatars',
+        resource_type: 'image',
+      });
+      image_url = result.secure_url;
+      // Delete local file
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    } catch (error) {
+      console.error("Cloudinary upload failed:", error);
+      return res.status(500).json({ success: false, error: { message: 'Image upload failed. Please try again.' } });
+    }
+  }
   let parsedTeamIds = team_ids;
   if (typeof team_ids === 'string') {
     try { parsedTeamIds = JSON.parse(team_ids); } 
@@ -313,7 +327,21 @@ const updateUser = async (req, res, next) => {
   const { userId } = req.params;
   const { full_name, email, role_name, team_id, team_ids } = req.body;
 
-  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+  let image_url = null;
+  if (req.file) {
+    try {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'users/avatars',
+        resource_type: 'image',
+      });
+      image_url = result.secure_url;
+      // Delete local file
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    } catch (error) {
+      console.error("Cloudinary upload failed:", error);
+      return res.status(500).json({ success: false, error: { message: 'Image upload failed. Please try again.' } });
+    }
+  }
   let parsedTeamIds = team_ids;
   if (typeof team_ids === 'string') {
     try { parsedTeamIds = JSON.parse(team_ids); } 
@@ -328,6 +356,10 @@ const updateUser = async (req, res, next) => {
           throw new Error('Invalid role');
         }
         const role_id = roleResult.rows[0].role_id;
+
+        // Fetch old image to delete later if needed
+        const currentUser = await client.query('SELECT image_url FROM users WHERE user_id = $1', [userId]);
+        const oldImageUrl = currentUser.rows.length > 0 ? currentUser.rows[0].image_url : null;
 
         let updateResult;
         if (image_url) {
@@ -367,10 +399,30 @@ const updateUser = async (req, res, next) => {
             [team_id, userId]
           );
         }
-        return updateResult.rows[0];
+        
+        return { user: updateResult.rows[0], oldImageUrl };
     });
 
-    sendSuccess(res, result, 'User updated successfully');
+    // Cleanup old image from Cloudinary or local
+    if (image_url && result.oldImageUrl) {
+      if (result.oldImageUrl.includes('cloudinary.com')) {
+        try {
+          const parts = result.oldImageUrl.split('/');
+          const lastPart = parts[parts.length - 1];
+          const folderParts = parts.slice(parts.indexOf('upload') + 2, parts.length - 1);
+          const publicIdWithExt = [...folderParts, lastPart].join('/');
+          const publicId = publicIdWithExt.split('.')[0];
+          await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+        } catch (e) {
+          console.error('Failed to delete old Cloudinary image:', e);
+        }
+      } else {
+        const filePath = path.join(__dirname, '../../', result.oldImageUrl);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+    }
+
+    sendSuccess(res, result.user, 'User updated successfully');
   } catch (error) {
     if (error.message === 'Invalid role') {
       return res.status(400).json({ success: false, error: { message: 'Invalid role' } });
@@ -414,6 +466,39 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+const removeUserImage = async (req, res, next) => {
+  const { userId } = req.params;
+  try {
+    const user = await db.query('SELECT image_url FROM users WHERE user_id = $1', [userId]);
+    if (user.rows.length === 0) return res.status(404).json({ success: false, error: { message: 'User not found' } });
+    
+    const imageUrl = user.rows[0].image_url;
+    if (imageUrl) {
+      if (imageUrl.includes('cloudinary.com')) {
+        try {
+          const parts = imageUrl.split('/');
+          const lastPart = parts[parts.length - 1];
+          const folderParts = parts.slice(parts.indexOf('upload') + 2, parts.length - 1);
+          const publicIdWithExt = [...folderParts, lastPart].join('/');
+          const publicId = publicIdWithExt.split('.')[0];
+          await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+        } catch (e) {
+          console.error('Failed to delete Cloudinary image:', e);
+        }
+      } else {
+        const filePath = path.join(__dirname, '../../', imageUrl);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+      
+      await db.query('UPDATE users SET image_url = NULL WHERE user_id = $1', [userId]);
+    }
+    
+    sendSuccess(res, null, 'Image removed successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -425,6 +510,7 @@ module.exports = {
   fetchAdminStatsData,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  removeUserImage
 };
 

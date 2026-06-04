@@ -19,6 +19,7 @@ router.post('/users', upload.single('image'), adminController.createUser);
 router.put('/users/:userId', upload.single('image'), adminController.updateUser);
 router.get('/users/:userId', adminController.getUserById);
 router.delete('/users/:userId', adminController.deleteUser);
+router.delete('/users/:userId/image', adminController.removeUserImage);
 router.get('/designers', adminController.getDesigners);
 router.get('/teams', adminController.getTeams);
 router.post('/teams', adminTeamController.createTeam);
