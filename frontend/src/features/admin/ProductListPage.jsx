@@ -153,6 +153,28 @@ const ProductListPage = () => {
     } catch (error) { toast.error('Failed to delete product'); }
   };
 
+  const handleBulkDelete = async (productIds) => {
+    const result = await Swal.fire({
+      title: 'Bulk Delete?',
+      text: `Are you sure you want to delete ${productIds.length} products? This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: 'var(--accent)',
+      confirmButtonText: 'Yes, delete all!'
+    });
+    if (!result.isConfirmed) return;
+    try {
+      // Execute concurrent delete requests
+      await Promise.all(productIds.map(id => deleteProduct(id)));
+      toast.success(`${productIds.length} products deleted successfully!`);
+      fetchProducts();
+    } catch (error) {
+      toast.error('Failed to complete bulk delete. Some items may not have been removed.');
+      fetchProducts();
+    }
+  };
+
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
       
@@ -228,6 +250,7 @@ const ProductListPage = () => {
           onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onBulkDelete={handleBulkDelete}
         />
       ) : (
         <ProductGridView 

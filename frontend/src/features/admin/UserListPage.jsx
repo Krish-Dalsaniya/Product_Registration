@@ -5,16 +5,18 @@ import { useTeams } from '../../hooks/useTeams';
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
-import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
 import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
 import Swal from 'sweetalert2';
+import UserGridView from './components/user/UserGridView';
 
 const UserListPage = ({ initialRole = '' }) => {
   const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState('grid');
   const [roleFilter, setRoleFilter] = useState(initialRole);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -323,7 +325,7 @@ const UserListPage = ({ initialRole = '' }) => {
         </div>
 
         {!initialRole && (
-          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner whitespace-nowrap">
+          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner whitespace-nowrap overflow-x-auto no-scrollbar">
             {['', 'Designer', 'Sales', 'Maintenance'].map((role) => (
               <button
                 key={role}
@@ -341,20 +343,34 @@ const UserListPage = ({ initialRole = '' }) => {
             ))}
           </div>
         )}
+
+        <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-0.5 rounded-lg shadow-inner shrink-0">
+          <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md transition-all duration-300 ${viewMode === 'grid' ? 'bg-[var(--accent)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`} title="Grid View"><LayoutGrid size={15} /></button>
+          <button onClick={() => setViewMode('table')} className={`p-2 rounded-md transition-all duration-300 ${viewMode === 'table' ? 'bg-[var(--accent)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`} title="Table View"><List size={15} /></button>
+        </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={filteredUsers}
-        loading={loading}
-        totalCount={pagination.total}
-        filteredCount={filteredUsers.length}
-        currentPage={pagination.page}
-        totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
-        onView={handleView}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      {viewMode === 'table' ? (
+        <DataTable
+          columns={columns}
+          data={filteredUsers}
+          loading={loading}
+          totalCount={pagination.total}
+          filteredCount={filteredUsers.length}
+          currentPage={pagination.page}
+          totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      ) : (
+        <UserGridView
+          users={filteredUsers}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}
@@ -377,10 +393,14 @@ const UserListPage = ({ initialRole = '' }) => {
           <div className="space-y-6">
             <div className="flex items-center gap-5 p-4 bg-[var(--bg-workspace)] rounded-2xl border-[0.5px] border-[var(--border-color)]">
               <div 
-                className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl border transition-all"
-                style={{ background: 'var(--nav-hover)', color: 'var(--accent)', borderColor: 'var(--border-color)' }}
+                className="w-16 h-16 rounded-full flex items-center justify-center border-2 overflow-hidden transition-all bg-[var(--bg-card)] shadow-sm group"
+                style={{ borderColor: 'var(--border-color)' }}
               >
-                {selectedUser?.full_name?.charAt(0)}
+                <img 
+                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(selectedUser?.full_name)}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`} 
+                  alt={selectedUser?.full_name} 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                />
               </div>
               <div>
                 <h4 className="text-xl font-black text-[var(--text-main)] tracking-tight">{selectedUser?.full_name}</h4>

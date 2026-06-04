@@ -12,6 +12,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 import { Loader2, Box, Tag, FileText, Check, Activity, ChevronRight, Trash2, Plus, CheckCircle, Zap, Cpu, CircuitBoard, Layers, X, Eye } from 'lucide-react';
+import { useAuth } from '../../../../context/AuthContext';
 
 const Quill = ReactQuill.Quill;
 const Parchment = Quill.import('parchment');
@@ -80,6 +81,9 @@ const ProductModal = ({
   companies,
   getFullUrl
 }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role_name === 'Admin';
+
   const [modalActiveTab, setModalActiveTab] = useState('general');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [specRows, setSpecRows] = useState([]);
@@ -419,8 +423,10 @@ const ProductModal = ({
               <div className="flex border-b border-[var(--border-color)] mb-8 overflow-x-auto no-scrollbar gap-2">
                 {[
                   { id: 'general', label: 'General Information' },
-                  { id: 'specs', label: 'Technical Specifications' },
-                  { id: 'bom', label: 'Bill of Material' },
+                  ...(isAdmin ? [
+                    { id: 'specs', label: 'Technical Specifications' },
+                    { id: 'bom', label: 'Bill of Material' }
+                  ] : []),
                   { id: 'files', label: 'Files' }
                 ].map(tab => (
                   <button
@@ -502,7 +508,7 @@ const ProductModal = ({
                     )}
                   </div>
                   <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
-                    <button type="button" onClick={() => setModalActiveTab('specs')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">Save & Next <ChevronRight size={16} strokeWidth={3} /></button>
+                    <button type="button" onClick={() => setModalActiveTab(isAdmin ? 'specs' : 'files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">Save & Next <ChevronRight size={16} strokeWidth={3} /></button>
                   </div>
                 </div>
               </div>

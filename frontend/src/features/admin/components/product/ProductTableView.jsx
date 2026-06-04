@@ -6,10 +6,12 @@ const ProductTableView = ({
   loading, 
   pagination, 
   onView, 
-  onEdit 
+  onEdit,
+  onDelete,
+  onBulkDelete
 }) => {
   const columns = [
-    { key: 'product_id', label: 'ID', render: (row) => row.product_id.substring(0, 8) + '...' },
+    // { key: 'product_id', label: 'ID', render: (row) => row.product_id ? String(row.product_id).substring(0, 8) + '...' : '' },
     { key: 'category', label: 'Category' },
     { key: 'product_name', label: 'Product Name' },
     { key: 'company_name', label: 'Company Name' },
@@ -27,6 +29,10 @@ const ProductTableView = ({
       totalPages={Math.ceil(pagination.total / pagination.limit) || 1} 
       onView={onView} 
       onEdit={onEdit} 
+      onDelete={onDelete}
+      rowKey="product_id"
+      enableBulkSelection={true}
+      onBulkDelete={onBulkDelete}
     />
   );
 };

@@ -300,73 +300,7 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '200ms' }}>
-              {/* Users / Personnel row */}
-              <div
-                className="flex items-center justify-between px-8 py-3.5 transition-all duration-300 group cursor-pointer"
-                style={{
-                  color: isUserSection ? 'var(--accent)' : 'var(--text-muted)',
-                  background: isUserSection ? 'var(--nav-active)' : undefined,
-                  borderLeft: isUserSection ? '3px solid var(--accent)' : '3px solid transparent',
-                }}
-                onMouseEnter={e => {
-                  if (!isUserSection) {
-                    e.currentTarget.style.background = 'var(--nav-hover)';
-                    e.currentTarget.style.color = 'var(--text-main)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!isUserSection) {
-                    e.currentTarget.style.background = '';
-                    e.currentTarget.style.color = 'var(--text-muted)';
-                  }
-                }}
-              >
-                <div
-                  onClick={() => navigate('/admin/users')}
-                  className="flex items-center gap-4 cursor-pointer flex-1"
-                >
-                  <div className="w-6 flex justify-center relative z-10">
-                    <UserCog
-                      size={20}
-                      strokeWidth={2.5}
-                      style={{ color: isUserSection ? 'var(--accent)' : 'var(--text-dim)' }}
-                      className="group-hover:text-[var(--accent)] transition-colors duration-300"
-                    />
-                  </div>
-                  <span
-                    className="text-[12px] font-bold uppercase tracking-wider transition-all duration-300 group-hover:text-[var(--text-main)]"
-                  >
-                    Users
-                  </span>
-                </div>
-                <div
-                  onClick={(e) => { e.stopPropagation(); toggleMenu('users'); }}
-                  className="cursor-pointer p-1.5 rounded-lg transition-all"
-                >
-                  <ChevronDown
-                    size={16}
-                    className="transition-transform duration-500"
-                    style={{
-                      transform: openMenus.users ? 'rotate(180deg)' : 'rotate(0deg)',
-                      color: openMenus.users ? 'var(--accent)' : 'var(--text-dim)',
-                    }}
-                    strokeWidth={3}
-                  />
-                </div>
-              </div>
-
-              <SubMenu isOpen={openMenus.users}>
-                <div className="space-y-0.5 py-1">
-                  {/* Designers row */}
-                  <NavItem to="/admin/designers" label="Designers" icon={PenTool} isSubItem />
-
-                  {/* Maintenance row */}
-                  <NavItem to="/admin/maintenance" label="Maintenance" icon={Wrench} isSubItem />
-
-                  {/* Sales row */}
-                  <NavItem to="/admin/sales" label="Sales" icon={ShoppingBag} isSubItem />
-                </div>
-              </SubMenu>
+              <NavItem to="/admin/users" label="Users" icon={UserCog} />
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '250ms' }}>
@@ -383,72 +317,8 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             
 
             {/* Inventory row */}
-            <div
-              className="animate-entrance-right"
-              style={{ animationDelay: '500ms' }}
-            >
-              <div
-                className="flex items-center justify-between px-8 py-3.5 transition-all duration-300 group cursor-pointer"
-                style={{
-                  color: isInventorySection ? 'var(--accent)' : 'var(--text-muted)',
-                  background: isInventorySection ? 'var(--nav-active)' : undefined,
-                  borderLeft: isInventorySection ? '3px solid var(--accent)' : '3px solid transparent',
-                }}
-                onMouseEnter={e => {
-                  if (!isInventorySection) {
-                    e.currentTarget.style.background = 'var(--nav-hover)';
-                    e.currentTarget.style.color = 'var(--text-main)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!isInventorySection) {
-                    e.currentTarget.style.background = '';
-                    e.currentTarget.style.color = 'var(--text-muted)';
-                  }
-                }}
-              >
-                <div
-                  onClick={() => navigate('/admin/inventory')}
-                  className="flex items-center gap-4 cursor-pointer flex-1"
-                >
-                  <div className="w-6 flex justify-center relative z-10">
-                    <Box
-                      size={20}
-                      strokeWidth={2.5}
-                      style={{ color: isInventorySection ? 'var(--accent)' : 'var(--text-dim)' }}
-                      className="group-hover:text-[var(--accent)] transition-colors duration-300"
-                    />
-                  </div>
-                  <span
-                    className="text-[12px] font-bold uppercase tracking-wider transition-all duration-300 group-hover:text-[var(--text-main)]"
-                  >
-                    Inventory
-                  </span>
-                </div>
-                <div
-                  onClick={(e) => { e.stopPropagation(); toggleMenu('inventory'); }}
-                  className="cursor-pointer p-1.5 rounded-lg transition-all"
-                >
-                  <ChevronDown
-                    size={16}
-                    className="transition-transform duration-500"
-                    style={{
-                      transform: openMenus.inventory ? 'rotate(180deg)' : 'rotate(0deg)',
-                      color: openMenus.inventory ? 'var(--accent)' : 'var(--text-dim)',
-                    }}
-                    strokeWidth={3}
-                  />
-                </div>
-              </div>
-
-              <SubMenu isOpen={openMenus.inventory}>
-                <div className="space-y-0.5 py-1">
-                  <NavItem to="/admin/inventory/pcb" label="PCB" icon={Cpu} isSubItem />
-                  <NavItem to="/admin/inventory/electronics" label="Electronics Parts" icon={CircuitBoard} isSubItem />
-                  <NavItem to="/admin/inventory/electrical" label="Electrical Parts" icon={Plug} isSubItem />
-                  <NavItem to="/admin/inventory/structural" label="Structural Parts" icon={Layers} isSubItem />
-                </div>
-              </SubMenu>
+            <div className="animate-entrance-right" style={{ animationDelay: '500ms' }}>
+              <NavItem to="/admin/inventory" label="Inventory" icon={Box} />
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '650ms' }}>
