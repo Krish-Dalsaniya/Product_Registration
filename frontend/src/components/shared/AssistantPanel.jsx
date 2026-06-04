@@ -1,14 +1,62 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
+import { X, Send, Bot, User, Loader2, Sparkles, Mic } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 import axiosInstance from '../../api/axiosInstance';
+import toast from 'react-hot-toast';
 
 const AssistantPanel = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hi there! I am your Crudex AI Assistant. How can I help you navigate the app today?' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  useEffect(() => {
+    if (SpeechRecognition && !recognitionRef.current) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput((prev) => (prev ? prev + ' ' + transcript : transcript));
+        setIsListening(false);
+      };
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        if (event.error !== 'no-speech') {
+          toast.error('Voice input failed. Please try again.');
+        }
+      };
+      recognition.onend = () => setIsListening(false);
+
+      recognitionRef.current = recognition;
+    }
+  }, [SpeechRecognition]);
+
+  const toggleListen = (e) => {
+    e.preventDefault();
+    if (!recognitionRef.current) {
+      toast.error('Voice input is not supported in this browser.');
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
+    }
+  };
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -29,11 +77,53 @@ const AssistantPanel = ({ isOpen, onClose }) => {
       const apiMessages = [...messages, userMessage].map(m => ({ role: m.role, content: m.content }));
       
       const response = await axiosInstance.post('/chatbot/chat', {
-        messages: apiMessages
+        messages: apiMessages,
+        currentPath: location.pathname
       });
 
-      if (response.data && response.data.content) {
-        setMessages(prev => [...prev, { role: 'assistant', content: response.data.content }]);
+      if (response.data) {
+        if (response.data.content) {
+          setMessages(prev => [...prev, { role: 'assistant', content: response.data.content }]);
+        }
+        if (response.data.action) {
+          if (response.data.action.type === 'AUTOFILL_PRODUCT_FORM') {
+            const isExactProductList = location.pathname === '/admin/products';
+            const isProductProfile = location.pathname.startsWith('/admin/products/') && location.pathname.length > '/admin/products/'.length;
+            const explicitProductId = response.data.action.payload.product_id;
+            
+            if (explicitProductId) {
+              navigate('/admin/products', { state: { editProductId: explicitProductId } });
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent(response.data.action.type, { detail: response.data.action.payload }));
+              }, 1000);
+            } else if (isProductProfile) {
+              const productId = location.pathname.split('/').pop();
+              navigate('/admin/products', { state: { editProductId: productId } });
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent(response.data.action.type, { detail: response.data.action.payload }));
+              }, 1000);
+            } else if (!isExactProductList) {
+              navigate('/admin/products');
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent(response.data.action.type, { detail: response.data.action.payload }));
+              }, 800);
+            } else {
+              window.dispatchEvent(new CustomEvent(response.data.action.type, { detail: response.data.action.payload }));
+            }
+          } else if (response.data.action.type === 'AUTOFILL_BOOK_A_SALE') {
+            const isExactBookASale = location.pathname === '/admin/book-a-sale';
+            if (!isExactBookASale) {
+              navigate('/admin/book-a-sale');
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent(response.data.action.type, { detail: response.data.action.payload }));
+              }, 800);
+            } else {
+              window.dispatchEvent(new CustomEvent(response.data.action.type, { detail: response.data.action.payload }));
+            }
+          } else {
+            window.dispatchEvent(new CustomEvent(response.data.action.type, { detail: response.data.action.payload }));
+          }
+        }
       }
     } catch (error) {
       console.error('Chatbot API Error:', error);
@@ -83,12 +173,31 @@ const AssistantPanel = ({ isOpen, onClose }) => {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${msg.role === 'user' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--accent)]'}`}>
                 {msg.role === 'user' ? <User size={14} /> : <Bot size={16} />}
               </div>
-              <div className={`max-w-[80%] px-4 py-3 rounded-2xl shadow-sm text-sm whitespace-pre-wrap leading-relaxed ${
+              <div className={`max-w-[80%] px-4 py-3 rounded-2xl shadow-sm text-sm leading-relaxed ${
                 msg.role === 'user' 
                   ? 'bg-[var(--accent)] text-white rounded-tr-sm' 
                   : 'bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--text-main)] rounded-tl-sm'
               }`}>
-                {msg.content}
+                {msg.role === 'user' ? (
+                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                ) : (
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <ReactMarkdown 
+                      components={{
+                        a: ({node, ...props}) => (
+                          <Link to={props.href} className="text-[var(--accent)] hover:underline font-medium" onClick={onClose}>
+                            {props.children}
+                          </Link>
+                        ),
+                        p: ({node, ...props}) => <p className="m-0 mb-2 last:mb-0" {...props} />,
+                        ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2 last:mb-0" {...props} />,
+                        ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2 last:mb-0" {...props} />
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -118,6 +227,18 @@ const AssistantPanel = ({ isOpen, onClose }) => {
               className="flex-1 bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-inner"
               disabled={isLoading}
             />
+            <button 
+              type="button" 
+              onClick={toggleListen}
+              className={`p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center shrink-0 ${
+                isListening 
+                  ? 'bg-rose-500 text-white animate-pulse' 
+                  : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--text-dim)]'
+              }`}
+              title="Voice Input"
+            >
+              <Mic size={18} />
+            </button>
             <button 
               type="submit" 
               disabled={!input.trim() || isLoading}

@@ -50,6 +50,26 @@ const BookASalePage = () => {
   const [quantity, setQuantity] = useState(1);
   const [quantityError, setQuantityError] = useState('');
 
+  // AI Assistant Autofill Event Listener
+  useEffect(() => {
+    const handleAutofill = (e) => {
+      const { customer_id, finished_good_id, quantity: autoQty } = e.detail;
+      
+      if (customer_id) setSelectedCustomer(customer_id);
+      if (finished_good_id) setSelectedFinishedGood(finished_good_id);
+      if (autoQty) setQuantity(autoQty);
+      
+      setQuantityError('');
+      setEditItem(null);
+      setViewMode(false);
+      setIsModalOpen(true);
+      toast.success('Form autofilled by AI Assistant');
+    };
+
+    window.addEventListener('AUTOFILL_BOOK_A_SALE', handleAutofill);
+    return () => window.removeEventListener('AUTOFILL_BOOK_A_SALE', handleAutofill);
+  }, []);
+
   const [viewMode, setViewMode] = useState(false);
   const [editItem, setEditItem] = useState(null);
 

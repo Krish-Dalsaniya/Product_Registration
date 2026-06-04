@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
 const { sendError } = require('../utils/response');
-const { redisClient } = require('../config/redis');
 
 const verifyToken = async (req, res, next) => {
   let token = req.cookies?.accessToken;
@@ -18,14 +17,6 @@ const verifyToken = async (req, res, next) => {
   }
   
   try {
-    // Check if token is blacklisted in Redis
-    if (redisClient.isOpen) {
-      const isBlacklisted = await redisClient.get(`bl_${token}`);
-      if (isBlacklisted) {
-        return sendError(res, 'UNAUTHORIZED', 'Token has been invalidated (Logged out)', 401);
-      }
-    }
-
     const decoded = jwt.verify(token, env.JWT_SECRET);
     req.user = decoded;
     next();

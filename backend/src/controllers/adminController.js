@@ -363,16 +363,15 @@ const deleteUser = async (req, res, next) => {
 
   try {
     await db.withTransaction(async (client) => {
-        // 1. Delete profiles
-        await client.query('DELETE FROM designer_profiles WHERE designer_id = $1', [userId]);
-        await client.query('DELETE FROM sales_profiles WHERE sales_id = $1', [userId]);
-        await client.query('DELETE FROM maintenance_profiles WHERE maintenance_id = $1', [userId]);
-        
-        // 2. Delete team memberships
+        // 1. Remove team memberships
         await client.query('DELETE FROM team_members WHERE user_id = $1', [userId]);
 
-        // 3. Delete from users table
-        const result = await client.query('DELETE FROM users WHERE user_id = $1 RETURNING user_id', [userId]);
+        // 2. Nullify leadership roles in teams
+        await client.query('UPDATE teams SET team_lead_id = NULL WHERE team_lead_id = $1', [userId]);
+        await client.query('UPDATE teams SET client_handler_id = NULL WHERE client_handler_id = $1', [userId]);
+
+        // 3. Soft delete the user (preventing login and hiding from active lists, but keeping FK references)
+        const result = await client.query('UPDATE users SET is_active = false WHERE user_id = $1 RETURNING user_id', [userId]);
 
         if (result.rows.length === 0) {
           throw new Error('User not found');

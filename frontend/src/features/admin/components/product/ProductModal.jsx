@@ -11,7 +11,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
-import { Loader2, Box, Tag, FileText, Check, Activity, ChevronRight, Trash2, Plus, CheckCircle, Zap, Cpu, CircuitBoard, Layers, X } from 'lucide-react';
+import { Loader2, Box, Tag, FileText, Check, Activity, ChevronRight, Trash2, Plus, CheckCircle, Zap, Cpu, CircuitBoard, Layers, X, Eye } from 'lucide-react';
 
 const Quill = ReactQuill.Quill;
 const Parchment = Quill.import('parchment');
@@ -114,7 +114,12 @@ const ProductModal = ({
     if (!formId || !isOpen) return;
     const subscription = watch((value) => {
       if (value && Object.keys(value).length > 0) {
-        dispatch(saveDraft({ formId, data: value, tab: modalActiveTab }));
+        // Strip non-serializable file inputs from drafts
+        const serializableValue = { ...value };
+        delete serializableValue.document;
+        delete serializableValue.image;
+        
+        dispatch(saveDraft({ formId, data: serializableValue, tab: modalActiveTab }));
       }
     });
     return () => subscription.unsubscribe();
@@ -221,6 +226,30 @@ const ProductModal = ({
       }
     }
   }, [isOpen, modalMode, selectedProduct]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleAutofill = (e) => {
+      const payload = e.detail;
+      if (!payload) return;
+      
+      let populatedCount = 0;
+      Object.keys(payload).forEach(key => {
+        if (payload[key]) {
+          setValue(key, payload[key], { shouldValidate: true, shouldDirty: true });
+          populatedCount++;
+        }
+      });
+      
+      if (populatedCount > 0) {
+        toast.success(`AI Auto-filled ${populatedCount} fields!`, { icon: '✨' });
+      }
+    };
+
+    window.addEventListener('AUTOFILL_PRODUCT_FORM', handleAutofill);
+    return () => window.removeEventListener('AUTOFILL_PRODUCT_FORM', handleAutofill);
+  }, [isOpen, setValue]);
 
   const onSubmit = async (data) => {
     if (modalMode === 'view') return;

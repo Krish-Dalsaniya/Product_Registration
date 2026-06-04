@@ -109,6 +109,21 @@ const ProductListPage = () => {
     setIsModalOpen(true);
   };
 
+  useEffect(() => {
+    const handleAutofillTrigger = (e) => {
+      if (!isModalOpen) {
+        handleOpenCreate();
+        // Wait for modal to mount, then re-dispatch so ProductModal can catch it
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('AUTOFILL_PRODUCT_FORM', { detail: e.detail }));
+        }, 500);
+      }
+    };
+    
+    window.addEventListener('AUTOFILL_PRODUCT_FORM', handleAutofillTrigger);
+    return () => window.removeEventListener('AUTOFILL_PRODUCT_FORM', handleAutofillTrigger);
+  }, [isModalOpen]);
+
   const handleView = (product) => {
     navigate(`/admin/products/${product.product_id}`);
   };

@@ -10,10 +10,8 @@ const cache = (duration) => {
     if (req.method !== 'GET') {
       return next();
     }
+    
 
-    if (!redisClient.isOpen) {
-      return next(); // Skip cache if Redis is not connected
-    }
 
     const key = `__express__${req.originalUrl || req.url}`;
     

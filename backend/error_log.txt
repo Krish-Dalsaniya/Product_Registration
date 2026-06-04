@@ -78,3 +78,62 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
     at async login (D:\LIPL\Product_Registration\backend\src\controllers\authController.js:17:20)
 
+2026-06-04T06:20:42.089Z - error: invalid input syntax for type integer: "{product_id}"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getProductById (D:\LIPL\Product_Registration\backend\src\controllers\productController.js:84:20)
+
+2026-06-04T06:20:43.736Z - error: invalid input syntax for type integer: "{product_id}"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getProductById (D:\LIPL\Product_Registration\backend\src\controllers\productController.js:84:20)
+
+2026-06-04T06:21:22.883Z - error: invalid input syntax for type integer: "{product_id}"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getProductById (D:\LIPL\Product_Registration\backend\src\controllers\productController.js:84:20)
+
+2026-06-04T06:21:24.372Z - error: invalid input syntax for type integer: "{product_id}"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getProductById (D:\LIPL\Product_Registration\backend\src\controllers\productController.js:84:20)
+
+2026-06-04T06:45:18.157Z - error: invalid input syntax for type integer: "<ID>"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getProductById (D:\LIPL\Product_Registration\backend\src\controllers\productController.js:84:20)
+
+2026-06-04T06:45:18.405Z - error: invalid input syntax for type integer: "<ID>"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getProductById (D:\LIPL\Product_Registration\backend\src\controllers\productController.js:84:20)
+
+2026-06-04T06:45:35.172Z - error: invalid input syntax for type integer: "<ID>"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getProductById (D:\LIPL\Product_Registration\backend\src\controllers\productController.js:84:20)
+
+2026-06-04T06:45:36.710Z - error: invalid input syntax for type integer: "<ID>"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getProductById (D:\LIPL\Product_Registration\backend\src\controllers\productController.js:84:20)
+
+2026-06-04T06:57:35.489Z - error: invalid input syntax for type integer: "search_product_details_result_id"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getProductById (D:\LIPL\Product_Registration\backend\src\controllers\productController.js:84:20)
+
+2026-06-04T07:44:02.578Z - error: update or delete on table "users" violates foreign key constraint "teams_client_handler_id_fkey" on table "teams"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:375:24
+    at async Object.withTransaction (D:\LIPL\Product_Registration\backend\src\config\db.js:45:20)
+    at async deleteUser (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:365:5)
+
+2026-06-04T07:44:22.003Z - error: update or delete on table "users" violates foreign key constraint "teams_client_handler_id_fkey" on table "teams"
+    at D:\LIPL\Product_Registration\backend\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:375:24
+    at async Object.withTransaction (D:\LIPL\Product_Registration\backend\src\config\db.js:45:20)
+    at async deleteUser (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:365:5)
+

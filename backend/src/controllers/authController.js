@@ -138,7 +138,6 @@ const refresh = async (req, res, next) => {
   }
 };
 
-const { redisClient } = require('../config/redis');
 
 const logout = async (req, res) => {
   // Clear cookies
@@ -158,43 +157,9 @@ const logout = async (req, res) => {
         if (decoded && decoded.user_id) {
             // Revoke refresh token in database
             await db.query('UPDATE users SET refresh_token = NULL WHERE user_id = $1', [decoded.user_id]);
-            
-            // Also add to Redis blacklist if configured
-            if (redisClient.isOpen && decoded.exp) {
-              const currentTime = Math.floor(Date.now() / 1000);
-              const timeToExpire = decoded.exp - currentTime;
-              if (timeToExpire > 0) {
-                await redisClient.setEx(`bl_${refreshToken}`, timeToExpire, 'true');
-              }
-            }
         }
     } catch (err) {
         console.error('Error invalidating refresh token in database:', err);
-    }
-  }
-
-  // Handle access token blacklisting
-  let token = req.cookies?.accessToken;
-  if (!token) {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    }
-  }
-
-  if (token && redisClient.isOpen) {
-    try {
-      const decoded = jwt.decode(token);
-      if (decoded && decoded.exp) {
-        const currentTime = Math.floor(Date.now() / 1000);
-        const timeToExpire = decoded.exp - currentTime;
-        
-        if (timeToExpire > 0) {
-          await redisClient.setEx(`bl_${token}`, timeToExpire, 'true');
-        }
-      }
-    } catch (err) {
-      console.error('Error blacklisting access token:', err);
     }
   }
 

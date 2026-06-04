@@ -11,7 +11,7 @@ const clearCache = (pattern) => {
       res.on('finish', async () => {
         // Only clear cache if the request was successful
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          if (!redisClient.isOpen) return;
+
           try {
             // Find all keys that start with the cache prefix + the given pattern
             const keys = await redisClient.keys(`__express__${pattern}*`);
