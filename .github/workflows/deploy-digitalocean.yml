@@ -72,15 +72,12 @@ jobs:
             echo "Installing backend dependencies..."
             cd "$APP_DIR/backend"
 
-            if [ -f package-lock.json ]; then
-              npm ci
-            else
-              npm install
-            fi
+            npm ci || npm install
 
             echo "Installing frontend dependencies..."
             cd "$APP_DIR/frontend"
-            npm install
+
+            npm ci || npm install
 
             echo "Building frontend..."
             npm run build
