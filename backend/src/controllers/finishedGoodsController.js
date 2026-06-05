@@ -82,7 +82,7 @@ const getFinishedGoods = async (req, res, next) => {
     try {
         let queryText = `
             WITH PaginatedGoods AS (
-                SELECT fg.*, p.product_name, p.product_code,
+                SELECT fg.*, p.product_name, p.product_code, p.image_url,
                 COUNT(*) OVER() as total_count 
                 FROM finished_goods fg
                 JOIN products p ON fg.product_id = p.product_id

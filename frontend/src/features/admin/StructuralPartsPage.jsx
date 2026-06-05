@@ -21,6 +21,7 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { STRUCTURAL_SPEC_FIELDS, STRUCTURAL_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
 import { getCustomCategories, saveCategoryFields, deleteCustomCategory } from '../../api/customCategories';
+import ViewToggle from '../../components/shared/ViewToggle';
 
 const CATEGORY_CONFIG = STRUCTURAL_CATEGORY_CONFIG;
 
@@ -662,22 +663,7 @@ const StructuralPartsPage = () => {
               {pagination.total} Records Found
             </div>
           </div>
-          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner">
-            <button 
-              onClick={() => setViewMode('grid')} 
-              className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'grid' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
-              title="Grid View"
-            >
-              <LayoutGrid size={18} />
-            </button>
-            <button 
-              onClick={() => setViewMode('table')} 
-              className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'table' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
-              title="Table View"
-            >
-              <List size={18} />
-            </button>
-          </div>
+          <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
         </div>
       </div>
 

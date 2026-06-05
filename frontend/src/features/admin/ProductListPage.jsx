@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import ProductGridView from './components/product/ProductGridView';
 import ProductTableView from './components/product/ProductTableView';
 import ProductModal from './components/product/ProductModal';
+import ViewToggle from '../../components/shared/ViewToggle';
 import { useNavigate as useNav, useLocation as useLoc } from 'react-router-dom';
 
 const ProductListPage = () => {
@@ -235,10 +236,7 @@ const ProductListPage = () => {
               {companies.map((comp) => ( <option key={comp.id || comp.name} value={comp.name}>{comp.name}</option> ))}
             </select>
           </div>
-          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-0.5 rounded-lg shadow-inner">
-            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md transition-all duration-300 ${viewMode === 'grid' ? 'bg-[var(--accent)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`} title="Grid View"><LayoutGrid size={15} /></button>
-            <button onClick={() => setViewMode('table')} className={`p-2 rounded-md transition-all duration-300 ${viewMode === 'table' ? 'bg-[var(--accent)] text-white shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`} title="Table View"><List size={15} /></button>
-          </div>
+          <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
         </div>
       </div>
 

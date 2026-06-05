@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFinishedGoods, useFinishedGoodsOptions, useCreateFinishedGood, useUpdateFinishedGood, useDeleteFinishedGood } from '../../hooks/useFinishedGoods';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
+import ViewToggle from '../../components/shared/ViewToggle';
 import { 
     Plus, 
     Search, 
@@ -17,7 +18,11 @@ import {
     ListPlus,
     Wrench,
     Binary,
-    Pencil
+    Pencil,
+    LayoutGrid,
+    List,
+    ImageOff,
+    Eye
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -26,6 +31,7 @@ import MultiSelectDropdown from '../../components/shared/MultiSelectDropdown';
 const FinishedGoodsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
+    const [viewMode, setViewMode] = useState('grid');
 
     const { data: itemsData, isLoading: itemsLoading } = useFinishedGoods({ page: pagination.page, limit: pagination.limit, search: searchTerm });
     const { data: optionsData, isLoading: optionsLoading } = useFinishedGoodsOptions();
@@ -336,21 +342,130 @@ const FinishedGoodsPage = () => {
                     />
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40 pointer-events-none hidden sm:block">{pagination.total} Records Found</div>
                 </div>
+                <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
             </div>
 
-            <DataTable
-                columns={columns}
-                data={items}
-                loading={loading}
-                totalCount={pagination.total}
-                filteredCount={items.length}
-                currentPage={pagination.page}
-                totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
-                onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
-                onView={handleView}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-            />
+            {viewMode === 'table' || viewMode === 'list' ? (
+                <DataTable
+                    columns={columns}
+                    data={items}
+                    loading={loading}
+                    totalCount={pagination.total}
+                    filteredCount={items.length}
+                    currentPage={pagination.page}
+                    totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
+                    onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
+                    onView={handleView}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                />
+            ) : (
+                <div className="space-y-6">
+                    {loading ? (
+                        <div className="flex justify-center items-center h-64">
+                            <Loader2 className="animate-spin text-[var(--accent)]" size={32} />
+                        </div>
+                    ) : items.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-64 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl">
+                            <Box size={48} className="text-[var(--text-muted)] mb-4 opacity-50" />
+                            <p className="text-[var(--text-dim)] font-medium">No finished goods found</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                            {items.map((item) => (
+                                <div key={item.id} className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl">
+                                    <div onClick={() => handleView(item)} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] block cursor-zoom-in group/img">
+                                        {item.image_url ? (
+                                            <img src={item.image_url} alt={item.product_name} className="w-full h-full object-contain p-6 group-hover/img:scale-110 transition-transform duration-700 ease-out hover:scale-105" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] opacity-20">
+                                                <ImageOff size={64} strokeWidth={1} />
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleView(item); }} 
+                                                className="w-12 h-12 bg-[var(--accent)] rounded-2xl shadow-xl flex items-center justify-center text-white hover:scale-110 transition-all transform translate-y-4 group-hover:translate-y-0" 
+                                                title="View Details"
+                                            >
+                                                <Eye size={22} />
+                                            </button>
+                                        </div>
+                                        <div className="absolute top-4 left-4">
+                                            <span className="bg-[var(--bg-card)] backdrop-blur-md border border-[var(--border-color)] text-[10px] font-black uppercase tracking-[0.15em] px-3.5 py-1.5 rounded-full text-[var(--accent)] shadow-sm">
+                                                {item.is_iot ? 'IoT Device' : 'Non-IoT'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 flex-1 flex flex-col">
+                                        <div className="flex-1 space-y-3">
+                                            <h3 className="text-[15px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300 line-clamp-2">
+                                                {item.product_name}
+                                            </h3>
+                                            <p className="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed">
+                                                <span className="font-mono">{item.product_code}</span>
+                                            </p>
+                                            
+                                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                                {item.hardware_features?.slice(0, 2).map((f, i) => (
+                                                    <span key={i} className="px-1.5 py-0.5 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded text-[9px] uppercase font-bold text-[var(--text-main)] truncate max-w-full">
+                                                        <span className="text-[var(--accent)]">{f.component_type}:</span> {getComponentName(f.component_type, f.component_id)}
+                                                    </span>
+                                                ))}
+                                                {(item.hardware_features?.length || 0) > 2 && (
+                                                    <span className="px-1.5 py-0.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded text-[9px] uppercase font-bold text-[var(--text-dim)]">
+                                                        +{(item.hardware_features?.length || 0) - 2} more
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
+                                                <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                                                    Qty: {item.quantity}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                                    className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"
+                                                    title="Edit Finished Good"
+                                                >
+                                                    <Pencil size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(item); }}
+                                                    className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"
+                                                    title="Delete Finished Good"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    
+                    {/* Grid Pagination */}
+                    {items.length > 0 && Math.ceil(pagination.total / pagination.limit) > 1 && (
+                        <div className="flex justify-center items-center gap-2 pt-4">
+                            {Array.from({ length: Math.ceil(pagination.total / pagination.limit) }).map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setPagination(prev => ({ ...prev, page: idx + 1 }))}
+                                    className={`w-8 h-8 rounded-lg text-[12px] font-black flex items-center justify-center transition-all ${pagination.page === idx + 1 ? 'bg-[var(--accent)] text-white shadow-md' : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]'}`}
+                                >
+                                    {idx + 1}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <Modal
                 isOpen={isModalOpen}

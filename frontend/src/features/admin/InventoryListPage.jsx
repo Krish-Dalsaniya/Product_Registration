@@ -4,6 +4,7 @@ import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import Lightbox from '../../components/shared/Lightbox';
+import ViewToggle from '../../components/shared/ViewToggle';
 import { 
   getPCBById, deletePCBImage, deletePCBFile,
   getElectronicsPartById, getElectricalPartById, getStructuralPartById,
@@ -1060,22 +1061,7 @@ const InventoryListPage = ({ type = '' }) => {
                 </div>
             )}
             
-            <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner">
-                <button 
-                onClick={() => setViewMode('grid')} 
-                className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'grid' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
-                title="Grid View"
-                >
-                <ImageIcon size={18} />
-                </button>
-                <button 
-                onClick={() => setViewMode('table')} 
-                className={`p-2.5 rounded-lg transition-all duration-300 ${viewMode === 'table' ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
-                title="Table View"
-                >
-                <Layers size={18} />
-                </button>
-            </div>
+            <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
           </div>
         </div>
 
