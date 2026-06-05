@@ -14,7 +14,13 @@ const MODULES = [
   'Sales',
   'Support Tickets'
 ];
-const ACTIONS = ['View', 'Create', 'Edit', 'Delete'];
+const ACTIONS = [
+  { id: 'tech_view', label: 'Technical View' },
+  { id: 'comm_view', label: 'Commercial View' },
+  { id: 'create', label: 'Create' },
+  { id: 'edit', label: 'Edit' },
+  { id: 'delete', label: 'Delete' }
+];
 
 const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode }) => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
@@ -129,9 +135,9 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[var(--nav-hover)] border-b border-[var(--border-color)]">
-                  <th className="p-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)]">MODULE</th>
+                  <th className="p-4 w-[14%] text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)]">MODULE</th>
                   {ACTIONS.map(action => (
-                    <th key={action} className="p-4 text-center text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)] last:border-0">{action}</th>
+                    <th key={action.id} className="p-4 w-[17.6%] text-center text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)] last:border-0">{action.label}</th>
                   ))}
                 </tr>
               </thead>
@@ -142,7 +148,7 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
                     <tr key={moduleName} className="border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--accent)]/5 transition-colors">
                       <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]">{moduleName === 'Sales' ? 'Book a Sale' : moduleName}</td>
                       {ACTIONS.map(action => {
-                        const actKey = action.toLowerCase();
+                        const actKey = action.id;
                         const isChecked = selectedPerms[modKey]?.[actKey] || false;
                         
                         // Check if this specific permission actually exists in the DB before showing the checkbox
@@ -150,15 +156,17 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
                         const exists = permissionsList?.some(p => p.permission_key === permKey);
 
                         return (
-                          <td key={action} className="p-4 text-center border-r border-[var(--border-color)] last:border-0">
+                          <td key={action.id} className="p-4 border-r border-[var(--border-color)] last:border-0">
                             {exists && (
-                              <input
-                                type="checkbox"
-                                checked={isAdmin ? true : isChecked}
-                                disabled={isReadOnly}
-                                onChange={() => handleToggle(modKey, actKey)}
-                                className={`w-4 h-4 accent-[var(--accent)] ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-                              />
+                              <div className="flex justify-center w-full">
+                                <input
+                                  type="checkbox"
+                                  checked={isAdmin ? true : isChecked}
+                                  disabled={isReadOnly}
+                                  onChange={() => handleToggle(modKey, actKey)}
+                                  className={`w-4 h-4 accent-[var(--accent)] ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                                />
+                              </div>
                             )}
                           </td>
                         );

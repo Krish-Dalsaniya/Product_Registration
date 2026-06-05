@@ -81,7 +81,16 @@ export const AuthProvider = ({ children }) => {
     
     if (!state.user.permissions) return false;
     
-    const permissionKey = `${moduleName.replace(/\s+/g, '').toLowerCase()}.${action.toLowerCase()}`;
+    const actionLower = action.toLowerCase();
+    const modKey = moduleName.replace(/\s+/g, '').toLowerCase();
+
+    // Transparently proxy 'view' to check for either 'tech_view' or 'comm_view'
+    if (actionLower === 'view') {
+      return state.user.permissions.includes(`${modKey}.tech_view`) || 
+             state.user.permissions.includes(`${modKey}.comm_view`);
+    }
+
+    const permissionKey = `${modKey}.${actionLower}`;
     return state.user.permissions.includes(permissionKey);
   };
 

@@ -801,53 +801,56 @@ const CustomerListPage = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                     {/* Technical Personnel */}
-                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Technical Personnel</span>
-                        <button type="button" onClick={() => handleOpenPersonnelModal('technical')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
-                      </div>
-                      <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
-                        {techContacts.map((c, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
-                              {c.designation && <p className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest truncate">{c.designation}</p>}
-                              <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
-                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-[var(--accent)]/60" /> {c.mobile}</p>}
-                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-[var(--accent)]/60" /> {c.email}</p>}
+                    {hasPermission('customers', 'tech_view') && (
+                      <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Technical Personnel</span>
+                          <button type="button" onClick={() => handleOpenPersonnelModal('technical')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
+                        </div>
+                        <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                          {techContacts.map((c, idx) => (
+                            <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
+                                {c.designation && <p className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest truncate">{c.designation}</p>}
+                                <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
+                                  {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-[var(--accent)]/60" /> {c.mobile}</p>}
+                                  {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-[var(--accent)]/60" /> {c.email}</p>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
+                                <button type="button" onClick={() => handleOpenPersonnelModal('technical', idx)} className="p-1.5 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded transition-all"><Edit2 size={13} /></button>
+                                <button type="button" onClick={() => setTechContacts(techContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
-                              <button type="button" onClick={() => handleOpenPersonnelModal('technical', idx)} className="p-1.5 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded transition-all"><Edit2 size={13} /></button>
-                              <button type="button" onClick={() => setTechContacts(techContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
-                            </div>
-                          </div>
-                        ))}
-                        {techContacts.length === 0 && (
-                          <div className="py-4 text-center border border-dashed border-[var(--border-color)] rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-[var(--accent)]">No technical personnel added</div>
-                        )}
+                          ))}
+                          {techContacts.length === 0 && (
+                            <div className="py-4 text-center border border-dashed border-[var(--border-color)] rounded-xl opacity-40 text-[9px] font-black uppercase tracking-widest text-[var(--accent)]">No technical personnel added</div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Purchase Personnel */}
-                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Purchase Personnel</span>
-                        <button type="button" onClick={() => handleOpenPersonnelModal('sales')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
-                      </div>
-                      <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
-                        {salesContacts.map((c, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
-                              {c.designation && <p className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest truncate">{c.designation}</p>}
-                              <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
-                                {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-[var(--accent)]/60" /> {c.mobile}</p>}
-                                {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-[var(--accent)]/60" /> {c.email}</p>}
+                    {hasPermission('customers', 'comm_view') && (
+                      <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Purchase Personnel</span>
+                          <button type="button" onClick={() => handleOpenPersonnelModal('sales')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
+                        </div>
+                        <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
+                          {salesContacts.map((c, idx) => (
+                            <div key={idx} className="p-3 rounded-xl bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] flex justify-between items-center group hover:border-[var(--accent)]/30 transition-all">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[12px] font-black uppercase text-[var(--text-main)] truncate">{c.name || c.person}</p>
+                                {c.designation && <p className="text-[9px] font-extrabold text-[var(--accent)] uppercase tracking-widest truncate">{c.designation}</p>}
+                                <div className="text-[10px] font-medium text-[var(--text-muted)] space-y-0.5 mt-1">
+                                  {c.mobile && <p className="flex items-center gap-1"><Phone size={10} className="text-[var(--accent)]/60" /> {c.mobile}</p>}
+                                  {c.email && <p className="flex items-center gap-1 truncate"><Mail size={10} className="text-[var(--accent)]/60" /> {c.email}</p>}
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
-                              <button type="button" onClick={() => handleOpenPersonnelModal('sales', idx)} className="p-1.5 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded transition-all"><Edit2 size={13} /></button>
+                              <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all ml-2 flex-shrink-0">
+                                <button type="button" onClick={() => handleOpenPersonnelModal('sales', idx)} className="p-1.5 hover:bg-[var(--accent)]/10 text-[var(--text-dim)] hover:text-[var(--accent)] rounded transition-all"><Edit2 size={13} /></button>
                               <button type="button" onClick={() => setSalesContacts(salesContacts.filter((_, i) => i !== idx))} className="p-1.5 hover:bg-rose-500/10 text-rose-500/50 hover:text-rose-500 rounded transition-all"><Trash2 size={13} /></button>
                             </div>
                           </div>
@@ -857,9 +860,11 @@ const CustomerListPage = () => {
                         )}
                       </div>
                     </div>
+                  )}
 
                     {/* Company Owner */}
-                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
+                    {hasPermission('customers', 'comm_view') && (
+                      <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Company Owner</span>
                         <button type="button" onClick={() => handleOpenPersonnelModal('owner')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
@@ -886,9 +891,11 @@ const CustomerListPage = () => {
                         )}
                       </div>
                     </div>
+                  )}
 
                     {/* Accounts */}
-                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
+                    {hasPermission('customers', 'comm_view') && (
+                      <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Accounts</span>
                         <button type="button" onClick={() => handleOpenPersonnelModal('accounts')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
@@ -915,9 +922,11 @@ const CustomerListPage = () => {
                         )}
                       </div>
                     </div>
+                  )}
 
                     {/* QA/QC */}
-                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
+                    {hasPermission('customers', 'tech_view') && (
+                      <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">QA/QC</span>
                         <button type="button" onClick={() => handleOpenPersonnelModal('qa_qc')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
@@ -944,9 +953,11 @@ const CustomerListPage = () => {
                         )}
                       </div>
                     </div>
+                  )}
 
                     {/* Other Personnel */}
-                    <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
+                    {hasPermission('customers', 'comm_view') && (
+                      <div className="p-4 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-2xl space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">Other Personnel</span>
                         <button type="button" onClick={() => handleOpenPersonnelModal('other')} className="p-1 hover:bg-[var(--accent)]/10 rounded text-[var(--accent)]"><Plus size={14} /></button>
@@ -973,6 +984,7 @@ const CustomerListPage = () => {
                         )}
                       </div>
                     </div>
+                  )}
                   </div>
                 </div>
               </div>

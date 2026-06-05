@@ -1318,20 +1318,22 @@ const InventoryListPage = ({ type = '' }) => {
                            </button>
                         </div>
 
-                        <div className="p-8 bg-[var(--bg-workspace)]/50 rounded-[32px] border border-[var(--border-color)] shadow-inner">
-                           <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.25em] mb-4 flex items-center gap-3">
-                              <Info size={14} /> Technical Abstract
-                           </h4>
-                           <p className="text-[15px] text-[var(--text-main)] leading-relaxed font-bold opacity-90 italic">
-                             "{selectedItem?.description || selectedItem?.pcb_description || selectedItem?.part_description || 'Detailed technical specifications for this hardware asset are available in the attached documentation library.'}"
-                           </p>
-                        </div>
+                        {hasPermission('inventory', 'tech_view') && (
+                          <div className="p-8 bg-[var(--bg-workspace)]/50 rounded-[32px] border border-[var(--border-color)] shadow-inner">
+                             <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.25em] mb-4 flex items-center gap-3">
+                                <Info size={14} /> Technical Abstract
+                             </h4>
+                             <p className="text-[15px] text-[var(--text-main)] leading-relaxed font-bold opacity-90 italic">
+                               "{selectedItem?.description || selectedItem?.pcb_description || selectedItem?.part_description || 'Detailed technical specifications for this hardware asset are available in the attached documentation library.'}"
+                             </p>
+                          </div>
+                        )}
                      </div>
                   </div>
                </div>
 
                {/* Technical Specs Grid */}
-               {renderTechnicalSpecs()}
+               {hasPermission('inventory', 'tech_view') && renderTechnicalSpecs()}
 
                {/* Documentation Library */}
                <div className="space-y-6">

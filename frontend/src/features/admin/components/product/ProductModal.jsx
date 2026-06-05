@@ -82,7 +82,7 @@ const ProductModal = ({
   getFullUrl
 }) => {
   const { user, hasPermission } = useAuth();
-  const canManageSpecs = hasPermission('products', 'view') || hasPermission('products', 'edit');
+  const canManageSpecs = hasPermission('products', 'tech_view') || hasPermission('products', 'edit');
 
   const [modalActiveTab, setModalActiveTab] = useState('general');
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -6,12 +6,14 @@ import Lightbox from '../../components/shared/Lightbox';
 import { Loader2, Box, Droplet, LayoutGrid, Activity, FileText, Eye, Download, CheckCircle, Pencil, Trash2, Maximize2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { useAuth } from '../../context/AuthContext';
 
 const ProductProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { updateTabLabel } = useOutletContext() || {};
+  const { hasPermission } = useAuth();
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('description');
@@ -251,7 +253,7 @@ const ProductProfilePage = () => {
               </div>
             )}
             
-            {(() => {
+            {hasPermission('products', 'tech_view') && (() => {
               const hardware = parseHardwareSpec(selectedProduct?.specification);
               if (!hardware) return null;
               return (
@@ -303,7 +305,12 @@ const ProductProfilePage = () => {
 
       <div className="bg-[var(--bg-surface)] rounded-[32px] border border-[var(--border-color)] overflow-hidden shadow-sm">
         <div className="flex bg-[var(--bg-workspace)] border-b border-[var(--border-color)] overflow-x-auto no-scrollbar">
-          {['description', 'specification', 'documents', 'faqs', 'bill of materials'].map(tab => (
+          {[
+            'description', 
+            ...(hasPermission('products', 'tech_view') ? ['specification'] : []), 
+            'documents', 
+            ...(hasPermission('products', 'tech_view') ? ['faqs', 'bill of materials'] : [])
+          ].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-4.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
               {tab}
               {activeTab === tab && <div className="absolute bottom-0 left-8 right-8 h-1 bg-[var(--accent)] rounded-t-full shadow-[0_-4px_12px_var(--border-glow)]" />}

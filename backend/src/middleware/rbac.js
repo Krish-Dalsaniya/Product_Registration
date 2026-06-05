@@ -62,6 +62,14 @@ const requirePermission = (permissionKey) => {
         }
       }
 
+      // Proxy '.view' to check for either 'tech_view' or 'comm_view'
+      if (permissionKey.endsWith('.view')) {
+        const modulePrefix = permissionKey.split('.')[0];
+        if (permissions.includes(`${modulePrefix}.tech_view`) || permissions.includes(`${modulePrefix}.comm_view`)) {
+          return next();
+        }
+      }
+
       if (permissions.includes(permissionKey)) {
         return next();
       }

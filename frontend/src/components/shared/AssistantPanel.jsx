@@ -35,8 +35,10 @@ const AssistantPanel = ({ isOpen, onClose }) => {
       recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
-        if (event.error !== 'no-speech') {
-          toast.error('Voice input failed. Please try again.');
+        if (event.error === 'not-allowed') {
+          toast.error('Microphone access denied. Please allow microphone permissions in your browser address bar.');
+        } else if (event.error !== 'no-speech') {
+          toast.error(`Voice input failed (${event.error}). Please try again.`);
         }
       };
       recognition.onend = () => setIsListening(false);
@@ -48,13 +50,28 @@ const AssistantPanel = ({ isOpen, onClose }) => {
   const toggleListen = (e) => {
     e.preventDefault();
     if (!recognitionRef.current) {
-      toast.error('Voice input is not supported in this browser.');
+      toast.error('Voice input is not supported in this browser (try Chrome or Edge).');
       return;
     }
     if (isListening) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch(err) { console.error(err); }
+      setIsListening(false);
     } else {
-      recognitionRef.current.start();
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch(err) {
+        console.error('Error starting recognition:', err);
+        // If it's already started, just reset state
+        if (err.name === 'InvalidStateError') {
+          setIsListening(true);
+        } else {
+          toast.error('Could not start microphone. Please try again.');
+          setIsListening(false);
+        }
+      }
     }
   };
 
