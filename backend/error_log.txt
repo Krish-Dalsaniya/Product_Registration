@@ -137,3 +137,67 @@
     at async Object.withTransaction (D:\LIPL\Product_Registration\backend\src\config\db.js:45:20)
     at async deleteUser (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:365:5)
 
+2026-06-05T10:41:57.440Z - Error: Connection terminated due to connection timeout
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
+
+2026-06-05T10:41:57.458Z - Error: Connection terminated due to connection timeout
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async fetchAdminStatsData (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:201:18)
+    at async getAdminStats (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:233:19)
+
+2026-06-05T10:41:57.460Z - Error: Connection terminated due to connection timeout
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getTeams (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:125:20)
+
+2026-06-05T10:42:06.636Z - Error: Connection terminated due to connection timeout
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async fetchAdminStatsData (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:201:18)
+    at async getAdminStats (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:233:19)
+
+2026-06-05T10:42:06.673Z - Error: Connection terminated due to connection timeout
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
+
+2026-06-05T10:42:06.825Z - Error: Connection terminated due to connection timeout
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getTeams (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:125:20)
+
+2026-06-05T10:42:09.261Z - error: server login has been failing, cached error: connect timeout (server_login_retry)
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async fetchAdminStatsData (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:201:18)
+    at async getAdminStats (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:233:19)
+
+2026-06-05T10:42:09.460Z - error: server login has been failing, cached error: connect timeout (server_login_retry)
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getTeams (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:125:20)
+
+2026-06-05T10:42:09.593Z - error: server login has been failing, cached error: connect timeout (server_login_retry)
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
+
+2026-06-05T10:42:12.627Z - error: server login has been failing, cached error: connect timeout (server_login_retry)
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async fetchAdminStatsData (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:201:18)
+    at async getAdminStats (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:233:19)
+
+2026-06-05T10:42:21.527Z - Error: Connection terminated due to connection timeout
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getTeams (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:125:20)
+
+2026-06-05T10:42:21.672Z - Error: Connection terminated due to connection timeout
+    at D:\LIPL\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
+

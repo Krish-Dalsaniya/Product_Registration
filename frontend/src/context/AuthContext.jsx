@@ -75,8 +75,18 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'LOGOUT' });
   };
 
+  const hasPermission = (moduleName, action) => {
+    if (!state.user) return false;
+    if (state.user.role_name === 'Admin') return true;
+    
+    if (!state.user.permissions) return false;
+    
+    const permissionKey = `${moduleName.replace(/\s+/g, '').toLowerCase()}.${action.toLowerCase()}`;
+    return state.user.permissions.includes(permissionKey);
+  };
+
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...state, login, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

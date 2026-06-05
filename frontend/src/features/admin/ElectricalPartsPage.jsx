@@ -44,6 +44,7 @@ const BASE_CATEGORIES = Object.keys(CATEGORY_CONFIG);
 const ElectricalPartsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasPermission } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
@@ -660,14 +661,16 @@ const ElectricalPartsPage = () => {
             </p> */}
           </div>
         </div>
-        <button 
-          onClick={handleOpenCreate}
-          className="btn-primary shadow-lg px-8 py-3 group"
-          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-        >
-          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span className="text-[12px] md:text-[14px]">Add Electrical Part</span>
-        </button>
+        {hasPermission('inventory', 'create') && (
+          <button 
+            onClick={handleOpenCreate}
+            className="btn-primary shadow-lg px-8 py-3 group"
+            style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+          >
+            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] md:text-[14px]">Add Electrical Part</span>
+          </button>
+        )}
       </div>
 
       <div className="space-y-6">
@@ -697,8 +700,8 @@ const ElectricalPartsPage = () => {
             currentPage={pagination.page}
             totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
             onView={(item) => loadPartDetails(item.part_id, 'view')}
-            onEdit={(item) => loadPartDetails(item.part_id, 'edit')}
-            onDelete={handleDelete}
+            onEdit={hasPermission('inventory', 'edit') ? (item) => loadPartDetails(item.part_id, 'edit') : undefined}
+            onDelete={hasPermission('inventory', 'delete') ? handleDelete : undefined}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
@@ -714,8 +717,8 @@ const ElectricalPartsPage = () => {
                 code={item.part_number}
                 stockQuantity={item.stock_quantity}
                 onView={(row) => loadPartDetails(row.part_id, 'view')}
-                onEdit={(row) => loadPartDetails(row.part_id, 'edit')}
-                onDelete={handleDelete}
+                onEdit={hasPermission('inventory', 'edit') ? (row) => loadPartDetails(row.part_id, 'edit') : undefined}
+                onDelete={hasPermission('inventory', 'delete') ? handleDelete : undefined}
                 getImageSrc={buildFileUrl}
               />
             ))}

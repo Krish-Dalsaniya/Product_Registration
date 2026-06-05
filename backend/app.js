@@ -23,6 +23,7 @@ const bookASaleRoutes = require('./src/routes/bookASaleRoutes');
 const supportTicketsRoutes = require('./src/routes/supportTicketsRoutes');
 const chatRoutes = require('./src/routes/chatRoutes');
 const chatbotRoutes = require('./src/routes/chatbotRoutes');
+const rolesRoutes = require('./src/routes/roles');
 
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (necessary for Secure cookies behind Render/Heroku load balancers)
@@ -94,6 +95,7 @@ app.use('/api/book-a-sale', bookASaleRoutes);
 app.use('/api/support-tickets', supportTicketsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/roles', rolesRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));

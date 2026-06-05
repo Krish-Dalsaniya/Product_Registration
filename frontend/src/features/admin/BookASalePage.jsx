@@ -17,8 +17,10 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { useAuth } from '../../context/AuthContext';
 
 const BookASalePage = () => {
+  const { hasPermission } = useAuth();
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -297,15 +299,17 @@ const BookASalePage = () => {
           </div>
         </div>
 
-        <button
-          id="book-sale-btn"
-          onClick={handleOpenModal}
-          className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
-          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-        >
-          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span className="text-[12px] md:text-[14px]">Book a Sale</span>
-        </button>
+        {hasPermission('sales', 'create') && (
+          <button
+            id="book-sale-btn"
+            onClick={handleOpenModal}
+            className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
+            style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+          >
+            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] md:text-[14px]">Book a Sale</span>
+          </button>
+        )}
       </div>
 
       {/* KPI Stats */}
@@ -388,8 +392,8 @@ const BookASalePage = () => {
         totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
         onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
         onView={handleView}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={hasPermission('sales', 'edit') ? handleEdit : undefined}
+        onDelete={hasPermission('sales', 'delete') ? handleDelete : undefined}
       />
 
       {/* Book a Sale Modal */}

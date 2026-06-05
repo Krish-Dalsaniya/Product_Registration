@@ -7,6 +7,11 @@ const fs = require('fs');
 const customCategoryController = require('../controllers/customCategoryController');
 const cache = require('../middleware/cache');
 const clearCache = require('../middleware/clearCache');
+const { verifyToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/rbac');
+
+router.use(verifyToken);
+router.use(requirePermission('inventory.view'));
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -78,35 +83,35 @@ router.delete('/:module/categories/:categoryName', customCategoryController.dele
 
 router.get('/pcb', cache(60), inventoryController.getPCBs);
 router.get('/pcb/:id', cache(60), inventoryController.getPCBById);
-router.post('/pcb', upload.fields(pcbFiles), clearCache('/api/inventory'), inventoryController.createPCB);
-router.put('/pcb/:id', upload.fields(pcbFiles), clearCache('/api/inventory'), inventoryController.updatePCB);
-router.delete('/pcb/:id', clearCache('/api/inventory'), inventoryController.deletePCB);
-router.delete('/pcb/:id/image', clearCache('/api/inventory'), inventoryController.deletePCBImage);
-router.delete('/pcb/:id/file', clearCache('/api/inventory'), inventoryController.deletePCBFile);
+router.post('/pcb', requirePermission('inventory.create'), upload.fields(pcbFiles), clearCache('/api/inventory'), inventoryController.createPCB);
+router.put('/pcb/:id', requirePermission('inventory.edit'), upload.fields(pcbFiles), clearCache('/api/inventory'), inventoryController.updatePCB);
+router.delete('/pcb/:id', requirePermission('inventory.delete'), clearCache('/api/inventory'), inventoryController.deletePCB);
+router.delete('/pcb/:id/image', requirePermission('inventory.edit'), clearCache('/api/inventory'), inventoryController.deletePCBImage);
+router.delete('/pcb/:id/file', requirePermission('inventory.edit'), clearCache('/api/inventory'), inventoryController.deletePCBFile);
 
 router.get('/electronics', cache(60), electronicsController.getElectronicsParts);
 router.get('/electronics/:id', cache(60), electronicsController.getElectronicsPartById);
-router.post('/electronics', upload.fields(electronicsFiles), clearCache('/api/inventory'), electronicsController.createElectronicsPart);
-router.put('/electronics/:id', upload.fields(electronicsFiles), clearCache('/api/inventory'), electronicsController.updateElectronicsPart);
-router.delete('/electronics/:id', clearCache('/api/inventory'), electronicsController.deleteElectronicsPart);
-router.delete('/electronics/:id/image', clearCache('/api/inventory'), electronicsController.deleteElectronicsImage);
-router.delete('/electronics/:id/file', clearCache('/api/inventory'), electronicsController.deleteElectronicsFile);
+router.post('/electronics', requirePermission('inventory.create'), upload.fields(electronicsFiles), clearCache('/api/inventory'), electronicsController.createElectronicsPart);
+router.put('/electronics/:id', requirePermission('inventory.edit'), upload.fields(electronicsFiles), clearCache('/api/inventory'), electronicsController.updateElectronicsPart);
+router.delete('/electronics/:id', requirePermission('inventory.delete'), clearCache('/api/inventory'), electronicsController.deleteElectronicsPart);
+router.delete('/electronics/:id/image', requirePermission('inventory.edit'), clearCache('/api/inventory'), electronicsController.deleteElectronicsImage);
+router.delete('/electronics/:id/file', requirePermission('inventory.edit'), clearCache('/api/inventory'), electronicsController.deleteElectronicsFile);
 
 router.get('/electrical', cache(60), electricalController.getElectricalParts);
 router.get('/electrical/:id', cache(60), electricalController.getElectricalPartById);
-router.post('/electrical', upload.fields(electricalFiles), clearCache('/api/inventory'), electricalController.createElectricalPart);
-router.put('/electrical/:id', upload.fields(electricalFiles), clearCache('/api/inventory'), electricalController.updateElectricalPart);
-router.delete('/electrical/:id', clearCache('/api/inventory'), electricalController.deleteElectricalPart);
-router.delete('/electrical/:id/image', clearCache('/api/inventory'), electricalController.deleteElectricalImage);
-router.delete('/electrical/:id/file', clearCache('/api/inventory'), electricalController.deleteElectricalFile);
+router.post('/electrical', requirePermission('inventory.create'), upload.fields(electricalFiles), clearCache('/api/inventory'), electricalController.createElectricalPart);
+router.put('/electrical/:id', requirePermission('inventory.edit'), upload.fields(electricalFiles), clearCache('/api/inventory'), electricalController.updateElectricalPart);
+router.delete('/electrical/:id', requirePermission('inventory.delete'), clearCache('/api/inventory'), electricalController.deleteElectricalPart);
+router.delete('/electrical/:id/image', requirePermission('inventory.edit'), clearCache('/api/inventory'), electricalController.deleteElectricalImage);
+router.delete('/electrical/:id/file', requirePermission('inventory.edit'), clearCache('/api/inventory'), electricalController.deleteElectricalFile);
 
 router.get('/structural', cache(60), structuralController.getStructuralParts);
 router.get('/structural/:id', cache(60), structuralController.getStructuralPartById);
-router.post('/structural', upload.fields(structuralFiles), clearCache('/api/inventory'), structuralController.createStructuralPart);
-router.put('/structural/:id', upload.fields(structuralFiles), clearCache('/api/inventory'), structuralController.updateStructuralPart);
-router.delete('/structural/:id', clearCache('/api/inventory'), structuralController.deleteStructuralPart);
-router.delete('/structural/:id/image', clearCache('/api/inventory'), structuralController.deleteStructuralImage);
-router.delete('/structural/:id/file', clearCache('/api/inventory'), structuralController.deleteStructuralFile);
+router.post('/structural', requirePermission('inventory.create'), upload.fields(structuralFiles), clearCache('/api/inventory'), structuralController.createStructuralPart);
+router.put('/structural/:id', requirePermission('inventory.edit'), upload.fields(structuralFiles), clearCache('/api/inventory'), structuralController.updateStructuralPart);
+router.delete('/structural/:id', requirePermission('inventory.delete'), clearCache('/api/inventory'), structuralController.deleteStructuralPart);
+router.delete('/structural/:id/image', requirePermission('inventory.edit'), clearCache('/api/inventory'), structuralController.deleteStructuralImage);
+router.delete('/structural/:id/file', requirePermission('inventory.edit'), clearCache('/api/inventory'), structuralController.deleteStructuralFile);
 
 
 

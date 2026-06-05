@@ -16,10 +16,12 @@ import ProductTableView from './components/product/ProductTableView';
 import ProductModal from './components/product/ProductModal';
 import ViewToggle from '../../components/shared/ViewToggle';
 import { useNavigate as useNav, useLocation as useLoc } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const ProductListPage = () => {
   const navigate = useNav();
   const location = useLoc();
+  const { hasPermission } = useAuth();
   
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -188,14 +190,16 @@ const ProductListPage = () => {
             <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">Product Catalogue</h1>
           </div>
         </div>
-        <button 
-          onClick={handleOpenCreate} 
-          className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
-          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-        >
-          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span className="text-[12px] md:text-[14px]">Add New Product</span>
-        </button>
+        {hasPermission('products', 'create') && (
+          <button 
+            onClick={handleOpenCreate} 
+            className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
+            style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+          >
+            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] md:text-[14px]">Add New Product</span>
+          </button>
+        )}
       </div>
 
       <div className="workspace-card p-2.5 flex flex-col md:flex-row gap-3 items-center border border-[var(--border-color)] bg-[var(--bg-card)] rounded-xl">
@@ -246,16 +250,16 @@ const ProductListPage = () => {
           loading={loading}
           pagination={pagination}
           onView={handleView}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onBulkDelete={handleBulkDelete}
+          onEdit={hasPermission('products', 'edit') ? handleEdit : undefined}
+          onDelete={hasPermission('products', 'delete') ? handleDelete : undefined}
+          onBulkDelete={hasPermission('products', 'delete') ? handleBulkDelete : undefined}
         />
       ) : (
         <ProductGridView 
           products={products}
           onView={handleView}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onEdit={hasPermission('products', 'edit') ? handleEdit : undefined}
+          onDelete={hasPermission('products', 'delete') ? handleDelete : undefined}
           getFullUrl={getFullUrl}
           setLightboxData={setLightboxData}
         />

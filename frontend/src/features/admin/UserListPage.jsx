@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUsers, useAdminStats, useCreateUser, useUpdateUser, useDeleteUser, useRemoveUserImage } from '../../hooks/useUsers';
 import { useTeams } from '../../hooks/useTeams';
+import { useRoles } from '../../hooks/useRoles';
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
@@ -14,9 +15,11 @@ import { useDebounce } from '../../hooks/useDebounce';
 import Swal from 'sweetalert2';
 import UserGridView from './components/user/UserGridView';
 import ViewToggle from '../../components/shared/ViewToggle';
+import { useAuth } from '../../context/AuthContext';
 
 const UserListPage = ({ initialRole = '' }) => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   const [viewMode, setViewMode] = useState('grid');
   const [roleFilter, setRoleFilter] = useState(initialRole);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,6 +35,7 @@ const UserListPage = ({ initialRole = '' }) => {
   const { data: usersData, isLoading: usersLoading } = useUsers(queryParams);
   const { data: statsData } = useAdminStats();
   const { data: teamsData } = useTeams();
+  const { data: rolesData } = useRoles();
 
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
@@ -346,7 +350,7 @@ const UserListPage = ({ initialRole = '' }) => {
           </div>
         </div>
 
-        {!initialRole && (
+        {!initialRole && hasPermission('users', 'create') && (
           <button
             onClick={handleOpenCreate}
             className="btn-primary shadow-lg px-8 py-3 group"
@@ -376,22 +380,30 @@ const UserListPage = ({ initialRole = '' }) => {
         </div>
 
         {!initialRole && (
-          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner whitespace-nowrap overflow-x-auto no-scrollbar">
-            {['', 'Designer', 'Sales', 'Maintenance'].map((role) => (
-              <button
-                key={role}
-                onClick={() => {
-                  setRoleFilter(role);
-                  setPagination(p => ({ ...p, page: 1 }));
-                }}
-                className={`px-5 py-2 rounded-lg text-[11px] font-black transition-all duration-300 tracking-wider ${roleFilter === role
-                    ? 'bg-[var(--accent)] text-white shadow-lg'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)]'
-                  }`}
-              >
-                {(role || 'All').toUpperCase()}
-              </button>
-            ))}
+          <div className="relative min-w-[160px] md:w-auto w-full">
+            <select
+              value={roleFilter || ''}
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+                setPagination(p => ({ ...p, page: 1 }));
+              }}
+              className="w-full appearance-none bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-4 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black tracking-wider text-[var(--text-main)] uppercase cursor-pointer shadow-sm hover:border-[var(--accent)]"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238888aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                backgroundSize: '1.2em',
+                backgroundPosition: 'right 0.6rem center',
+                backgroundRepeat: 'no-repeat',
+              }}
+            >
+              <option value="">ALL ROLES</option>
+              {(rolesData?.map(r => r.role_name) || [])
+                .filter(role => role.toLowerCase() !== 'admin')
+                .map((role) => (
+                  <option key={role} value={role}>
+                    {role.toUpperCase()}
+                  </option>
+                ))}
+            </select>
           </div>
         )}
 
@@ -408,15 +420,15 @@ const UserListPage = ({ initialRole = '' }) => {
           currentPage={pagination.page}
           totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
           onView={handleView}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onEdit={hasPermission('users', 'edit') ? handleEdit : undefined}
+          onDelete={hasPermission('users', 'delete') ? handleDelete : undefined}
         />
       ) : (
         <UserGridView
           users={filteredUsers}
           onView={handleView}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onEdit={hasPermission('users', 'edit') ? handleEdit : undefined}
+          onDelete={hasPermission('users', 'delete') ? handleDelete : undefined}
         />
       )}
 
@@ -595,9 +607,9 @@ const UserListPage = ({ initialRole = '' }) => {
                   <div>
                     <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Department</label>
                     <select {...register('role_name', { required: 'Role is required' })} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] appearance-none text-[var(--text-main)] cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
-                      <option value="Designer">Designer Department</option>
-                      <option value="Sales">Sales Network</option>
-                      <option value="Maintenance">Maintenance Crew</option>
+                      {rolesData?.map(r => (
+                        <option key={r.role_id} value={r.role_name}>{r.role_name}</option>
+                      ))}
                     </select>
                   </div>
                 )}

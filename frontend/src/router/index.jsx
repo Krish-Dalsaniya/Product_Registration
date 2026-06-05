@@ -9,7 +9,7 @@ import AssistantPanel from '../components/shared/AssistantPanel';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare } from 'lucide-react';
+import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare, Shield } from 'lucide-react';
 
 const IconMap = {
   Home,
@@ -23,7 +23,8 @@ const IconMap = {
   LayoutGrid,
   Package,
   LifeBuoy,
-  MessageSquare
+  MessageSquare,
+  Shield
 };
 
 const getTabMetadata = (pathname, search) => {
@@ -38,6 +39,9 @@ const getTabMetadata = (pathname, search) => {
   }
   if (pathname === '/admin/designers') {
     return { label: 'Designers', iconType: 'Users' };
+  }
+  if (pathname === '/admin/roles') {
+    return { label: 'Roles', iconType: 'Shield' };
   }
   if (pathname === '/admin/maintenance') {
     return { label: 'Maintenance', iconType: 'Wrench' };
@@ -109,6 +113,7 @@ const BookASalePage = lazy(() => import('../features/admin/BookASalePage'));
 const SupportTicketsPage = lazy(() => import('../features/admin/SupportTicketsPage'));
 const SupportTicketProfilePage = lazy(() => import('../features/admin/SupportTicketProfilePage'));
 const ChatPage = lazy(() => import('../features/chat/ChatPage'));
+const RolesPage = lazy(() => import('../features/admin/RolesPage'));
 
 
 const PageLoader = () => (
@@ -124,10 +129,12 @@ const DashboardLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const storageKey = user?.user_id ? `workspace_tabs_${user.user_id}` : 'workspace_tabs_default';
+
   // State to store open tabs
   const [tabs, setTabs] = React.useState(() => {
     try {
-      const saved = localStorage.getItem('admin_workspace_tabs');
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -136,8 +143,9 @@ const DashboardLayout = () => {
       console.error(e);
     }
     // Default tab
+    const isStandardRole = ['Admin', 'Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
     return [{ 
-      fullPath: user?.role_name ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
+      fullPath: isStandardRole ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
       label: 'Dashboard', 
       iconType: 'Home' 
     }];
@@ -165,7 +173,7 @@ const DashboardLayout = () => {
         iconType: meta.iconType
       }];
       
-      localStorage.setItem('admin_workspace_tabs', JSON.stringify(newTabs));
+      localStorage.setItem(storageKey, JSON.stringify(newTabs));
       return newTabs;
     });
   }, [activePath, location.pathname, location.search]);
@@ -183,7 +191,7 @@ const DashboardLayout = () => {
     const indexToDelete = tabs.findIndex(t => t.fullPath === pathToDelete);
     const newTabs = tabs.filter(t => t.fullPath !== pathToDelete);
     setTabs(newTabs);
-    localStorage.setItem('admin_workspace_tabs', JSON.stringify(newTabs));
+    localStorage.setItem(storageKey, JSON.stringify(newTabs));
 
     // If the closed tab was active, navigate to another tab
     if (activePath === pathToDelete) {
@@ -206,13 +214,14 @@ const DashboardLayout = () => {
     });
     
     if (result.isConfirmed) {
+      const isStandardRole = ['Admin', 'Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
       const dashboardTab = { 
-        fullPath: user?.role_name ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
+        fullPath: isStandardRole ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
         label: 'Dashboard', 
         iconType: 'Home' 
       };
       setTabs([dashboardTab]);
-      localStorage.setItem('admin_workspace_tabs', JSON.stringify([dashboardTab]));
+      localStorage.setItem(storageKey, JSON.stringify([dashboardTab]));
       navigate(dashboardTab.fullPath);
       toast.success('All tabs cleared');
     }
@@ -230,7 +239,7 @@ const DashboardLayout = () => {
         }
         return t;
       });
-      localStorage.setItem('admin_workspace_tabs', JSON.stringify(updated));
+      localStorage.setItem(storageKey, JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -280,11 +289,12 @@ const Router = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<div className="p-10 text-center text-rose-500 font-bold bg-[var(--bg-workspace)] h-screen uppercase tracking-widest text-sm">Unauthorized Access Restricted</div>} />
         
-        {/* Admin Routes */}
-        <Route element={<AuthGuard><RoleGuard allowedRoles={['Admin']}><DashboardLayout /></RoleGuard></AuthGuard>}>
+        {/* Shared Workspace Routes */}
+        <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
           <Route path="/admin" element={<Navigate to="/admin/dashboard" />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserListPage />} />
+          <Route path="/admin/roles" element={<RolesPage />} />
           <Route path="/admin/designers" element={<UserListPage initialRole="Designer" />} />
           <Route path="/admin/maintenance" element={<UserListPage initialRole="Maintenance" />} />
           <Route path="/admin/sales" element={<UserListPage initialRole="Sales" />} />
@@ -305,7 +315,7 @@ const Router = () => {
 
         </Route>
 
-        {/* Designer Routes */}
+        {/* Designer Workspace Dashboard & Specifics */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Designer']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/designer" element={<Navigate to="/designer/dashboard" />} />
           <Route path="/designer/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Designer Dashboard Initialization...</div>} />
@@ -314,7 +324,7 @@ const Router = () => {
           <Route path="/designer/chat" element={<ChatPage />} />
         </Route>
 
-        {/* Sales Routes */}
+        {/* Sales Workspace Dashboard & Specifics */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Sales']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/sales" element={<Navigate to="/sales/dashboard" />} />
           <Route path="/sales/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Sales Dashboard Initialization...</div>} />
@@ -324,7 +334,7 @@ const Router = () => {
           <Route path="/sales/chat" element={<ChatPage />} />
         </Route>
 
-        {/* Maintenance Routes */}
+        {/* Maintenance Workspace Dashboard & Specifics */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Maintenance']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/maintenance" element={<Navigate to="/maintenance/dashboard" />} />
           <Route path="/maintenance/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Maintenance Dashboard Initialization...</div>} />

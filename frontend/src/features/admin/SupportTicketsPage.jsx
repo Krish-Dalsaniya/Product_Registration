@@ -17,7 +17,7 @@ import ViewToggle from '../../components/shared/ViewToggle';
 
 const SupportTicketsPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [products, setProducts] = useState([]);
   const { data: ticketsData, isLoading: loading } = useSupportTickets();
   const tickets = ticketsData?.data || [];
@@ -241,14 +241,16 @@ const SupportTicketsPage = () => {
             {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">Manage and track all support tickets</p> */}
           </div>
         </div>
-        <button 
-          onClick={handleOpenCreate} 
-          className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
-          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-        >
-          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span className="text-[12px] md:text-[14px]">Create Ticket</span>
-        </button>
+        {hasPermission('supporttickets', 'create') && (
+          <button 
+            onClick={handleOpenCreate} 
+            className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
+            style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+          >
+            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] md:text-[14px]">Create Ticket</span>
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-entrance-up">
@@ -314,7 +316,7 @@ const SupportTicketsPage = () => {
       </div>
 
       {viewMode === 'table' ? (
-        <DataTable columns={columns} data={filteredTickets} loading={loading} totalCount={filteredTickets.length} filteredCount={filteredTickets.length} currentPage={1} totalPages={1} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
+        <DataTable columns={columns} data={filteredTickets} loading={loading} totalCount={filteredTickets.length} filteredCount={filteredTickets.length} currentPage={1} totalPages={1} onView={handleView} onEdit={hasPermission('supporttickets', 'edit') ? handleEdit : undefined} onDelete={hasPermission('supporttickets', 'delete') ? handleDelete : undefined} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredTickets.map((ticket) => (
@@ -344,12 +346,16 @@ const SupportTicketsPage = () => {
                   <span className="text-[11px] font-bold text-[var(--text-main)]">{ticket.creator_name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={(e) => { e.stopPropagation(); handleEdit(ticket); }} className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--accent)] hover:bg-[var(--bg-workspace)] transition-all">
-                    <Pencil size={14} />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleDelete(ticket); }} className="p-1.5 rounded-lg text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all">
-                    <Trash2 size={14} />
-                  </button>
+                  {hasPermission('supporttickets', 'edit') && (
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(ticket); }} className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--accent)] hover:bg-[var(--bg-workspace)] transition-all">
+                      <Pencil size={14} />
+                    </button>
+                  )}
+                  {hasPermission('supporttickets', 'delete') && (
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(ticket); }} className="p-1.5 rounded-lg text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

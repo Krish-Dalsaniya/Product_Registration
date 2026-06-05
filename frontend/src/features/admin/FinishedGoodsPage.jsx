@@ -27,8 +27,10 @@ import {
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import MultiSelectDropdown from '../../components/shared/MultiSelectDropdown';
+import { useAuth } from '../../context/AuthContext';
 
 const FinishedGoodsPage = () => {
+    const { hasPermission } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
     const [viewMode, setViewMode] = useState('grid');
@@ -295,14 +297,16 @@ const FinishedGoodsPage = () => {
                     </div>
                 </div>
 
-                <button
-                    onClick={() => { resetForm(); setIsModalOpen(true); }}
-                    className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
-                    style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-                >
-                    <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-                    <span className="text-[12px] md:text-[14px]">Add Finished Good</span>
-                </button>
+                {hasPermission('products', 'create') && (
+                    <button
+                        onClick={() => { resetForm(); setIsModalOpen(true); }}
+                        className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
+                        style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+                    >
+                        <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+                        <span className="text-[12px] md:text-[14px]">Add Finished Good</span>
+                    </button>
+                )}
             </div>
 
             {/* KPI Stats Grid */}
@@ -356,8 +360,8 @@ const FinishedGoodsPage = () => {
                     totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
                     onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
                     onView={handleView}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
+                    onEdit={hasPermission('products', 'edit') ? handleEdit : undefined}
+                    onDelete={hasPermission('products', 'delete') ? handleDelete : undefined}
                 />
             ) : (
                 <div className="space-y-6">
@@ -428,20 +432,24 @@ const FinishedGoodsPage = () => {
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-1">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
-                                                    className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"
-                                                    title="Edit Finished Good"
-                                                >
-                                                    <Pencil size={14} />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDelete(item); }}
-                                                    className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"
-                                                    title="Delete Finished Good"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                {hasPermission('products', 'edit') && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                                        className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"
+                                                        title="Edit Finished Good"
+                                                    >
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                )}
+                                                {hasPermission('products', 'delete') && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDelete(item); }}
+                                                        className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"
+                                                        title="Delete Finished Good"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

@@ -9,8 +9,10 @@ import { useDispatch, useStore } from 'react-redux';
 import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { useAuth } from '../../context/AuthContext';
 
 const CustomerListPage = () => {
+  const { hasPermission } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const { data: customersData, isLoading: loading } = useCustomers();
   const customers = customersData || [];
@@ -363,14 +365,16 @@ const CustomerListPage = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="btn-primary shadow-lg px-8 py-3 group"
-          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-        >
-          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span>Add New Customer</span>
-        </button>
+        {hasPermission('customers', 'create') && (
+          <button
+            onClick={handleOpenCreate}
+            className="btn-primary shadow-lg px-8 py-3 group"
+            style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+          >
+            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span>Add New Customer</span>
+          </button>
+        )}
       </div>
 
       <CustomerFilters 
@@ -383,8 +387,8 @@ const CustomerListPage = () => {
         data={filteredCustomers}
         loading={loading}
         onView={handleView}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={hasPermission('customers', 'edit') ? handleEdit : undefined}
+        onDelete={hasPermission('customers', 'delete') ? handleDelete : undefined}
       />
 
       <Modal

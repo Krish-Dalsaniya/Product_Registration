@@ -22,6 +22,7 @@ import Swal from 'sweetalert2';
 import { STRUCTURAL_SPEC_FIELDS, STRUCTURAL_CATEGORY_CONFIG } from '../../constants/inventorySpecs';
 import { getCustomCategories, saveCategoryFields, deleteCustomCategory } from '../../api/customCategories';
 import ViewToggle from '../../components/shared/ViewToggle';
+import { useAuth } from '../../context/AuthContext';
 
 const CATEGORY_CONFIG = STRUCTURAL_CATEGORY_CONFIG;
 
@@ -32,6 +33,7 @@ const BASE_CATEGORIES = Object.keys(CATEGORY_CONFIG);
 const StructuralPartsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasPermission } = useAuth();
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
 
   const buildFileUrl = (filePath) => {
@@ -637,14 +639,16 @@ const StructuralPartsPage = () => {
           </div>
         </div>
 
-        <button 
-          onClick={handleOpenCreate} 
-          className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
-          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-        >
-          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span className="text-[12px] md:text-[14px]">Add Structural Part</span>
-        </button>
+        {hasPermission('inventory', 'create') && (
+          <button 
+            onClick={handleOpenCreate} 
+            className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
+            style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+          >
+            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] md:text-[14px]">Add Structural Part</span>
+          </button>
+        )}
       </div>
 
       {/* Main Content Area */}
@@ -688,15 +692,15 @@ const StructuralPartsPage = () => {
             code={item.part_number}
             stockQuantity={item.stock_quantity}
             onView={handleView}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
+            onEdit={hasPermission('inventory', 'edit') ? handleEdit : undefined}
+            onDelete={hasPermission('inventory', 'delete') ? handleDelete : undefined}
             getImageSrc={buildFileUrl}
           />
         ))}
       </div>
     ) : (
       <div className="workspace-card overflow-hidden border border-[var(--border-color)]">
-        <DataTable columns={columns} data={items} onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
+        <DataTable columns={columns} data={items} onEdit={hasPermission('inventory', 'edit') ? handleEdit : undefined} onDelete={hasPermission('inventory', 'delete') ? handleDelete : undefined} onView={handleView} />
       </div>
         )
       }

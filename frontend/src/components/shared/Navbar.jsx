@@ -88,7 +88,7 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
                 key={tab.fullPath}
                 ref={isActive ? activeTabRef : null}
                 onClick={() => onTabClick(tab.fullPath)}
-                className={`flex items-center gap-2.5 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border transition-all duration-300 flex-shrink-0 group ${
+                className={`flex items-center gap-2.5 px-5 py-2 rounded-md text-[10px] font-black uppercase tracking-widest cursor-pointer border transition-all duration-300 flex-shrink-0 group ${
                   isActive
                     ? 'text-white border-transparent shadow-md shadow-[var(--border-glow)]'
                     : 'bg-[var(--bg-card)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-[var(--accent)]/40 hover:text-[var(--text-main)]'

@@ -14,8 +14,10 @@ import toast from 'react-hot-toast';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import Swal from 'sweetalert2';
+import { useAuth } from '../../context/AuthContext';
 
 const TeamsPage = () => {
+  const { hasPermission } = useAuth();
   const [filterRole, setFilterRole] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -281,14 +283,16 @@ const TeamsPage = () => {
           </div>
         </div>
 
-        <button 
-          onClick={handleOpenCreate} 
-          className="btn-primary shadow-lg px-8 py-3 group"
-          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-        >
-          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span className="text-[12px] md:text-[14px]">Add Team</span>
-        </button>
+        {hasPermission('teams', 'create') && (
+          <button 
+            onClick={handleOpenCreate} 
+            className="btn-primary shadow-lg px-8 py-3 group"
+            style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+          >
+            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] md:text-[14px]">Add Team</span>
+          </button>
+        )}
       </div>
 
       <div className="workspace-card p-3.5 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)]">
@@ -323,7 +327,7 @@ const TeamsPage = () => {
         </div>
       </div>
 
-      <DataTable columns={columns} data={filteredData} loading={loading} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
+      <DataTable columns={columns} data={filteredData} loading={loading} onView={handleView} onEdit={hasPermission('teams', 'edit') ? handleEdit : undefined} onDelete={hasPermission('teams', 'delete') ? handleDelete : undefined} />
 
       <Modal
         isOpen={isModalOpen}

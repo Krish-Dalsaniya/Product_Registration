@@ -1,12 +1,12 @@
 const express = require('express');
 const designerController = require('../controllers/designerController');
 const { verifyToken } = require('../middleware/auth');
-const { requireRole } = require('../middleware/rbac');
+const { requirePermission } = require('../middleware/rbac');
 
 const router = express.Router();
 
 router.use(verifyToken);
-router.use(requireRole('Designer'));
+router.use(requirePermission('teams.view'));
 
 router.get('/profile', designerController.getProfile);
 router.put('/profile', designerController.updateProfile);

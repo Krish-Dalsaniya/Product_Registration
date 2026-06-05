@@ -2,20 +2,20 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
 const { verifyToken } = require('../middleware/auth');
-const { requireRole } = require('../middleware/rbac');
+const { requirePermission } = require('../middleware/rbac');
 const upload = require('../middleware/upload');
 const cache = require('../middleware/cache');
 const clearCache = require('../middleware/clearCache');
 
-// All product routes are protected and for Admin
-router.get('/bom-options', verifyToken, requireRole('Admin', 'Staff'), cache(300), productController.getBomOptions);
-router.get('/', verifyToken, requireRole('Admin', 'Staff'), cache(60), productController.getProducts);
-router.get('/:id', verifyToken, requireRole('Admin', 'Staff'), productController.getProductById);
-router.get('/:id/bom', verifyToken, requireRole('Admin', 'Staff'), productController.getProductBom);
-router.put('/:id/bom', verifyToken, requireRole('Admin'), clearCache('/api/products'), productController.saveProductBom);
+// All product routes are protected
+router.get('/bom-options', verifyToken, requirePermission('products.view'), cache(300), productController.getBomOptions);
+router.get('/', verifyToken, requirePermission('products.view'), cache(60), productController.getProducts);
+router.get('/:id', verifyToken, requirePermission('products.view'), productController.getProductById);
+router.get('/:id/bom', verifyToken, requirePermission('products.view'), productController.getProductBom);
+router.put('/:id/bom', verifyToken, requirePermission('products.edit'), clearCache('/api/products'), productController.saveProductBom);
 router.post('/', 
   verifyToken, 
-  requireRole('Admin'), 
+  requirePermission('products.create'), 
   upload.fields([
     { name: 'image', maxCount: 10 },
     { name: 'document', maxCount: 10 }
@@ -25,7 +25,7 @@ router.post('/',
 );
 router.put('/:id', 
   verifyToken, 
-  requireRole('Admin'), 
+  requirePermission('products.edit'), 
   upload.fields([
     { name: 'image', maxCount: 10 },
     { name: 'document', maxCount: 10 }
@@ -33,8 +33,8 @@ router.put('/:id',
   clearCache('/api/products'),
   productController.updateProduct
 );
-router.delete('/:id/assets', verifyToken, requireRole('Admin'), clearCache('/api/products'), productController.removeAsset);
-router.delete('/:id', verifyToken, requireRole('Admin'), clearCache('/api/products'), productController.deleteProduct);
+router.delete('/:id/assets', verifyToken, requirePermission('products.edit'), clearCache('/api/products'), productController.removeAsset);
+router.delete('/:id', verifyToken, requirePermission('products.delete'), clearCache('/api/products'), productController.deleteProduct);
 
 module.exports = router;
 

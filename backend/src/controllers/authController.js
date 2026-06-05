@@ -37,7 +37,7 @@ const login = async (req, res, next) => {
     }
 
     const accessToken = jwt.sign(
-      { user_id: user.user_id, role_name: user.role_name },
+      { user_id: user.user_id, role_id: user.role_id, role_name: user.role_name },
       env.JWT_SECRET,
       { expiresIn: '15m' }
     );
@@ -70,12 +70,21 @@ const login = async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
+    const permsResult = await db.query(`
+      SELECT p.permission_key 
+      FROM permissions p
+      JOIN role_permissions rp ON p.permission_id = rp.permission_id
+      WHERE rp.role_id = $1
+    `, [user.role_id]);
+    const permissions = permsResult.rows.map(r => r.permission_key);
+
     sendSuccess(res, {
       user: {
         user_id: user.user_id,
         full_name: user.full_name,
         email: user.email,
-        role_name: user.role_name
+        role_name: user.role_name,
+        permissions: permissions
       }
     });
   } catch (error) {

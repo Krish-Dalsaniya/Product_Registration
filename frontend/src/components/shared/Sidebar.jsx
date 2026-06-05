@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   
   const handleLogout = () => {
     Swal.fire({
@@ -51,7 +51,7 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
       }
     });
   };
-  const { theme, setTheme, AVAILABLE_THEMES } = useTheme();
+  const { theme, setTheme, font, setFont, AVAILABLE_THEMES, AVAILABLE_FONTS } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [openMenus, setOpenMenus] = useState({
@@ -237,39 +237,72 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
               {/* Settings Dropdown */}
               {isSettingsOpen && (
                 <div 
-                  className="absolute top-[120%] left-1/2 -translate-x-1/2 w-48 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 p-2 animate-in fade-in zoom-in-95 duration-200"
+                  className="absolute top-[120%] left-1/2 -translate-x-1/2 w-56 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 p-2 animate-in fade-in zoom-in-95 duration-200"
                   onClick={(e) => e.stopPropagation()}
+                  style={{ maxHeight: '70vh', overflowY: 'auto' }}
                 >
                   <div className="flex flex-col gap-2">
+                    {/* Theme Selector */}
                     <div>
                       <div className="px-1 mb-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-                        Appearance
+                        🎨 Theme
                       </div>
                       <select
                         value={theme}
-                        onChange={(e) => {
-                          setTheme(e.target.value);
-                          setIsSettingsOpen(false);
-                        }}
+                        onChange={(e) => { setTheme(e.target.value); }}
                         className="w-full appearance-none py-2 pl-3 pr-8 rounded-lg border border-[var(--border-color)] bg-[var(--bg-workspace)] text-[var(--text-main)] font-bold text-[11px] outline-none cursor-pointer hover:border-[var(--accent)] transition-all"
+                        aria-label="Select theme"
                         style={{
-                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238888aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
                           backgroundSize: '1.2em',
                           backgroundPosition: 'right 0.4rem center',
                           backgroundRepeat: 'no-repeat',
                         }}
                       >
-                        {AVAILABLE_THEMES.map(t => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
+                        <optgroup label="☀️ Light">
+                          {AVAILABLE_THEMES.filter(t => t.group === 'Light').map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="🌑 Dark">
+                          {AVAILABLE_THEMES.filter(t => t.group === 'Dark').map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    <div className="h-px bg-[var(--border-color)]" />
+
+                    {/* Font Selector */}
+                    <div>
+                      <div className="px-1 mb-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+                        🔤 Font
+                      </div>
+                      <select
+                        value={font}
+                        onChange={(e) => { setFont(e.target.value); }}
+                        className="w-full appearance-none py-2 pl-3 pr-8 rounded-lg border border-[var(--border-color)] bg-[var(--bg-workspace)] text-[var(--text-main)] font-bold text-[11px] outline-none cursor-pointer hover:border-[var(--accent)] transition-all"
+                        aria-label="Select font"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238888aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                          backgroundSize: '1.2em',
+                          backgroundPosition: 'right 0.4rem center',
+                          backgroundRepeat: 'no-repeat',
+                        }}
+                      >
+                        {AVAILABLE_FONTS.map(f => (
+                          <option key={f.id} value={f.id}>{f.name} — {f.label}</option>
                         ))}
                       </select>
                     </div>
-                    
+
                     <div className="h-px bg-[var(--border-color)]" />
                     
                     <button
                       onClick={() => { setIsSettingsOpen(false); handleLogout(); }}
                       className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-[11px] font-bold text-rose-500 hover:bg-rose-500/10 transition-all"
+                      aria-label="Sign out"
                     >
                       <LogOut size={14} />
                       <span className="uppercase tracking-widest font-bold text-[9px]">Sign Out</span>
@@ -301,6 +334,9 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
 
             <div className="animate-entrance-right" style={{ animationDelay: '200ms' }}>
               <NavItem to="/admin/users" label="Users" icon={UserCog} />
+            </div>
+            <div className="animate-entrance-right" style={{ animationDelay: '225ms' }}>
+              <NavItem to="/admin/roles" label="Roles" icon={Building2} />
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '250ms' }}>
@@ -347,31 +383,28 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             >
               Workspace
             </p>
-            {isDesigner && (
-              <>
-                <NavItem to="/designer/dashboard" label="Workstation" icon={Layers} />
-                <NavItem to="/designer/support-tickets" label="Support Center" icon={LifeBuoy} />
-                <NavItem to="/designer/chat" label="Chat" icon={MessageSquare} />
-                <NavItem to="#" label="AI Assistant" icon={Bot} onClick={onToggleAssistant} />
-              </>
-            )}
-            {isSales && (
-              <>
-                <NavItem to="/sales/dashboard" label="Dashboard" icon={LayoutDashboard} />
-                {/* <NavItem to="/sales/opportunities" label="Pipeline" icon={ShoppingBag} /> */}
-                <NavItem to="/sales/support-tickets" label="Support Center" icon={LifeBuoy} />
-                <NavItem to="/sales/chat" label="Chat" icon={MessageSquare} />
-                <NavItem to="#" label="AI Assistant" icon={Bot} onClick={onToggleAssistant} />
-              </>
-            )}
-            {isMaintenance && (
-              <>
-                <NavItem to="/maintenance/dashboard" label="Service Console" icon={Wrench} />
-                <NavItem to="/maintenance/support-tickets" label="Support Center" icon={LifeBuoy} />
-                <NavItem to="/maintenance/chat" label="Chat" icon={MessageSquare} />
-                <NavItem to="#" label="AI Assistant" icon={Bot} onClick={onToggleAssistant} />
-              </>
-            )}
+            
+            {/* Base Dashboards */}
+            {isDesigner && <NavItem to="/designer/dashboard" label="Workstation" icon={Layers} />}
+            {isSales && <NavItem to="/sales/dashboard" label="Dashboard" icon={LayoutDashboard} />}
+            {isMaintenance && <NavItem to="/maintenance/dashboard" label="Service Console" icon={Wrench} />}
+            {(!isAdmin && !isDesigner && !isSales && !isMaintenance) && <NavItem to="/admin/dashboard" label="Dashboard" icon={LayoutDashboard} />}
+
+            {/* Dynamically Granted Modules */}
+            {hasPermission('users', 'view') && <NavItem to="/admin/users" label="Users" icon={UserCog} />}
+            {hasPermission('teams', 'view') && <NavItem to="/admin/teams" label="Teams" icon={Layers} />}
+            {hasPermission('products', 'view') && <NavItem to="/admin/products" label="Products" icon={Zap} />}
+            {hasPermission('customers', 'view') && <NavItem to="/admin/customers" label="Customers" icon={Users} />}
+            {hasPermission('inventory', 'view') && <NavItem to="/admin/inventory" label="Inventory" icon={Box} />}
+            {hasPermission('sales', 'view') && <NavItem to="/admin/book-a-sale" label="Book a Sale" icon={ShoppingBag} />}
+            {hasPermission('supporttickets', 'view') && <NavItem to="/admin/support-tickets" label="Support Center" icon={LifeBuoy} />}
+
+            {/* General Functionality */}
+            {isDesigner && <NavItem to="/designer/chat" label="Chat" icon={MessageSquare} />}
+            {isSales && <NavItem to="/sales/chat" label="Chat" icon={MessageSquare} />}
+            {isMaintenance && <NavItem to="/maintenance/chat" label="Chat" icon={MessageSquare} />}
+            {(!isAdmin && !isDesigner && !isSales && !isMaintenance) && <NavItem to="/admin/chat" label="Chat" icon={MessageSquare} />}
+            <NavItem to="#" label="AI Assistant" icon={Bot} onClick={onToggleAssistant} />
           </div>
         )}
 

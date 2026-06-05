@@ -194,7 +194,7 @@ const LoginPage = () => {
         Maintenance: '/maintenance/dashboard'
       };
       
-      navigate(roleRoutes[loggedUser.role_name]);
+      navigate(roleRoutes[loggedUser.role_name] || '/admin/dashboard');
 
     } catch (error) {
       setErrorMessage(error.message || 'Authentication failed.');
@@ -211,7 +211,7 @@ const LoginPage = () => {
       Sales: '/sales/dashboard',
       Maintenance: '/maintenance/dashboard'
     };
-    return <Navigate to={roleRoutes[user.role_name]} />;
+    return <Navigate to={roleRoutes[user.role_name] || '/admin/dashboard'} />;
   }
 
   return (

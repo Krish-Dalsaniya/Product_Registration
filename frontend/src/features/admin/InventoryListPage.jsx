@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDebounce } from '../../hooks/useDebounce';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
@@ -62,13 +63,14 @@ import { useForm, Controller } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
 import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
 import toast from 'react-hot-toast';
-import { useDebounce } from '../../hooks/useDebounce';
 import Swal from 'sweetalert2';
+import { useAuth } from '../../context/AuthContext';
 
 const InventoryListPage = ({ type = '' }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const store = useStore();
+  const { hasPermission } = useAuth();
 
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
   const buildFileUrl = (filePath) => {
@@ -1001,7 +1003,7 @@ const InventoryListPage = ({ type = '' }) => {
             </p> */}
           </div>
         </div>
-        {type && (
+        {type && hasPermission('inventory', 'create') && (
           <button 
             onClick={handleOpenCreate}
             className="btn-primary shadow-lg px-8 py-3 group hover-scale-md"
@@ -1080,8 +1082,8 @@ const InventoryListPage = ({ type = '' }) => {
             currentPage={pagination.page}
             totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
             onView={handleView}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
+            onEdit={hasPermission('inventory', 'edit') ? handleEdit : undefined}
+            onDelete={hasPermission('inventory', 'delete') ? handleDelete : undefined}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">

@@ -81,8 +81,8 @@ const ProductModal = ({
   companies,
   getFullUrl
 }) => {
-  const { user } = useAuth();
-  const isAdmin = user?.role_name === 'Admin';
+  const { user, hasPermission } = useAuth();
+  const canManageSpecs = hasPermission('products', 'view') || hasPermission('products', 'edit');
 
   const [modalActiveTab, setModalActiveTab] = useState('general');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -423,7 +423,7 @@ const ProductModal = ({
               <div className="flex border-b border-[var(--border-color)] mb-8 overflow-x-auto no-scrollbar gap-2">
                 {[
                   { id: 'general', label: 'General Information' },
-                  ...(isAdmin ? [
+                  ...(canManageSpecs ? [
                     { id: 'specs', label: 'Technical Specifications' },
                     { id: 'bom', label: 'Bill of Material' }
                   ] : []),
@@ -508,7 +508,7 @@ const ProductModal = ({
                     )}
                   </div>
                   <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
-                    <button type="button" onClick={() => setModalActiveTab(isAdmin ? 'specs' : 'files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">Save & Next <ChevronRight size={16} strokeWidth={3} /></button>
+                    <button type="button" onClick={() => setModalActiveTab(canManageSpecs ? 'specs' : 'files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">Save & Next <ChevronRight size={16} strokeWidth={3} /></button>
                   </div>
                 </div>
               </div>

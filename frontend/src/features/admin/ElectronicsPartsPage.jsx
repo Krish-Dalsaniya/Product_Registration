@@ -18,6 +18,7 @@ import { ELECTRONICS_SPEC_FIELDS, ELECTRONICS_CATEGORY_CONFIG } from '../../cons
 import { getCustomCategories, saveCategoryFields, deleteCustomCategory } from '../../api/customCategories';
 import Swal from 'sweetalert2';
 import ViewToggle from '../../components/shared/ViewToggle';
+import { useAuth } from '../../context/AuthContext';
 
 const CATEGORY_CONFIG = ELECTRONICS_CATEGORY_CONFIG;
 
@@ -26,6 +27,7 @@ const BASE_CATEGORIES = Object.keys(CATEGORY_CONFIG);
 const ElectronicsPartsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasPermission } = useAuth();
   const FILE_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/api$/, '');
 const ELECTRONICS_FIELDS = ELECTRONICS_SPEC_FIELDS;
 
@@ -737,14 +739,16 @@ const buildFileUrl = (filePath) => {
             </p> */}
           </div>
         </div>
-        <button 
-          onClick={handleOpenCreate}
-          className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
-          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-        >
-          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span className="text-[12px] md:text-[14px]">Add Electronics Part</span>
-        </button>
+        {hasPermission('inventory', 'create') && (
+          <button 
+            onClick={handleOpenCreate}
+            className="btn-primary shadow-lg px-8 py-3 group hover-scale-md animate-glow"
+            style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+          >
+            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] md:text-[14px]">Add Electronics Part</span>
+          </button>
+        )}
       </div>
 
       {/* Main Content Area */}
@@ -776,8 +780,8 @@ const buildFileUrl = (filePath) => {
               currentPage={pagination.page}
               totalPages={Math.ceil(pagination.total / pagination.limit) || 1}
               onView={handleView}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
+              onEdit={hasPermission('inventory', 'edit') ? handleEdit : undefined}
+              onDelete={hasPermission('inventory', 'delete') ? handleDelete : undefined}
             />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
@@ -793,8 +797,8 @@ const buildFileUrl = (filePath) => {
                   code={item.part_number}
                   stockQuantity={item.stock_quantity}
                   onView={handleView}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
+                  onEdit={hasPermission('inventory', 'edit') ? handleEdit : undefined}
+                  onDelete={hasPermission('inventory', 'delete') ? handleDelete : undefined}
                   getImageSrc={buildFileUrl}
                 />
               ))}
