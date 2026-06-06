@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   getCategories,
   getSubCategories,
@@ -148,8 +149,8 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 transition-opacity" onClick={onClose} />
 
       <Draggable nodeRef={nodeRef} handle=".modal-header" bounds="parent">
@@ -291,7 +292,8 @@ const CategoryModal = ({ isOpen, onClose, onSelect, onSelectCategory, initialCat
         </div>
         </div>
       </Draggable>
-    </div>
+    </div>,
+    document.body
   );
 };
 

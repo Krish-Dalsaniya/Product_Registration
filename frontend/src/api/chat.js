@@ -41,5 +41,41 @@ export const chatApi = {
   clearChat: async (userId) => {
     const response = await api.delete(`/chat/messages/user/${userId}`);
     return response.data;
+  },
+
+  // --- GROUP CHAT APIs ---
+  getChatGroups: async () => {
+    const response = await api.get('/chat/groups');
+    return response.data;
+  },
+
+  createChatGroup: async (data) => {
+    const response = await api.post('/chat/groups', data);
+    return response.data;
+  },
+
+  getGroupHistory: async (groupId) => {
+    const response = await api.get(`/chat/groups/${groupId}/messages`);
+    return response.data;
+  },
+
+  getGroupMembers: async (groupId) => {
+    const response = await api.get(`/chat/groups/${groupId}/members`);
+    return response.data;
+  },
+
+  addGroupMembers: async (groupId, data) => {
+    const response = await api.post(`/chat/groups/${groupId}/members`, data);
+    return response.data;
+  },
+
+  removeGroupMember: async (groupId, userId) => {
+    const response = await api.delete(`/chat/groups/${groupId}/members/${userId}`);
+    return response.data;
+  },
+
+  deleteGroup: async (groupId) => {
+    const response = await api.delete(`/chat/groups/${groupId}`);
+    return response.data;
   }
 };

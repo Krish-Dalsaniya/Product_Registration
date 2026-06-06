@@ -67,7 +67,7 @@ const getProducts = async (req, res, next) => {
     const countResult = await db.query(countQuery, params);
     const total = parseInt(countResult.rows[0].count);
 
-    const dataQuery = `SELECT * ${baseQuery} ORDER BY created_at DESC LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
+    const dataQuery = `SELECT *, COALESCE((SELECT SUM(quantity) FROM finished_goods fg WHERE fg.product_id = products.product_id), 0) AS stock_quantity ${baseQuery} ORDER BY created_at DESC LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
     const dataParams = [...params, limit, offset];
 
     const result = await db.query(dataQuery, dataParams);

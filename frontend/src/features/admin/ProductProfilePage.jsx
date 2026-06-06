@@ -7,6 +7,7 @@ import { Loader2, Box, Droplet, LayoutGrid, Activity, FileText, Eye, Download, C
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
+import FinishedGoodsPage from './FinishedGoodsPage';
 
 const ProductProfilePage = () => {
   const { id } = useParams();
@@ -309,7 +310,7 @@ const ProductProfilePage = () => {
             'description', 
             ...(hasPermission('products', 'tech_view') ? ['specification'] : []), 
             'documents', 
-            ...(hasPermission('products', 'tech_view') ? ['faqs', 'bill of materials'] : [])
+            ...(hasPermission('products', 'tech_view') ? ['faqs', 'bill of materials', 'finished goods'] : [])
           ].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-4.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
               {tab}
@@ -458,6 +459,9 @@ const ProductProfilePage = () => {
                 </div>
               )}
             </div>
+          )}
+          {activeTab === 'finished goods' && (
+            <FinishedGoodsPage isEmbedded={true} hideAddButton={true} defaultProductId={selectedProduct?.product_id} />
           )}
         </div>
       </div>

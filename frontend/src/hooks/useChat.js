@@ -31,16 +31,21 @@ export const useChatMessages = (userId) => {
 export const useSendMessage = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ receiver_id, message }) => {
-      const response = await chatApi.sendMessage({ receiver_id, message });
+    mutationFn: async ({ receiver_id, group_id, message }) => {
+      const response = await chatApi.sendMessage({ receiver_id, group_id, message });
       if (!response.success) throw new Error('Failed to send message');
       return response.data;
     },
     onSuccess: (data, variables) => {
-      return Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.receiver_id] }),
-        queryClient.invalidateQueries({ queryKey: ['chatUsers'] })
-      ]);
+      const invalidations = [queryClient.invalidateQueries({ queryKey: ['chatUsers'] })];
+      if (variables.receiver_id) {
+        invalidations.push(queryClient.invalidateQueries({ queryKey: ['chatMessages', variables.receiver_id] }));
+      }
+      if (variables.group_id) {
+        invalidations.push(queryClient.invalidateQueries({ queryKey: ['groupMessages', variables.group_id] }));
+        invalidations.push(queryClient.invalidateQueries({ queryKey: ['chatGroups'] }));
+      }
+      return Promise.all(invalidations);
     },
   });
 };
@@ -73,3 +78,105 @@ export const useClearChat = () => {
     },
   });
 };
+
+// --- GROUP CHAT HOOKS ---
+
+export const useChatGroups = () => {
+  return useQuery({
+    queryKey: ['chatGroups'],
+    queryFn: async () => {
+      const response = await chatApi.getChatGroups();
+      if (!response.success) throw new Error('Failed to fetch chat groups');
+      return response.data;
+    },
+    refetchInterval: 10000,
+  });
+};
+
+export const useGroupMessages = (groupId) => {
+  return useQuery({
+    queryKey: ['groupMessages', groupId],
+    queryFn: async () => {
+      const response = await chatApi.getGroupHistory(groupId);
+      if (!response.success) throw new Error('Failed to fetch group messages');
+      return response.data;
+    },
+    enabled: !!groupId,
+    refetchInterval: 3000,
+  });
+};
+
+export const useCreateGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data) => {
+      const response = await chatApi.createChatGroup(data);
+      if (!response.success) throw new Error('Failed to create group');
+      return response.data;
+    },
+    onSuccess: () => {
+      return queryClient.invalidateQueries({ queryKey: ['chatGroups'] });
+    },
+  });
+};
+
+export const useGroupMembers = (groupId) => {
+  return useQuery({
+    queryKey: ['groupMembers', groupId],
+    queryFn: async () => {
+      const response = await chatApi.getGroupMembers(groupId);
+      if (!response.success) throw new Error('Failed to fetch group members');
+      return response.data;
+    },
+    enabled: !!groupId,
+  });
+};
+
+export const useAddGroupMembers = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ groupId, memberIds }) => {
+      const response = await chatApi.addGroupMembers(groupId, { memberIds });
+      if (!response.success) throw new Error('Failed to add members');
+      return groupId;
+    },
+    onSuccess: (groupId) => {
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['groupMembers', groupId] }),
+        queryClient.invalidateQueries({ queryKey: ['chatGroups'] })
+      ]);
+    },
+  });
+};
+
+export const useRemoveGroupMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ groupId, userId }) => {
+      const response = await chatApi.removeGroupMember(groupId, userId);
+      if (!response.success) throw new Error('Failed to remove member');
+      return { groupId, userId };
+    },
+    onSuccess: (data) => {
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['groupMembers', data.groupId] }),
+        queryClient.invalidateQueries({ queryKey: ['chatGroups'] })
+      ]);
+    },
+  });
+};
+
+export const useDeleteGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (groupId) => {
+      const response = await chatApi.deleteGroup(groupId);
+      if (!response.success) throw new Error('Failed to delete group');
+      return groupId;
+    },
+    onSuccess: (groupId) => {
+      return queryClient.invalidateQueries({ queryKey: ['chatGroups'] });
+    },
+  });
+};
+

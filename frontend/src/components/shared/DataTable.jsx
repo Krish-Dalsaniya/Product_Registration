@@ -66,6 +66,7 @@ const DataTable = ({
           </div>
           {onBulkDelete && (
             <button 
+              type="button"
               onClick={() => onBulkDelete(selectedRows)}
               className="px-4 py-2 bg-rose-500 text-white rounded-lg text-[11px] font-black uppercase tracking-widest hover:bg-rose-600 transition-colors flex items-center gap-2"
             >
@@ -129,6 +130,7 @@ const DataTable = ({
                   <td className={`px-3 md:px-4 ${pyClass} text-right`} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <div className="flex items-center justify-end gap-2">
                       <button
+                        type="button"
                         onClick={() => onView(row)}
                         className={`${btnPad} rounded-lg transition-all duration-200`}
                         style={{ color: 'var(--text-dim)' }}
@@ -140,6 +142,7 @@ const DataTable = ({
                       </button>
                       {onEdit && (
                         <button
+                          type="button"
                           onClick={() => onEdit(row)}
                           className={`text-[11px] font-bold uppercase tracking-wider px-4 ${pyClass} rounded-md transition-all duration-200`}
                           style={{ background: 'transparent', border: '1.5px solid var(--accent)', color: 'var(--accent)' }}
@@ -150,6 +153,7 @@ const DataTable = ({
                         </button>
                       )}
                       <button
+                        type="button"
                         onClick={(e) => { e.stopPropagation(); onDelete && onDelete(row); }}
                         className={`${btnPad} rounded-lg transition-all duration-200`}
                         style={{ color: '#f87171', background: 'rgba(239,68,68,0.1)' }}
@@ -184,6 +188,7 @@ const DataTable = ({
             Total Records: {filteredCount ?? data.length}
           </span>
           <button 
+            type="button"
             onClick={toggleDensity}
             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--accent)] hover:underline ml-2"
           >

@@ -51,10 +51,10 @@ const ProductGridView = ({ products, onView, onEdit, onDelete, getFullUrl, setLi
               </p>
             </div>
             <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
-                <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
-                  {product.company_name || 'Generic'}
+              <div className="flex items-center gap-1.5 bg-[var(--accent)]/10 border border-[var(--accent)]/20 px-3 py-1.5 rounded-full">
+                <Box size={14} className="text-[var(--accent)]" />
+                <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">
+                  {product.stock_quantity || 0} UNITS
                 </span>
               </div>
               <div className="flex items-center gap-1">

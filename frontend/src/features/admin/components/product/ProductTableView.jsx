@@ -14,7 +14,7 @@ const ProductTableView = ({
     // { key: 'product_id', label: 'ID', render: (row) => row.product_id ? String(row.product_id).substring(0, 8) + '...' : '' },
     { key: 'category', label: 'Category' },
     { key: 'product_name', label: 'Product Name' },
-    { key: 'company_name', label: 'Company Name' },
+    { key: 'stock_quantity', label: 'Stock Units', render: (row) => `${row.stock_quantity || 0} Units` },
     { key: 'created_at', label: 'Registration Date', render: (row) => new Date(row.created_at).toLocaleDateString() }
   ];
 

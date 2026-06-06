@@ -18,7 +18,7 @@ import ViewToggle from '../../components/shared/ViewToggle';
 import { useNavigate as useNav, useLocation as useLoc } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const ProductListPage = () => {
+const ProductListPage = ({ isEmbedded = false }) => {
   const navigate = useNav();
   const location = useLoc();
   const { hasPermission } = useAuth();
@@ -179,7 +179,7 @@ const ProductListPage = () => {
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
+    <div className={`space-y-4 max-w-[1600px] mx-auto ${!isEmbedded ? 'animate-in fade-in slide-in-from-bottom-4 duration-500' : ''}`}>
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
         <div className="flex items-center gap-5">

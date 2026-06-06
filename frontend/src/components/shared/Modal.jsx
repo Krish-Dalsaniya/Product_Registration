@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import Draggable from 'react-draggable';
 
@@ -18,8 +19,8 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', header
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[1050] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/10 animate-in fade-in duration-300"
@@ -74,7 +75,8 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', header
         </div>
         </div>
       </Draggable>
-    </div>
+    </div>,
+    document.body
   );
 };
 

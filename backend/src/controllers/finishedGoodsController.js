@@ -77,7 +77,7 @@ const validateHardwareInventory = async (hardwareFeatures = [], quantity = 1) =>
 
 const getFinishedGoods = async (req, res, next) => {
     const { page, limit, offset } = parsePagination(req);
-    const { search } = req.query;
+    const { search, product_id } = req.query;
 
     try {
         let queryText = `
@@ -91,8 +91,13 @@ const getFinishedGoods = async (req, res, next) => {
         const params = [limit, offset];
 
         if (search) {
-            queryText += ` AND (p.product_name ILIKE $3 OR p.product_code ILIKE $3)`;
+            queryText += ` AND (p.product_name ILIKE $${params.length + 1} OR p.product_code ILIKE $${params.length + 1})`;
             params.push(`%${search}%`);
+        }
+        
+        if (product_id) {
+            queryText += ` AND fg.product_id = $${params.length + 1}`;
+            params.push(product_id);
         }
 
         queryText += ` 
@@ -144,29 +149,37 @@ const updateHardwareInventory = async (client, hardwareFeatures, qty, isRefund =
 };
 
 const createFinishedGood = async (req, res, next) => {
-    const { product_id, quantity, hardware_features, communication_details, power_controller, motherboard_id, is_iot } = req.body;
-
+    const { product_id, quantity, hardware_features, communication_details, power_controller, motherboard_id, is_iot, version } = req.body;
+    
     try {
-        const inventoryCheck = await validateHardwareInventory(hardware_features, quantity);
-        if (inventoryCheck) {
-            return sendError(res, 'INSUFFICIENT_INVENTORY', inventoryCheck.message, 400);
-        }
-
         const isIotEnabled = is_iot === true || is_iot === 'true';
-
         let finished_good_id;
         let serialNumbers = [];
 
+        const inventoryError = await validateHardwareInventory(hardware_features, quantity);
+        if (inventoryError) {
+            return res.status(400).json({ success: false, error: { code: 'INSUFFICIENT_INVENTORY', message: inventoryError.message, details: inventoryError.feature } });
+        }
+
+        const versionToCheck = version || '1.0';
+        const duplicateCheck = await db.query('SELECT id FROM finished_goods WHERE product_id = $1 AND version = $2', [product_id, versionToCheck]);
+        if (duplicateCheck.rows.length > 0) {
+            return res.status(400).json({ success: false, error: { code: 'DUPLICATE_VERSION', message: `A finished good with version '${versionToCheck}' already exists for this product.` } });
+        }
+
         await db.withTransaction(async (client) => {
             const fgResult = await client.query(
-                'INSERT INTO finished_goods (product_id, quantity, is_iot, communication_details, power_controller, motherboard_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+                `INSERT INTO finished_goods 
+                (product_id, quantity, is_iot, communication_details, power_controller, motherboard_id, version) 
+                VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
                 [
                     product_id, 
                     quantity || 1, 
                     isIotEnabled,
                     isIotEnabled ? JSON.stringify(communication_details || []) : '[]',
                     isIotEnabled ? !!power_controller : false,
-                    isIotEnabled ? (motherboard_id || null) : null
+                    isIotEnabled ? (motherboard_id || null) : null,
+                    version || '1.0'
                 ]
             );
             finished_good_id = fgResult.rows[0].id;
@@ -295,35 +308,44 @@ const deleteFinishedGood = async (req, res, next) => {
 
 const updateFinishedGood = async (req, res, next) => {
     const { id } = req.params;
-    const { product_id, quantity, hardware_features, communication_details, power_controller, motherboard_id, is_iot } = req.body;
+    const { product_id, quantity, hardware_features, communication_details, power_controller, motherboard_id, is_iot, version } = req.body;
 
     try {
-        const inventoryCheck = await validateHardwareInventory(hardware_features, quantity);
-        if (inventoryCheck) {
-            return sendError(res, 'INSUFFICIENT_INVENTORY', inventoryCheck.message, 400);
+        const isIotEnabled = is_iot === true || is_iot === 'true';
+        let serialNumbers = [];
+
+        const currentFgQuery = await db.query('SELECT * FROM finished_goods WHERE id = $1', [id]);
+        if (currentFgQuery.rows.length === 0) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Finished Good not found' } });
+        }
+        const currentFg = currentFgQuery.rows[0];
+
+        const oldHardwareQuery = await db.query('SELECT * FROM finished_goods_hardware WHERE finished_good_id = $1', [id]);
+        const oldHardware = oldHardwareQuery.rows;
+
+        const versionToCheck = version || '1.0';
+        const duplicateCheck = await db.query('SELECT id FROM finished_goods WHERE product_id = $1 AND version = $2 AND id != $3', [product_id, versionToCheck, id]);
+        if (duplicateCheck.rows.length > 0) {
+            return res.status(400).json({ success: false, error: { code: 'DUPLICATE_VERSION', message: `A finished good with version '${versionToCheck}' already exists for this product.` } });
         }
 
         await db.withTransaction(async (client) => {
-            // Check if finished good exists
-            const existing = await client.query('SELECT * FROM finished_goods WHERE id = $1', [id]);
-            if (existing.rows.length === 0) {
-                throw new Error('NOT_FOUND');
+            // Restore old inventory
+            await updateHardwareInventory(client, oldHardware.map(h => ({ type: h.component_type, id: h.component_id })), currentFg.quantity, true);
+            if (currentFg.is_iot && currentFg.motherboard_id) {
+                await updateHardwareInventory(client, [{ type: 'pcb', id: currentFg.motherboard_id }], currentFg.quantity, true);
             }
 
-            const oldQty = existing.rows[0].quantity;
-            const oldProductId = existing.rows[0].product_id;
-            const isIotEnabled = is_iot === true || is_iot === 'true';
-
-            // Refund old features
-            const oldFeaturesRes = await client.query('SELECT component_type as type, component_id as id FROM finished_goods_hardware WHERE finished_good_id = $1', [id]);
-            await updateHardwareInventory(client, oldFeaturesRes.rows, oldQty, true);
-            if (existing.rows[0].is_iot && existing.rows[0].motherboard_id) {
-                await updateHardwareInventory(client, [{ type: 'pcb', id: existing.rows[0].motherboard_id }], oldQty, true);
+            // Validate new inventory
+            const inventoryError = await validateHardwareInventory(hardware_features, quantity);
+            if (inventoryError) {
+                throw new Error(inventoryError.message);
             }
 
-            // Update finished goods table
             await client.query(
-                'UPDATE finished_goods SET product_id = $1, quantity = $2, is_iot = $3, communication_details = $4, power_controller = $5, motherboard_id = $6, updated_at = NOW() WHERE id = $7',
+                `UPDATE finished_goods 
+                 SET product_id = $1, quantity = $2, is_iot = $3, communication_details = $4, power_controller = $5, motherboard_id = $6, updated_at = CURRENT_TIMESTAMP, version = $7
+                 WHERE id = $8`,
                 [
                     product_id, 
                     quantity || 1, 
@@ -331,6 +353,7 @@ const updateFinishedGood = async (req, res, next) => {
                     isIotEnabled ? JSON.stringify(communication_details || []) : '[]',
                     isIotEnabled ? !!power_controller : false,
                     isIotEnabled ? (motherboard_id || null) : null,
+                    version || '1.0',
                     id
                 ]
             );
@@ -352,7 +375,7 @@ const updateFinishedGood = async (req, res, next) => {
             }
 
             // Handle serial numbers
-            if (parseInt(oldQty) !== parseInt(quantity) || parseInt(oldProductId) !== parseInt(product_id)) {
+            if (parseInt(currentFg.quantity) !== parseInt(quantity) || parseInt(currentFg.product_id) !== parseInt(product_id)) {
                 await client.query('DELETE FROM finished_goods_serials WHERE finished_good_id = $1', [id]);
                 const serialNumbers = [];
                 const qty = parseInt(quantity) || 1;

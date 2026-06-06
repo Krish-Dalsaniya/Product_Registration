@@ -7,6 +7,7 @@ import Modal from '../../../../components/shared/Modal';
 import CategoryModal from '../../../../components/shared/CategoryModal';
 import CompanyModal from '../../../../components/shared/CompanyModal';
 import HardwareConfigModal from './HardwareConfigModal';
+import FinishedGoodsPage from '../../FinishedGoodsPage';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import Swal from 'sweetalert2';
@@ -89,6 +90,7 @@ const ProductModal = ({
   const [specRows, setSpecRows] = useState([]);
   const [faqRows, setFaqRows] = useState([]);
   const [pendingImages, setPendingImages] = useState([]);
+  const [removedAssets, setRemovedAssets] = useState([]);
   const [previews, setPreviews] = useState([]);
   
   const [bomOptions, setBomOptions] = useState({ pcb: [], electrical: [], electronics: [], structural: [] });
@@ -184,6 +186,7 @@ const ProductModal = ({
         setFaqRows([]);
         setBomItems([]);
         setPendingImages([]);
+        setRemovedAssets([]);
         getBomOptions().then(res => setBomOptions(res.data.data || { pcb: [], electrical: [], electronics: [], structural: [] })).catch(() => {});
       } else if (selectedProduct) {
         const hardware = parseHardwareSpec(selectedProduct.specification);
@@ -212,6 +215,7 @@ const ProductModal = ({
         }
         
         setPendingImages([]);
+        setRemovedAssets([]);
         setBomItems([]);
         Promise.all([
           getBomOptions().catch(() => ({ data: { data: { pcb: [], electrical: [], electronics: [], structural: [] } } })),
@@ -293,6 +297,15 @@ const ProductModal = ({
         await createProduct(formData);
         toast.success('Product created successfully!');
       } else {
+        if (removedAssets.length > 0) {
+          for (const asset of removedAssets) {
+            try {
+              await removeAsset(selectedProduct.product_id, asset.url, asset.type);
+            } catch (e) {
+              console.error("Failed to remove asset:", asset.url, e);
+            }
+          }
+        }
         await updateProduct(selectedProduct.product_id, formData);
         toast.success('Product updated successfully!');
       }
@@ -339,21 +352,15 @@ const ProductModal = ({
   const handleRemoveAssetClick = async (url, type) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
-      text: 'Are you sure you want to delete this asset?',
+      text: 'This asset will be removed when you save the product.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: 'var(--accent)',
       cancelButtonColor: '#ef4444',
-      confirmButtonText: 'Yes, delete it!'
+      confirmButtonText: 'Yes, remove it!'
     });
     if (!result.isConfirmed) return;
-    try {
-      await removeAsset(selectedProduct.product_id, url, type);
-      toast.success('Asset removed');
-      onSuccess();
-    } catch (error) {
-      toast.error('Failed to remove asset');
-    }
+    setRemovedAssets(prev => [...prev, { url, type }]);
   };
 
   const FileInput = ({ label, name, accept = "*", icon: Icon }) => {
@@ -425,7 +432,8 @@ const ProductModal = ({
                   { id: 'general', label: 'General Information' },
                   ...(canManageSpecs ? [
                     { id: 'specs', label: 'Technical Specifications' },
-                    { id: 'bom', label: 'Bill of Material' }
+                    { id: 'bom', label: 'Bill of Material' },
+                    { id: 'finished-goods', label: 'Finished Goods' }
                   ] : []),
                   { id: 'files', label: 'Files' }
                 ].map(tab => (
@@ -676,7 +684,10 @@ const ProductModal = ({
                         <div className="space-y-3">
                           <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] ml-1">Current Gallery</label>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            {(selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image_url]).filter(Boolean).map((url, idx) => (
+                            {(selectedProduct.images && selectedProduct.images.length > 0 ? selectedProduct.images : [selectedProduct.image_url])
+                              .filter(Boolean)
+                              .filter(url => !removedAssets.some(ra => ra.url === url && ra.type === 'images'))
+                              .map((url, idx) => (
                               <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-[var(--border-color)] group bg-[var(--bg-workspace)]/50">
                                 <img src={getFullUrl(url)} alt="" className="w-full h-full object-contain p-2" />
                                 {modalMode !== 'view' && (
@@ -717,8 +728,11 @@ const ProductModal = ({
                             {(selectedProduct.documents && selectedProduct.documents.length > 0 
                               ? selectedProduct.documents 
                               : (selectedProduct?.document_url ? [selectedProduct.document_url] : [])
-                            ).filter(Boolean).map((docItem, idx) => {
-                              const doc = typeof docItem === 'string' ? { url: docItem, name: docItem.split('/').pop() } : docItem;
+                            )
+                              .filter(Boolean)
+                              .map(docItem => typeof docItem === 'string' ? { url: docItem, name: docItem.split('/').pop() } : docItem)
+                              .filter(doc => !removedAssets.some(ra => ra.url === doc.url && ra.type === 'documents'))
+                              .map((doc, idx) => {
                               return (
                                 <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] rounded-xl group hover:border-[var(--accent)]/50 transition-all">
                                   <div className="flex items-center gap-3 truncate"><FileText size={16} className="text-[var(--accent)]" /><span className="text-[11px] font-bold text-[var(--text-main)] truncate uppercase tracking-wider">{doc.name}</span></div>
@@ -746,6 +760,23 @@ const ProductModal = ({
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* 5. Finished Goods Tab */}
+              <div className={modalActiveTab === 'finished-goods' ? 'animate-in fade-in duration-300' : 'hidden'}>
+                <div className="p-4 md:p-8 workspace-card border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl md:rounded-[32px]">
+                   {modalMode === 'create' || !selectedProduct?.product_id ? (
+                       <div className="flex flex-col items-center justify-center py-20 text-center">
+                           <Box size={48} className="text-[var(--accent)] opacity-50 mb-4" />
+                           <h4 className="text-lg font-black text-[var(--text-main)] uppercase tracking-widest">Product Not Saved</h4>
+                           <p className="text-[12px] text-[var(--text-muted)] mt-2 max-w-md font-medium">Please save this product first before you can manage its finished goods inventory.</p>
+                       </div>
+                   ) : (
+                       <div className="-mx-4 md:-mx-8 -my-4 md:-my-8">
+                           <FinishedGoodsPage isEmbedded={true} defaultProductId={selectedProduct.product_id} />
+                       </div>
+                   )}
                 </div>
               </div>
             </form>
