@@ -220,7 +220,9 @@ const BookASalePage = () => {
       label: 'Product',
       render: (row) => (
         <div className="flex flex-col">
-          <span className="font-bold text-[var(--text-main)]">{row.product_name}</span>
+          <span className="font-bold text-[var(--text-main)]">
+            {row.product_name} {row.version ? <span className="text-[var(--accent)]">({row.version})</span> : ''}
+          </span>
           <span className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider font-mono">
             {row.product_code}
           </span>
@@ -434,8 +436,8 @@ const BookASalePage = () => {
               <option value="">Select a product...</option>
               {options.finishedGoods.map((fg) => (
                 <option key={fg.id} value={fg.id}>
-                  {fg.product_name}
-                  {fg.product_code ? ` (${fg.product_code})` : ''} — Available: {fg.quantity}
+                  {fg.product_name} {fg.version ? `(${fg.version})` : ''} 
+                  {fg.product_code ? ` [${fg.product_code}]` : ''} — Available: {fg.quantity}
                 </option>
               ))}
             </select>

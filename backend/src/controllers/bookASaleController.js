@@ -13,6 +13,7 @@ const getSaleOptions = async (req, res, next) => {
       SELECT 
         fg.id,
         fg.quantity,
+        fg.version,
         p.product_name,
         p.product_code,
         fg.is_iot
@@ -58,6 +59,7 @@ const getSales = async (req, res, next) => {
         bs.*,
         p.product_name,
         p.product_code,
+        fg.version,
         c.customer_name,
         c.company_name,
         c.customer_code,
