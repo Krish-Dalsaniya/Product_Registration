@@ -82,6 +82,13 @@ jobs:
             echo "Building frontend..."
             npm run build
 
+            echo "Running database migration..."
+            cd "$APP_DIR/backend"
+
+            if [ -f database/migration.sql ]; then
+              sudo -u postgres psql -d product_registration -f database/migration.sql
+            fi
+
             echo "Restarting backend..."
             cd "$APP_DIR/backend"
 
