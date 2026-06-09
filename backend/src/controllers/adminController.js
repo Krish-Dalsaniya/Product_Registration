@@ -9,8 +9,9 @@ const getUsers = async (req, res, next) => {
   try {
     // Use DISTINCT ON to prevent duplicate rows caused by users belonging to multiple teams
     let queryText = `
-      SELECT DISTINCT ON (user_id) *, COUNT(*) OVER() as total_count
-      FROM v_admin_user_panel
+      SELECT DISTINCT ON (v.user_id) v.*, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions, COUNT(*) OVER() as total_count
+      FROM v_admin_user_panel v
+      LEFT JOIN user_custom_access uca ON v.user_id = uca.user_id
       WHERE 1=1
     `;
     const params = [limit, offset];
@@ -25,7 +26,7 @@ const getUsers = async (req, res, next) => {
       queryText += ` AND company::text = $${params.length}`;
     }
 
-    queryText += ` ORDER BY user_id, created_at DESC LIMIT $1 OFFSET $2`;
+    queryText += ` ORDER BY v.user_id, v.created_at DESC LIMIT $1 OFFSET $2`;
 
     const result = await db.query(queryText, params);
     const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0;
@@ -41,7 +42,10 @@ const getUserById = async (req, res, next) => {
 
   try {
     const userResult = await db.query(
-      `SELECT * FROM v_admin_user_panel WHERE user_id = $1`,
+      `SELECT v.*, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions 
+       FROM v_admin_user_panel v 
+       LEFT JOIN user_custom_access uca ON v.user_id = uca.user_id 
+       WHERE v.user_id = $1`,
       [userId]
     );
 
@@ -526,10 +530,10 @@ const getUserPermissions = async (req, res, next) => {
     // Also fetch user to know if they have custom permissions enabled
     let hasCustom = false;
     try {
-      const userRes = await db.query('SELECT has_custom_permissions FROM users WHERE user_id = $1', [userId]);
+      const userRes = await db.query('SELECT has_custom_permissions FROM user_custom_access WHERE user_id = $1', [userId]);
       hasCustom = userRes.rows[0]?.has_custom_permissions || false;
     } catch (err) {
-      if (err.code !== '42703') throw err; // 42703 is undefined_column
+      if (err.code !== '42P01') throw err; // 42P01 is undefined_table
     }
 
     sendSuccess(res, { permissions, has_custom_permissions: hasCustom });
@@ -545,16 +549,21 @@ const updateUserPermissions = async (req, res, next) => {
   try {
     await db.withTransaction(async (client) => {
       try {
-        await client.query('UPDATE users SET has_custom_permissions = $1 WHERE user_id = $2', [has_custom_permissions, userId]);
+        await client.query(`
+          INSERT INTO user_custom_access (user_id, has_custom_permissions) 
+          VALUES ($2, $1)
+          ON CONFLICT (user_id) DO UPDATE SET has_custom_permissions = EXCLUDED.has_custom_permissions
+        `, [has_custom_permissions, userId]);
       } catch (err) {
-        if (err.code !== '42703') throw err;
-        throw new Error('Database migration pending. Please run the migration script to add has_custom_permissions column.');
+        if (err.code !== '42P01') throw err;
+        throw new Error('Database migration pending. Please run the migration script to add user_custom_access table.');
       }
       
       try {
         await client.query('DELETE FROM user_permissions WHERE user_id = $1', [userId]);
         
         if (has_custom_permissions && Array.isArray(permissions) && permissions.length > 0) {
+          console.log('INSERTING PERMISSIONS:', permissions);
           const values = permissions.map((p, i) => `($1, $${i + 2})`).join(', ');
           const queryParams = [userId, ...permissions];
           await client.query(
@@ -590,4 +599,3 @@ module.exports = {
   getUserPermissions,
   updateUserPermissions
 };
-

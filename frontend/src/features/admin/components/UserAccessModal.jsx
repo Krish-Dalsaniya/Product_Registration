@@ -43,6 +43,7 @@ const ACTIONS = [
 const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => {
   const [selectedPerms, setSelectedPerms] = useState({});
   const [hasCustomPerms, setHasCustomPerms] = useState(false);
+  const [showContent, setShowContent] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: userPermsData, isLoading } = useQuery({
@@ -67,7 +68,16 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
   });
 
   useEffect(() => {
-    if (isOpen && userPermsData) {
+    if (isOpen) {
+      const timer = setTimeout(() => setShowContent(true), 150);
+      return () => clearTimeout(timer);
+    } else {
+      setShowContent(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && userPermsData && showContent) {
       setHasCustomPerms(userPermsData.has_custom_permissions);
       
       const initialPerms = {};
@@ -91,7 +101,7 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
       setSelectedPerms({});
       setHasCustomPerms(false);
     }
-  }, [isOpen, userPermsData, permissionsList]);
+  }, [isOpen, userPermsData, permissionsList, showContent]);
 
   const handleToggle = (moduleKey, actionKey, subKey = null) => {
     if (!hasCustomPerms) return;
@@ -200,9 +210,9 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
         <div className={`space-y-4 transition-opacity duration-300 ${!hasCustomPerms ? 'opacity-50 pointer-events-none' : ''}`}>
           <h4 className="text-[12px] font-black uppercase tracking-widest text-[var(--text-main)]">Custom Permissions Matrix</h4>
           
-          <div className="overflow-x-auto border border-[var(--border-color)] rounded-2xl bg-[var(--bg-card)] max-h-[400px] overflow-y-auto">
-            {isLoading ? (
-              <div className="p-10 flex justify-center"><Loader2 size={24} className="animate-spin text-[var(--accent)]" /></div>
+          <div className="overflow-x-auto border border-[var(--border-color)] rounded-2xl bg-[var(--bg-card)] h-[400px] overflow-y-auto relative">
+            {isLoading || !showContent ? (
+              <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={32} className="animate-spin text-[var(--accent)]" /></div>
             ) : (
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10">

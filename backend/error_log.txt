@@ -153,3 +153,29 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
 
+2026-06-09T06:58:16.993Z - Error: Database migration pending. Please run the migration script to add has_custom_permissions column.
+    at D:\Product_Registration\backend\src\controllers\adminController.js:551:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async Object.withTransaction (D:\Product_Registration\backend\src\config\db.js:45:20)
+    at async updateUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:546:5)
+
+2026-06-09T06:58:45.395Z - Error: Database migration pending. Please run the migration script to add has_custom_permissions column.
+    at D:\Product_Registration\backend\src\controllers\adminController.js:551:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async Object.withTransaction (D:\Product_Registration\backend\src\config\db.js:45:20)
+    at async updateUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:546:5)
+
+2026-06-09T07:43:53.067Z - error: insert or update on table "user_permissions" violates foreign key constraint "user_permissions_permission_id_fkey"
+    at D:\Product_Registration\backend\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async D:\Product_Registration\backend\src\controllers\adminController.js:568:11
+    at async Object.withTransaction (D:\Product_Registration\backend\src\config\db.js:45:20)
+    at async updateUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:550:5)
+
+2026-06-09T07:44:02.375Z - error: insert or update on table "user_permissions" violates foreign key constraint "user_permissions_permission_id_fkey"
+    at D:\Product_Registration\backend\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async D:\Product_Registration\backend\src\controllers\adminController.js:568:11
+    at async Object.withTransaction (D:\Product_Registration\backend\src\config\db.js:45:20)
+    at async updateUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:550:5)
+

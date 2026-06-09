@@ -16,9 +16,10 @@ const login = async (req, res, next) => {
 
   try {
     const result = await db.query(
-      `SELECT u.*, r.role_name 
+      `SELECT u.*, r.role_name, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions
        FROM users u 
        JOIN roles r ON r.role_id = u.role_id 
+       LEFT JOIN user_custom_access uca ON u.user_id = uca.user_id
        WHERE LOWER(u.email) = LOWER($1) AND u.is_active = true`,
       [email]
     );
@@ -115,9 +116,10 @@ const refresh = async (req, res, next) => {
     const decoded = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET);
     
     const result = await db.query(
-      `SELECT u.*, r.role_name 
+      `SELECT u.*, r.role_name, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions
        FROM users u 
        JOIN roles r ON r.role_id = u.role_id 
+       LEFT JOIN user_custom_access uca ON u.user_id = uca.user_id
        WHERE u.user_id = $1 AND u.is_active = true`,
       [decoded.user_id]
     );

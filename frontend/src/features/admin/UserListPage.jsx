@@ -18,7 +18,7 @@ import UserGridView from './components/user/UserGridView';
 import ViewToggle from '../../components/shared/ViewToggle';
 import { useAuth } from '../../context/AuthContext';
 
-const UserListPage = ({ initialRole = '', isAccessControlMode = false }) => {
+const UserListPage = ({ initialRole = '' }) => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
   const [viewMode, setViewMode] = useState('grid');
@@ -162,13 +162,9 @@ const UserListPage = ({ initialRole = '', isAccessControlMode = false }) => {
   };
 
   const handleView = (user) => {
+    setModalMode('view');
     setSelectedUser(user);
-    if (isAccessControlMode) {
-      setIsAccessModalOpen(true);
-    } else {
-      setModalMode('view');
-      setIsModalOpen(true);
-    }
+    setIsModalOpen(true);
   };
 
   const handleEdit = (user) => {
@@ -357,7 +353,7 @@ const UserListPage = ({ initialRole = '', isAccessControlMode = false }) => {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">
-              {isAccessControlMode ? 'User Access Control' : (initialRole ? (initialRole === 'Sales' ? initialRole : `${initialRole}s`) : 'User Personnel')}
+              {initialRole ? (initialRole === 'Sales' ? initialRole : `${initialRole}s`) : 'User Personnel'}
             </h1>
 
             {/* <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
@@ -366,7 +362,7 @@ const UserListPage = ({ initialRole = '', isAccessControlMode = false }) => {
           </div>
         </div>
 
-        {!initialRole && !isAccessControlMode && hasPermission('users', 'create') && (
+        {!initialRole && hasPermission('users', 'create') && (
           <button
             onClick={handleOpenCreate}
             className="btn-primary shadow-lg px-8 py-3 group"

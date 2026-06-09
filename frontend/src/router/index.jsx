@@ -100,6 +100,7 @@ const getTabMetadata = (pathname, search) => {
 // Lazy load components
 const LoginPage = lazy(() => import('../features/auth/LoginPage'));
 const UserListPage = lazy(() => import('../features/admin/UserListPage'));
+const UserAccessPage = lazy(() => import('../features/admin/UserAccessPage'));
 const TeamsPage = lazy(() => import('../features/admin/TeamsPage'));
 const ProductListPage = lazy(() => import('../features/admin/ProductListPage'));
 const ProductProfilePage = lazy(() => import('../features/admin/ProductProfilePage'));
@@ -290,7 +291,7 @@ const Router = () => {
           <Route path="/admin" element={<Navigate to="/admin/dashboard" />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserListPage />} />
-          <Route path="/admin/user-access" element={<UserListPage isAccessControlMode={true} />} />
+          <Route path="/admin/user-access" element={<UserAccessPage />} />
           <Route path="/admin/roles" element={<RolesPage />} />
           <Route path="/admin/designers" element={<UserListPage initialRole="Designer" />} />
           <Route path="/admin/maintenance" element={<UserListPage initialRole="Maintenance" />} />

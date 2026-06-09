@@ -36,9 +36,16 @@ const requirePermission = (permissionKey) => {
         }
       }
 
-      const cacheKey = `user_perms:${roleId}`;
+      // Determine if user has custom permissions
+      let hasCustom = false;
+      const customRes = await pool.query('SELECT has_custom_permissions FROM user_custom_access WHERE user_id = $1', [req.user.user_id]);
+      if (customRes.rows.length > 0) {
+        hasCustom = customRes.rows[0].has_custom_permissions;
+      }
+
       let permissions = [];
-      
+      const cacheKey = hasCustom ? `user_custom_perms:${req.user.user_id}` : `role_perms:${roleId}`;
+
       // Try to get from cache
       if (redisClient && redisClient.isReady) {
         const cached = await redisClient.get(cacheKey);
@@ -47,14 +54,23 @@ const requirePermission = (permissionKey) => {
 
       // If not in cache, fetch from DB
       if (!permissions.length) {
-        const result = await pool.query(`
-          SELECT p.permission_key 
-          FROM permissions p
-          JOIN role_permissions rp ON p.permission_id = rp.permission_id
-          WHERE rp.role_id = $1
-        `, [roleId]);
-        
-        permissions = result.rows.map(r => r.permission_key);
+        if (hasCustom) {
+          const result = await pool.query(`
+            SELECT p.permission_key 
+            FROM permissions p
+            JOIN user_permissions up ON p.permission_id = up.permission_id
+            WHERE up.user_id = $1
+          `, [req.user.user_id]);
+          permissions = result.rows.map(r => r.permission_key);
+        } else {
+          const result = await pool.query(`
+            SELECT p.permission_key 
+            FROM permissions p
+            JOIN role_permissions rp ON p.permission_id = rp.permission_id
+            WHERE rp.role_id = $1
+          `, [roleId]);
+          permissions = result.rows.map(r => r.permission_key);
+        }
         
         // Save to cache for 1 hour
         if (redisClient && redisClient.isReady) {
@@ -62,11 +78,19 @@ const requirePermission = (permissionKey) => {
         }
       }
 
-      // Proxy '.view' to check for either 'tech_view' or 'comm_view'
-      if (permissionKey.endsWith('.view')) {
-        const modulePrefix = permissionKey.split('.')[0];
-        if (permissions.includes(`${modulePrefix}.tech_view`) || permissions.includes(`${modulePrefix}.comm_view`)) {
-          return next();
+      // Direct exact match
+      if (permissions.includes(permissionKey)) {
+        return next();
+      }
+
+      // Sub-section fallback logic:
+      // If endpoint requires 'module.view' or 'module.create', grant if they have that action on ANY subsection.
+      const parts = permissionKey.split('.');
+      if (parts.length === 2) {
+        const [modKey, action] = parts;
+        if (['view', 'create', 'edit', 'delete'].includes(action)) {
+          const hasSubsectionAccess = permissions.some(p => p.startsWith(`${modKey}.`) && p.endsWith(`.${action}`));
+          if (hasSubsectionAccess) return next();
         }
       }
 
