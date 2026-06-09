@@ -290,6 +290,7 @@ const Router = () => {
           <Route path="/admin" element={<Navigate to="/admin/dashboard" />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<UserListPage />} />
+          <Route path="/admin/user-access" element={<UserListPage isAccessControlMode={true} />} />
           <Route path="/admin/roles" element={<RolesPage />} />
           <Route path="/admin/designers" element={<UserListPage initialRole="Designer" />} />
           <Route path="/admin/maintenance" element={<UserListPage initialRole="Maintenance" />} />

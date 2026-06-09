@@ -1,0 +1,155 @@
+2026-06-09T06:26:42.531Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:26:43.675Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:26:45.799Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:26:49.933Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:31:33.020Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:31:34.150Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:34:19.074Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:34:20.406Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:34:22.721Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:34:27.021Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:34:38.566Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:34:39.677Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:34:41.787Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:34:45.994Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:34:47.581Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:35:12.483Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:35:13.800Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:35:16.113Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:35:37.932Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:35:43.142Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:35:44.445Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:35:46.752Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:36:10.227Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:42:15.718Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:42:16.870Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:42:19.026Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:42:23.173Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:42:39.236Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:42:40.388Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:42:42.821Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T06:42:47.263Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+

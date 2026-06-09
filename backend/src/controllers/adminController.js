@@ -510,18 +510,29 @@ const removeUserImage = async (req, res, next) => {
 const getUserPermissions = async (req, res, next) => {
   const { userId } = req.params;
   try {
-    const result = await db.query(`
-      SELECT p.permission_id, p.permission_key 
-      FROM permissions p
-      JOIN user_permissions up ON p.permission_id = up.permission_id
-      WHERE up.user_id = $1
-    `, [userId]);
+    let permissions = [];
+    try {
+      const result = await db.query(`
+        SELECT p.permission_id, p.permission_key 
+        FROM permissions p
+        JOIN user_permissions up ON p.permission_id = up.permission_id
+        WHERE up.user_id = $1
+      `, [userId]);
+      permissions = result.rows.map(r => r.permission_key);
+    } catch (err) {
+      if (err.code !== '42P01') throw err; // 42P01 is undefined_table
+    }
     
     // Also fetch user to know if they have custom permissions enabled
-    const userRes = await db.query('SELECT has_custom_permissions FROM users WHERE user_id = $1', [userId]);
-    const hasCustom = userRes.rows[0]?.has_custom_permissions || false;
+    let hasCustom = false;
+    try {
+      const userRes = await db.query('SELECT has_custom_permissions FROM users WHERE user_id = $1', [userId]);
+      hasCustom = userRes.rows[0]?.has_custom_permissions || false;
+    } catch (err) {
+      if (err.code !== '42703') throw err; // 42703 is undefined_column
+    }
 
-    sendSuccess(res, { permissions: result.rows.map(r => r.permission_key), has_custom_permissions: hasCustom });
+    sendSuccess(res, { permissions, has_custom_permissions: hasCustom });
   } catch (error) {
     next(error);
   }
@@ -533,17 +544,27 @@ const updateUserPermissions = async (req, res, next) => {
 
   try {
     await db.withTransaction(async (client) => {
-      await client.query('UPDATE users SET has_custom_permissions = $1 WHERE user_id = $2', [has_custom_permissions, userId]);
+      try {
+        await client.query('UPDATE users SET has_custom_permissions = $1 WHERE user_id = $2', [has_custom_permissions, userId]);
+      } catch (err) {
+        if (err.code !== '42703') throw err;
+        throw new Error('Database migration pending. Please run the migration script to add has_custom_permissions column.');
+      }
       
-      await client.query('DELETE FROM user_permissions WHERE user_id = $1', [userId]);
-      
-      if (has_custom_permissions && Array.isArray(permissions) && permissions.length > 0) {
-        const values = permissions.map((p, i) => `($1, $${i + 2})`).join(', ');
-        const queryParams = [userId, ...permissions];
-        await client.query(
-          `INSERT INTO user_permissions (user_id, permission_id) VALUES ${values}`,
-          queryParams
-        );
+      try {
+        await client.query('DELETE FROM user_permissions WHERE user_id = $1', [userId]);
+        
+        if (has_custom_permissions && Array.isArray(permissions) && permissions.length > 0) {
+          const values = permissions.map((p, i) => `($1, $${i + 2})`).join(', ');
+          const queryParams = [userId, ...permissions];
+          await client.query(
+            `INSERT INTO user_permissions (user_id, permission_id) VALUES ${values}`,
+            queryParams
+          );
+        }
+      } catch (err) {
+        if (err.code !== '42P01') throw err;
+        throw new Error('Database migration pending. Please run the migration script to add user_permissions table.');
       }
     });
 

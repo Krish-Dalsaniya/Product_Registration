@@ -27,7 +27,8 @@ import {
   Plug,
   LifeBuoy,
   MessageSquare,
-  Bot
+  Bot,
+  Shield
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
@@ -337,6 +338,10 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             </div>
             <div className="animate-entrance-right" style={{ animationDelay: '225ms' }}>
               <NavItem to="/admin/roles" label="Roles" icon={Building2} />
+            </div>
+
+            <div className="animate-entrance-right" style={{ animationDelay: '235ms' }}>
+              <NavItem to="/admin/user-access" label="User Access" icon={Shield} />
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '250ms' }}>
