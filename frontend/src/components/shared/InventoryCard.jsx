@@ -63,35 +63,34 @@ const InventoryCard = ({
           </p>
         </div>
 
-        <div className="flex items-center justify-between pt-4 mt-4 border-t border-[var(--border-color)]">
-          <div className="flex-1">
-            <span className="flex items-center gap-1.5 bg-gradient-to-r from-[var(--accent)]/15 to-[var(--accent)]/5 px-2.5 py-1.5 rounded-lg border border-[var(--accent)]/30 w-fit">
-              <Package size={11} className="text-[var(--accent)] flex-shrink-0" strokeWidth={2.5} />
-              <span className="text-[9px] font-black text-[var(--accent)] uppercase tracking-[0.1em]">
-                {stockQuantity ?? 0} Units
+        <div className="flex items-center justify-between pt-3 mt-4 border-t border-[var(--border-color)]/60">
+          <div className="flex items-center gap-1.5">
+            <div className="px-2.5 py-1 bg-[var(--accent)]/10 rounded-md">
+              <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-wider">
+                Qty: {stockQuantity ?? 0}
               </span>
-            </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 transition-opacity">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit?.(item);
               }}
-              className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"
+              className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-[var(--accent)] text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm"
               title="Edit"
             >
-              <Pencil size={14} />
+              <Pencil size={12} />
             </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete?.(item);
               }}
-              className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"
+              className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-rose-500 text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm"
               title="Delete"
             >
-              <Trash2 size={14} />
+              <Trash2 size={12} />
             </button>
           </div>
         </div>

@@ -97,18 +97,16 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
               >
                 <Icon size={12} className={isActive ? 'text-white' : 'text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors'} />
                 <span>{tab.label}</span>
-                {tabs.length > 1 && (
-                  <button
-                    onClick={(e) => onTabClose(e, tab.fullPath)}
-                    className={`p-0.5 rounded-full transition-all duration-200 ${
-                      isActive
-                        ? 'hover:bg-white/20 text-white'
-                        : 'hover:bg-rose-500/10 text-[var(--text-dim)] hover:text-rose-500'
-                    }`}
-                  >
-                    <X size={10} strokeWidth={3} />
-                  </button>
-                )}
+                <button
+                  onClick={(e) => onTabClose(e, tab.fullPath)}
+                  className={`p-0.5 rounded-full transition-all duration-200 ${
+                    isActive
+                      ? 'hover:bg-white/20 text-white'
+                      : 'hover:bg-rose-500/10 text-[var(--text-dim)] hover:text-rose-500'
+                  }`}
+                >
+                  <X size={10} strokeWidth={3} />
+                </button>
               </div>
             );
           })}

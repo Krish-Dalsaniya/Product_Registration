@@ -229,7 +229,12 @@ export const useInventoryStats = () => {
     queryKey: ['inventoryStats'],
     queryFn: async () => {
       const res = await getAdminStats();
-      return res.data?.data?.inventory || { pcb: 0, electronics: 0, electrical: 0, structural: 0 };
+      const data = res.data?.data || {};
+      return {
+        ...(data.inventory || { pcb: 0, electronics: 0, electrical: 0, structural: 0 }),
+        finishedGoodsCount: data.finishedGoodsCount || 0,
+        finishedGoodsQty: data.finishedGoodsQty || 0
+      };
     },
     keepPreviousData: true,
   });
@@ -312,5 +317,40 @@ export const useInventoryOverview = ({ type, selectedCategory, searchTerm, pagin
       return { data: allItems, total: totalCount };
     },
     keepPreviousData: true,
+  });
+};
+
+export const useAddInventoryStock = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ category, id, quantityToAdd }) => {
+      let response;
+      if (category === 'PCB') {
+        const { addPCBStock } = await import('../api/inventory');
+        response = await addPCBStock(id, quantityToAdd);
+      } else if (category === 'Electronic Part') {
+        const { addElectronicsStock } = await import('../api/inventory');
+        response = await addElectronicsStock(id, quantityToAdd);
+      } else if (category === 'Electrical Part') {
+        const { addElectricalStock } = await import('../api/inventory');
+        response = await addElectricalStock(id, quantityToAdd);
+      } else if (category === 'Structural Part') {
+        const { addStructuralStock } = await import('../api/inventory');
+        response = await addStructuralStock(id, quantityToAdd);
+      } else {
+        throw new Error('Unknown category');
+      }
+      return response;
+    },
+    onSuccess: () => {
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventoryStats'] }),
+        queryClient.invalidateQueries({ queryKey: ['pcbs'] }),
+        queryClient.invalidateQueries({ queryKey: ['electronicsParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['electricalParts'] }),
+        queryClient.invalidateQueries({ queryKey: ['structuralParts'] })
+      ]);
+    }
   });
 };

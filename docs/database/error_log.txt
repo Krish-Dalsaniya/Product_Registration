@@ -201,3 +201,28 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
     at async getUsers (D:\LIPL\Product_Registration\backend\src\controllers\adminController.js:24:20)
 
+2026-06-08T09:38:27.026Z - error: relation "users" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:18:20)
+
+2026-06-09T05:49:28.928Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T05:49:30.046Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T05:49:32.166Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+
+2026-06-09T05:49:36.275Z - error: column "has_custom_permissions" does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:521:21)
+

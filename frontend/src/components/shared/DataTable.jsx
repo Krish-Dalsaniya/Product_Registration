@@ -3,7 +3,7 @@ import { Eye, Trash2, Maximize2, Minimize2, CheckSquare } from 'lucide-react';
 
 const DataTable = ({ 
   columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, 
-  onView, onEdit, onDelete, rowKey = 'id', 
+  onView, onEdit, onDelete, onRestock, rowKey = 'id', 
   enableBulkSelection = false, onBulkDelete 
 }) => {
   const [density, setDensity] = useState(() => {
@@ -140,6 +140,19 @@ const DataTable = ({
                       >
                         <Eye size={iconSize} strokeWidth={2} />
                       </button>
+                      {onRestock && (
+                        <button
+                          type="button"
+                          onClick={() => onRestock(row)}
+                          className={`text-[11px] font-bold uppercase tracking-wider px-3 ${pyClass} rounded-md transition-all duration-200`}
+                          style={{ background: 'transparent', border: '1.5px solid #10b981', color: '#10b981' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                          title="Quick Restock"
+                        >
+                          Restock
+                        </button>
+                      )}
                       {onEdit && (
                         <button
                           type="button"

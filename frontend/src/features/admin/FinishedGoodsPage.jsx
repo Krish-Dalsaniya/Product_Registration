@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useFinishedGoods, useFinishedGoodsOptions, useCreateFinishedGood, useUpdateFinishedGood, useDeleteFinishedGood } from '../../hooks/useFinishedGoods';
+import { useFinishedGoods, useFinishedGoodsOptions, useCreateFinishedGood, useUpdateFinishedGood, useDeleteFinishedGood, useAddFinishedGoodStock } from '../../hooks/useFinishedGoods';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import ViewToggle from '../../components/shared/ViewToggle';
@@ -22,7 +22,8 @@ import {
     LayoutGrid,
     List,
     ImageOff,
-    Eye
+    Eye,
+    PackagePlus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -51,8 +52,12 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
     const createFinishedGoodMutation = useCreateFinishedGood();
     const updateFinishedGoodMutation = useUpdateFinishedGood();
     const deleteFinishedGoodMutation = useDeleteFinishedGood();
+    const addStockMutation = useAddFinishedGoodStock();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isAddStockModalOpen, setIsAddStockModalOpen] = useState(false);
+    const [addStockItem, setAddStockItem] = useState(null);
+    const [stockQuantityToAdd, setStockQuantityToAdd] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form state
@@ -219,6 +224,26 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
         }
     };
 
+    const handleAddStockClick = (row) => {
+        setAddStockItem(row);
+        setStockQuantityToAdd(1);
+        setIsAddStockModalOpen(true);
+    };
+
+    const handleAddStockSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await addStockMutation.mutateAsync({ id: addStockItem.id || addStockItem.finished_good_id, quantityToAdd: stockQuantityToAdd });
+            toast.success(`Successfully added ${stockQuantityToAdd} to stock`);
+            setIsAddStockModalOpen(false);
+            setAddStockItem(null);
+        } catch (error) {
+            console.error(error);
+            const errorMessage = error?.response?.data?.error?.message || 'Failed to add stock';
+            toast.error(errorMessage);
+        }
+    };
+
     const resetForm = () => {
         setProductId(defaultProductId || '');
         setQuantity(1);
@@ -302,6 +327,24 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
             key: 'created_at',
             label: 'Created At',
             render: (row) => new Date(row.created_at).toLocaleDateString()
+        },
+        {
+            key: 'actions',
+            label: 'Actions',
+            render: (row) => (
+                <div className="flex items-center gap-1 justify-end">
+                    {hasPermission('products', 'edit') && (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleAddStockClick(row); }}
+                            className="p-1.5 text-[var(--accent)] bg-[var(--accent)]/10 hover:bg-[var(--accent)] hover:text-white rounded-md transition-colors"
+                            title="Quick Add Stock"
+                        >
+                            <PackagePlus size={14} />
+                        </button>
+                    )}
+                </div>
+            )
         }
     ];
 
@@ -694,90 +737,98 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                             <p className="text-[var(--text-dim)] font-medium">No finished goods found</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
                             {items.map((item) => (
-                                <div key={item.id} className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl">
-                                    <div onClick={() => handleView(item)} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] block cursor-zoom-in group/img">
+                                <div key={item.id} className="group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-[20px] overflow-hidden transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-[var(--accent)] hover:-translate-y-1 relative">
+                                    <div onClick={() => handleView(item)} className="relative h-40 w-full overflow-hidden bg-gradient-to-b from-[var(--bg-workspace)] to-[var(--bg-card)] border-b border-[var(--border-color)] cursor-zoom-in">
                                         {item.image_url ? (
-                                            <img src={item.image_url} alt={item.product_name} className="w-full h-full object-contain p-6 group-hover/img:scale-110 transition-transform duration-700 ease-out hover:scale-105" />
+                                            <img src={item.image_url} alt={item.product_name} className="w-full h-full object-contain p-6 group-hover:scale-110 transition-transform duration-700 ease-out" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] opacity-20">
-                                                <ImageOff size={64} strokeWidth={1} />
+                                                <ImageOff size={48} strokeWidth={1} />
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                                             <button 
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); handleView(item); }} 
-                                                className="w-12 h-12 bg-[var(--accent)] rounded-2xl shadow-xl flex items-center justify-center text-white hover:scale-110 transition-all transform translate-y-4 group-hover:translate-y-0" 
+                                                className="w-10 h-10 bg-[var(--accent)] rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform transform translate-y-2 group-hover:translate-y-0" 
                                                 title="View Details"
                                             >
-                                                <Eye size={22} />
+                                                <Eye size={18} />
                                             </button>
                                         </div>
-                                        <div className="absolute top-4 left-4">
-                                            <span className="bg-[var(--bg-card)] backdrop-blur-md border border-[var(--border-color)] text-[10px] font-black uppercase tracking-[0.15em] px-3.5 py-1.5 rounded-full text-[var(--accent)] shadow-sm">
+                                        <div className="absolute top-3 left-3">
+                                            <span className={`backdrop-blur-md border border-white/20 text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded-full shadow-sm text-white ${item.is_iot ? 'bg-[var(--accent)]/90' : 'bg-slate-800/80'}`}>
                                                 {item.is_iot ? 'IoT Device' : 'Non-IoT'}
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="p-4 flex-1 flex flex-col">
-                                        <div className="flex-1 space-y-3">
-                                            <h3 className="text-[15px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300 line-clamp-2">
-                                                {item.product_name} <span className="opacity-70 font-medium text-[13px]">(v{item.version || '1.0'})</span>
-                                            </h3>
-                                            <p className="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed">
-                                                <span className="font-mono">{item.product_code}</span>
+                                    <div className="p-5 flex-1 flex flex-col">
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start gap-2 mb-1">
+                                                <h3 className="text-[14px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300 line-clamp-2">
+                                                    {item.product_name}
+                                                </h3>
+                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-muted)] shrink-0">v{item.version || '1.0'}</span>
+                                            </div>
+                                            <p className="text-[10px] text-[var(--text-muted)] font-medium mb-3">
+                                                ID: <span className="font-mono text-[11px]">{item.product_code}</span>
                                             </p>
                                             
-                                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                            <div className="flex flex-wrap gap-1.5">
                                                 {item.hardware_features?.slice(0, 2).map((f, i) => (
-                                                    <span key={i} className="px-1.5 py-0.5 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded text-[9px] uppercase font-bold text-[var(--text-main)] truncate max-w-full">
-                                                        <span className="text-[var(--accent)]">{f.component_type}:</span> {getComponentName(f.component_type, f.component_id)}
+                                                    <span key={i} className="px-2 py-1 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-lg text-[9px] uppercase font-bold text-[var(--text-main)] truncate max-w-[160px] flex items-center gap-1.5">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-70"></span>
+                                                        <span className="opacity-70">{f.component_type}:</span> <span className="truncate">{getComponentName(f.component_type, f.component_id)}</span>
                                                     </span>
                                                 ))}
                                                 {(item.hardware_features?.length || 0) > 2 && (
-                                                    <span className="px-1.5 py-0.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded text-[9px] uppercase font-bold text-[var(--text-dim)]">
+                                                    <span className="px-2 py-1 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-[9px] uppercase font-bold text-[var(--text-dim)] flex items-center">
                                                         +{(item.hardware_features?.length || 0) - 2} more
                                                     </span>
                                                 )}
                                             </div>
                                         </div>
                                         
-                                        <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-40" />
-                                                    <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
+                                        <div className="flex items-center justify-between pt-3 mt-4 border-t border-[var(--border-color)]/60">
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="px-2.5 py-1 bg-[var(--accent)]/10 rounded-md">
+                                                    <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-wider">
                                                         Qty: {item.quantity}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-400 opacity-40" />
-                                                    <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">
-                                                        Ver: {item.version || '1.0'}
-                                                    </span>
-                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1 transition-opacity">
+                                                {hasPermission('products', 'edit') && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.stopPropagation(); handleAddStockClick(item); }}
+                                                        className="w-7 h-7 flex items-center justify-center bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white rounded-md transition-all shadow-sm"
+                                                        title="Quick Add Stock"
+                                                    >
+                                                        <PackagePlus size={12} />
+                                                    </button>
+                                                )}
                                                 {hasPermission('products', 'edit') && (
                                                     <button
                                                         type="button"
                                                         onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
-                                                        className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"
+                                                        className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-[var(--accent)] text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm"
                                                         title="Edit Finished Good"
                                                     >
-                                                        <Pencil size={14} />
+                                                        <Pencil size={12} />
                                                     </button>
                                                 )}
                                                 {hasPermission('products', 'delete') && (
                                                     <button
                                                         type="button"
                                                         onClick={(e) => { e.stopPropagation(); handleDelete(item); }}
-                                                        className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"
+                                                        className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-rose-500 text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm"
                                                         title="Delete Finished Good"
                                                     >
-                                                        <Trash2 size={14} />
+                                                        <Trash2 size={12} />
                                                     </button>
                                                 )}
                                             </div>
@@ -966,9 +1017,73 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                     </div>
                 </div>
             </Modal>
+
+            {/* Quick Add Stock Modal */}
+            <Modal
+                isOpen={isAddStockModalOpen}
+                onClose={() => { setIsAddStockModalOpen(false); setAddStockItem(null); }}
+                title="Quick Add Stock"
+                maxWidth="max-w-md"
+            >
+                {addStockItem && (
+                    <form onSubmit={handleAddStockSubmit} className="p-4 sm:p-6 space-y-6">
+                        <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
+                            <h4 className="text-[13px] font-black text-[var(--text-main)] mb-1">{addStockItem.product_name} <span className="opacity-70 text-[11px]">(v{addStockItem.version || '1.0'})</span></h4>
+                            <p className="text-[11px] font-medium text-[var(--text-muted)] font-mono">{addStockItem.product_code}</p>
+                            <div className="mt-3 inline-flex items-center gap-2 px-2.5 py-1 bg-[var(--accent)]/10 rounded-md">
+                                <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-wider">
+                                    Current Qty: {addStockItem.quantity}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">
+                                Quantity to Add <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="number"
+                                min="1"
+                                className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-2xl px-5 py-4 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold font-mono"
+                                value={stockQuantityToAdd}
+                                onChange={(e) => setStockQuantityToAdd(e.target.value)}
+                                required
+                                autoFocus
+                            />
+                            <p className="text-[10px] font-medium text-[var(--text-muted)] ml-1">New serial numbers will be generated automatically for the added quantity.</p>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]/60">
+                            <button
+                                type="button"
+                                onClick={() => setIsAddStockModalOpen(false)}
+                                className="px-6 py-3 rounded-xl font-black text-[11px] uppercase tracking-[0.1em] text-[var(--text-dim)] hover:text-[var(--text-main)] hover:bg-[var(--bg-workspace)] transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={addStockMutation.isLoading || stockQuantityToAdd < 1}
+                                className="flex items-center gap-2 bg-[var(--accent)] text-white px-6 py-3 rounded-xl font-black text-[11px] uppercase tracking-[0.1em] hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50 disabled:scale-100"
+                            >
+                                {addStockMutation.isLoading ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={16} />
+                                        Adding...
+                                    </>
+                                ) : (
+                                    <>
+                                        <PackagePlus size={16} />
+                                        Add Stock
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
         </div>
     );
 };
 
 export default FinishedGoodsPage;
-                

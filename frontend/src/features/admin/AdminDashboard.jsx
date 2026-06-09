@@ -23,6 +23,7 @@ import {
   ChevronRight,
   LifeBuoy,
   Package,
+  PackagePlus,
   ShoppingCart,
   Ticket
 } from 'lucide-react';
@@ -194,8 +195,8 @@ const AdminDashboard = () => {
         />
         <StatCard 
           title="Finished Goods" 
-          value={stats?.finishedGoodsQty || 0} 
-          icon={Package} 
+          value={stats?.finishedGoodsCount || 0} 
+          icon={PackagePlus} 
           path="/admin/finished-goods" 
           accentBg="rgba(16, 185, 129, 0.1)"
           accentText="#10b981"

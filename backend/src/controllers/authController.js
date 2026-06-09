@@ -70,13 +70,24 @@ const login = async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    const permsResult = await db.query(`
-      SELECT p.permission_key 
-      FROM permissions p
-      JOIN role_permissions rp ON p.permission_id = rp.permission_id
-      WHERE rp.role_id = $1
-    `, [user.role_id]);
-    const permissions = permsResult.rows.map(r => r.permission_key);
+    let permissions = [];
+    if (user.has_custom_permissions) {
+      const permsResult = await db.query(`
+        SELECT p.permission_key 
+        FROM permissions p
+        JOIN user_permissions up ON p.permission_id = up.permission_id
+        WHERE up.user_id = $1
+      `, [user.user_id]);
+      permissions = permsResult.rows.map(r => r.permission_key);
+    } else {
+      const permsResult = await db.query(`
+        SELECT p.permission_key 
+        FROM permissions p
+        JOIN role_permissions rp ON p.permission_id = rp.permission_id
+        WHERE rp.role_id = $1
+      `, [user.role_id]);
+      permissions = permsResult.rows.map(r => r.permission_key);
+    }
 
     sendSuccess(res, {
       user: {

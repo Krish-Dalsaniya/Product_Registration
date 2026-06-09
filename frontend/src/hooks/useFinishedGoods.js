@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getFinishedGoods, createFinishedGood, updateFinishedGood, deleteFinishedGood, getFinishedGoodsOptions } from '../api/finishedGoods';
+import { getFinishedGoods, createFinishedGood, updateFinishedGood, deleteFinishedGood, getFinishedGoodsOptions, addFinishedGoodStock } from '../api/finishedGoods';
 
 export const useFinishedGoods = (params) => {
   return useQuery({
@@ -46,6 +46,16 @@ export const useDeleteFinishedGood = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteFinishedGood,
+    onSuccess: () => {
+      return queryClient.invalidateQueries({ queryKey: ['finishedGoods'] });
+    },
+  });
+};
+
+export const useAddFinishedGoodStock = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, quantityToAdd }) => addFinishedGoodStock(id, quantityToAdd),
     onSuccess: () => {
       return queryClient.invalidateQueries({ queryKey: ['finishedGoods'] });
     },

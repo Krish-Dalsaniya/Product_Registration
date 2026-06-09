@@ -773,7 +773,7 @@ const ProductModal = ({
                            <p className="text-[12px] text-[var(--text-muted)] mt-2 max-w-md font-medium">Please save this product first before you can manage its finished goods inventory.</p>
                        </div>
                    ) : (
-                       <div className="-mx-4 md:-mx-8 -my-4 md:-my-8">
+                       <div className="pt-2">
                            <FinishedGoodsPage isEmbedded={true} defaultProductId={selectedProduct.product_id} />
                        </div>
                    )}

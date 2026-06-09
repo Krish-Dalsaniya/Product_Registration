@@ -4,19 +4,25 @@ const { parsePagination } = require('../utils/pagination');
 
 const getUsers = async (req, res, next) => {
   const { page, limit, offset } = parsePagination(req);
-  const { role } = req.query;
+  const { role, company } = req.query;
 
   try {
     // Use DISTINCT ON to prevent duplicate rows caused by users belonging to multiple teams
     let queryText = `
       SELECT DISTINCT ON (user_id) *, COUNT(*) OVER() as total_count
       FROM v_admin_user_panel
+      WHERE 1=1
     `;
     const params = [limit, offset];
 
     if (role) {
-      queryText += ` WHERE role_name::text = $3`;
       params.push(role);
+      queryText += ` AND role_name::text = $${params.length}`;
+    }
+    
+    if (company) {
+      params.push(company);
+      queryText += ` AND company::text = $${params.length}`;
     }
 
     queryText += ` ORDER BY user_id, created_at DESC LIMIT $1 OFFSET $2`;
@@ -191,6 +197,7 @@ const fetchAdminStatsData = async () => {
       (SELECT COUNT(*) FROM electronics_part_master WHERE is_active = TRUE) as electronics,
       (SELECT COUNT(*) FROM electrical_part_master WHERE is_active = TRUE) as electrical,
       (SELECT COUNT(*) FROM STRUCTURAL_PART_MASTER WHERE is_active = TRUE) as structural,
+      (SELECT COUNT(*) FROM finished_goods) as finished_goods_count,
       (SELECT COALESCE(SUM(quantity), 0) FROM finished_goods) as finished_goods_qty,
       (SELECT COUNT(*) FROM book_a_sale) as book_a_sale_count,
       (SELECT COALESCE(SUM(quantity), 0) FROM book_a_sale) as book_a_sale_qty,
@@ -211,6 +218,7 @@ const fetchAdminStatsData = async () => {
     teams: parseInt(row.designer_teams) + parseInt(row.sales_teams) + parseInt(row.maintenance_teams),
     products: parseInt(row.products),
     customers: parseInt(row.customers),
+    finishedGoodsCount: parseInt(row.finished_goods_count),
     finishedGoodsQty: parseInt(row.finished_goods_qty),
     bookASaleCount: parseInt(row.book_a_sale_count),
     bookASaleQty: parseInt(row.book_a_sale_qty),
@@ -243,7 +251,7 @@ const fs = require('fs');
 const path = require('path');
 
 const createUser = async (req, res, next) => {
-  const { full_name, email, password, role_name, team_id, team_ids } = req.body;
+  const { full_name, email, password, role_name, team_id, team_ids, company } = req.body;
 
   let image_url = null;
   if (req.file) {
@@ -277,9 +285,9 @@ const createUser = async (req, res, next) => {
 
         const password_hash = await bcrypt.hash(password, 10);
         const insertResult = await client.query(
-          `INSERT INTO users (full_name, email, password_hash, role_id, image_url) 
-           VALUES ($1, $2, $3, $4, $5) RETURNING user_id, full_name, email, image_url`,
-          [full_name, email, password_hash, role_id, image_url]
+          `INSERT INTO users (full_name, email, password_hash, role_id, image_url, company) 
+           VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id, full_name, email, image_url, company`,
+          [full_name, email, password_hash, role_id, image_url, company]
         );
 
         // Create profile based on role
@@ -325,7 +333,7 @@ const createUser = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   const { userId } = req.params;
-  const { full_name, email, role_name, team_id, team_ids } = req.body;
+  const { full_name, email, role_name, team_id, team_ids, company } = req.body;
 
   let image_url = null;
   if (req.file) {
@@ -365,16 +373,16 @@ const updateUser = async (req, res, next) => {
         if (image_url) {
           updateResult = await client.query(
             `UPDATE users 
-             SET full_name = $1, email = $2, role_id = $3, image_url = $4
-             WHERE user_id = $5 RETURNING user_id, full_name, email, image_url`,
-            [full_name, email, role_id, image_url, userId]
+             SET full_name = $1, email = $2, role_id = $3, image_url = $4, company = $5
+             WHERE user_id = $6 RETURNING user_id, full_name, email, image_url, company`,
+            [full_name, email, role_id, image_url, company, userId]
           );
         } else {
           updateResult = await client.query(
             `UPDATE users 
-             SET full_name = $1, email = $2, role_id = $3 
-             WHERE user_id = $4 RETURNING user_id, full_name, email, image_url`,
-            [full_name, email, role_id, userId]
+             SET full_name = $1, email = $2, role_id = $3, company = $4
+             WHERE user_id = $5 RETURNING user_id, full_name, email, image_url, company`,
+            [full_name, email, role_id, company, userId]
           );
         }
 
@@ -499,6 +507,52 @@ const removeUserImage = async (req, res, next) => {
   }
 };
 
+const getUserPermissions = async (req, res, next) => {
+  const { userId } = req.params;
+  try {
+    const result = await db.query(`
+      SELECT p.permission_id, p.permission_key 
+      FROM permissions p
+      JOIN user_permissions up ON p.permission_id = up.permission_id
+      WHERE up.user_id = $1
+    `, [userId]);
+    
+    // Also fetch user to know if they have custom permissions enabled
+    const userRes = await db.query('SELECT has_custom_permissions FROM users WHERE user_id = $1', [userId]);
+    const hasCustom = userRes.rows[0]?.has_custom_permissions || false;
+
+    sendSuccess(res, { permissions: result.rows.map(r => r.permission_key), has_custom_permissions: hasCustom });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateUserPermissions = async (req, res, next) => {
+  const { userId } = req.params;
+  const { permissions, has_custom_permissions } = req.body; // permissions is an array of permission_id
+
+  try {
+    await db.withTransaction(async (client) => {
+      await client.query('UPDATE users SET has_custom_permissions = $1 WHERE user_id = $2', [has_custom_permissions, userId]);
+      
+      await client.query('DELETE FROM user_permissions WHERE user_id = $1', [userId]);
+      
+      if (has_custom_permissions && Array.isArray(permissions) && permissions.length > 0) {
+        const values = permissions.map((p, i) => `($1, $${i + 2})`).join(', ');
+        const queryParams = [userId, ...permissions];
+        await client.query(
+          `INSERT INTO user_permissions (user_id, permission_id) VALUES ${values}`,
+          queryParams
+        );
+      }
+    });
+
+    sendSuccess(res, null, 'User permissions updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -511,6 +565,8 @@ module.exports = {
   createUser,
   updateUser,
   deleteUser,
-  removeUserImage
+  removeUserImage,
+  getUserPermissions,
+  updateUserPermissions
 };
 

@@ -16,7 +16,8 @@ import {
   useCreatePCB, useUpdatePCB, useDeletePCB,
   useUpdateElectronicsPart, useDeleteElectronicsPart,
   useUpdateElectricalPart, useDeleteElectricalPart,
-  useUpdateStructuralPart, useDeleteStructuralPart
+  useUpdateStructuralPart, useDeleteStructuralPart,
+  useAddInventoryStock
 } from '../../hooks/useInventory';
 import { 
   STRUCTURAL_SPEC_FIELDS, ELECTRONICS_SPEC_FIELDS, ELECTRICAL_SPEC_FIELDS,
@@ -57,7 +58,8 @@ import {
   Factory,
   Ruler,
   Pencil,
-  Maximize2
+  Maximize2,
+  PackagePlus
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
@@ -141,6 +143,34 @@ const InventoryListPage = ({ type = '' }) => {
 
   const updateStructuralPartMutation = useUpdateStructuralPart();
   const deleteStructuralPartMutation = useDeleteStructuralPart();
+
+  const addStockMutation = useAddInventoryStock();
+  const [quickAddModal, setQuickAddModal] = useState({ isOpen: false, item: null, quantityToAdd: '' });
+
+  const handleQuickAddOpen = (item) => {
+      setQuickAddModal({ isOpen: true, item, quantityToAdd: '' });
+  };
+
+  const handleQuickAddSubmit = async (e) => {
+      e.preventDefault();
+      const { item, quantityToAdd } = quickAddModal;
+      const qty = parseInt(quantityToAdd, 10);
+      if (!qty || qty <= 0) {
+          toast.error('Please enter a valid quantity greater than 0');
+          return;
+      }
+      
+      try {
+          const id = item.pcb_id || item.part_id || item.id;
+          const category = item.category || type || 'PCB';
+          
+          await addStockMutation.mutateAsync({ category, id, quantityToAdd: qty });
+          toast.success(`Successfully added ${qty} units to stock.`);
+          setQuickAddModal({ isOpen: false, item: null, quantityToAdd: '' });
+      } catch (err) {
+          toast.error('Failed to add stock');
+      }
+  };
 
   const getFullUrl = (path) => {
     if (!path) return null;
@@ -1017,11 +1047,12 @@ const InventoryListPage = ({ type = '' }) => {
 
       {/* Overview Stats */}
       {!type && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           <StatCard title="PCB Units" count={stats.pcb} icon={CircuitBoard} to="/admin/inventory/pcb" colorAccent="#3b82f6" />
           <StatCard title="Electronic Parts" count={stats.electronics} icon={Cpu} to="/admin/inventory/electronics" colorAccent="#10b981" />
           <StatCard title="Electrical Parts" count={stats.electrical} icon={Plug} to="/admin/inventory/electrical" colorAccent="#f59e0b" />
           <StatCard title="Structural Parts" count={stats.structural} icon={Layers} to="/admin/inventory/structural" colorAccent="#ec4899" />
+          <StatCard title="Finished Goods" count={stats.finishedGoodsCount} icon={PackagePlus} to="/admin/finished-goods" colorAccent="#8b5cf6" />
         </div>
       )}
 
@@ -1084,6 +1115,7 @@ const InventoryListPage = ({ type = '' }) => {
             onView={handleView}
             onEdit={hasPermission('inventory', 'edit') ? handleEdit : undefined}
             onDelete={hasPermission('inventory', 'delete') ? handleDelete : undefined}
+            onRestock={hasPermission('inventory', 'edit') ? handleQuickAddOpen : undefined}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
@@ -1129,20 +1161,22 @@ const InventoryListPage = ({ type = '' }) => {
                     </p>
                   </div>
                   
-                  <div className="flex items-center justify-between pt-4 mt-4 border-t border-[var(--border-color)]">
-                    <div className="flex-1">
+                  <div className="flex items-center justify-between pt-3 mt-4 border-t border-[var(--border-color)]/60">
+                    <div className="flex items-center gap-1.5">
                       {(item.stock_quantity !== undefined && item.stock_quantity !== null) && (
-                        <div className="flex items-center gap-1.5 bg-gradient-to-r from-[var(--accent)]/15 to-[var(--accent)]/5 px-2.5 py-1.5 rounded-lg border border-[var(--accent)]/30 w-fit">
-                          <Box size={11} className="text-[var(--accent)] flex-shrink-0" strokeWidth={2.5} />
-                          <span className="text-[9px] font-black text-[var(--accent)] uppercase tracking-[0.1em]">
-                            {item.stock_quantity} Units
+                        <div className="px-2.5 py-1 bg-[var(--accent)]/10 rounded-md">
+                          <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-wider">
+                            Qty: {item.stock_quantity}
                           </span>
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                       <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] hover:bg-[var(--nav-hover)] rounded-lg transition-all" title="Edit"><Pencil size={14} /></button>
-                       <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="p-2 text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"><Trash2 size={14} /></button>
+                    <div className="flex items-center gap-1 transition-opacity">
+                       {hasPermission('inventory', 'edit') && (
+                          <button onClick={(e) => { e.stopPropagation(); handleQuickAddOpen(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white rounded-md transition-all shadow-sm" title="Quick Restock"><PackagePlus size={12} /></button>
+                       )}
+                       <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-[var(--accent)] text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm" title="Edit"><Pencil size={12} /></button>
+                       <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-rose-500 text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm" title="Delete"><Trash2 size={12} /></button>
                     </div>
                   </div>
                 </div>
@@ -1316,15 +1350,13 @@ const InventoryListPage = ({ type = '' }) => {
                            >
                                <Trash2 size={18} />
                            </button>
-                        </div>
-
-                        {hasPermission('inventory', 'tech_view') && (
+                        </div>                        {hasPermission('inventory', 'view', 'general') && (
                           <div className="p-8 bg-[var(--bg-workspace)]/50 rounded-[32px] border border-[var(--border-color)] shadow-inner">
                              <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.25em] mb-4 flex items-center gap-3">
                                 <Info size={14} /> Technical Abstract
                              </h4>
                              <p className="text-[15px] text-[var(--text-main)] leading-relaxed font-bold opacity-90 italic">
-                               "{selectedItem?.description || selectedItem?.pcb_description || selectedItem?.part_description || 'Detailed technical specifications for this hardware asset are available in the attached documentation library.'}"
+                                "{selectedItem?.description || selectedItem?.pcb_description || selectedItem?.part_description || 'Detailed technical specifications for this hardware asset are available in the attached documentation library.'}"
                              </p>
                           </div>
                         )}
@@ -1333,16 +1365,18 @@ const InventoryListPage = ({ type = '' }) => {
                </div>
 
                {/* Technical Specs Grid */}
-               {hasPermission('inventory', 'tech_view') && renderTechnicalSpecs()}
+               {hasPermission('inventory', 'view', 'tech_spec') && renderTechnicalSpecs()}
 
                {/* Documentation Library */}
-               <div className="space-y-6">
-                  <div className="flex items-center gap-4 ml-4">
-                     <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-sm"><FileUp size={20} /></div>
-                     <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Documentation Library</h3>
-                  </div>
-                  {renderDocumentationLibrary()}
-               </div>
+               {hasPermission('inventory', 'view', 'files') && (
+                 <div className="space-y-6">
+                    <div className="flex items-center gap-4 ml-4">
+                       <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-sm"><FileUp size={20} /></div>
+                       <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Documentation Library</h3>
+                    </div>
+                    {renderDocumentationLibrary()}
+                 </div>
+               )}
             </div>
           ) : (
             /* Create / Edit Mode (Tabs) */
@@ -1615,6 +1649,57 @@ const InventoryListPage = ({ type = '' }) => {
               </div>
             </div>
           )}
+        </Modal>
+      )}
+
+      {/* Quick Add Stock Modal */}
+      {quickAddModal.isOpen && (
+        <Modal
+          isOpen={quickAddModal.isOpen}
+          onClose={() => setQuickAddModal({ isOpen: false, item: null, quantityToAdd: '' })}
+          title="Quick Restock"
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleQuickAddSubmit} className="space-y-6">
+             <div className="bg-[var(--bg-workspace)] p-4 rounded-2xl border border-[var(--border-color)]">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Item to Restock</p>
+                <p className="text-[14px] font-bold text-[var(--text-main)] truncate">{quickAddModal.item?.pcb_name || quickAddModal.item?.part_name || quickAddModal.item?.name}</p>
+                <p className="text-[11px] font-black text-[var(--accent)] mt-1">{quickAddModal.item?.part_no || quickAddModal.item?.part_number}</p>
+             </div>
+             
+             <div className="space-y-2">
+                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+                   Quantity to Add <span className="text-rose-500">*</span>
+                </label>
+                <input 
+                   type="number"
+                   min="1"
+                   required
+                   value={quickAddModal.quantityToAdd}
+                   onChange={(e) => setQuickAddModal(prev => ({ ...prev, quantityToAdd: e.target.value }))}
+                   placeholder="Enter quantity"
+                   className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[#10b981] focus:ring-4 focus:ring-[#10b981]/10 transition-all font-bold"
+                />
+             </div>
+
+             <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]">
+                <button
+                   type="button"
+                   onClick={() => setQuickAddModal({ isOpen: false, item: null, quantityToAdd: '' })}
+                   className="px-6 py-2.5 text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+                >
+                   Cancel
+                </button>
+                <button
+                   type="submit"
+                   disabled={addStockMutation.isLoading}
+                   className="px-6 py-2.5 text-[11px] font-black uppercase tracking-widest bg-[#10b981] text-white rounded-xl hover:bg-[#059669] shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                   {addStockMutation.isLoading ? <Loader2 size={14} className="animate-spin" /> : <PackagePlus size={14} />}
+                   Confirm Restock
+                </button>
+             </div>
+          </form>
         </Modal>
       )}
         <Lightbox 

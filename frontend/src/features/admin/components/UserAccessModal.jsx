@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import Modal from '../../../components/shared/Modal';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useCreateRole, useUpdateRole } from '../../../hooks/useRoles';
+import { useAuth } from '../../../context/AuthContext';
+import api from "../../../api/axiosInstance";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const MODULES = [
   { name: 'Dashboard' },
@@ -39,44 +40,62 @@ const ACTIONS = [
   { id: 'delete', label: 'Delete' }
 ];
 
-const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode }) => {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => {
   const [selectedPerms, setSelectedPerms] = useState({});
-  const createMutation = useCreateRole();
-  const updateMutation = useUpdateRole();
+  const [hasCustomPerms, setHasCustomPerms] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: userPermsData, isLoading } = useQuery({
+    queryKey: ['userPermissions', selectedUser?.user_id],
+    queryFn: async () => {
+      if (!selectedUser?.user_id) return null;
+      const res = await api.get(`/admin/users/${selectedUser.user_id}/permissions`);
+      return res.data.data;
+    },
+    enabled: isOpen && !!selectedUser,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data) => {
+      const res = await api.put(`/admin/users/${selectedUser.user_id}/permissions`, data);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['userPermissions', selectedUser?.user_id]);
+      queryClient.invalidateQueries(['users']);
+    }
+  });
 
   useEffect(() => {
-    if (isOpen) {
-      if (editingItem) {
-        reset({ role_name: editingItem.role_name, description: editingItem.description || '' });
-        const initialPerms = {};
-        if (editingItem.permissions && permissionsList) {
-          editingItem.permissions.forEach(pid => {
-            const p = permissionsList.find(x => x.permission_id === pid);
-            if (p) {
-              const parts = p.permission_key.split('.');
-              if (parts.length === 2) {
-                const [mod, act] = parts;
-                if (!initialPerms[mod]) initialPerms[mod] = {};
-                initialPerms[mod][act] = true;
-              } else if (parts.length === 3) {
-                const [mod, sub, act] = parts;
-                if (!initialPerms[mod]) initialPerms[mod] = {};
-                if (!initialPerms[mod][sub]) initialPerms[mod][sub] = {};
-                initialPerms[mod][sub][act] = true;
-              }
-            }
-          });
-        }
-        setSelectedPerms(initialPerms);
-      } else {
-        reset({ role_name: '', description: '' });
-        setSelectedPerms({});
+    if (isOpen && userPermsData) {
+      setHasCustomPerms(userPermsData.has_custom_permissions);
+      
+      const initialPerms = {};
+      if (userPermsData.permissions && permissionsList) {
+        userPermsData.permissions.forEach(key => {
+          const parts = key.split('.');
+          if (parts.length === 2) {
+            const [mod, act] = parts;
+            if (!initialPerms[mod]) initialPerms[mod] = {};
+            initialPerms[mod][act] = true;
+          } else if (parts.length === 3) {
+            const [mod, sub, act] = parts;
+            if (!initialPerms[mod]) initialPerms[mod] = {};
+            if (!initialPerms[mod][sub]) initialPerms[mod][sub] = {};
+            initialPerms[mod][sub][act] = true;
+          }
+        });
       }
+      setSelectedPerms(initialPerms);
+    } else if (!isOpen) {
+      setSelectedPerms({});
+      setHasCustomPerms(false);
     }
-  }, [isOpen, editingItem, reset, permissionsList]);
+  }, [isOpen, userPermsData, permissionsList]);
 
   const handleToggle = (moduleKey, actionKey, subKey = null) => {
+    if (!hasCustomPerms) return;
+    
     setSelectedPerms(prev => {
       const newPerms = { ...prev };
       
@@ -101,12 +120,11 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
     });
   };
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
-
-  const onSubmit = async (data) => {
+  const onSubmit = async (e) => {
+    e.preventDefault();
     try {
       const permissions = [];
-      if (permissionsList) {
+      if (hasCustomPerms && permissionsList) {
         Object.entries(selectedPerms).forEach(([mod, val1]) => {
           Object.entries(val1).forEach(([subOrAct, val2]) => {
             if (typeof val2 === 'boolean') {
@@ -128,59 +146,64 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
         });
       }
 
-      const payload = { ...data, permissions };
-
-      if (editingItem) {
-        await updateMutation.mutateAsync({ id: editingItem.role_id, data: payload });
-        toast.success('Role updated successfully');
-      } else {
-        await createMutation.mutateAsync(payload);
-        toast.success('Role created successfully');
-      }
+      await updateMutation.mutateAsync({ has_custom_permissions: hasCustomPerms, permissions });
+      toast.success('User permissions updated successfully');
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.error?.message || 'Failed to save role');
+      toast.error(error.response?.data?.error?.message || 'Failed to update user permissions');
     }
   };
 
-  const isView = modalMode === 'view';
-  const isAdmin = editingItem && editingItem.role_id === 1;
-  const isReadOnly = isAdmin || isView;
+  const isSubmitting = updateMutation.isPending;
+  const isReadOnly = selectedUser?.role_id === 1; // Cannot override Admin role users usually
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isView ? 'View Role' : (editingItem ? 'Edit Role' : 'New Role')}
+      title="User Access Control"
       maxWidth="max-w-[1000px]"
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Role Name *</label>
-            <input 
-              {...register('role_name', { required: 'Role name is required' })}
-              disabled={isReadOnly}
-              className={`w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] font-bold outline-none focus:border-[var(--accent)] transition-colors ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
-              placeholder="e.g. Content Manager"
-            />
-            {errors.role_name && <p className="text-red-500 text-[10px] font-bold uppercase tracking-wider ml-1">{errors.role_name.message}</p>}
-          </div>
-          <div className="space-y-2">
-            <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Description</label>
-            <input 
-              {...register('description')}
-              disabled={isReadOnly}
-              className={`w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] font-medium outline-none focus:border-[var(--accent)] transition-colors ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`}
-              placeholder="Role description..."
-            />
+      <form onSubmit={onSubmit} className="space-y-6">
+        <div className="flex items-center gap-4 bg-[var(--accent)]/10 p-4 rounded-xl border border-[var(--accent)]/30">
+          <ShieldAlert size={32} className="text-[var(--accent)]" />
+          <div>
+            <h4 className="text-[14px] font-bold text-[var(--text-main)]">{selectedUser?.full_name}</h4>
+            <p className="text-[11px] text-[var(--text-muted)] font-medium">Role: {selectedUser?.role_name}</p>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <h4 className="text-[12px] font-black uppercase tracking-widest text-[var(--text-main)]">Permissions Matrix</h4>
+        <div className="flex items-center gap-3 bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border-color)] shadow-sm">
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div className="relative">
+              <input 
+                type="checkbox" 
+                className="sr-only" 
+                checked={hasCustomPerms} 
+                onChange={(e) => setHasCustomPerms(e.target.checked)}
+                disabled={isReadOnly}
+              />
+              <div className={`block w-10 h-6 rounded-full transition-colors ${hasCustomPerms ? 'bg-[var(--accent)]' : 'bg-gray-400'}`}></div>
+              <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${hasCustomPerms ? 'translate-x-4' : ''}`}></div>
+            </div>
+            <div className="flex flex-col">
+              <span className={`text-[13px] font-black uppercase tracking-widest ${hasCustomPerms ? 'text-[var(--accent)]' : 'text-[var(--text-main)]'}`}>
+                Override Role Permissions
+              </span>
+              <span className="text-[11px] text-[var(--text-muted)]">
+                {hasCustomPerms ? 'User permissions will be used instead of their assigned role.' : 'User is currently inheriting permissions from their assigned role.'}
+              </span>
+            </div>
+          </label>
+        </div>
+
+        <div className={`space-y-4 transition-opacity duration-300 ${!hasCustomPerms ? 'opacity-50 pointer-events-none' : ''}`}>
+          <h4 className="text-[12px] font-black uppercase tracking-widest text-[var(--text-main)]">Custom Permissions Matrix</h4>
           
           <div className="overflow-x-auto border border-[var(--border-color)] rounded-2xl bg-[var(--bg-card)] max-h-[400px] overflow-y-auto">
+            {isLoading ? (
+              <div className="p-10 flex justify-center"><Loader2 size={24} className="animate-spin text-[var(--accent)]" /></div>
+            ) : (
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[var(--nav-hover)] border-b border-[var(--border-color)]">
@@ -219,10 +242,9 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
                                     <div className="flex justify-center w-full">
                                       <input
                                         type="checkbox"
-                                        checked={isAdmin ? true : isChecked}
-                                        disabled={isReadOnly}
+                                        checked={isChecked}
                                         onChange={() => handleToggle(modKey, actKey, sub.id)}
-                                        className={`w-4 h-4 accent-[var(--accent)] ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                                        className={`w-4 h-4 accent-[var(--accent)] cursor-pointer`}
                                       />
                                     </div>
                                   )}
@@ -250,10 +272,9 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
                               <div className="flex justify-center w-full">
                                 <input
                                   type="checkbox"
-                                  checked={isAdmin ? true : isChecked}
-                                  disabled={isReadOnly}
+                                  checked={isChecked}
                                   onChange={() => handleToggle(modKey, actKey)}
-                                  className={`w-4 h-4 accent-[var(--accent)] ${isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                                  className={`w-4 h-4 accent-[var(--accent)] cursor-pointer`}
                                 />
                               </div>
                             )}
@@ -265,25 +286,24 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
                 })}
               </tbody>
             </table>
+            )}
           </div>
-          {isAdmin && (
-            <p className="text-[11px] text-[var(--accent)] font-bold italic">* The Admin role automatically has all permissions and cannot be modified.</p>
+          {isReadOnly && (
+            <p className="text-[11px] text-[var(--accent)] font-bold italic">* This user is an Admin and their permissions cannot be overridden.</p>
           )}
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]">
           <button type="button" onClick={onClose} className="px-5 py-2.5 text-[11px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors uppercase tracking-wider">
-            {isView ? 'Close' : 'Cancel'}
+            Cancel
           </button>
-          {!isView && (
-            <button type="submit" disabled={isSubmitting || isAdmin} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest">
-              {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (editingItem ? 'Update Role' : 'Create Role')}
-            </button>
-          )}
+          <button type="submit" disabled={isSubmitting || isReadOnly} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest">
+            {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : 'Save Access Control'}
+          </button>
         </div>
       </form>
     </Modal>
   );
 };
 
-export default RoleModal;
+export default UserAccessModal;

@@ -20,7 +20,9 @@ const Breadcrumbs = ({ items = [] }) => {
     'customers': 'Customers',
     'dashboard': 'Dashboard',
     'designer': 'Designer',
-    'opportunities': 'Opportunities'
+    'opportunities': 'Opportunities',
+    'inventory': 'Inventory',
+    'finished-goods': 'Finished Goods'
   };
 
   const pathnames = location.pathname.split('/').filter((x) => x);
@@ -34,7 +36,8 @@ const Breadcrumbs = ({ items = [] }) => {
     '/admin/designers': ['admin', 'users'],
     '/admin/maintenance': ['admin', 'users'],
     '/admin/sales': ['admin', 'users'],
-    '/admin/teams': ['admin']
+    '/admin/teams': ['admin'],
+    '/admin/finished-goods': ['admin', 'inventory']
   };
 
   const currentPath = location.pathname;
@@ -53,6 +56,7 @@ const Breadcrumbs = ({ items = [] }) => {
       else if (name === 'designers') routeTo = '/admin/designers';
       else if (name === 'sales') routeTo = '/admin/sales';
       else if (name === 'maintenance') routeTo = '/admin/maintenance';
+      else if (name === 'inventory') routeTo = '/admin/inventory';
       else routeTo = currentPath; // The last item
     } else {
       // Default logic for flat paths

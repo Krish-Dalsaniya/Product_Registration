@@ -84,6 +84,7 @@ router.delete('/:module/categories/:categoryName', customCategoryController.dele
 router.get('/pcb', cache(60), inventoryController.getPCBs);
 router.get('/pcb/:id', cache(60), inventoryController.getPCBById);
 router.post('/pcb', requirePermission('inventory.create'), upload.fields(pcbFiles), clearCache('/api/inventory'), inventoryController.createPCB);
+router.post('/pcb/:id/add-stock', requirePermission('inventory.edit'), clearCache('/api/inventory'), inventoryController.addPCBStock);
 router.put('/pcb/:id', requirePermission('inventory.edit'), upload.fields(pcbFiles), clearCache('/api/inventory'), inventoryController.updatePCB);
 router.delete('/pcb/:id', requirePermission('inventory.delete'), clearCache('/api/inventory'), inventoryController.deletePCB);
 router.delete('/pcb/:id/image', requirePermission('inventory.edit'), clearCache('/api/inventory'), inventoryController.deletePCBImage);
@@ -92,6 +93,7 @@ router.delete('/pcb/:id/file', requirePermission('inventory.edit'), clearCache('
 router.get('/electronics', cache(60), electronicsController.getElectronicsParts);
 router.get('/electronics/:id', cache(60), electronicsController.getElectronicsPartById);
 router.post('/electronics', requirePermission('inventory.create'), upload.fields(electronicsFiles), clearCache('/api/inventory'), electronicsController.createElectronicsPart);
+router.post('/electronics/:id/add-stock', requirePermission('inventory.edit'), clearCache('/api/inventory'), electronicsController.addElectronicsStock);
 router.put('/electronics/:id', requirePermission('inventory.edit'), upload.fields(electronicsFiles), clearCache('/api/inventory'), electronicsController.updateElectronicsPart);
 router.delete('/electronics/:id', requirePermission('inventory.delete'), clearCache('/api/inventory'), electronicsController.deleteElectronicsPart);
 router.delete('/electronics/:id/image', requirePermission('inventory.edit'), clearCache('/api/inventory'), electronicsController.deleteElectronicsImage);
@@ -100,6 +102,7 @@ router.delete('/electronics/:id/file', requirePermission('inventory.edit'), clea
 router.get('/electrical', cache(60), electricalController.getElectricalParts);
 router.get('/electrical/:id', cache(60), electricalController.getElectricalPartById);
 router.post('/electrical', requirePermission('inventory.create'), upload.fields(electricalFiles), clearCache('/api/inventory'), electricalController.createElectricalPart);
+router.post('/electrical/:id/add-stock', requirePermission('inventory.edit'), clearCache('/api/inventory'), electricalController.addElectricalStock);
 router.put('/electrical/:id', requirePermission('inventory.edit'), upload.fields(electricalFiles), clearCache('/api/inventory'), electricalController.updateElectricalPart);
 router.delete('/electrical/:id', requirePermission('inventory.delete'), clearCache('/api/inventory'), electricalController.deleteElectricalPart);
 router.delete('/electrical/:id/image', requirePermission('inventory.edit'), clearCache('/api/inventory'), electricalController.deleteElectricalImage);
@@ -108,6 +111,7 @@ router.delete('/electrical/:id/file', requirePermission('inventory.edit'), clear
 router.get('/structural', cache(60), structuralController.getStructuralParts);
 router.get('/structural/:id', cache(60), structuralController.getStructuralPartById);
 router.post('/structural', requirePermission('inventory.create'), upload.fields(structuralFiles), clearCache('/api/inventory'), structuralController.createStructuralPart);
+router.post('/structural/:id/add-stock', requirePermission('inventory.edit'), clearCache('/api/inventory'), structuralController.addStructuralStock);
 router.put('/structural/:id', requirePermission('inventory.edit'), upload.fields(structuralFiles), clearCache('/api/inventory'), structuralController.updateStructuralPart);
 router.delete('/structural/:id', requirePermission('inventory.delete'), clearCache('/api/inventory'), structuralController.deleteStructuralPart);
 router.delete('/structural/:id/image', requirePermission('inventory.edit'), clearCache('/api/inventory'), structuralController.deleteStructuralImage);

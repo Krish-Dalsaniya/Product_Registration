@@ -168,7 +168,7 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const loggedUser = await login(data.email, data.password);
+      const loggedUser = await login(data.email, data.password, data.rememberMe);
       
       if (data.rememberMe) {
         localStorage.setItem('rememberedEmail', data.email);

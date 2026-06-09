@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUsers, useAdminStats, useCreateUser, useUpdateUser, useDeleteUser, useRemoveUserImage } from '../../hooks/useUsers';
 import { useTeams } from '../../hooks/useTeams';
-import { useRoles } from '../../hooks/useRoles';
+import { useRoles, usePermissions } from '../../hooks/useRoles';
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
-import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List } from 'lucide-react';
+import UserAccessModal from './components/UserAccessModal';
+import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List, Building } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
 import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
@@ -22,6 +23,7 @@ const UserListPage = ({ initialRole = '' }) => {
   const { hasPermission } = useAuth();
   const [viewMode, setViewMode] = useState('grid');
   const [roleFilter, setRoleFilter] = useState(initialRole);
+  const [companyFilter, setCompanyFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
@@ -29,13 +31,15 @@ const UserListPage = ({ initialRole = '' }) => {
   const queryParams = {
     page: pagination.page,
     limit: pagination.limit,
-    role: roleFilter || undefined
+    role: roleFilter || undefined,
+    company: companyFilter || undefined
   };
 
   const { data: usersData, isLoading: usersLoading } = useUsers(queryParams);
   const { data: statsData } = useAdminStats();
   const { data: teamsData } = useTeams();
   const { data: rolesData } = useRoles();
+  const { data: permissionsList } = usePermissions();
 
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
@@ -55,6 +59,7 @@ const UserListPage = ({ initialRole = '' }) => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,6 +106,7 @@ const UserListPage = ({ initialRole = '' }) => {
       formData.append('full_name', data.full_name);
       formData.append('email', data.email);
       if (data.password) formData.append('password', data.password);
+      if (data.company) formData.append('company', data.company);
       
       const finalRoleName = data.role_name || (modalMode === 'edit' ? selectedUser?.role_name : (initialRole || 'Designer'));
       formData.append('role_name', finalRoleName);
@@ -149,7 +155,7 @@ const UserListPage = ({ initialRole = '' }) => {
     if (draft && draft.data && Object.keys(draft.data).length > 0) {
       reset(draft.data);
     } else {
-      reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer' });
+      reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer', company: '' });
     }
     
     setIsModalOpen(true);
@@ -178,7 +184,8 @@ const UserListPage = ({ initialRole = '' }) => {
     const resetData = {
       full_name: user.full_name,
       email: user.email,
-      role_name: user.role_name
+      role_name: user.role_name,
+      company: user.company || ''
     };
     const draftId = `user_edit_${user.user_id}`;
     const draft = store.getState().drafts[draftId];
@@ -239,6 +246,11 @@ const UserListPage = ({ initialRole = '' }) => {
   const columns = [
     { key: 'full_name', label: 'Full Name' },
     { key: 'email', label: 'Email Address' },
+    {
+      key: 'company',
+      label: 'Company',
+      render: (row) => row.company ? <span className="text-[12px] font-semibold">{row.company}</span> : <span className="text-[11px] text-[var(--text-muted)] italic">N/A</span>
+    },
     {
       key: 'role_name',
       label: 'Role Assignment',
@@ -407,6 +419,31 @@ const UserListPage = ({ initialRole = '' }) => {
           </div>
         )}
 
+        <div className="relative min-w-[160px] md:w-auto w-full">
+          <select
+            value={companyFilter || ''}
+            onChange={(e) => {
+              setCompanyFilter(e.target.value);
+              setPagination(p => ({ ...p, page: 1 }));
+            }}
+            className="w-full appearance-none bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-4 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black tracking-wider text-[var(--text-main)] uppercase cursor-pointer shadow-sm hover:border-[var(--accent)]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238888aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundSize: '1.2em',
+              backgroundPosition: 'right 0.6rem center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
+            <option value="">ALL COMPANIES</option>
+            <option value="SmarTec">SMARTEC</option>
+            <option value="Illuminated Minds">ILLUMINATED MINDS</option>
+            <option value="NAF Media">NAF MEDIA</option>
+            <option value="Peg-IT Healthcare">PEG-IT HEALTHCARE</option>
+            <option value="Leons Integration">LEONS INTEGRATION</option>
+            <option value="Crudex Controls">CRUDEX CONTROLS</option>
+          </select>
+        </div>
+
         <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
       </div>
 
@@ -495,6 +532,21 @@ const UserListPage = ({ initialRole = '' }) => {
                 </div>
               </div>
 
+              {selectedUser?.company && (
+                <div className="flex items-center gap-4 p-3 hover:bg-[var(--bg-workspace)] transition-colors rounded-xl group">
+                  <div 
+                    className="p-2.5 rounded-lg group-hover:scale-110 transition-transform"
+                    style={{ background: 'var(--nav-hover)', color: 'var(--accent)' }}
+                  >
+                    <Building size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Company</p>
+                    <p className="text-sm font-semibold text-[var(--text-main)]">{selectedUser.company}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center gap-4 p-3 hover:bg-[var(--bg-workspace)] transition-colors rounded-xl group">
                 <div 
                   className="p-2.5 rounded-lg group-hover:scale-110 transition-transform"
@@ -530,7 +582,16 @@ const UserListPage = ({ initialRole = '' }) => {
               )}
             </div>
 
-            <div className="pt-4">
+            <div className="pt-4 space-y-3">
+              {(hasPermission('roles', 'edit') || selectedUser?.role_id === 1) && (
+                <button 
+                  onClick={() => setIsAccessModalOpen(true)} 
+                  className="w-full flex justify-center items-center gap-2 font-bold py-3.5 rounded-lg transition-all active:scale-95 text-[13px] uppercase tracking-widest border border-[var(--accent)] hover:bg-[var(--accent)] hover:text-white group"
+                  style={{ color: 'var(--accent)' }}
+                >
+                  <Shield size={16} className="group-hover:text-white" /> Manage Access Control
+                </button>
+              )}
               <button 
                 onClick={() => setIsModalOpen(false)} 
                 className="w-full font-bold py-3.5 rounded-lg transition-all active:scale-95 text-[13px] uppercase tracking-widest border border-[var(--border-color)] hover:bg-[var(--nav-hover)]"
@@ -591,6 +652,20 @@ const UserListPage = ({ initialRole = '' }) => {
               <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
               <input {...register('email', { required: 'Email is required' })} type="email" autoComplete="off" className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)]" placeholder="john@procore.sys" />
               {errors.email && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.email.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Company</label>
+              <select {...register('company', { required: 'Company is required' })} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] appearance-none text-[var(--text-main)] cursor-pointer" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}>
+                <option value="">Select Company</option>
+                <option value="SmarTec">SmarTec</option>
+                <option value="Illuminated Minds">Illuminated Minds</option>
+                <option value="NAF Media">NAF Media</option>
+                <option value="Peg-IT Healthcare">Peg-IT Healthcare</option>
+                <option value="Leons Integration">Leons Integration</option>
+                <option value="Crudex Controls">Crudex Controls</option>
+              </select>
+              {errors.company && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.company.message}</p>}
             </div>
 
             {modalMode === 'create' && (
@@ -715,6 +790,15 @@ const UserListPage = ({ initialRole = '' }) => {
           </form>
         )}
       </Modal>
+      
+      {isAccessModalOpen && (
+        <UserAccessModal
+          isOpen={isAccessModalOpen}
+          onClose={() => setIsAccessModalOpen(false)}
+          selectedUser={selectedUser}
+          permissionsList={permissionsList}
+        />
+      )}
     </div>
   );
 };

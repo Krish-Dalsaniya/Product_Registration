@@ -489,6 +489,32 @@ const deleteStructuralFile = async (req, res, next) => {
         next(error);
     }
 };
+const addStructuralStock = async (req, res, next) => {
+    const { id } = req.params;
+    const { quantityToAdd } = req.body;
+
+    try {
+        const addedQty = parseInt(quantityToAdd);
+        if (isNaN(addedQty) || addedQty <= 0) {
+            return res.status(400).json({ success: false, error: { message: 'Quantity to add must be greater than zero.' } });
+        }
+
+        const partResult = await db.query('SELECT * FROM STRUCTURAL_PART_MASTER WHERE part_id = $1 AND is_active = TRUE', [id]);
+        if (partResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: { message: 'Structural Part not found' } });
+        }
+
+        await db.query(
+            'UPDATE STRUCTURAL_PART_MASTER SET stock_quantity = COALESCE(stock_quantity, 0) + $1, updated_at = CURRENT_TIMESTAMP WHERE part_id = $2',
+            [addedQty, id]
+        );
+
+        sendSuccess(res, null, `Successfully added ${addedQty} stock to the Structural Part`);
+    } catch (error) {
+        console.error('Add Structural Stock Error:', error);
+        next(error);
+    }
+};
 
 module.exports = {
     getStructuralParts,
@@ -497,5 +523,6 @@ module.exports = {
     updateStructuralPart,
     deleteStructuralPart,
     deleteStructuralImage,
-    deleteStructuralFile
+    deleteStructuralFile,
+    addStructuralStock
 };

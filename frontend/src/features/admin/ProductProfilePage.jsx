@@ -84,6 +84,20 @@ const ProductProfilePage = () => {
     }
   }, [selectedProduct, updateTabLabel, location]);
 
+  const availableTabs = React.useMemo(() => [
+    ...(hasPermission('products', 'view', 'general') ? ['description', 'features'] : []),
+    ...(hasPermission('products', 'view', 'tech_spec') ? ['specification', 'faqs'] : []), 
+    ...(hasPermission('products', 'view', 'files') ? ['documents'] : []), 
+    ...(hasPermission('products', 'view', 'bom') ? ['bill of materials'] : []),
+    ...(hasPermission('inventory', 'view') ? ['finished goods'] : [])
+  ], [hasPermission]);
+
+  useEffect(() => {
+    if (availableTabs.length > 0 && !availableTabs.includes(activeTab)) {
+      setActiveTab(availableTabs[0]);
+    }
+  }, [availableTabs, activeTab]);
+
   const parseHardwareSpec = (specStr) => {
     try {
       if (!specStr) return null;
@@ -307,10 +321,11 @@ const ProductProfilePage = () => {
       <div className="bg-[var(--bg-surface)] rounded-[32px] border border-[var(--border-color)] overflow-hidden shadow-sm">
         <div className="flex bg-[var(--bg-workspace)] border-b border-[var(--border-color)] overflow-x-auto no-scrollbar">
           {[
-            'description', 
-            ...(hasPermission('products', 'tech_view') ? ['specification'] : []), 
-            'documents', 
-            ...(hasPermission('products', 'tech_view') ? ['faqs', 'bill of materials', 'finished goods'] : [])
+            ...(hasPermission('products', 'view', 'general') ? ['description', 'features'] : []),
+            ...(hasPermission('products', 'view', 'tech_spec') ? ['specification', 'faqs'] : []), 
+            ...(hasPermission('products', 'view', 'files') ? ['documents'] : []), 
+            ...(hasPermission('products', 'view', 'bom') ? ['bill of materials'] : []),
+            ...(hasPermission('inventory', 'view') ? ['finished goods'] : [])
           ].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-4.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
               {tab}

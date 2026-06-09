@@ -399,10 +399,76 @@ const updateFinishedGood = async (req, res, next) => {
     }
 };
 
+const addFinishedGoodStock = async (req, res, next) => {
+    const { id } = req.params;
+    const { quantityToAdd } = req.body;
+
+    try {
+        const addedQty = parseInt(quantityToAdd);
+        if (isNaN(addedQty) || addedQty <= 0) {
+            return res.status(400).json({ success: false, error: { code: 'INVALID_QUANTITY', message: 'Quantity to add must be greater than zero.' } });
+        }
+
+        const currentFgQuery = await db.query('SELECT * FROM finished_goods WHERE id = $1', [id]);
+        if (currentFgQuery.rows.length === 0) {
+            return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Finished Good not found' } });
+        }
+        const currentFg = currentFgQuery.rows[0];
+
+        const hardwareQuery = await db.query('SELECT component_type as type, component_id as id FROM finished_goods_hardware WHERE finished_good_id = $1', [id]);
+        const hardwareFeatures = hardwareQuery.rows;
+
+        // Check if we need motherboard for inventory check
+        const featuresToCheck = [...hardwareFeatures];
+        if (currentFg.is_iot && currentFg.motherboard_id) {
+            featuresToCheck.push({ type: 'pcb', id: currentFg.motherboard_id });
+        }
+
+        // Validate inventory for the *new* amount only
+        const inventoryError = await validateHardwareInventory(featuresToCheck, addedQty);
+        if (inventoryError) {
+            return res.status(400).json({ success: false, error: { code: 'INSUFFICIENT_INVENTORY', message: inventoryError.message, details: inventoryError.feature } });
+        }
+
+        let newSerials = [];
+
+        await db.withTransaction(async (client) => {
+            // Update the quantity in finished_goods table
+            await client.query(
+                'UPDATE finished_goods SET quantity = quantity + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                [addedQty, id]
+            );
+
+            // Deduct from hardware inventory
+            await updateHardwareInventory(client, featuresToCheck, addedQty, false);
+
+            // Fetch current quantity to correctly start numbering the serials
+            const existingSerialsCountRes = await client.query('SELECT COUNT(*) as count FROM finished_goods_serials WHERE finished_good_id = $1', [id]);
+            const startIdx = parseInt(existingSerialsCountRes.rows[0].count) || 0;
+
+            // Generate and insert new serials
+            for (let i = 0; i < addedQty; i++) {
+                const serialNumber = `FG-${currentFg.product_id}-${Date.now()}-${startIdx + i + 1}-${Math.floor(Math.random() * 1000)}`;
+                newSerials.push(serialNumber);
+                await client.query(
+                    'INSERT INTO finished_goods_serials (finished_good_id, serial_number) VALUES ($1, $2)',
+                    [id, serialNumber]
+                );
+            }
+        });
+
+        sendSuccess(res, { added_serials: newSerials }, `Successfully added ${addedQty} stock to the finished good`);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getFinishedGoods,
     createFinishedGood,
     getComponentOptions,
     deleteFinishedGood,
-    updateFinishedGood
+    updateFinishedGood,
+    addFinishedGoodStock
 };
+

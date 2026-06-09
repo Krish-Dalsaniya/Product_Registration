@@ -11,6 +11,7 @@ export const updatePCB = (id, formData) => axiosInstance.put(`/inventory/pcb/${i
 export const deletePCB = (id) => axiosInstance.delete(`/inventory/pcb/${id}`);
 export const deletePCBImage = (id, imageUrl) => axiosInstance.delete(`/inventory/pcb/${id}/image`, { data: { imageUrl } });
 export const deletePCBFile = (id, field) => axiosInstance.delete(`/inventory/pcb/${id}/file`, { data: { field } });
+export const addPCBStock = (id, quantityToAdd) => axiosInstance.post(`/inventory/pcb/${id}/add-stock`, { quantityToAdd });
 
 export const getElectronicsParts = (params) => axiosInstance.get('/inventory/electronics', { params });
 export const getElectronicsPartById = (id) => axiosInstance.get(`/inventory/electronics/${id}`);
@@ -23,6 +24,7 @@ export const updateElectronicsPart = (id, formData) => axiosInstance.put(`/inven
 export const deleteElectronicsPart = (id) => axiosInstance.delete(`/inventory/electronics/${id}`);
 export const deleteElectronicsImage = (id, image_url) => axiosInstance.delete(`/inventory/electronics/${id}/image`, { data: { image_url } });
 export const deleteElectronicsFile = (id, field) => axiosInstance.delete(`/inventory/electronics/${id}/file`, { data: { field } });
+export const addElectronicsStock = (id, quantityToAdd) => axiosInstance.post(`/inventory/electronics/${id}/add-stock`, { quantityToAdd });
 
 export const getElectricalParts = (params) => axiosInstance.get('/inventory/electrical', { params });
 export const getElectricalPartById = (id) => axiosInstance.get(`/inventory/electrical/${id}`);
@@ -35,6 +37,7 @@ export const updateElectricalPart = (id, formData) => axiosInstance.put(`/invent
 export const deleteElectricalPart = (id) => axiosInstance.delete(`/inventory/electrical/${id}`);
 export const deleteElectricalImage = (id, imageUrl) => axiosInstance.delete(`/inventory/electrical/${id}/image`, { data: { imageUrl } });
 export const deleteElectricalFile = (id, field) => axiosInstance.delete(`/inventory/electrical/${id}/file`, { data: { field } });
+export const addElectricalStock = (id, quantityToAdd) => axiosInstance.post(`/inventory/electrical/${id}/add-stock`, { quantityToAdd });
 
 export const getStructuralParts = (params) => axiosInstance.get('/inventory/structural', { params });
 export const getStructuralPartById = (id) => axiosInstance.get(`/inventory/structural/${id}`);
@@ -47,3 +50,4 @@ export const updateStructuralPart = (id, formData) => axiosInstance.put(`/invent
 export const deleteStructuralPart = (id) => axiosInstance.delete(`/inventory/structural/${id}`);
 export const deleteStructuralImage = (id, imageUrl) => axiosInstance.delete(`/inventory/structural/${id}/image`, { data: { imageUrl } });
 export const deleteStructuralFile = (id, field) => axiosInstance.delete(`/inventory/structural/${id}/file`, { data: { field } });
+export const addStructuralStock = (id, quantityToAdd) => axiosInstance.post(`/inventory/structural/${id}/add-stock`, { quantityToAdd });

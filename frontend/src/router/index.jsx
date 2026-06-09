@@ -142,13 +142,7 @@ const DashboardLayout = () => {
     } catch (e) {
       console.error(e);
     }
-    // Default tab
-    const isStandardRole = ['Admin', 'Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
-    return [{ 
-      fullPath: isStandardRole ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
-      label: 'Dashboard', 
-      iconType: 'Home' 
-    }];
+    return [];
   });
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
@@ -160,6 +154,7 @@ const DashboardLayout = () => {
     // Avoid adding tabs for login, unauthorized or wildcard pages
     if (['/login', '/unauthorized', '/unauthorized/'].includes(location.pathname)) return;
     if (location.pathname === '/' || location.pathname === '') return;
+    if (location.pathname.endsWith('/dashboard')) return; // Do not add tabs for dashboards
 
     const meta = getTabMetadata(location.pathname, location.search);
     
@@ -182,14 +177,18 @@ const DashboardLayout = () => {
   const handleCloseTab = (e, pathToDelete) => {
     e.stopPropagation(); // Prevent navigating to the tab being closed
     
-    // Always keep at least one tab
-    if (tabs.length <= 1) {
-      toast.error('Cannot close the last remaining tab');
+    const indexToDelete = tabs.findIndex(t => t.fullPath === pathToDelete);
+    const newTabs = tabs.filter(t => t.fullPath !== pathToDelete);
+    
+    if (newTabs.length === 0) {
+      const isStandardRole = ['Admin', 'Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
+      const defaultPath = isStandardRole ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard';
+      setTabs([]);
+      localStorage.removeItem(storageKey);
+      navigate(defaultPath);
       return;
     }
 
-    const indexToDelete = tabs.findIndex(t => t.fullPath === pathToDelete);
-    const newTabs = tabs.filter(t => t.fullPath !== pathToDelete);
     setTabs(newTabs);
     localStorage.setItem(storageKey, JSON.stringify(newTabs));
 
@@ -215,14 +214,11 @@ const DashboardLayout = () => {
     
     if (result.isConfirmed) {
       const isStandardRole = ['Admin', 'Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
-      const dashboardTab = { 
-        fullPath: isStandardRole ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard', 
-        label: 'Dashboard', 
-        iconType: 'Home' 
-      };
-      setTabs([dashboardTab]);
-      localStorage.setItem(storageKey, JSON.stringify([dashboardTab]));
-      navigate(dashboardTab.fullPath);
+      const defaultPath = isStandardRole ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard';
+      
+      setTabs([]);
+      localStorage.removeItem(storageKey);
+      navigate(defaultPath);
       toast.success('All tabs cleared');
     }
   };

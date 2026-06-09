@@ -31,3 +31,8 @@ export const updateFinishedGood = async (id, data) => {
     const response = await api.put(`/finished-goods/${id}`, data);
     return response.data;
 };
+
+export const addFinishedGoodStock = async (id, quantityToAdd) => {
+    const response = await api.post(`/finished-goods/${id}/add-stock`, { quantityToAdd });
+    return response.data;
+};

@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
 
     if (user) {
       dispatch({
@@ -46,13 +46,19 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe = false) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const res = await loginApi(email, password);
       const { user } = res.data.data;
       
-      localStorage.setItem('user', JSON.stringify(user));
+      if (rememberMe) {
+        localStorage.setItem('user', JSON.stringify(user));
+        sessionStorage.removeItem('user');
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(user));
+        localStorage.removeItem('user');
+      }
       
       dispatch({
         type: 'LOGIN',
@@ -71,11 +77,22 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.error('Logout error:', e);
     }
+    // Clear all workspace tabs to prevent them from persisting after logout
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('workspace_tabs_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+
     localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
     dispatch({ type: 'LOGOUT' });
   };
 
-  const hasPermission = (moduleName, action) => {
+  const hasPermission = (moduleName, action, subsection = null) => {
     if (!state.user) return false;
     if (state.user.role_name === 'Admin') return true;
     
@@ -84,14 +101,22 @@ export const AuthProvider = ({ children }) => {
     const actionLower = action.toLowerCase();
     const modKey = moduleName.replace(/\s+/g, '').toLowerCase();
 
-    // Transparently proxy 'view' to check for either 'tech_view' or 'comm_view'
-    if (actionLower === 'view') {
-      return state.user.permissions.includes(`${modKey}.tech_view`) || 
-             state.user.permissions.includes(`${modKey}.comm_view`);
+    if (subsection) {
+      const subKey = subsection.replace(/\s+/g, '_').toLowerCase();
+      return state.user.permissions.includes(`${modKey}.${subKey}.${actionLower}`);
     }
 
-    const permissionKey = `${modKey}.${actionLower}`;
-    return state.user.permissions.includes(permissionKey);
+    const directKey = `${modKey}.${actionLower}`;
+    if (state.user.permissions.includes(directKey)) return true;
+
+    // Sub-section fallback logic:
+    // If checking for general access (e.g. 'view') on a module, 
+    // grant it if they have that action on ANY subsection of that module.
+    if (actionLower === 'view' || actionLower === 'create' || actionLower === 'edit' || actionLower === 'delete') {
+       return state.user.permissions.some(p => p.startsWith(`${modKey}.`) && p.endsWith(`.${actionLower}`));
+    }
+
+    return false;
   };
 
   return (
