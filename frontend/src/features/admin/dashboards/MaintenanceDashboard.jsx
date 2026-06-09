@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import api from '../../../api/api';
+import api from '../../../api/axiosInstance';
 import {
   LifeBuoy,
   AlertCircle,
@@ -138,17 +138,17 @@ const MaintenanceDashboard = () => {
             {stats?.recentUnresolvedTickets && stats.recentUnresolvedTickets.length > 0 ? (
               <div className="space-y-3">
                 {stats.recentUnresolvedTickets.map(t => (
-                  <div key={t.id} className="p-3 border border-[var(--border-color)] rounded-xl bg-[var(--bg-workspace)] flex justify-between items-center cursor-pointer hover:border-[var(--accent)]" onClick={() => navigate(\`/admin/support-tickets/\${t.id}\`)}>
+                  <div key={t.id} className="p-3 border border-[var(--border-color)] rounded-xl bg-[var(--bg-workspace)] flex justify-between items-center cursor-pointer hover:border-[var(--accent)]" onClick={() => navigate(`/admin/support-tickets/${t.id}`)}>
                 <div>
                   <div className="font-bold text-[13px] text-[var(--text-main)]">{t.ticket_id}</div>
                   <div className="text-[12px] text-[var(--text-muted)]">{t.issue_type}</div>
                   <div className="text-[10px] text-[var(--text-dim)] mt-1">{format(new Date(t.created_at), 'MMM d, yyyy')}</div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <span className={\`px-2 py-0.5 rounded-full text-[10px] font-bold \${
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                     t.priority === 'High' ? 'bg-red-500/10 text-red-500' :
                       t.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'
-                  }\`}>
+                  }`}>
                   {t.priority}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--border-color)] text-[var(--text-main)]">

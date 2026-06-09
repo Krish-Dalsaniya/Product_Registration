@@ -16,6 +16,7 @@
     "@tanstack/react-query-devtools": "^5.100.14",
     "autoprefixer": "^10.5.0",
     "axios": "^1.15.2",
+    "date-fns": "^4.4.0",
     "lucide-react": "^1.11.0",
     "postcss": "^8.5.12",
     "react": "^19.2.5",
