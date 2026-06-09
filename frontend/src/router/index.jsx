@@ -318,9 +318,7 @@ const Router = () => {
         {/* Designer Workspace Dashboard & Specifics */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Designer']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/designer" element={<Navigate to="/designer/dashboard" />} />
-          <Route element={<RoleGuard allowedRoles={['Designer']} />}>
           <Route path="/designer/dashboard" element={<DesignerDashboard />} />
-          </Route>
           <Route path="/designer/support-tickets" element={<SupportTicketsPage />} />
           <Route path="/designer/support-tickets/:id" element={<SupportTicketProfilePage />} />
           <Route path="/designer/chat" element={<ChatPage />} />
@@ -329,9 +327,7 @@ const Router = () => {
         {/* Sales Workspace Dashboard & Specifics */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Sales']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/sales" element={<Navigate to="/sales/dashboard" />} />
-          <Route element={<RoleGuard allowedRoles={['Sales']} />}>
           <Route path="/sales/dashboard" element={<SalesDashboard />} />
-          </Route>
           {/* <Route path="/sales/opportunities" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Opportunities Pipeline...</div>} /> */}
           <Route path="/sales/support-tickets" element={<SupportTicketsPage />} />
           <Route path="/sales/support-tickets/:id" element={<SupportTicketProfilePage />} />
@@ -341,9 +337,7 @@ const Router = () => {
         {/* Maintenance Workspace Dashboard & Specifics */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Maintenance']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/maintenance" element={<Navigate to="/maintenance/dashboard" />} />
-          <Route element={<RoleGuard allowedRoles={['Maintenance']} />}>
           <Route path="/maintenance/dashboard" element={<MaintenanceDashboard />} />
-          </Route>
           <Route path="/maintenance/support-tickets" element={<SupportTicketsPage />} />
           <Route path="/maintenance/support-tickets/:id" element={<SupportTicketProfilePage />} />
           <Route path="/maintenance/chat" element={<ChatPage />} />

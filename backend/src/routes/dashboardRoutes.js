@@ -7,8 +7,8 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-router.get('/sales', requirePermission('dashboard.view'), getSalesDashboardStats);
-router.get('/maintenance', requirePermission('dashboard.view'), getMaintenanceDashboardStats);
-router.get('/designer', requirePermission('dashboard.view'), getDesignerDashboardStats);
+router.get('/sales', requirePermission('sales.view'), getSalesDashboardStats);
+router.get('/maintenance', requirePermission('supporttickets.view'), getMaintenanceDashboardStats);
+router.get('/designer', requirePermission('products.view'), getDesignerDashboardStats);
 
 module.exports = router;
