@@ -1175,8 +1175,12 @@ const InventoryListPage = ({ type = '' }) => {
                        {hasPermission('inventory', 'edit') && (
                           <button onClick={(e) => { e.stopPropagation(); handleQuickAddOpen(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white rounded-md transition-all shadow-sm" title="Quick Restock"><PackagePlus size={12} /></button>
                        )}
-                       <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-[var(--accent)] text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm" title="Edit"><Pencil size={12} /></button>
-                       <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-rose-500 text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm" title="Delete"><Trash2 size={12} /></button>
+                       {hasPermission('inventory', 'edit') && (
+                          <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-[var(--accent)] text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm" title="Edit"><Pencil size={12} /></button>
+                       )}
+                       {hasPermission('inventory', 'delete') && (
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-rose-500 text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm" title="Delete"><Trash2 size={12} /></button>
+                       )}
                     </div>
                   </div>
                 </div>
@@ -1678,7 +1682,7 @@ const InventoryListPage = ({ type = '' }) => {
                    value={quickAddModal.quantityToAdd}
                    onChange={(e) => setQuickAddModal(prev => ({ ...prev, quantityToAdd: e.target.value }))}
                    placeholder="Enter quantity"
-                   className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[#10b981] focus:ring-4 focus:ring-[#10b981]/10 transition-all font-bold"
+                   className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 transition-all font-bold"
                 />
              </div>
 
@@ -1693,7 +1697,7 @@ const InventoryListPage = ({ type = '' }) => {
                 <button
                    type="submit"
                    disabled={addStockMutation.isLoading}
-                   className="px-6 py-2.5 text-[11px] font-black uppercase tracking-widest bg-[#10b981] text-white rounded-xl hover:bg-[#059669] shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+                   className="px-6 py-2.5 text-[11px] font-black uppercase tracking-widest bg-[var(--accent)] text-white rounded-xl hover:opacity-90 shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
                 >
                    {addStockMutation.isLoading ? <Loader2 size={14} className="animate-spin" /> : <PackagePlus size={14} />}
                    Confirm Restock

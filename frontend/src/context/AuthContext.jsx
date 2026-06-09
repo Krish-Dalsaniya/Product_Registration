@@ -49,8 +49,24 @@ export const AuthProvider = ({ children }) => {
       logout();
     };
 
+    const handleStorageChange = (e) => {
+      if (e.key === 'user') {
+        const newUser = e.newValue ? JSON.parse(e.newValue) : null;
+        if (newUser) {
+          dispatch({ type: 'LOGIN', payload: { user: newUser } });
+        } else {
+          dispatch({ type: 'LOGOUT' });
+        }
+      }
+    };
+
     window.addEventListener('unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('unauthorized', handleUnauthorized);
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('unauthorized', handleUnauthorized);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const login = async (email, password, rememberMe = false) => {

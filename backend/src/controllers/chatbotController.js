@@ -437,23 +437,61 @@ exports.chat = async (req, res) => {
       return res.status(400).json({ error: 'Messages array is required' });
     }
 
+    let isAdmin = req.user?.role_name === 'Admin';
+    let userPermissions = [];
+    
+    if (!isAdmin && req.user) {
+      const roleId = req.user.role_id;
+      const userId = req.user.user_id;
+      const customRes = await db.query('SELECT has_custom_permissions FROM user_custom_access WHERE user_id = $1', [userId]);
+      const hasCustom = customRes.rows.length > 0 ? customRes.rows[0].has_custom_permissions : false;
+      
+      if (hasCustom) {
+        const result = await db.query(`SELECT p.permission_key FROM permissions p JOIN user_permissions up ON p.permission_id = up.permission_id WHERE up.user_id = $1`, [userId]);
+        userPermissions = result.rows.map(r => r.permission_key);
+      } else {
+        const result = await db.query(`SELECT p.permission_key FROM permissions p JOIN role_permissions rp ON p.permission_id = rp.permission_id WHERE rp.role_id = $1`, [roleId]);
+        userPermissions = result.rows.map(r => r.permission_key);
+      }
+    }
+
     let statsContext = '';
     try {
       const stats = await fetchAdminStatsData();
-      statsContext = `
-Here is the real-time data from the dashboard:
-- Total Designers: ${stats.designers}
-- Total Sales Personnel: ${stats.sales}
-- Total Maintenance Staff: ${stats.maintenance}
-- Total Teams: ${stats.teams} (Designers: ${stats.designerTeams}, Sales: ${stats.salesTeams}, Maintenance: ${stats.maintenanceTeams})
-- Total Active Products: ${stats.products}
-- Total Customers: ${stats.customers}
-- Inventory Counts (Active): PCB: ${stats.inventory.pcb}, Electronics: ${stats.inventory.electronics}, Electrical: ${stats.inventory.electrical}, Structural: ${stats.inventory.structural}
-- Finished Goods Quantity: ${stats.finishedGoodsQty}
-- Sales Logged (Book a Sale): ${stats.bookASaleCount} records, Total Quantity: ${stats.bookASaleQty}
-- Support Tickets: ${stats.supportTicketsTotal} total, ${stats.supportTicketsActive} active (Pending/In Progress)
+      let statsText = [];
+      
+      if (isAdmin || userPermissions.includes('users.view')) {
+         statsText.push(`- Total Designers: ${stats.designers}`);
+         statsText.push(`- Total Sales Personnel: ${stats.sales}`);
+         statsText.push(`- Total Maintenance Staff: ${stats.maintenance}`);
+      }
+      if (isAdmin || userPermissions.includes('teams.view')) {
+         statsText.push(`- Total Teams: ${stats.teams} (Designers: ${stats.designerTeams}, Sales: ${stats.salesTeams}, Maintenance: ${stats.maintenanceTeams})`);
+      }
+      if (isAdmin || userPermissions.includes('products.view')) {
+         statsText.push(`- Total Active Products: ${stats.products}`);
+      }
+      if (isAdmin || userPermissions.includes('customers.view')) {
+         statsText.push(`- Total Customers: ${stats.customers}`);
+      }
+      if (isAdmin || userPermissions.includes('inventory.view')) {
+         statsText.push(`- Inventory Counts (Active): PCB: ${stats.inventory.pcb}, Electronics: ${stats.inventory.electronics}, Electrical: ${stats.inventory.electrical}, Structural: ${stats.inventory.structural}`);
+      }
+      if (isAdmin || userPermissions.includes('finishedgoods.view')) {
+         statsText.push(`- Finished Goods Quantity: ${stats.finishedGoodsQty}`);
+      }
+      if (isAdmin || userPermissions.includes('sales.view')) {
+         statsText.push(`- Sales Logged (Book a Sale): ${stats.bookASaleCount} records, Total Quantity: ${stats.bookASaleQty}`);
+      }
+      if (isAdmin || userPermissions.includes('supporttickets.view')) {
+         statsText.push(`- Support Tickets: ${stats.supportTicketsTotal} total, ${stats.supportTicketsActive} active (Pending/In Progress)`);
+      }
 
-Use this data to directly answer questions about quantities or statistics without telling the user to navigate to the dashboard.`;
+      if (statsText.length > 0) {
+        statsContext = `\nHere is the real-time data from the dashboard you have access to:\n` + statsText.join('\n') + `\nUse this data to directly answer questions about quantities or statistics without telling the user to navigate to the dashboard.`;
+      } else {
+        statsContext = `\nYou currently do not have permission to view real-time statistics.`;
+      }
     } catch (err) {
       console.error('Failed to fetch stats for chatbot context:', err);
     }
@@ -468,30 +506,29 @@ Use this data to directly answer questions about quantities or statistics withou
       ...messages
     ];
 
-    const userRole = req.user?.role_name || 'Designer'; // fallback if no auth (though route is protected)
     let allowedTools = [];
 
-    // Filter tools based on role
-    if (userRole === 'Admin') {
+    // Filter tools based on user permissions
+    if (isAdmin) {
       allowedTools = groqTools; // Admins get everything
     } else {
       const toolPermissions = {
-        'get_low_inventory': ['Maintenance', 'Designer'],
-        'get_recent_sales_summary': ['Sales'],
-        'get_pending_support_tickets': ['Maintenance'],
-        'search_product_details': ['Designer', 'Sales', 'Maintenance'],
-        'search_customer': ['Sales'],
-        'search_support_ticket': ['Designer', 'Sales', 'Maintenance'],
-        'create_support_ticket': ['Designer', 'Sales', 'Maintenance'],
-        'autofill_product_form': ['Designer'],
-        'update_inventory': ['Maintenance', 'Designer'],
-        'assign_ticket': ['Maintenance', 'Designer', 'Sales'],
-        'autofill_book_a_sale': ['Sales']
+        'get_low_inventory': 'inventory.view',
+        'get_recent_sales_summary': 'sales.view',
+        'get_pending_support_tickets': 'supporttickets.view',
+        'search_product_details': 'products.view',
+        'search_customer': 'customers.view',
+        'search_support_ticket': 'supporttickets.view',
+        'create_support_ticket': 'supporttickets.create',
+        'autofill_product_form': 'products.create',
+        'update_inventory': 'inventory.edit',
+        'assign_ticket': 'supporttickets.edit',
+        'autofill_book_a_sale': 'sales.create'
       };
       
       allowedTools = groqTools.filter(tool => {
-        const allowedRoles = toolPermissions[tool.function.name];
-        return allowedRoles && allowedRoles.includes(userRole);
+        const requiredPerm = toolPermissions[tool.function.name];
+        return requiredPerm && userPermissions.includes(requiredPerm);
       });
     }
 

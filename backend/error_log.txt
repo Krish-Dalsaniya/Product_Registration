@@ -179,3 +179,73 @@
     at async Object.withTransaction (D:\Product_Registration\backend\src\config\db.js:45:20)
     at async updateUserPermissions (D:\Product_Registration\backend\src\controllers\adminController.js:550:5)
 
+2026-06-09T10:15:40.633Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getSaleOptions (D:\Product_Registration\backend\src\controllers\bookASaleController.js:12:27)
+
+2026-06-09T10:15:40.649Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getSales (D:\Product_Registration\backend\src\controllers\bookASaleController.js:82:20)
+
+2026-06-09T10:15:51.699Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getSales (D:\Product_Registration\backend\src\controllers\bookASaleController.js:82:20)
+
+2026-06-09T10:15:51.706Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getSaleOptions (D:\Product_Registration\backend\src\controllers\bookASaleController.js:12:27)
+
+2026-06-09T10:16:38.761Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getFinishedGoods (D:\Product_Registration\backend\src\controllers\finishedGoodsController.js:121:24)
+
+2026-06-09T10:17:04.999Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:18:20)
+
+2026-06-09T10:17:40.170Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:18:20)
+
+2026-06-09T10:41:57.299Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:18:20)
+
+2026-06-09T10:42:18.922Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getCompanies (D:\Product_Registration\backend\src\controllers\companyController.js:6:20)
+
+2026-06-09T10:42:18.929Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getCategories (D:\Product_Registration\backend\src\controllers\categoryController.js:6:20)
+
+2026-06-09T10:42:28.983Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getCategories (D:\Product_Registration\backend\src\controllers\categoryController.js:6:20)
+
+2026-06-09T10:42:28.987Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getCompanies (D:\Product_Registration\backend\src\controllers\companyController.js:6:20)
+
+2026-06-09T10:43:11.297Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getFinishedGoods (D:\Product_Registration\backend\src\controllers\finishedGoodsController.js:121:24)
+
+2026-06-09T10:43:20.969Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:18:20)
+

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-
+import { useAuth } from './AuthContext';
 const ThemeContext = createContext();
 
 export const AVAILABLE_THEMES = [
@@ -60,13 +60,23 @@ const FONT_STACK_MAP = {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setThemeState] = useState(localStorage.getItem('theme') || 'light');
-  const [font, setFontState] = useState(localStorage.getItem('font') || 'font-inter');
+  const { user } = useAuth();
+  
+  const getThemeKey = () => `theme_${user?.user_id || 'guest'}`;
+  const getFontKey = () => `font_${user?.user_id || 'guest'}`;
+
+  const [theme, setThemeState] = useState(localStorage.getItem(getThemeKey()) || 'light');
+  const [font, setFontState] = useState(localStorage.getItem(getFontKey()) || 'font-inter');
+
+  useEffect(() => {
+    setThemeState(localStorage.getItem(getThemeKey()) || 'light');
+    setFontState(localStorage.getItem(getFontKey()) || 'font-inter');
+  }, [user?.user_id]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    localStorage.setItem(getThemeKey(), theme);
+  }, [theme, user?.user_id]);
 
   useEffect(() => {
     // Apply font
@@ -87,8 +97,8 @@ export const ThemeProvider = ({ children }) => {
     document.documentElement.style.setProperty('--font-body', fontStack);
     document.documentElement.style.setProperty('--font-sans', fontStack);
     document.documentElement.setAttribute('data-font', font);
-    localStorage.setItem('font', font);
-  }, [font]);
+    localStorage.setItem(getFontKey(), font);
+  }, [font, user?.user_id]);
 
   const setTheme = (newTheme) => setThemeState(newTheme);
   const setFont = (newFont) => setFontState(newFont);

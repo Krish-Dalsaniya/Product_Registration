@@ -91,6 +91,13 @@ exports.updateRole = async (req, res) => {
     }
 
     await client.query('COMMIT');
+
+    // Clear Redis cache for this role
+    const redisClient = require('../config/redis');
+    if (redisClient && redisClient.isReady) {
+      await redisClient.del(`role_perms:${roleId}`);
+    }
+
     res.json({ success: true, message: 'Role updated successfully' });
   } catch (error) {
     await client.query('ROLLBACK');

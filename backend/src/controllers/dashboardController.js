@@ -174,8 +174,32 @@ const getDesignerDashboardStats = async (req, res, next) => {
   }
 };
 
+const getLowStockAlerts = async (req, res, next) => {
+  try {
+    const threshold = 10;
+    
+    // Fetch from all 4 tables
+    const pcbsRes = await safeQuery(`SELECT pcb_id as id, pcb_name as name, part_no as part_number, stock_quantity, 'PCB' as category FROM pcb_master WHERE stock_quantity < $1 AND is_active = TRUE`, [threshold]);
+    const electricalRes = await safeQuery(`SELECT part_id as id, part_name as name, part_number, stock_quantity, 'Electrical' as category FROM electrical_part_master WHERE stock_quantity < $1 AND is_active = TRUE`, [threshold]);
+    const electronicsRes = await safeQuery(`SELECT part_id as id, part_name as name, part_number, stock_quantity, 'Electronics' as category FROM electronics_part_master WHERE stock_quantity < $1 AND is_active = TRUE`, [threshold]);
+    const structuralRes = await safeQuery(`SELECT part_id as id, part_name as name, part_number, stock_quantity, 'Structural' as category FROM structural_part_master WHERE stock_quantity < $1 AND is_active = TRUE`, [threshold]);
+    
+    const alerts = [
+      ...(pcbsRes.rows || []),
+      ...(electricalRes.rows || []),
+      ...(electronicsRes.rows || []),
+      ...(structuralRes.rows || [])
+    ].sort((a, b) => a.stock_quantity - b.stock_quantity); // Sort by lowest stock first
+
+    sendSuccess(res, alerts);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getSalesDashboardStats,
   getMaintenanceDashboardStats,
-  getDesignerDashboardStats
+  getDesignerDashboardStats,
+  getLowStockAlerts
 };

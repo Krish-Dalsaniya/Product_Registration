@@ -13,6 +13,8 @@ export const deletePCBImage = (id, imageUrl) => axiosInstance.delete(`/inventory
 export const deletePCBFile = (id, field) => axiosInstance.delete(`/inventory/pcb/${id}/file`, { data: { field } });
 export const addPCBStock = (id, quantityToAdd) => axiosInstance.post(`/inventory/pcb/${id}/add-stock`, { quantityToAdd });
 
+export const getLowStockAlerts = () => axiosInstance.get('/dashboard/low-stock-alerts');
+
 export const getElectronicsParts = (params) => axiosInstance.get('/inventory/electronics', { params });
 export const getElectronicsPartById = (id) => axiosInstance.get(`/inventory/electronics/${id}`);
 export const createElectronicsPart = (formData) => axiosInstance.post('/inventory/electronics', formData, {
