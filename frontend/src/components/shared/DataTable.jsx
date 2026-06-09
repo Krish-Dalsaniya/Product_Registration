@@ -165,17 +165,19 @@ const DataTable = ({
                           Update
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onDelete && onDelete(row); }}
-                        className={`${btnPad} rounded-lg transition-all duration-200`}
-                        style={{ color: '#f87171', background: 'rgba(239,68,68,0.1)' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
-                        title="Delete Record"
-                      >
-                        <Trash2 size={iconSize-4} strokeWidth={2.5} />
-                      </button>
+                      {onDelete && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onDelete(row); }}
+                          className={`${btnPad} rounded-lg transition-all duration-200`}
+                          style={{ color: '#f87171', background: 'rgba(239,68,68,0.1)' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+                          title="Delete Record"
+                        >
+                          <Trash2 size={iconSize-4} strokeWidth={2.5} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

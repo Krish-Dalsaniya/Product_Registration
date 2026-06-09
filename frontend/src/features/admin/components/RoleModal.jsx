@@ -182,8 +182,8 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
           
           <div className="overflow-x-auto border border-[var(--border-color)] rounded-2xl bg-[var(--bg-card)] max-h-[400px] overflow-y-auto">
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-[var(--nav-hover)] border-b border-[var(--border-color)]">
+              <thead className="sticky top-0 z-10 bg-[var(--bg-card)]">
+                <tr className="border-b border-[var(--border-color)]">
                   <th className="p-4 w-[20%] text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)]">MODULE</th>
                   {ACTIONS.map(action => (
                     <th key={action.id} className="p-4 w-[20%] text-center text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)] last:border-0">{action.label}</th>

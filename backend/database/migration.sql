@@ -9,6 +9,10 @@ BEGIN;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS company VARCHAR(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS has_custom_permissions BOOLEAN DEFAULT false;
 
+-- 1b. Add created_by to customers and book_a_sale for non-admin dashboards
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(user_id) ON DELETE SET NULL;
+ALTER TABLE book_a_sale ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(user_id) ON DELETE SET NULL;
+
 -- 2. Update v_admin_user_panel view to include the company column
 DROP VIEW IF EXISTS v_admin_user_panel;
 CREATE VIEW v_admin_user_panel AS

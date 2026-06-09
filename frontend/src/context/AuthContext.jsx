@@ -44,6 +44,13 @@ export const AuthProvider = ({ children }) => {
     } else {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
+
+    const handleUnauthorized = () => {
+      logout();
+    };
+
+    window.addEventListener('unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('unauthorized', handleUnauthorized);
   }, []);
 
   const login = async (email, password, rememberMe = false) => {

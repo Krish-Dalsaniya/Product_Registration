@@ -27,10 +27,7 @@ const MODULES = [
     ] 
   },
   { name: 'Sales' },
-  { name: 'Support Tickets' },
-  { name: 'Roles' },
-  { name: 'Teams' },
-  { name: 'Users' }
+  { name: 'Support Tickets' }
 ];
 
 const ACTIONS = [
@@ -215,8 +212,8 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
               <div className="absolute inset-0 flex items-center justify-center"><Loader2 size={32} className="animate-spin text-[var(--accent)]" /></div>
             ) : (
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-[var(--nav-hover)] border-b border-[var(--border-color)]">
+              <thead className="sticky top-0 z-10 bg-[var(--bg-card)]">
+                <tr className="border-b border-[var(--border-color)]">
                   <th className="p-4 w-[20%] text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)]">MODULE</th>
                   {ACTIONS.map(action => (
                     <th key={action.id} className="p-4 w-[20%] text-center text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)] last:border-0">{action.label}</th>

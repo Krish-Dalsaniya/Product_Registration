@@ -583,15 +583,7 @@ const UserListPage = ({ initialRole = '' }) => {
             </div>
 
             <div className="pt-4 space-y-3">
-              {(hasPermission('roles', 'edit') || selectedUser?.role_id === 1) && (
-                <button 
-                  onClick={() => setIsAccessModalOpen(true)} 
-                  className="w-full flex justify-center items-center gap-2 font-bold py-3.5 rounded-lg transition-all active:scale-95 text-[13px] uppercase tracking-widest border border-[var(--accent)] hover:bg-[var(--accent)] hover:text-white group"
-                  style={{ color: 'var(--accent)' }}
-                >
-                  <Shield size={16} className="group-hover:text-white" /> Manage Access Control
-                </button>
-              )}
+
               <button 
                 onClick={() => setIsModalOpen(false)} 
                 className="w-full font-bold py-3.5 rounded-lg transition-all active:scale-95 text-[13px] uppercase tracking-widest border border-[var(--border-color)] hover:bg-[var(--nav-hover)]"

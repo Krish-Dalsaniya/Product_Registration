@@ -106,20 +106,24 @@ const UserGridView = ({
                   <RoleBadge role={user.role_name} />
                 </div>
                 <div className="flex items-center gap-1">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onEdit(user); }} 
-                    className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" 
-                    title="Edit User"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onDelete(user); }} 
-                    className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all" 
-                    title="Delete User"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {onEdit && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onEdit(user); }} 
+                      className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" 
+                      title="Edit User"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onDelete(user); }} 
+                      className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all" 
+                      title="Delete User"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

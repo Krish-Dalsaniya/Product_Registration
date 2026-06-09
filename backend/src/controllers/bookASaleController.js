@@ -93,6 +93,7 @@ const getSales = async (req, res, next) => {
  * Book a sale: validates finished goods quantity and reduces it.
  */
 const createSale = async (req, res, next) => {
+  const userId = req.user ? req.user.user_id : null;
   const { finished_good_id, customer_id, quantity } = req.body;
 
   if (!finished_good_id || !customer_id || !quantity) {
@@ -137,9 +138,9 @@ const createSale = async (req, res, next) => {
 
         // Create the sale record
         const saleResult = await client.query(
-          `INSERT INTO book_a_sale (finished_good_id, customer_id, quantity, sale_date)
-           VALUES ($1, $2::uuid, $3, NOW()) RETURNING *`,
-          [finished_good_id, customer_id, requestedQty]
+          `INSERT INTO book_a_sale (finished_good_id, customer_id, quantity, sale_date, created_by)
+           VALUES ($1, $2::uuid, $3, NOW(), $4) RETURNING *`,
+          [finished_good_id, customer_id, requestedQty, userId]
         );
 
         return saleResult.rows[0];

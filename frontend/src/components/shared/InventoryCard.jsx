@@ -72,26 +72,30 @@ const InventoryCard = ({
             </div>
           </div>
           <div className="flex items-center gap-1 transition-opacity">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit?.(item);
-              }}
-              className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-[var(--accent)] text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm"
-              title="Edit"
-            >
-              <Pencil size={12} />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete?.(item);
-              }}
-              className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-rose-500 text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm"
-              title="Delete"
-            >
-              <Trash2 size={12} />
-            </button>
+            {onEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(item);
+                }}
+                className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-[var(--accent)] text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm"
+                title="Edit"
+              >
+                <Pencil size={12} />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(item);
+                }}
+                className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-rose-500 text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm"
+                title="Delete"
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
           </div>
         </div>
       </div>

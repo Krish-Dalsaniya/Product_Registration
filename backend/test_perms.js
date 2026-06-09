@@ -1,13 +1,15 @@
-const { pool } = require('./src/config/db');
+function hasPermission(moduleName, action, permissions) {
+    const actionLower = action.toLowerCase();
+    const modKey = moduleName.replace(/\s+/g, '').toLowerCase();
 
-async function test() {
-  try {
-    const res = await pool.query("SELECT permission_id, permission_key FROM permissions WHERE permission_key LIKE '%products%'");
-    console.log("Permissions:", res.rows);
-    process.exit(0);
-  } catch (err) {
-    console.error(err);
-    process.exit(1);
-  }
+    const directKey = `${modKey}.${actionLower}`;
+    if (permissions.includes(directKey)) return true;
+
+    if (actionLower === 'view' || actionLower === 'create' || actionLower === 'edit' || actionLower === 'delete') {
+       return permissions.some(p => p.startsWith(`${modKey}.`) && p.endsWith(`.${actionLower}`));
+    }
+    return false;
 }
-test();
+console.log(hasPermission('sales', 'edit', ['sales.view']));
+console.log(hasPermission('supporttickets', 'edit', ['supporttickets.view']));
+

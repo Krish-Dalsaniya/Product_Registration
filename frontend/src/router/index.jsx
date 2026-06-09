@@ -99,6 +99,10 @@ const getTabMetadata = (pathname, search) => {
 
 // Lazy load components
 const LoginPage = lazy(() => import('../features/auth/LoginPage'));
+const AdminDashboard = lazy(() => import('../features/admin/AdminDashboard'));
+const SalesDashboard = lazy(() => import('../features/admin/dashboards/SalesDashboard'));
+const MaintenanceDashboard = lazy(() => import('../features/admin/dashboards/MaintenanceDashboard'));
+const DesignerDashboard = lazy(() => import('../features/admin/dashboards/DesignerDashboard'));
 const UserListPage = lazy(() => import('../features/admin/UserListPage'));
 const UserAccessPage = lazy(() => import('../features/admin/UserAccessPage'));
 const TeamsPage = lazy(() => import('../features/admin/TeamsPage'));
@@ -277,8 +281,6 @@ const DashboardLayout = () => {
 };
 
 
-const AdminDashboard = lazy(() => import('../features/admin/AdminDashboard'));
-
 const Router = () => {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -316,7 +318,9 @@ const Router = () => {
         {/* Designer Workspace Dashboard & Specifics */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Designer']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/designer" element={<Navigate to="/designer/dashboard" />} />
-          <Route path="/designer/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Designer Dashboard Initialization...</div>} />
+          <Route element={<RoleGuard allowedRoles={['Designer']} />}>
+          <Route path="/designer/dashboard" element={<DesignerDashboard />} />
+          </Route>
           <Route path="/designer/support-tickets" element={<SupportTicketsPage />} />
           <Route path="/designer/support-tickets/:id" element={<SupportTicketProfilePage />} />
           <Route path="/designer/chat" element={<ChatPage />} />
@@ -325,7 +329,9 @@ const Router = () => {
         {/* Sales Workspace Dashboard & Specifics */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Sales']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/sales" element={<Navigate to="/sales/dashboard" />} />
-          <Route path="/sales/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Sales Dashboard Initialization...</div>} />
+          <Route element={<RoleGuard allowedRoles={['Sales']} />}>
+          <Route path="/sales/dashboard" element={<SalesDashboard />} />
+          </Route>
           {/* <Route path="/sales/opportunities" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Opportunities Pipeline...</div>} /> */}
           <Route path="/sales/support-tickets" element={<SupportTicketsPage />} />
           <Route path="/sales/support-tickets/:id" element={<SupportTicketProfilePage />} />
@@ -335,7 +341,9 @@ const Router = () => {
         {/* Maintenance Workspace Dashboard & Specifics */}
         <Route element={<AuthGuard><RoleGuard allowedRoles={['Maintenance']}><DashboardLayout /></RoleGuard></AuthGuard>}>
           <Route path="/maintenance" element={<Navigate to="/maintenance/dashboard" />} />
-          <Route path="/maintenance/dashboard" element={<div className="p-10 text-[var(--text-main)] font-black uppercase tracking-widest">Maintenance Dashboard Initialization...</div>} />
+          <Route element={<RoleGuard allowedRoles={['Maintenance']} />}>
+          <Route path="/maintenance/dashboard" element={<MaintenanceDashboard />} />
+          </Route>
           <Route path="/maintenance/support-tickets" element={<SupportTicketsPage />} />
           <Route path="/maintenance/support-tickets/:id" element={<SupportTicketProfilePage />} />
           <Route path="/maintenance/chat" element={<ChatPage />} />

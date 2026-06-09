@@ -57,6 +57,7 @@ const getCustomerById = async (req, res, next) => {
 };
 
 const createCustomer = async (req, res, next) => {
+  const userId = req.user ? req.user.user_id : null;
   const {
     customer_code,
     first_name,
@@ -94,8 +95,8 @@ const createCustomer = async (req, res, next) => {
         owner_contacts, accounts_contacts, qa_qc_contacts, other_contacts,
         addresses, udyam_aadhar_no,
         email, gst_no, status, company_type, product,
-        product_promoted, product_inquired, product_quoted, product_sampled, product_purchased
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25) 
+        product_promoted, product_inquired, product_quoted, product_sampled, product_purchased, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26) 
       RETURNING *`,
       [
         customer_code, customer_name, first_name, middle_name, last_name,
@@ -116,7 +117,8 @@ const createCustomer = async (req, res, next) => {
         product_inquired || false,
         product_quoted || false,
         product_sampled || false,
-        product_purchased || false
+        product_purchased || false,
+        userId
       ]
     );
     sendSuccess(res, result.rows[0], 201);
