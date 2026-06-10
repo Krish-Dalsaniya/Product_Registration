@@ -6,7 +6,6 @@ import toast from 'react-hot-toast';
 import { useCreateRole, useUpdateRole } from '../../../hooks/useRoles';
 
 const MODULES = [
-  { name: 'Dashboard' },
   { name: 'Customers' },
   { 
     name: 'Products', 
@@ -42,12 +41,20 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
   const createMutation = useCreateRole();
   const updateMutation = useUpdateRole();
 
+  const [isInitialized, setIsInitialized] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
+      setIsInitialized(false);
+    }
+  }, [isOpen, editingItem]);
+
+  useEffect(() => {
+    if (isOpen && permissionsList && !isInitialized) {
       if (editingItem) {
         reset({ role_name: editingItem.role_name, description: editingItem.description || '' });
         const initialPerms = {};
-        if (editingItem.permissions && permissionsList) {
+        if (editingItem.permissions) {
           editingItem.permissions.forEach(pid => {
             const p = permissionsList.find(x => x.permission_id === pid);
             if (p) {
@@ -70,8 +77,9 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
         reset({ role_name: '', description: '' });
         setSelectedPerms({});
       }
+      setIsInitialized(true);
     }
-  }, [isOpen, editingItem, reset, permissionsList]);
+  }, [isOpen, editingItem, reset, permissionsList, isInitialized]);
 
   const handleToggle = (moduleKey, actionKey, subKey = null) => {
     setSelectedPerms(prev => {

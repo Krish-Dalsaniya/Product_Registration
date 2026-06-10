@@ -156,7 +156,7 @@ const UserListPage = ({ initialRole = '' }) => {
     if (draft && draft.data && Object.keys(draft.data).length > 0) {
       reset(draft.data);
     } else {
-      reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer', company: '' });
+      reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer', company: '', designation: '' });
     }
     
     setIsModalOpen(true);
@@ -186,7 +186,8 @@ const UserListPage = ({ initialRole = '' }) => {
       full_name: user.full_name,
       email: user.email,
       role_name: user.role_name,
-      company: user.company || ''
+      company: user.company || '',
+      designation: user.designation || ''
     };
     const draftId = `user_edit_${user.user_id}`;
     const draft = store.getState().drafts[draftId];
@@ -251,6 +252,11 @@ const UserListPage = ({ initialRole = '' }) => {
       key: 'company',
       label: 'Company',
       render: (row) => row.company ? <span className="text-[12px] font-semibold">{row.company}</span> : <span className="text-[11px] text-[var(--text-muted)] italic">N/A</span>
+    },
+    {
+      key: 'designation',
+      label: 'Designation',
+      render: (row) => row.designation ? <span className="text-[12px]">{row.designation}</span> : <span className="text-[11px] text-[var(--text-muted)] italic">N/A</span>
     },
     {
       key: 'role_name',
@@ -707,6 +713,10 @@ const UserListPage = ({ initialRole = '' }) => {
                     </select>
                   </div>
                 )}
+                <div>
+                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Designation</label>
+                  <input {...register('designation')} type="text" className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)]" placeholder="e.g. Embedded Engineer" />
+                </div>
                 <div className="relative space-y-2">
                   <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Assign to Teams</label>
                   

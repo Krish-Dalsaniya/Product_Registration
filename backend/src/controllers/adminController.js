@@ -255,7 +255,7 @@ const fs = require('fs');
 const path = require('path');
 
 const createUser = async (req, res, next) => {
-  const { full_name, email, password, role_name, team_id, team_ids, company } = req.body;
+  const { full_name, email, password, role_name, team_id, team_ids, company, designation } = req.body;
 
   let image_url = null;
   if (req.file) {
@@ -289,9 +289,9 @@ const createUser = async (req, res, next) => {
 
         const password_hash = await bcrypt.hash(password, 10);
         const insertResult = await client.query(
-          `INSERT INTO users (full_name, email, password_hash, role_id, image_url, company) 
-           VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id, full_name, email, image_url, company`,
-          [full_name, email, password_hash, role_id, image_url, company]
+          `INSERT INTO users (full_name, email, password_hash, role_id, image_url, company, designation) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING user_id, full_name, email, image_url, company, designation`,
+          [full_name, email, password_hash, role_id, image_url, company, designation]
         );
 
         // Create profile based on role
@@ -337,7 +337,7 @@ const createUser = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   const { userId } = req.params;
-  const { full_name, email, role_name, team_id, team_ids, company } = req.body;
+  const { full_name, email, role_name, team_id, team_ids, company, designation } = req.body;
 
   let image_url = null;
   if (req.file) {

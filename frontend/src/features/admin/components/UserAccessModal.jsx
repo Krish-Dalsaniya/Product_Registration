@@ -7,7 +7,6 @@ import api from "../../../api/axiosInstance";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const MODULES = [
-  { name: 'Dashboard' },
   { name: 'Customers' },
   { 
     name: 'Products', 
