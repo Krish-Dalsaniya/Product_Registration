@@ -4,7 +4,7 @@ import UserAccessModal from './components/UserAccessModal';
 import { useUsers } from '../../hooks/useUsers';
 import { usePermissions } from '../../hooks/useRoles';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, LockKeyhole } from 'lucide-react';
 
 const UserAccessPage = () => {
   const { hasPermission } = useAuth();
@@ -78,15 +78,19 @@ const UserAccessPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1400px] mx-auto pb-12 pt-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] uppercase tracking-tight flex items-center gap-3">
-            <Shield className="text-[var(--accent)]" size={32} />
-            User Access Control
-          </h1>
-          <p className="text-[13px] font-bold text-[var(--text-dim)] uppercase tracking-widest mt-2">
-            Override inherited role permissions for specific users
-          </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
+        <div className="flex items-center gap-5">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <LockKeyhole className="text-[var(--accent)] md:w-[28px] md:h-[28px] group-hover:scale-110 transition-transform duration-300" size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+              User Access Control
+            </h1>
+            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+              Override inherited role permissions for specific users
+            </p>
+          </div>
         </div>
       </div>
 

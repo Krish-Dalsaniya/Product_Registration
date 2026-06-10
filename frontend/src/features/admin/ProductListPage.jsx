@@ -6,7 +6,7 @@ import { getCompanies } from '../../api/companies';
 import { deleteProduct } from '../../api/products';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import Lightbox from '../../components/shared/Lightbox';
-import { Search, Plus, Tag, Building2, LayoutGrid, List, X } from 'lucide-react';
+import { Search, Plus, Tag, Building2, LayoutGrid, List, X, Cpu } from 'lucide-react';
 import { useDebounce } from '../../hooks/useDebounce';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
@@ -184,7 +184,7 @@ const ProductListPage = ({ isEmbedded = false }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
         <div className="flex items-center gap-5">
           <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-zap md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <Cpu className="text-[var(--accent)] md:w-[28px] md:h-[28px] group-hover:scale-110 transition-transform duration-300" size={24} />
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none ">Product Catalogue</h1>

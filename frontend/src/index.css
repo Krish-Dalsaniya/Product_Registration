@@ -215,38 +215,38 @@
    MODIFIED RETRO
    ═══════════════════════════════════════ */
 [data-theme="modified-retro"] {
-  --primary:       #c76114; --primary-hover:   #9c480b;
-  --accent:        #c76114; --accent-hover:    #9c480b;
-  --mid:           #8c5e42;
+  --primary:       #555555; --primary-hover:   #666666;
+  --accent:        #555555; --accent-hover:    #666666;
+  --mid:           #777777;
 
   --bg-sidebar:    #e8dcc4; --bg-workspace:    #f5ecd8;
   --bg-card:       #e8dcc4; --bg-elevated:     #d8c9ab;
   --input-bg:      #f5ecd8;
 
-  --text-main:     #3a2c22; --text-secondary:  #5a4338;
-  --text-muted:    #7a5e4e; --text-dim:        #9a7864;
+  --text-main:     #333333; --text-secondary:  #444444;
+  --text-muted:    #666666; --text-dim:        #777777;
 
-  --border-color:  rgba(140, 94, 66, 0.3);
-  --border-hover:  #c76114; --border-focus:    #c76114;
-  --border-glow:   rgba(199, 97, 20, 0.3);
+  --border-color:  rgba(85, 85, 85, 0.3);
+  --border-hover:  #555555; --border-focus:    #555555;
+  --border-glow:   rgba(85, 85, 85, 0.3);
 
-  --grad-primary:  linear-gradient(135deg, #e8dcc4 0%, #c76114 100%);
-  --grad-accent:   linear-gradient(135deg, #e8dcc4 0%, #c76114 100%);
+  --grad-primary:  linear-gradient(135deg, #e8dcc4 0%, #555555 100%);
+  --grad-accent:   linear-gradient(135deg, #e8dcc4 0%, #555555 100%);
   --grad-sidebar:  linear-gradient(180deg, #e8dcc4 0%, #d8c9ab 100%);
   --grad-card:     linear-gradient(145deg, #f5ecd8 0%, #e8dcc4 100%);
-  --grad-button:   linear-gradient(135deg, #c76114 0%, #9c480b 100%);
+  --grad-button:   linear-gradient(135deg, #777777 0%, #555555 100%);
   --grad-header:   linear-gradient(135deg, #e8dcc4 0%, #f5ecd8 100%);
 
-  --card-shadow:       0 2px 16px rgba(74, 59, 50, 0.10);
-  --card-shadow-hover: 0 4px 20px rgba(74, 59, 50, 0.20);
-  --nav-hover:  rgba(140, 94, 66, 0.1);
-  --nav-active: rgba(199, 97, 20, 0.2);
-  --focus-ring: 0 0 0 3px rgba(199, 97, 20, 0.35);
+  --card-shadow:       0 2px 16px rgba(85, 85, 85, 0.10);
+  --card-shadow-hover: 0 4px 20px rgba(85, 85, 85, 0.20);
+  --nav-hover:  rgba(85, 85, 85, 0.1);
+  --nav-active: rgba(85, 85, 85, 0.2);
+  --focus-ring: 0 0 0 3px rgba(85, 85, 85, 0.35);
 
-  --badge-admin-bg:   rgba(199, 97, 20, 0.15); --badge-admin-text: #8c3a05;
-  --badge-maint-bg:   rgba(140, 94, 66, 0.15); --badge-maint-text: #5e3a22;
-  --badge-sales-bg:   rgba(84, 110, 80, 0.15); --badge-sales-text: #2e4a2a;
-  --badge-teams-bg:   rgba(217, 144, 54, 0.15);--badge-teams-text: #7a5000;
+  --badge-admin-bg:   rgba(85, 85, 85, 0.15); --badge-admin-text: #555555;
+  --badge-maint-bg:   rgba(85, 85, 85, 0.15); --badge-maint-text: #555555;
+  --badge-sales-bg:   rgba(85, 85, 85, 0.15); --badge-sales-text: #555555;
+  --badge-teams-bg:   rgba(85, 85, 85, 0.15); --badge-teams-text: #555555;
 }
 
 /* ═══════════════════════════════════════
@@ -409,38 +409,38 @@
    DEFAULT WHITE
    ═══════════════════════════════════════ */
 [data-theme="default-white"] {
-  --primary:       #000000; --primary-hover:   #1a1a1a;
-  --accent:        #000000; --accent-hover:    #333333;
+  --primary:       #4a4a4a; --primary-hover:   #555555;
+  --accent:        #4a4a4a; --accent-hover:    #555555;
   --mid:           #e5e5e5;
 
   --bg-sidebar:    #f5f5f5; --bg-workspace:    #ffffff;
   --bg-card:       #ffffff; --bg-elevated:     #fafafa;
   --input-bg:      #ffffff;
 
-  --text-main:     #000000; --text-secondary:  #333333;
+  --text-main:     #1a1a1a; --text-secondary:  #4a4a4a;
   --text-muted:    #666666; --text-dim:        #999999;
 
   --border-color:  rgba(0, 0, 0, 0.1);
   --border-hover:  rgba(0, 0, 0, 0.2);
-  --border-focus:  #000000;
+  --border-focus:  #4a4a4a;
   --border-glow:   rgba(0, 0, 0, 0.05);
 
   --grad-primary:  linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%);
-  --grad-accent:   linear-gradient(135deg, #333333 0%, #000000 100%);
+  --grad-accent:   linear-gradient(135deg, #555555 0%, #4a4a4a 100%);
   --grad-sidebar:  linear-gradient(180deg, #f5f5f5 0%, #ebebeb 100%);
   --grad-card:     linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
-  --grad-button:   linear-gradient(135deg, #333333 0%, #000000 100%);
+  --grad-button:   linear-gradient(135deg, #555555 0%, #4a4a4a 100%);
   --grad-header:   linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
 
   --card-shadow:       0 1px 8px rgba(0, 0, 0, 0.04);
   --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.08);
   --nav-hover:  rgba(0, 0, 0, 0.04);
   --nav-active: rgba(0, 0, 0, 0.08);
-  --focus-ring: 0 0 0 3px rgba(0, 0, 0, 0.15);
+  --focus-ring: 0 0 0 3px rgba(74, 74, 74, 0.25);
 
-  --badge-admin-bg:   #e5e5e5; --badge-admin-text: #000000;
-  --badge-maint-bg:   #f5f5f5; --badge-maint-text: #333333;
-  --badge-sales-bg:   #ebebeb; --badge-sales-text: #1a1a1a;
+  --badge-admin-bg:   #e5e5e5; --badge-admin-text: #4a4a4a;
+  --badge-maint-bg:   #f5f5f5; --badge-maint-text: #555555;
+  --badge-sales-bg:   #ebebeb; --badge-sales-text: #4a4a4a;
   --badge-teams-bg:   #fafafa; --badge-teams-text: #666666;
 }
 

@@ -57,10 +57,10 @@ const getTabMetadata = (pathname, search) => {
     return { label: 'Teams', iconType: 'Users' };
   }
   if (pathname === '/admin/products') {
-    return { label: 'Products', iconType: 'Box' };
+    return { label: 'Products', iconType: 'Cpu' };
   }
   if (pathname.startsWith('/admin/products/')) {
-    return { label: 'Product Profile', iconType: 'Box' };
+    return { label: 'Product Profile', iconType: 'Cpu' };
   }
   if (pathname === '/admin/customers') {
     return { label: 'Customers', iconType: 'Layers' };

@@ -63,17 +63,20 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
     }
   });
 
+  const [isInitialized, setIsInitialized] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
+      setIsInitialized(false);
       const timer = setTimeout(() => setShowContent(true), 150);
       return () => clearTimeout(timer);
     } else {
       setShowContent(false);
     }
-  }, [isOpen]);
+  }, [isOpen, selectedUser?.user_id]);
 
   useEffect(() => {
-    if (isOpen && userPermsData && showContent) {
+    if (isOpen && userPermsData && showContent && !isInitialized) {
       setHasCustomPerms(userPermsData.has_custom_permissions);
       
       const initialPerms = {};
@@ -93,11 +96,12 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
         });
       }
       setSelectedPerms(initialPerms);
+      setIsInitialized(true);
     } else if (!isOpen) {
       setSelectedPerms({});
       setHasCustomPerms(false);
     }
-  }, [isOpen, userPermsData, permissionsList, showContent]);
+  }, [isOpen, userPermsData, permissionsList, showContent, isInitialized]);
 
   const handleToggle = (moduleKey, actionKey, subKey = null) => {
     if (!hasCustomPerms) return;

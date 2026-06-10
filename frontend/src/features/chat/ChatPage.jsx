@@ -299,15 +299,19 @@ const ChatPage = () => {
 
   return (
     <div className="animate-fade-in flex flex-col h-[calc(100vh-92px)] max-w-[1600px] mx-auto pb-0">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-3 shrink-0">
-        <div>
-          <h1 className="text-[28px] font-black tracking-tight text-[var(--text-main)] flex items-center gap-3">
-            <MessageSquare className="text-[var(--accent)]" size={32} />
-            Chat Hub
-          </h1>
-          <p className="text-[14px] text-[var(--text-muted)] mt-1 font-medium tracking-wide">
-            Internal messaging and group collaboration network
-          </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4 shrink-0 animate-entrance-down">
+        <div className="flex items-center gap-5">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <MessageSquare className="text-[var(--accent)] md:w-[28px] md:h-[28px] group-hover:scale-110 transition-transform duration-300" size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+              Chat Hub
+            </h1>
+            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+              Internal messaging and group collaboration network
+            </p>
+          </div>
         </div>
       </div>
 
@@ -659,7 +663,7 @@ const ChatPage = () => {
         </div>
 
         {/* Resizer Right */}
-        {isGroupInfoOpen && activeTab === 'groups' && selectedGroup && (
+        {isGroupInfoOpen && selectedGroup && (
           <div 
             onMouseDown={handleRightResize}
             className="w-1 bg-[var(--border-color)] hover:bg-[var(--accent)] cursor-col-resize shrink-0 transition-colors z-20"
@@ -667,7 +671,7 @@ const ChatPage = () => {
         )}
 
         {/* Right Pane - Group Info Sidebar */}
-        {isGroupInfoOpen && activeTab === 'groups' && selectedGroup && (
+        {isGroupInfoOpen && selectedGroup && (
           <div style={{ width: `${rightSidebarWidth}px` }} className="shrink-0 bg-[var(--bg-workspace)] flex flex-col animate-in slide-in-from-right-8 duration-300">
             <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-elevated)]/50">
               <h3 className="font-black text-sm text-[var(--text-main)] uppercase tracking-widest flex items-center gap-2">

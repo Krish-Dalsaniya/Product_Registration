@@ -377,16 +377,16 @@ const updateUser = async (req, res, next) => {
         if (image_url) {
           updateResult = await client.query(
             `UPDATE users 
-             SET full_name = $1, email = $2, role_id = $3, image_url = $4, company = $5
-             WHERE user_id = $6 RETURNING user_id, full_name, email, image_url, company`,
-            [full_name, email, role_id, image_url, company, userId]
+             SET full_name = $1, email = $2, role_id = $3, image_url = $4, company = $5, designation = $7
+             WHERE user_id = $6 RETURNING user_id, full_name, email, image_url, company, designation`,
+            [full_name, email, role_id, image_url, company, userId, designation]
           );
         } else {
           updateResult = await client.query(
             `UPDATE users 
-             SET full_name = $1, email = $2, role_id = $3, company = $4
-             WHERE user_id = $5 RETURNING user_id, full_name, email, image_url, company`,
-            [full_name, email, role_id, company, userId]
+             SET full_name = $1, email = $2, role_id = $3, company = $4, designation = $6
+             WHERE user_id = $5 RETURNING user_id, full_name, email, image_url, company, designation`,
+            [full_name, email, role_id, company, userId, designation]
           );
         }
 

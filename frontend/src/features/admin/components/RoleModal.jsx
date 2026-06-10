@@ -47,7 +47,7 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
     if (isOpen) {
       setIsInitialized(false);
     }
-  }, [isOpen, editingItem]);
+  }, [isOpen, editingItem?.role_id]);
 
   useEffect(() => {
     if (isOpen && permissionsList && !isInitialized) {

@@ -333,9 +333,9 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             {/* Settings Cog */}
             <div
               ref={settingsDropdownRef}
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full shadow-md cursor-pointer hover:scale-110 transition-transform"
+              className="absolute -bottom-1 -right-2 w-8 h-8 rounded-full shadow-md cursor-pointer hover:scale-110 transition-transform"
               style={{ background: 'var(--bg-workspace)', border: '1px solid var(--border-color)' }}
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              onClick={(e) => { e.stopPropagation(); setIsSettingsOpen(!isSettingsOpen); }}
             >
               <div className="w-full h-full flex items-center justify-center">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="hover:stroke-[var(--accent)] transition-colors">
@@ -457,7 +457,7 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '300ms' }}>
-              <NavItem to="/admin/products" label="Products" icon={Zap} />
+              <NavItem to="/admin/products" label="Products" icon={Cpu} />
             </div>
             <div className="animate-entrance-right" style={{ animationDelay: '400ms' }}>
               <NavItem to="/admin/customers" label="Customers" icon={Users} />
@@ -502,7 +502,7 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             {/* Dynamically Granted Modules */}
             {hasPermission('users', 'view') && <NavItem to="/admin/users" label="Users" icon={UserCog} />}
             {hasPermission('teams', 'view') && <NavItem to="/admin/teams" label="Teams" icon={Layers} />}
-            {hasPermission('products', 'view') && <NavItem to="/admin/products" label="Products" icon={Zap} />}
+            {hasPermission('products', 'view') && <NavItem to="/admin/products" label="Products" icon={Cpu} />}
             {hasPermission('customers', 'view') && <NavItem to="/admin/customers" label="Customers" icon={Users} />}
             {hasPermission('inventory', 'view') && <NavItem to="/admin/inventory" label="Inventory" icon={Box} />}
             {hasPermission('sales', 'view') && <NavItem to="/admin/book-a-sale" label="Book a Sale" icon={ShoppingBag} />}
