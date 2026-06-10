@@ -43,6 +43,13 @@ const SupportTicketProfilePage = () => {
     }
   }, [messages]);
 
+  const getImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:3000';
+    return `${baseUrl}/${url.startsWith('/') ? url.substring(1) : url}`;
+  };
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim() || addMessageMutation.isPending) return;
@@ -289,6 +296,24 @@ const SupportTicketProfilePage = () => {
                         </div>
                       )}
                       <div className={`flex items-center gap-2 max-w-[85%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                        {/* Avatar */}
+                        {isMe ? (
+                          user?.image_url ? (
+                            <img src={getImageUrl(user.image_url)} alt="Avatar" className="w-8 h-8 rounded-full object-cover shadow-sm shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                              {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+                            </div>
+                          )
+                        ) : (
+                          msg.image_url ? (
+                            <img src={getImageUrl(msg.image_url)} alt="Avatar" className="w-8 h-8 rounded-full object-cover shadow-sm shrink-0 border border-[var(--border-color)]" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] flex items-center justify-center font-bold text-xs text-[var(--text-main)] shrink-0 shadow-sm">
+                              {(msg.sender_name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                          )
+                        )}
                         <div className={`p-3 rounded-2xl ${isMe ? 'bg-[var(--accent)] text-white rounded-tr-sm' : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-tl-sm'}`}>
                           <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                         </div>

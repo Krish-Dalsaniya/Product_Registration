@@ -240,6 +240,13 @@ const ChatPage = () => {
     return new Date(dateString).toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
+  const getImageUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:3000';
+    return `${baseUrl}/${url.startsWith('/') ? url.substring(1) : url}`;
+  };
+
   const handleLeftResize = (e) => {
     e.preventDefault();
     const startX = e.clientX;
@@ -386,6 +393,12 @@ const ChatPage = () => {
                             }`}>
                               <Users size={18} />
                             </div>
+                          ) : chat.image_url ? (
+                            <img 
+                              src={getImageUrl(chat.image_url)} 
+                              alt="Profile" 
+                              className={`w-10 h-10 rounded-full object-cover shadow-sm ${isSelected ? 'ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg-elevated)]' : ''}`} 
+                            />
                           ) : (
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${
                               isSelected ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-workspace)] border border-[var(--border-color)]'
@@ -486,9 +499,13 @@ const ChatPage = () => {
               <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-workspace)]/50 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
                 <div className="flex items-center gap-4">
                   {selectedUser ? (
-                    <div className="w-12 h-12 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-color)] flex items-center justify-center font-bold text-lg text-[var(--accent)] shadow-sm">
-                      {selectedUser.full_name.charAt(0).toUpperCase()}
-                    </div>
+                    selectedUser.image_url ? (
+                      <img src={getImageUrl(selectedUser.image_url)} alt="Profile" className="w-12 h-12 rounded-full object-cover shadow-sm border border-[var(--border-color)]" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-color)] flex items-center justify-center font-bold text-lg text-[var(--accent)] shadow-sm">
+                        {selectedUser.full_name.charAt(0).toUpperCase()}
+                      </div>
+                    )
                   ) : (
                     <div className="w-12 h-12 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)] flex items-center justify-center font-bold text-lg text-[var(--accent)] shadow-sm">
                       <Users size={24} />
@@ -550,6 +567,24 @@ const ChatPage = () => {
                              <span className="text-[10px] font-bold text-[var(--text-muted)] mb-1 ml-1">{msg.sender_name}</span>
                           )}
                           <div className={`flex items-center gap-2 max-w-[70%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                            {/* Avatar beside message */}
+                            {isMe ? (
+                              user.image_url ? (
+                                <img src={getImageUrl(user.image_url)} alt="Avatar" className="w-8 h-8 rounded-full object-cover shadow-sm shrink-0" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                                  {user.full_name?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                              )
+                            ) : (
+                              msg.image_url || (activeTab === 'direct' && selectedUser?.image_url) ? (
+                                <img src={getImageUrl(msg.image_url || selectedUser?.image_url)} alt="Avatar" className="w-8 h-8 rounded-full object-cover shadow-sm shrink-0 border border-[var(--border-color)]" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] flex items-center justify-center font-bold text-xs text-[var(--text-main)] shrink-0 shadow-sm">
+                                  {(msg.sender_name || selectedUser?.full_name || 'U').charAt(0).toUpperCase()}
+                                </div>
+                              )
+                            )}
                             <div 
                               className={`px-5 py-3 rounded-2xl shadow-sm ${
                                 isMe 
@@ -682,9 +717,13 @@ const ChatPage = () => {
                     <div className="border border-[var(--border-color)] rounded-xl bg-[var(--bg-elevated)] divide-y divide-[var(--border-color)]">
                       {groupInfo.members?.map(member => (
                         <div key={member.user_id} className="flex items-center gap-3 p-3">
-                          <div className="w-8 h-8 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] flex items-center justify-center font-bold text-xs text-[var(--text-main)]">
-                            {member.full_name.charAt(0).toUpperCase()}
-                          </div>
+                          {member.image_url ? (
+                            <img src={getImageUrl(member.image_url)} alt="Profile" className="w-8 h-8 rounded-full object-cover shadow-sm border border-[var(--border-color)]" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] flex items-center justify-center font-bold text-xs text-[var(--text-main)]">
+                              {member.full_name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div className="flex-1 overflow-hidden">
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-bold text-[var(--text-main)] truncate">{member.full_name}</p>

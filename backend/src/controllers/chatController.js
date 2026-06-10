@@ -12,6 +12,7 @@ const getChatUsers = async (req, res, next) => {
         u.user_id, 
         u.full_name, 
         u.email, 
+        u.image_url,
         r.role_name,
         COALESCE(
           (SELECT COUNT(*) 
@@ -275,7 +276,7 @@ const getGroupHistory = async (req, res, next) => {
     }
 
     const query = `
-      SELECT cm.message_id, cm.sender_id, u.full_name as sender_name, cm.group_id, cm.message, cm.created_at
+      SELECT cm.message_id, cm.sender_id, u.full_name as sender_name, u.image_url, cm.group_id, cm.message, cm.created_at
       FROM chat_messages cm
       JOIN users u ON cm.sender_id = u.user_id
       WHERE cm.group_id = $1
@@ -303,7 +304,7 @@ const getGroupMembers = async (req, res, next) => {
     }
 
     const query = `
-      SELECT u.user_id, u.full_name, u.email, r.role_name, cgm.joined_at, cg.created_by, cg.created_at as group_created_at
+      SELECT u.user_id, u.full_name, u.email, u.image_url, r.role_name, cgm.joined_at, cg.created_by, cg.created_at as group_created_at
       FROM chat_group_members cgm
       JOIN users u ON cgm.user_id = u.user_id
       JOIN roles r ON u.role_id = r.role_id

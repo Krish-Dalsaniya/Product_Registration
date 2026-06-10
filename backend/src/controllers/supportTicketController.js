@@ -185,6 +185,7 @@ const getTicketMessages = async (req, res, next) => {
                 stm.created_at,
                 u.user_id as sender_id,
                 u.full_name as sender_name,
+                u.image_url,
                 r.role_name as sender_role
             FROM support_ticket_messages stm
             JOIN users u ON stm.sender_id = u.user_id
@@ -234,6 +235,7 @@ const addTicketMessage = async (req, res, next) => {
                 stm.created_at,
                 u.user_id as sender_id,
                 u.full_name as sender_name,
+                u.image_url,
                 r.role_name as sender_role
             FROM support_ticket_messages stm
             JOIN users u ON stm.sender_id = u.user_id
