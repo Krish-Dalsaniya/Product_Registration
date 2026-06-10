@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Swal from 'sweetalert2';
+import toast from 'react-hot-toast';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { updateProfileImageApi, deleteProfileImageApi } from '../../api/auth';
 import RoleBadge from './RoleBadge';
 import { 
   Users, 
-  ShoppingBag, 
-  Wrench, 
-  ChevronDown, 
+  ShoppingBag,
+  Wrench,
+  ChevronDown,
   ChevronUp,
   LogOut,
   Box,
@@ -28,11 +30,15 @@ import {
   LifeBuoy,
   MessageSquare,
   Bot,
-  Shield
+  Shield,
+  LockKeyhole,
+  Loader2,
+  Camera,
+  Trash2
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
-  const { user, logout, hasPermission } = useAuth();
+  const { user, logout, hasPermission, updateUserImage } = useAuth();
   
   const handleLogout = () => {
     Swal.fire({
@@ -64,7 +70,78 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
   });
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const settingsDropdownRef = React.useRef(null);
+  const settingsDropdownRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const res = await updateProfileImageApi(formData);
+      if (res.data?.success) {
+        if (updateUserImage) {
+           updateUserImage(res.data.data.image_url);
+        } else {
+           window.location.reload();
+        }
+        toast.success('Profile picture updated successfully');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(error.response?.data?.error?.message || 'Failed to upload image');
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteImage = async (e) => {
+    e.stopPropagation(); // prevent triggering upload
+    Swal.fire({
+      title: 'Remove Photo?',
+      text: 'Are you sure you want to remove your profile photo?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f06532',
+      cancelButtonColor: '#a89b96',
+      confirmButtonText: 'Yes, remove it',
+      background: 'var(--bg-card)',
+      color: 'var(--text-main)',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          setIsUploadingImage(true);
+          const res = await deleteProfileImageApi();
+          if (res.data?.success) {
+            if (updateUserImage) updateUserImage(null);
+            else window.location.reload();
+            toast.success('Profile photo removed');
+          }
+        } catch (error) {
+          console.error('Delete error:', error);
+          toast.error(error.response?.data?.error?.message || 'Failed to remove image');
+        } finally {
+          setIsUploadingImage(false);
+        }
+      }
+    });
+  };
 
   React.useEffect(() => {
     const handleClickOutside = (event) => {
@@ -212,15 +289,46 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
           <div className="relative group">
             {/* Avatar */}
             <div
-              className="w-24 h-24 rounded-full p-0.5 overflow-hidden shadow-xl transition-all duration-500"
+              className="w-24 h-24 rounded-full p-0.5 shadow-xl transition-all duration-500 relative cursor-pointer group/avatar"
               style={{ border: '2px solid var(--accent)', background: 'var(--bg-elevated)' }}
+              onClick={() => !isUploadingImage && fileInputRef.current?.click()}
             >
-              <img
-                src="/avatar.png"
-                alt="Profile"
-                className="w-full h-full object-cover rounded-full"
-              />
+              <div className="w-full h-full rounded-full overflow-hidden relative bg-[var(--bg-card)] flex items-center justify-center">
+                {isUploadingImage ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 rounded-full">
+                    <Loader2 className="w-8 h-8 text-white animate-spin" />
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2 opacity-0 group-hover/avatar:opacity-100 transition-opacity z-10 rounded-full">
+                    <Camera className="w-6 h-6 text-white" />
+                    {user?.image_url && (
+                      <button onClick={handleDeleteImage} className="p-1.5 bg-red-500/80 rounded-full hover:bg-red-600 transition-colors z-20" title="Remove Photo">
+                        <Trash2 className="w-4 h-4 text-white" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                
+                {user?.image_url ? (
+                  <img
+                    src={user.image_url.startsWith('http') ? user.image_url : `${import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:3000'}/${user.image_url.startsWith('/') ? user.image_url.substring(1) : user.image_url}`}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-3xl font-black text-[var(--accent)] tracking-tighter">
+                    {user?.full_name ? user.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
+                  </span>
+                )}
+              </div>
             </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImageUpload} 
+              accept="image/*" 
+              className="hidden" 
+            />
 
             {/* Settings Cog */}
             <div
@@ -337,11 +445,11 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
               <NavItem to="/admin/users" label="Users" icon={UserCog} />
             </div>
             <div className="animate-entrance-right" style={{ animationDelay: '225ms' }}>
-              <NavItem to="/admin/roles" label="Roles" icon={Building2} />
+              <NavItem to="/admin/roles" label="Roles Access" icon={Building2} />
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '235ms' }}>
-              <NavItem to="/admin/user-access" label="User Access" icon={Shield} />
+              <NavItem to="/admin/user-access" label="User Access" icon={LockKeyhole} />
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '250ms' }}>
@@ -357,14 +465,10 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
 
             
 
-            {/* Inventory row */}
             <div className="animate-entrance-right" style={{ animationDelay: '500ms' }}>
               <NavItem to="/admin/inventory" label="Inventory" icon={Box} />
             </div>
 
-            <div className="animate-entrance-right" style={{ animationDelay: '650ms' }}>
-              <NavItem to="/admin/finished-goods" label="Finished Goods" icon={Package} />
-            </div>
             <div className="animate-entrance-right" style={{ animationDelay: '700ms' }}>
               <NavItem to="/admin/book-a-sale" label="Book a Sale" icon={ShoppingBag} />
             </div>
@@ -390,9 +494,9 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             </p>
             
             {/* Base Dashboards */}
-            {isDesigner && <NavItem to="/designer/dashboard" label="Workstation" icon={Layers} />}
+            {isDesigner && <NavItem to="/designer/dashboard" label="Dashboard" icon={Layers} />}
             {isSales && <NavItem to="/sales/dashboard" label="Dashboard" icon={LayoutDashboard} />}
-            {isMaintenance && <NavItem to="/maintenance/dashboard" label="Service Console" icon={Wrench} />}
+            {isMaintenance && <NavItem to="/maintenance/dashboard" label="Dashboard" icon={Wrench} />}
             {(!isAdmin && !isDesigner && !isSales && !isMaintenance) && <NavItem to="/admin/dashboard" label="Dashboard" icon={LayoutDashboard} />}
 
             {/* Dynamically Granted Modules */}

@@ -5,6 +5,9 @@ const { validationResult } = require('express-validator');
 const db = require('../config/db');
 const env = require('../config/env');
 const { sendSuccess, sendError } = require('../utils/response');
+const cloudinary = require('../config/cloudinary');
+const fs = require('fs');
+const path = require('path');
 
 const login = async (req, res, next) => {
   const errors = validationResult(req);
@@ -96,6 +99,7 @@ const login = async (req, res, next) => {
         full_name: user.full_name,
         email: user.email,
         role_name: user.role_name,
+        image_url: user.image_url,
         permissions: permissions
       }
     });
@@ -190,8 +194,99 @@ const logout = async (req, res) => {
 
   sendSuccess(res, { message: 'Logged out' });
 };
+const updateProfileImage = async (req, res, next) => {
+  const userId = req.user.user_id; // From verifyToken middleware
+  
+  if (!req.file) {
+    return sendError(res, 'BAD_REQUEST', 'No image file provided', 400);
+  }
+
+  try {
+    // 1. Fetch current user to get old image URL
+    const currentUser = await db.query('SELECT image_url FROM users WHERE user_id = $1', [userId]);
+    if (currentUser.rows.length === 0) {
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return sendError(res, 'NOT_FOUND', 'User not found', 404);
+    }
+    const oldImageUrl = currentUser.rows[0].image_url;
+
+    // 2. Upload new image to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'users/avatars',
+      resource_type: 'image',
+    });
+    const newImageUrl = result.secure_url;
+
+    // 3. Delete local file
+    if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+
+    // 4. Update database
+    await db.query('UPDATE users SET image_url = $1 WHERE user_id = $2', [newImageUrl, userId]);
+
+    // 5. Cleanup old image from Cloudinary if it exists
+    if (oldImageUrl && oldImageUrl.includes('cloudinary.com')) {
+      try {
+        const parts = oldImageUrl.split('/');
+        const lastPart = parts[parts.length - 1];
+        const folderParts = parts.slice(parts.indexOf('upload') + 2, parts.length - 1);
+        const publicIdWithExt = [...folderParts, lastPart].join('/');
+        const publicId = publicIdWithExt.split('.')[0];
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+      } catch (e) {
+        console.error('Failed to delete old Cloudinary image:', e);
+      }
+    } else if (oldImageUrl) {
+      // Cleanup local old image if any
+      const filePath = path.join(__dirname, '../../', oldImageUrl);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+
+    sendSuccess(res, { image_url: newImageUrl }, 'Profile image updated successfully');
+  } catch (error) {
+    console.error("Cloudinary upload failed:", error);
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    next(error);
+  }
+};
+
+const removeProfileImage = async (req, res, next) => {
+  const userId = req.user.user_id;
+
+  try {
+    const userResult = await db.query('SELECT image_url FROM users WHERE user_id = $1', [userId]);
+    if (userResult.rows.length === 0) return sendError(res, 'NOT_FOUND', 'User not found', 404);
+    
+    const imageUrl = userResult.rows[0].image_url;
+    if (imageUrl) {
+      if (imageUrl.includes('cloudinary.com')) {
+        try {
+          const parts = imageUrl.split('/');
+          const lastPart = parts[parts.length - 1];
+          const folderParts = parts.slice(parts.indexOf('upload') + 2, parts.length - 1);
+          const publicIdWithExt = [...folderParts, lastPart].join('/');
+          const publicId = publicIdWithExt.split('.')[0];
+          await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+        } catch (e) {
+          console.error('Failed to delete Cloudinary image:', e);
+        }
+      } else {
+        const filePath = path.join(__dirname, '../../', imageUrl);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+      
+      await db.query('UPDATE users SET image_url = NULL WHERE user_id = $1', [userId]);
+    }
+    
+    sendSuccess(res, null, 'Image removed successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   login,
   refresh,
-  logout
+  logout,
+  updateProfileImage,
+  removeProfileImage
 };

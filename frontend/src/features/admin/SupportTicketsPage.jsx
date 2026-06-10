@@ -421,14 +421,7 @@ const SupportTicketsPage = () => {
                   </div>
                   <div>
                     <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Query Type</label>
-                    <select {...register('query_type')} className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold appearance-none">
-                      <option value="">Select Query Type</option>
-                      <option value="Hardware">Hardware</option>
-                      <option value="Software">Software</option>
-                      <option value="Process Stuck">Process Stuck</option>
-                      <option value="Hardware Stuck">Hardware Stuck</option>
-                      <option value="Other">Other</option>
-                    </select>
+                    <input type="text" {...register('query_type')} placeholder="Enter Query Type" className="w-full bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" />
                   </div>
                   <div>
                     <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Priority</label>

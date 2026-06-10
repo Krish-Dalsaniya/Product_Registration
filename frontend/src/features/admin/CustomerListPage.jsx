@@ -14,6 +14,8 @@ import { useAuth } from '../../context/AuthContext';
 const CustomerListPage = () => {
   const { hasPermission } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [companyTypeFilter, setCompanyTypeFilter] = useState('');
   const { data: customersData, isLoading: loading } = useCustomers();
   const customers = customersData || [];
 
@@ -64,18 +66,23 @@ const CustomerListPage = () => {
     return () => subscription.unsubscribe();
   }, [watch, formId, dispatch, isModalOpen]);
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.customer_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.product?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.technical_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    customer.sales_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    customer.owner_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    customer.accounts_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    customer.qa_qc_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    customer.other_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = customer.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.customer_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.product?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.technical_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      customer.sales_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      customer.owner_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      customer.accounts_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      customer.qa_qc_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      customer.other_contacts?.some(c => c.person?.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesStatus = statusFilter ? customer.status === statusFilter : true;
+    const matchesCompanyType = companyTypeFilter ? customer.company_type === companyTypeFilter : true;
+
+    return matchesSearch && matchesStatus && matchesCompanyType;
+  });
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
@@ -380,7 +387,11 @@ const CustomerListPage = () => {
       <CustomerFilters 
         searchTerm={searchTerm} 
         setSearchTerm={setSearchTerm} 
-        totalCount={customers.length} 
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        companyTypeFilter={companyTypeFilter}
+        setCompanyTypeFilter={setCompanyTypeFilter}
+        totalCount={filteredCustomers.length} 
       />
 
       <CustomerTable

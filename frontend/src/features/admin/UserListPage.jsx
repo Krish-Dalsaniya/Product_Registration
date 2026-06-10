@@ -24,6 +24,7 @@ const UserListPage = ({ initialRole = '' }) => {
   const [viewMode, setViewMode] = useState('grid');
   const [roleFilter, setRoleFilter] = useState(initialRole);
   const [companyFilter, setCompanyFilter] = useState('');
+  const [teamFilter, setTeamFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
@@ -278,10 +279,12 @@ const UserListPage = ({ initialRole = '' }) => {
   ];
 
 
-  const filteredUsers = users.filter(u =>
-    u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTeam = teamFilter ? u.teams?.some(t => t.team_id.toString() === teamFilter) : true;
+    return matchesSearch && matchesTeam;
+  });
 
   const getRoleIcon = () => {
     if (initialRole === 'Designer') return <PenTool className="text-[var(--accent)]" />;
@@ -441,6 +444,30 @@ const UserListPage = ({ initialRole = '' }) => {
             <option value="Peg-IT Healthcare">PEG-IT HEALTHCARE</option>
             <option value="Leons Integration">LEONS INTEGRATION</option>
             <option value="Crudex Controls">CRUDEX CONTROLS</option>
+          </select>
+        </div>
+
+        <div className="relative min-w-[160px] md:w-auto w-full">
+          <select
+            value={teamFilter || ''}
+            onChange={(e) => {
+              setTeamFilter(e.target.value);
+              setPagination(p => ({ ...p, page: 1 }));
+            }}
+            className="w-full appearance-none bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-4 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black tracking-wider text-[var(--text-main)] uppercase cursor-pointer shadow-sm hover:border-[var(--accent)]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238888aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundSize: '1.2em',
+              backgroundPosition: 'right 0.6rem center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
+            <option value="">ALL TEAMS</option>
+            {teamsData?.data?.map(team => (
+              <option key={team.team_id} value={team.team_id.toString()}>
+                {team.team_name.toUpperCase()}
+              </option>
+            ))}
           </select>
         </div>
 

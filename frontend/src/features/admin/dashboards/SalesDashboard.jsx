@@ -87,7 +87,7 @@ const SalesDashboard = () => {
       </div>
 
       {/* Core Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0 animate-entrance-up">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-shrink-0 animate-entrance-up">
         <StatCard 
           title="Total Customers" 
           value={stats?.totalCustomers ?? null} 
@@ -95,15 +95,6 @@ const SalesDashboard = () => {
           path={hasPermission('customers', 'view') ? "/admin/customers" : null} 
           accentBg="var(--badge-sales-bg)"
           accentText="var(--badge-sales-text)"
-          navigate={navigate}
-        />
-        <StatCard 
-          title="My Customers" 
-          value={stats?.myCustomers ?? null} 
-          icon={Users} 
-          path={hasPermission('customers', 'view') ? "/admin/customers" : null} 
-          accentBg="rgba(16, 185, 129, 0.1)"
-          accentText="#10b981"
           navigate={navigate}
         />
         <StatCard 

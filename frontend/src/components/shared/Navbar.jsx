@@ -1,9 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, X, Briefcase, ChevronLeft, ChevronRight, Trash2, Package, Bell, AlertTriangle } from 'lucide-react';
+import { Menu, X, Briefcase, ChevronLeft, ChevronRight, Trash2, Package, Bell, AlertTriangle, PackagePlus, Loader2, LifeBuoy } from 'lucide-react';
 import { Home, Users, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getLowStockAlerts } from '../../api/inventory';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { getNotifications, addPCBStock, addElectronicsStock, addElectricalStock, addStructuralStock } from '../../api/inventory';
 import { useAuth } from '../../context/AuthContext';
+import Modal from './Modal';
+import { useNavigate } from 'react-router-dom';
 
 const IconMap = {
   Home,
@@ -26,15 +28,51 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef(null);
   const { user } = useAuth();
-  const hasInventoryAccess = user?.role_name === 'Admin' || user?.permissions?.includes('inventory.view') || user?.permissions?.includes('admin');
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
+  const basePath = user?.role_name ? `/${user.role_name.toLowerCase()}` : '/admin';
 
-  const { data: alertsRes } = useQuery({
-    queryKey: ['low-stock-alerts'],
-    queryFn: () => getLowStockAlerts().then(res => res.data.data),
-    enabled: !!hasInventoryAccess,
+  const hasInventoryAccess = user?.role_name === 'Admin' || user?.permissions?.includes('inventory.view') || user?.permissions?.includes('admin');
+  const hasTicketsAccess = user?.role_name === 'Admin' || user?.permissions?.includes('supporttickets.view');
+  const hasNotificationsAccess = hasInventoryAccess || hasTicketsAccess;
+
+  const [quickAddModal, setQuickAddModal] = useState({ isOpen: false, item: null, quantityToAdd: '' });
+
+  const { data: notificationsRes } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => getNotifications().then(res => res.data.data),
+    enabled: !!hasNotificationsAccess,
     refetchInterval: 60000,
   });
-  const alerts = alertsRes || [];
+  const alerts = notificationsRes?.inventoryAlerts || [];
+  const tickets = notificationsRes?.supportTickets || [];
+  const totalNotifications = alerts.length + tickets.length;
+
+  const addStockMutation = useMutation({
+    mutationFn: async ({ category, id, quantity }) => {
+      switch(category) {
+        case 'PCB': return await addPCBStock(id, quantity);
+        case 'Electronics': return await addElectronicsStock(id, quantity);
+        case 'Electrical': return await addElectricalStock(id, quantity);
+        case 'Structural': return await addStructuralStock(id, quantity);
+        default: throw new Error('Unknown category');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['notifications']);
+      setQuickAddModal({ isOpen: false, item: null, quantityToAdd: '' });
+    }
+  });
+
+  const handleQuickAddSubmit = (e) => {
+    e.preventDefault();
+    addStockMutation.mutate({
+      category: quickAddModal.item.category,
+      id: quickAddModal.item.id,
+      quantity: quickAddModal.quantityToAdd
+    });
+  };
 
   // Close notifications when clicking outside
   useEffect(() => {
@@ -162,17 +200,17 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
         </div>
         
         <div className="flex items-center gap-4 md:gap-6 flex-shrink-0">
-          {hasInventoryAccess && (
+          {hasNotificationsAccess && (
             <div className="relative flex items-center" ref={notificationsRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                title="Low Stock Notifications"
+                title="Notifications"
                 className={`z-10 relative p-1.5 h-[32px] w-[32px] flex-shrink-0 flex items-center justify-center border rounded-lg shadow-sm transition-all ${showNotifications ? 'bg-[var(--accent)] border-[var(--accent)] text-white' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--accent)] hover:border-[var(--accent)]'}`}
               >
                 <Bell size={16} strokeWidth={showNotifications ? 3 : 2} />
-                {alerts.length > 0 && (
+                {totalNotifications > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-[var(--bg-card)]">
-                    {alerts.length}
+                    {totalNotifications}
                   </span>
                 )}
               </button>
@@ -181,30 +219,62 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
                 <div className="absolute top-10 right-0 w-80 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl overflow-hidden z-50 animate-scale-in">
                   <div className="px-4 py-3 border-b border-[var(--border-color)] bg-[var(--bg-workspace)] flex items-center justify-between">
                     <h3 className="text-[12px] font-black uppercase tracking-widest text-[var(--text-main)] flex items-center gap-2">
-                      <AlertTriangle size={14} className="text-amber-500" />
-                      Low Stock Alerts
+                      <Bell size={14} className="text-amber-500" />
+                      Notifications
                     </h3>
-                    <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">{alerts.length} items</span>
+                    <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">{totalNotifications} new</span>
                   </div>
-                  <div className="max-h-64 overflow-y-auto custom-scrollbar">
-                    {alerts.length === 0 ? (
+                  <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    {totalNotifications === 0 ? (
                       <div className="p-6 text-center text-[12px] text-[var(--text-muted)]">
-                        All inventory stock levels are healthy.
+                        You have no new notifications.
                       </div>
                     ) : (
-                      alerts.map((alert, idx) => (
-                        <div key={`${alert.category}-${alert.id}-${idx}`} className="px-4 py-3 border-b border-[var(--border-color)]/50 hover:bg-[var(--nav-hover)] transition-colors flex items-center justify-between">
-                          <div className="flex-1 min-w-0 pr-4">
-                            <p className="text-[12px] font-bold text-[var(--text-main)] truncate">{alert.name}</p>
-                            <p className="text-[10px] text-[var(--text-dim)] truncate mt-0.5 font-mono">{alert.part_number}</p>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-[var(--accent)] mt-1">{alert.category}</p>
+                      <div className="divide-y divide-[var(--border-color)]/50">
+                        {tickets.length > 0 && (
+                          <div className="py-2">
+                            <h4 className="px-4 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Support Tickets</h4>
+                            {tickets.map((ticket, idx) => (
+                              <div key={`ticket-${ticket.ticket_id}`} 
+                                className="px-4 py-3 hover:bg-[var(--nav-hover)] transition-colors flex items-center justify-between cursor-pointer"
+                                onClick={() => { setShowNotifications(false); navigate(`${basePath}/support-tickets/${ticket.id}`); }}
+                              >
+                                <div className="flex-1 min-w-0 pr-4">
+                                  <p className="text-[12px] font-bold text-[var(--text-main)] truncate">{ticket.subject}</p>
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-500 mt-1">Ticket {ticket.ticket_id}</p>
+                                </div>
+                                <LifeBuoy size={16} className="text-[var(--text-dim)]" />
+                              </div>
+                            ))}
                           </div>
-                          <div className="flex-shrink-0 text-right flex flex-col items-end">
-                            <span className="text-[18px] font-black text-rose-500 leading-none">{alert.stock_quantity}</span>
-                            <span className="text-[9px] uppercase tracking-wider text-[var(--text-dim)] mt-1">in stock</span>
+                        )}
+                        {alerts.length > 0 && (
+                          <div className="py-2">
+                            <h4 className="px-4 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Low Stock Alerts</h4>
+                            {alerts.map((alert, idx) => (
+                              <div key={`${alert.category}-${alert.id}-${idx}`} className="px-4 py-3 hover:bg-[var(--nav-hover)] transition-colors flex items-center justify-between group">
+                                <div className="flex-1 min-w-0 pr-4">
+                                  <p className="text-[12px] font-bold text-[var(--text-main)] truncate">{alert.name}</p>
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--accent)] mt-1">{alert.category}</p>
+                                </div>
+                                <div className="flex-shrink-0 text-right flex items-center gap-3">
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-[14px] font-black text-rose-500 leading-none">{alert.stock_quantity}</span>
+                                    <span className="text-[8px] uppercase tracking-wider text-[var(--text-dim)] mt-1">left</span>
+                                  </div>
+                                  <button
+                                    onClick={() => { setShowNotifications(false); setQuickAddModal({ isOpen: true, item: alert, quantityToAdd: '' }); }}
+                                    className="p-1.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded hover:bg-[var(--accent)] hover:text-white transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                                    title="Quick Restock"
+                                  >
+                                    <PackagePlus size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        </div>
-                      ))
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -214,6 +284,56 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
           {/* Theme toggle removed per user request */}
         </div>
       </div>
+
+      {quickAddModal.isOpen && (
+        <Modal
+          isOpen={quickAddModal.isOpen}
+          onClose={() => setQuickAddModal({ isOpen: false, item: null, quantityToAdd: '' })}
+          title="Quick Restock"
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleQuickAddSubmit} className="space-y-6">
+             <div className="bg-[var(--bg-workspace)] p-4 rounded-2xl border border-[var(--border-color)]">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Item to Restock</p>
+                <p className="text-[14px] font-bold text-[var(--text-main)] truncate">{quickAddModal.item?.name}</p>
+                <p className="text-[11px] font-black text-[var(--accent)] mt-1">{quickAddModal.item?.part_number}</p>
+             </div>
+             
+             <div className="space-y-2">
+                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+                   Quantity to Add <span className="text-rose-500">*</span>
+                </label>
+                <input 
+                   type="number"
+                   min="1"
+                   required
+                   value={quickAddModal.quantityToAdd}
+                   onChange={(e) => setQuickAddModal(prev => ({ ...prev, quantityToAdd: e.target.value }))}
+                   placeholder="Enter quantity"
+                   className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 transition-all font-bold"
+                />
+             </div>
+
+             <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]">
+                <button
+                   type="button"
+                   onClick={() => setQuickAddModal({ isOpen: false, item: null, quantityToAdd: '' })}
+                   className="px-6 py-2.5 text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+                >
+                   Cancel
+                </button>
+                <button
+                   type="submit"
+                   disabled={addStockMutation.isPending}
+                   className="px-6 py-2.5 text-[11px] font-black uppercase tracking-widest bg-[var(--accent)] text-white rounded-xl hover:opacity-90 shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                   {addStockMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <PackagePlus size={14} />}
+                   Confirm Restock
+                </button>
+             </div>
+          </form>
+        </Modal>
+      )}
     </header>
   );
 };

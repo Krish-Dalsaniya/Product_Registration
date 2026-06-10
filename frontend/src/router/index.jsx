@@ -9,7 +9,7 @@ import AssistantPanel from '../components/shared/AssistantPanel';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare, Shield } from 'lucide-react';
+import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare, Shield, LockKeyhole } from 'lucide-react';
 
 const IconMap = {
   Home,
@@ -24,7 +24,8 @@ const IconMap = {
   Package,
   LifeBuoy,
   MessageSquare,
-  Shield
+  Shield,
+  LockKeyhole
 };
 
 const getTabMetadata = (pathname, search) => {
@@ -40,8 +41,11 @@ const getTabMetadata = (pathname, search) => {
   if (pathname === '/admin/designers') {
     return { label: 'Designers', iconType: 'Users' };
   }
+  if (pathname === '/admin/user-access') {
+    return { label: 'User Access', iconType: 'LockKeyhole' };
+  }
   if (pathname === '/admin/roles') {
-    return { label: 'Roles', iconType: 'Shield' };
+    return { label: 'Roles Access', iconType: 'Shield' };
   }
   if (pathname === '/admin/maintenance') {
     return { label: 'Maintenance', iconType: 'Wrench' };

@@ -115,6 +115,20 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'LOGOUT' });
   };
 
+  const updateUserImage = (newImageUrl) => {
+    if (!state.user) return;
+    const updatedUser = { ...state.user, image_url: newImageUrl };
+    
+    // Update storage
+    if (localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    } else if (sessionStorage.getItem('user')) {
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+    
+    dispatch({ type: 'LOGIN', payload: { user: updatedUser } });
+  };
+
   const hasPermission = (moduleName, action, subsection = null) => {
     if (!state.user) return false;
     if (state.user.role_name === 'Admin') return true;
@@ -143,7 +157,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ ...state, login, logout, updateUserImage, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

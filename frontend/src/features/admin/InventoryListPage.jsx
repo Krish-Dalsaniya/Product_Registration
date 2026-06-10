@@ -109,6 +109,7 @@ const InventoryListPage = ({ type = '' }) => {
 
   const [viewMode, setViewMode] = useState('grid');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [stockStatusFilter, setStockStatusFilter] = useState('');
   const [activeImageIdx, setActiveImageIdx] = useState(0);
 
   const { data: statsData } = useInventoryStats();
@@ -121,7 +122,15 @@ const InventoryListPage = ({ type = '' }) => {
     pagination 
   });
   
-  const items = inventoryData?.data || [];
+  let items = inventoryData?.data || [];
+  if (stockStatusFilter) {
+    items = items.filter(item => {
+      const qty = item.stock_quantity ?? 0;
+      if (stockStatusFilter === 'In Stock') return qty > 0;
+      if (stockStatusFilter === 'Out of Stock') return qty === 0;
+      return true;
+    });
+  }
   const loading = isLoading;
 
   useEffect(() => {
@@ -1096,6 +1105,20 @@ const InventoryListPage = ({ type = '' }) => {
             
             <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
           </div>
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+             <div className="relative group min-w-[150px] flex-1 md:flex-none">
+                 <select 
+                     value={stockStatusFilter} 
+                     onChange={(e) => setStockStatusFilter(e.target.value)} 
+                     className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-4 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[13px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
+                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+                 >
+                     <option value="">All Stock Status</option>
+                     <option value="In Stock">In Stock</option>
+                     <option value="Out of Stock">Out of Stock</option>
+                 </select>
+             </div>
+          </div>
         </div>
 
         {!type && items.length === 0 ? (
@@ -1341,19 +1364,23 @@ const InventoryListPage = ({ type = '' }) => {
                         </div>
 
                         <div className="flex items-center gap-4 py-2">
-                            <button 
-                                onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedItem), 100); }} 
-                                className="btn-primary flex-1 py-4 px-6 shadow-lg uppercase tracking-widest text-[11px]" 
-                                style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-                            >
-                                Edit Specifications
-                            </button>
-                           <button 
-                               onClick={() => handleDelete(selectedItem)} 
-                               className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
-                           >
-                               <Trash2 size={18} />
-                           </button>
+                            {hasPermission('inventory', 'edit') && (
+                                <button 
+                                    onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedItem), 100); }} 
+                                    className="btn-primary flex-1 py-4 px-6 shadow-lg uppercase tracking-widest text-[11px]" 
+                                    style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+                                >
+                                    Edit Specifications
+                                </button>
+                            )}
+                            {hasPermission('inventory', 'delete') && (
+                               <button 
+                                   onClick={() => handleDelete(selectedItem)} 
+                                   className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                               >
+                                   <Trash2 size={18} />
+                               </button>
+                            )}
                         </div>                        {hasPermission('inventory', 'view', 'general') && (
                           <div className="p-8 bg-[var(--bg-workspace)]/50 rounded-[32px] border border-[var(--border-color)] shadow-inner">
                              <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.25em] mb-4 flex items-center gap-3">

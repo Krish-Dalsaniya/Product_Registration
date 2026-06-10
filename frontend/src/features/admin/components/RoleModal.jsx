@@ -26,10 +26,7 @@ const MODULES = [
     ] 
   },
   { name: 'Sales' },
-  { name: 'Support Tickets' },
-  { name: 'Roles' },
-  { name: 'Teams' },
-  { name: 'Users' }
+  { name: 'Support Tickets' }
 ];
 
 const ACTIONS = [
@@ -192,7 +189,7 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
               </thead>
               <tbody>
                 {MODULES.map(module => {
-                  const modKey = module.name.replace(/\s+/g, '').toLowerCase();
+                  const modKey = module.id || module.name.replace(/\s+/g, '').toLowerCase();
                   
                   if (module.subsections) {
                     return (

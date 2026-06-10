@@ -152,16 +152,21 @@ const AdminDashboard = () => {
   );
 
   const inventoryData = [
-    { name: 'PCB Units', value: stats?.inventory?.pcb || 0, color: '#00d2ff' },
-    { name: 'Electronics', value: stats?.inventory?.electronics || 0, color: '#34d399' },
-    { name: 'Electrical', value: stats?.inventory?.electrical || 0, color: '#fbbf24' },
-    { name: 'Structural', value: stats?.inventory?.structural || 0, color: '#a78bfa' }
+    { name: 'PCB Units', value: stats?.inventory?.pcb || 0, color: '#3b82f6' }, // Blue
+    { name: 'Electronics', value: stats?.inventory?.electronics || 0, color: '#8b5cf6' }, // Purple
+    { name: 'Electrical', value: stats?.inventory?.electrical || 0, color: '#f59e0b' }, // Amber
+    { name: 'Structural', value: stats?.inventory?.structural || 0, color: '#10b981' } // Emerald
   ];
 
   const personnelData = [
-    { name: 'Designers', value: stats?.designers || 0, color: '#8b5cf6' },
-    { name: 'Sales', value: stats?.sales || 0, color: '#ec4899' },
-    { name: 'Maintenance', value: stats?.maintenance || 0, color: '#f97316' }
+    { name: 'Designers', value: stats?.designers || 0, color: '#0ea5e9' }, // Sky Blue
+    { name: 'Sales', value: stats?.sales || 0, color: '#f43f5e' }, // Rose
+    { name: 'Maintenance', value: stats?.maintenance || 0, color: '#eab308' } // Yellow
+  ];
+
+  const ticketData = [
+    { name: 'Pending', value: stats?.supportTicketsActive || 0, color: '#ef4444' },
+    { name: 'Resolved', value: Math.max(0, (stats?.supportTicketsTotal || 0) - (stats?.supportTicketsActive || 0)), color: '#10b981' }
   ];
 
   return (
@@ -253,7 +258,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Analytics Row */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[1000px] lg:min-h-0 items-stretch animate-entrance-up pb-2" style={{ animationDelay: '0.1s' }}>
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 min-h-[1000px] md:min-h-0 items-stretch animate-entrance-up pb-2" style={{ animationDelay: '0.1s' }}>
         {/* Inventory Chart */}
         <div className="workspace-card p-6 h-full flex flex-col">
           <h3 className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.1em] mb-5 flex items-center gap-2">
@@ -321,6 +326,51 @@ const AdminDashboard = () => {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Support Tickets Chart */}
+        <div className="workspace-card p-6 h-full flex flex-col">
+          <h3 className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.1em] mb-5 flex items-center gap-2">
+            <LifeBuoy size={14} className="text-[var(--accent)]" /> Ticket Resolution
+          </h3>
+          <div className="flex-1 min-h-0 relative">
+            {ticketData.every(d => d.value === 0) && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                 <span className="text-[12px] font-bold text-[var(--text-muted)] uppercase">No Tickets</span>
+              </div>
+            )}
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart style={{ outline: 'none' }}>
+                <Pie
+                  data={ticketData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="60%"
+                  outerRadius="80%"
+                  paddingAngle={5}
+                  dataKey="value"
+                  stroke="none"
+                  style={{ outline: 'none' }}
+                >
+                  {ticketData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} style={{ outline: 'none' }} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-color)', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}
+                  itemStyle={{ color: 'var(--text-main)' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex justify-center gap-4 mt-4 flex-wrap">
+             {ticketData.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                   <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">{item.name}</span>
+                </div>
+             ))}
           </div>
         </div>
 
