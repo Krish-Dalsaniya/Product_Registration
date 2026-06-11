@@ -12,7 +12,7 @@ const TwoFactorModal = ({ isOpen, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [is2FaEnabled, setIs2FaEnabled] = useState(false);
-  const { login } = useAuth(); // we can use context to refresh user data if needed, though getMeApi does it via useEffect if we want, but better to just locally update.
+  const { user, login } = useAuth(); // we can use context to refresh user data if needed, though getMeApi does it via useEffect if we want, but better to just locally update.
   
   useEffect(() => {
     if (isOpen) {
@@ -99,7 +99,24 @@ const TwoFactorModal = ({ isOpen, onClose }) => {
   const copySecret = () => {
     navigator.clipboard.writeText(secret);
     setIsCopied(true);
+    toast.success('Setup key copied to clipboard!');
     setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const downloadRecoveryKey = () => {
+    const email = user?.email || 'user';
+    const content = `Product Registration - 2FA Recovery\n\nUser: ${email}\n\nAuthenticator Setup Key:\n${secret}\n\nKeep this file secure.\nAnyone with this key can generate your OTP codes.\n`;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '2fa-recovery-key.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Recovery key downloaded successfully!');
   };
 
   return (
@@ -144,13 +161,26 @@ const TwoFactorModal = ({ isOpen, onClose }) => {
               )}
               
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <p className="text-xs text-gray-500 mb-2">Or enter this setup key manually:</p>
-                <div className="flex items-center justify-center gap-2">
-                  <code className="text-sm font-mono bg-white px-2 py-1 rounded border text-gray-800">{secret}</code>
-                  <button type="button" onClick={copySecret} className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Copy">
-                    {isCopied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-xs font-medium mb-4 text-left shadow-sm border border-yellow-100 flex items-start gap-2">
+                  <ShieldAlert size={16} className="text-yellow-600 shrink-0 mt-0.5" />
+                  <span>Save this recovery key in a secure place. If you lose your authenticator app, this key can be used to reconfigure 2FA on a new device.</span>
+                </div>
+                
+                <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Manual Setup Key</p>
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <code className="text-sm font-mono bg-white px-3 py-2 rounded-lg border border-gray-200 text-gray-800 tracking-wider shadow-sm">{secret}</code>
+                  <button type="button" onClick={copySecret} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 rounded-lg transition-all" title="Copy Key">
+                    {isCopied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                   </button>
                 </div>
+                
+                <button
+                  type="button"
+                  onClick={downloadRecoveryKey}
+                  className="w-full py-2 bg-white border border-gray-300 text-gray-700 font-bold text-xs uppercase tracking-wider rounded-lg hover:bg-gray-50 hover:text-indigo-600 transition-colors shadow-sm"
+                >
+                  Download Recovery Key
+                </button>
               </div>
             </div>
 

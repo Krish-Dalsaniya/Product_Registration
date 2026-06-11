@@ -7,6 +7,7 @@ import {
   EyeOff, 
   ShieldAlert, 
   Check, 
+  Copy,
   ArrowRight,
   Loader2
 } from 'lucide-react';
@@ -17,7 +18,7 @@ import { resetPasswordApi } from '../../api/auth';
 
 const LoginPage = () => {
   const { login, loginWith2FA, isAuthenticated, user } = useAuth();
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, watch, getValues, formState: { errors } } = useForm();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -31,6 +32,7 @@ const LoginPage = () => {
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const [glarePosition, setGlarePosition] = useState({ x: 50, y: 50 });
 
   const canvasRef = useRef(null);
@@ -144,7 +146,6 @@ const LoginPage = () => {
   const handleCardMouseMove = (e) => {
     const card = cardRef.current;
     if (!card) return;
-
     const rect = card.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -278,6 +279,29 @@ const LoginPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const copySecret = () => {
+    navigator.clipboard.writeText(secret);
+    setIsCopied(true);
+    toast.success('Setup key copied to clipboard!');
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const downloadRecoveryKey = () => {
+    const email = getValues('email') || 'user';
+    const content = `Product Registration - 2FA Recovery\n\nUser: ${email}\n\nAuthenticator Setup Key:\n${secret}\n\nKeep this file secure.\nAnyone with this key can generate your OTP codes.\n`;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '2fa-recovery-key.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Recovery key downloaded successfully!');
   };
 
   if (isAuthenticated && user) {
@@ -586,8 +610,30 @@ const LoginPage = () => {
                 </div>
 
                 <div className="flex flex-col items-center justify-center bg-white rounded-2xl p-4 shadow-sm border border-[#eddcd0]">
-                  {qrCodeUrl && <img src={qrCodeUrl} alt="2FA QR Code" className="w-32 h-32 rounded-lg" />}
-                  <p className="text-[10px] text-[#8c8279] mt-3 font-mono font-bold tracking-widest">{secret}</p>
+                  {qrCodeUrl && <img src={qrCodeUrl} alt="2FA QR Code" className="w-32 h-32 rounded-lg mb-2 border-2 border-stone-100" />}
+                  
+                  <div className="w-full mt-2 pt-3 border-t border-stone-100">
+                    <div className="bg-yellow-50/50 text-yellow-800 p-2.5 rounded-lg text-[10px] font-medium mb-3 text-left border border-yellow-100 flex items-start gap-2">
+                      <ShieldAlert size={14} className="text-yellow-600 shrink-0 mt-0.5" />
+                      <span>Save this recovery key in a secure place. If you lose your authenticator app, this key can be used to reconfigure 2FA on a new device.</span>
+                    </div>
+
+                    <p className="text-[10px] text-stone-500 mb-1.5 font-bold uppercase tracking-wider text-center">Manual Setup Key</p>
+                    <div className="flex items-center justify-center gap-1.5 mb-3">
+                      <code className="text-xs font-mono bg-stone-50 px-2 py-1.5 rounded-lg border border-stone-200 text-stone-800 tracking-wider font-bold">{secret}</code>
+                      <button type="button" onClick={copySecret} className="p-1.5 text-stone-400 hover:text-[#ff7944] hover:bg-[#ff7944]/10 rounded-lg transition-all" title="Copy Key">
+                        {isCopied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={downloadRecoveryKey}
+                      className="w-full py-2 bg-stone-50 border border-stone-200 text-stone-600 font-bold text-[10px] uppercase tracking-wider rounded-lg hover:bg-stone-100 hover:text-[#ff7944] transition-colors"
+                    >
+                      Download Recovery Key
+                    </button>
+                  </div>
                 </div>
 
                 <div className="group flex flex-col space-y-2">
