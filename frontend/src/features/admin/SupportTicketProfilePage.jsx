@@ -14,7 +14,8 @@ const SupportTicketProfilePage = () => {
   const location = useLocation();
   const { updateTabLabel } = useOutletContext() || {};
   const { user } = useAuth();
-  const basePath = user?.role_name && user.role_name !== 'Admin' ? `/${user.role_name.toLowerCase()}` : '/admin';
+  const isStandardRole = ['Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
+  const basePath = isStandardRole ? `/${user.role_name.toLowerCase()}` : '/admin';
 
   const rawApiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
   const assetBaseURL = rawApiUrl.replace(/\/api$/, '');

@@ -163,7 +163,8 @@ const SupportTicketsPage = () => {
   };
 
   const handleView = (ticket) => {
-    const basePath = user?.role_name && user.role_name !== 'Admin' ? `/${user.role_name.toLowerCase()}` : '/admin';
+    const isStandardRole = ['Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
+    const basePath = isStandardRole ? `/${user.role_name.toLowerCase()}` : '/admin';
     navigate(`${basePath}/support-tickets/${ticket.id}`);
   };
 
