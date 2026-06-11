@@ -497,7 +497,7 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             {isDesigner && <NavItem to="/designer/dashboard" label="Dashboard" icon={Layers} />}
             {isSales && <NavItem to="/sales/dashboard" label="Dashboard" icon={LayoutDashboard} />}
             {isMaintenance && <NavItem to="/maintenance/dashboard" label="Dashboard" icon={Wrench} />}
-            {(!isAdmin && !isDesigner && !isSales && !isMaintenance) && <NavItem to="/admin/dashboard" label="Dashboard" icon={LayoutDashboard} />}
+            {(!isAdmin && !isDesigner && !isSales && !isMaintenance) && <NavItem to="/dashboard" label="Dashboard" icon={LayoutDashboard} />}
 
             {/* Dynamically Granted Modules */}
             {hasPermission('users', 'view') && <NavItem to="/admin/users" label="Users" icon={UserCog} />}

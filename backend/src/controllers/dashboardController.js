@@ -94,7 +94,7 @@ const getMaintenanceDashboardStats = async (req, res, next) => {
 
     // Recent unresolved tickets table
     const recentUnresolvedRes = await safeQuery(`
-      SELECT id, ticket_id, issue_type, priority, created_at, status
+      SELECT id, ticket_id, query_type as issue_type, priority, created_at, status
       FROM support_tickets
       WHERE status IN ('Pending', 'In Progress')
       ORDER BY 
@@ -177,9 +177,13 @@ const getDesignerDashboardStats = async (req, res, next) => {
 const getNotifications = async (req, res, next) => {
   try {
     const userPermissions = req.user.permissions || [];
-    const isAdmin = req.user.role_name === 'Admin';
-    const hasInventory = isAdmin || userPermissions.includes('inventory.view');
-    const hasTickets = isAdmin || userPermissions.includes('supporttickets.view');
+    const isAdmin = req.user.role_name?.toLowerCase() === 'admin' || userPermissions.includes('admin');
+    const hasInventory = isAdmin || userPermissions.some(p => p === 'inventory.view' || (p.startsWith('inventory.') && p.endsWith('.view')));
+    const hasTickets = isAdmin || userPermissions.some(p => 
+      p === 'supporttickets.view' || p === 'support_tickets.view' || 
+      (p.startsWith('supporttickets.') && p.endsWith('.view')) ||
+      (p.startsWith('support_tickets.') && p.endsWith('.view'))
+    );
 
     let inventoryAlerts = [];
     let supportTickets = [];

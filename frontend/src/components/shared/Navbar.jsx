@@ -28,7 +28,7 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef(null);
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -53,8 +53,8 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
 
   const basePath = user?.role_name ? `/${user.role_name.toLowerCase()}` : '/admin';
 
-  const hasInventoryAccess = user?.role_name === 'Admin' || user?.permissions?.includes('inventory.view') || user?.permissions?.includes('admin');
-  const hasTicketsAccess = user?.role_name === 'Admin' || user?.permissions?.includes('supporttickets.view');
+  const hasInventoryAccess = hasPermission('inventory', 'view');
+  const hasTicketsAccess = hasPermission('support_tickets', 'view');
   const hasNotificationsAccess = hasInventoryAccess || hasTicketsAccess;
 
   const [quickAddModal, setQuickAddModal] = useState({ isOpen: false, item: null, quantityToAdd: '' });
