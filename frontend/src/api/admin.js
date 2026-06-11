@@ -14,4 +14,4 @@ export const createUser = (data) => axiosInstance.post('/admin/users', data);
 export const updateUser = (id, data) => axiosInstance.put(`/admin/users/${id}`, data);
 export const deleteUser = (id) => axiosInstance.delete(`/admin/users/${id}`);
 export const removeUserImage = (id) => axiosInstance.delete(`/admin/users/${id}/image`);
-
+export const resetUser2FA = (id) => axiosInstance.post(`/admin/users/${id}/reset-2fa`);

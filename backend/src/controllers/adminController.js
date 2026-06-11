@@ -547,6 +547,19 @@ const removeUserImage = async (req, res, next) => {
   }
 };
 
+const resetUser2FA = async (req, res, next) => {
+  const { userId } = req.params;
+  try {
+    const result = await db.query('DELETE FROM user_two_factor WHERE user_id = $1 RETURNING user_id', [userId]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, error: { message: '2FA configuration not found for this user.' } });
+    }
+    sendSuccess(res, null, 'User 2FA configuration reset successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getUserPermissions = async (req, res, next) => {
   const { userId } = req.params;
   try {
@@ -638,6 +651,7 @@ module.exports = {
   updateUser,
   deleteUser,
   removeUserImage,
+  resetUser2FA,
   getUserPermissions,
   updateUserPermissions
 };

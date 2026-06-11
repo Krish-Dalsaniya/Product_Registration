@@ -21,6 +21,7 @@ router.put('/users/:userId', requirePermission('users.edit'), upload.single('ima
 router.get('/users/:userId', requirePermission('users.view'), adminController.getUserById);
 router.delete('/users/:userId', requirePermission('users.delete'), adminController.deleteUser);
 router.delete('/users/:userId/image', requirePermission('users.edit'), adminController.removeUserImage);
+router.post('/users/:userId/reset-2fa', requirePermission('users.edit'), adminController.resetUser2FA);
 router.get('/users/:userId/permissions', requirePermission('users.view'), adminController.getUserPermissions);
 router.put('/users/:userId/permissions', requirePermission('users.edit'), adminController.updateUserPermissions);
 router.get('/designers', requirePermission('users.view'), adminController.getDesigners);

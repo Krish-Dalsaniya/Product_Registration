@@ -374,30 +374,99 @@ const getMe = async (req, res, next) => {
   }
 };
 
+const verifyResetPassword = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return sendError(res, 'BAD_REQUEST', errors.array()[0].msg, 400);
+  }
+
+  const { email, otp } = req.body;
+
+  try {
+    const userResult = await db.query(
+      `SELECT u.user_id, u.is_active, u2f.two_factor_secret, u2f.is_two_factor_enabled 
+       FROM users u 
+       LEFT JOIN user_two_factor u2f ON u.user_id = u2f.user_id 
+       WHERE LOWER(u.email) = LOWER($1) AND u.is_active = true`,
+      [email]
+    );
+
+    if (userResult.rowCount === 0) {
+      // Return a generic error or require2FA to prevent email enumeration, but here we just say User not found
+      return sendError(res, 'BAD_REQUEST', 'User not found.', 400);
+    }
+
+    const user = userResult.rows[0];
+
+    if (user.is_two_factor_enabled) {
+      if (!otp) {
+        return sendSuccess(res, { require2FA: true }, '2FA verification required to reset password');
+      }
+
+      // Check if OTP matches Recovery Key (base32 secret)
+      const isRecoveryKey = otp === user.two_factor_secret;
+      
+      let verified = false;
+      if (isRecoveryKey) {
+        verified = true;
+      } else {
+        verified = speakeasy.totp.verify({
+          secret: user.two_factor_secret,
+          encoding: 'base32',
+          token: otp
+        });
+      }
+
+      if (!verified) {
+        return sendError(res, 'BAD_REQUEST', 'Invalid 2FA code or Recovery Key.', 400);
+      }
+    }
+
+    // Generate reset token
+    const resetToken = jwt.sign(
+      { user_id: user.user_id, action: 'reset-password' },
+      env.JWT_SECRET,
+      { expiresIn: '10m' }
+    );
+
+    sendSuccess(res, { resetToken }, 'Verification successful. You can now reset your password.');
+  } catch (error) {
+    next(error);
+  }
+};
+
 const resetPassword = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return sendError(res, 'BAD_REQUEST', errors.array()[0].msg, 400);
   }
 
-  const { email, newPassword } = req.body;
+  const { resetToken, newPassword } = req.body;
 
   try {
+    const decoded = jwt.verify(resetToken, env.JWT_SECRET);
+    if (decoded.action !== 'reset-password') {
+      return sendError(res, 'UNAUTHORIZED', 'Invalid token type', 401);
+    }
+
     // Hash new password
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
     // Update password
     const result = await db.query(
-      'UPDATE users SET password_hash = $1 WHERE LOWER(email) = LOWER($2) AND is_active = true RETURNING user_id',
-      [passwordHash, email]
+      'UPDATE users SET password_hash = $1 WHERE user_id = $2 AND is_active = true RETURNING user_id',
+      [passwordHash, decoded.user_id]
     );
 
     if (result.rowCount === 0) {
-      return sendError(res, 'BAD_REQUEST', 'Failed to reset password. User not found.', 400);
+       return sendError(res, 'BAD_REQUEST', 'Failed to reset password. User not found.', 400);
     }
 
     sendSuccess(res, null, 'Password successfully reset.');
   } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return sendError(res, 'UNAUTHORIZED', 'Reset session expired. Please try again.', 401);
+    }
     next(error);
   }
 };
@@ -571,6 +640,7 @@ module.exports = {
   logout,
   updateProfileImage,
   removeProfileImage,
+  verifyResetPassword,
   resetPassword,
   getMe,
   setup2FA,

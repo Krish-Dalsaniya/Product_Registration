@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUsers, useAdminStats, useCreateUser, useUpdateUser, useDeleteUser, useRemoveUserImage } from '../../hooks/useUsers';
+import { useUsers, useAdminStats, useCreateUser, useUpdateUser, useDeleteUser, useRemoveUserImage, useResetUser2FA } from '../../hooks/useUsers';
 import { useTeams } from '../../hooks/useTeams';
 import { useRoles, usePermissions } from '../../hooks/useRoles';
 import DataTable from '../../components/shared/DataTable';
@@ -46,6 +46,7 @@ const UserListPage = ({ initialRole = '' }) => {
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
   const removeUserImageMutation = useRemoveUserImage();
+  const resetUser2FAMutation = useResetUser2FA();
 
   const users = usersData?.data || [];
   const loading = usersLoading;
@@ -243,6 +244,25 @@ const UserListPage = ({ initialRole = '' }) => {
       toast.success('User deleted successfully');
     } catch (error) {
       toast.error('Failed to delete user');
+    }
+  };
+
+  const handleReset2FA = async (user) => {
+    const result = await Swal.fire({
+      title: 'Reset 2FA Configuration?',
+      text: `This will clear the 2FA settings for "${user.full_name}" and force them to re-configure it on their next login. Are you sure?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'Yes, reset 2FA'
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await resetUser2FAMutation.mutateAsync(user.user_id);
+      toast.success('2FA configuration reset successfully');
+    } catch (error) {
+      toast.error(error.message || 'Failed to reset 2FA');
     }
   };
 
@@ -827,6 +847,23 @@ const UserListPage = ({ initialRole = '' }) => {
                       </div>
                     </>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Admin Actions */}
+            {modalMode === 'edit' && hasPermission('users', 'edit') && (
+              <div className="pt-4 mt-6 border-t border-[var(--border-color)] border-opacity-50">
+                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-3">Admin Actions</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleReset2FA(selectedUser)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[#f59e0b] text-[#f59e0b] hover:bg-[#f59e0b] hover:text-white transition-all text-xs font-bold uppercase tracking-wider"
+                  >
+                    <Shield size={16} />
+                    Reset 2FA
+                  </button>
                 </div>
               </div>
             )}
