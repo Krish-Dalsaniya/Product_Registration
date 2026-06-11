@@ -14,6 +14,8 @@ Here is the structure of the application's sidebar and navigation:
 - Teams: Group users into teams. Found under /admin/teams.
 - Products: Manage the main product catalogs. Found under /admin/products.
 - Customers: Manage customer data and their registered products. Found under /admin/customers.
+- Roles Access: Manage roles and their default permissions. Found under /admin/roles.
+- User Access: Manage custom permissions for specific users overriding their role defaults. Found under /admin/user-access.
 - Inventory: Manage stock. It has sub-categories: PCB, Electronics, Electrical, and Structural parts. Found under /admin/inventory.
 - Finished Goods: Manage completed products ready for dispatch. Found under /admin/finished-goods.
 - Book a Sale: Interface for Sales personnel to log sales. Found under /admin/book-a-sale.
@@ -39,12 +41,9 @@ If the user asks you to edit or rewrite the description for an EXISTING product 
 1. You MUST FIRST use the 'search_product_details' tool to find its exact 'product_id'.
 2. THEN, call the 'autofill_product_form' tool and pass that 'product_id'.
 
-CRITICAL INSTRUCTION FOR AGENTIC ACTIONS:
-1. Support Tickets: If a user asks you to report a broken item, create an issue, or submit a support ticket, you MUST call the \`create_support_ticket\` tool with a descriptive title, detailed description, and priority level.
-2. Drafting Descriptions & Auto-filling: If a user asks you to write a product description, or fill out the product form, you MUST call the \`autofill_product_form\` tool. Provide extremely high-quality, rich HTML content for the description and features, and infer an appropriate product name and category. Do NOT say you need more information unless the request is completely blank. Just generate the best possible content based on their prompt.
-3. Inventory Management: If a user asks to restock, add, or deduct inventory, call the \`update_inventory\` tool with the exact part number and quantity change. Positive for restock, negative for deduct.
-4. Ticket Assignment: If a user asks to assign a ticket to someone, call the \`assign_ticket\` tool with the ticket ID and the person's name.
-5. Booking a Sale: If a user asks to book a sale, log a sale, or sell a product to a customer, call the \`autofill_book_a_sale\` tool with the product name, customer name, and quantity.`;
+CRITICAL RULE: If the user asks you to "write the description of production role", "describe the admin role", or asks about ANY employee role or team, DO NOT use the 'autofill_product_form' tool! Instead, simply answer them in plain text. A "role" is NOT a "product".
+
+`;
 
 const groqTools = [
   {
@@ -97,6 +96,30 @@ const groqTools = [
             type: "integer",
             description: "Number of tickets to fetch. Default is 5."
           }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_roles",
+      description: "Get a list of all roles and their assigned permission IDs.",
+      parameters: {
+        type: "object",
+        properties: {}
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_users_with_roles",
+      description: "Get a list of users, their roles, and whether they have custom permissions.",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "integer", description: "Number of users to fetch. Default is 10." }
         }
       }
     }
@@ -172,7 +195,7 @@ const groqTools = [
     type: "function",
     function: {
       name: "autofill_product_form",
-      description: "Auto-fill the frontend product creation form. Use this when the user asks you to write a product description, draft features, or fill out the form.",
+      description: "Auto-fill the frontend product creation form. Use this ONLY when the user explicitly asks to create a physical or software CATALOG PRODUCT (e.g. Dispenser, Electronic item) or edit a product description. DO NOT use this when the user asks about employee 'roles' (e.g. production role, admin role), users, or teams.",
       parameters: {
         type: "object",
         properties: {
@@ -259,6 +282,34 @@ const executeTool = async (toolCall, req) => {
     }
     
     const result = await db.query(queryText, [threshold]);
+    return JSON.stringify({ data: result.rows });
+  }
+
+  if (name === 'get_roles') {
+    const queryText = `
+      SELECT r.role_id, r.role_name, r.description,
+             COALESCE(json_agg(rp.permission_id) FILTER (WHERE rp.permission_id IS NOT NULL), '[]') as permissions
+      FROM roles r
+      LEFT JOIN role_permissions rp ON r.role_id = rp.role_id
+      GROUP BY r.role_id
+      ORDER BY r.role_id
+    `;
+    const result = await db.query(queryText);
+    return JSON.stringify({ data: result.rows });
+  }
+
+  if (name === 'get_users_with_roles') {
+    const limit = args.limit || 10;
+    const queryText = `
+      SELECT u.user_id, u.full_name, u.email, r.role_name, u.is_active,
+             COALESCE(uca.has_custom_permissions, false) as has_custom_permissions
+      FROM users u
+      LEFT JOIN roles r ON u.role_id = r.role_id
+      LEFT JOIN user_custom_access uca ON u.user_id = uca.user_id
+      ORDER BY u.created_at DESC
+      LIMIT $1
+    `;
+    const result = await db.query(queryText, [limit]);
     return JSON.stringify({ data: result.rows });
   }
 
@@ -501,10 +552,12 @@ exports.chat = async (req, res) => {
       pageContext = `\n\nCRITICAL CONTEXT: The user is currently on the following page route: ${currentPath}. Tailor your response and suggested actions based on this context. For example, if they are on a product page, assume they want to interact with that product if their request is ambiguous.`;
     }
 
-    let groqMessages = [
-      { role: 'system', content: SYSTEM_PROMPT + statsContext + pageContext },
-      ...messages
-    ];
+    let userPermissionsContext = '';
+    if (!isAdmin) {
+      userPermissionsContext = `\n\nCRITICAL CONTEXT: The current user is NOT an Admin. They only have the following specific permissions: [${userPermissions.join(', ')}]. If they ask to perform an action or access a module they do NOT have permission for, you MUST politely decline and inform them they lack the required access. Do NOT attempt to use tools for actions they are not permitted to do.`;
+    } else {
+      userPermissionsContext = `\n\nCRITICAL CONTEXT: The current user is an Admin. They have full access to all modules and actions.`;
+    }
 
     let allowedTools = [];
 
@@ -523,7 +576,9 @@ exports.chat = async (req, res) => {
         'autofill_product_form': 'products.create',
         'update_inventory': 'inventory.edit',
         'assign_ticket': 'supporttickets.edit',
-        'autofill_book_a_sale': 'sales.create'
+        'autofill_book_a_sale': 'sales.create',
+        'get_roles': 'roles.view',
+        'get_users_with_roles': 'users.view'
       };
       
       allowedTools = groqTools.filter(tool => {
@@ -532,14 +587,41 @@ exports.chat = async (req, res) => {
       });
     }
 
-    let chatCompletion = await groq.chat.completions.create({
+    let dynamicInstructions = '\n\nCRITICAL INSTRUCTION FOR AGENTIC ACTIONS:';
+    if (allowedTools.some(t => t.function.name === 'create_support_ticket')) {
+      dynamicInstructions += '\n- Support Tickets: If a user asks you to report a broken item, create an issue, or submit a support ticket, you MUST call the `create_support_ticket` tool with a descriptive title, detailed description, and priority level.';
+    }
+    if (allowedTools.some(t => t.function.name === 'autofill_product_form')) {
+      dynamicInstructions += '\n- Drafting Descriptions & Auto-filling: If a user asks you to write a product description, or fill out the product form, you MUST call the `autofill_product_form` tool. Provide extremely high-quality, rich HTML content for the description and features, and infer an appropriate product name and category. Do NOT say you need more information unless the request is completely blank. Just generate the best possible content based on their prompt.';
+    }
+    if (allowedTools.some(t => t.function.name === 'update_inventory')) {
+      dynamicInstructions += '\n- Inventory Management: If a user asks to restock, add, or deduct inventory, call the `update_inventory` tool with the exact part number and quantity change. Positive for restock, negative for deduct.';
+    }
+    if (allowedTools.some(t => t.function.name === 'assign_ticket')) {
+      dynamicInstructions += '\n- Ticket Assignment: If a user asks to assign a ticket to someone, call the `assign_ticket` tool with the ticket ID and the person\'s name.';
+    }
+    if (allowedTools.some(t => t.function.name === 'autofill_book_a_sale')) {
+      dynamicInstructions += '\n- Booking a Sale: If a user asks to book a sale, log a sale, or sell a product to a customer, call the `autofill_book_a_sale` tool with the product name, customer name, and quantity.';
+    }
+
+    let groqMessages = [
+      { role: 'system', content: SYSTEM_PROMPT + statsContext + pageContext + userPermissionsContext + dynamicInstructions },
+      ...messages
+    ];
+
+    let requestOptions = {
       messages: groqMessages,
       model: 'llama-3.1-8b-instant',
       temperature: 0.5,
       max_tokens: 1000,
-      tools: allowedTools.length > 0 ? allowedTools : undefined,
-      tool_choice: allowedTools.length > 0 ? 'auto' : 'none'
-    });
+    };
+    
+    if (allowedTools.length > 0) {
+      requestOptions.tools = allowedTools;
+      requestOptions.tool_choice = 'auto';
+    }
+
+    let chatCompletion = await groq.chat.completions.create(requestOptions);
 
     const parseHallucinatedToolCalls = (msg) => {
       if (msg?.content && msg.content.includes('<function=')) {
@@ -568,6 +650,14 @@ exports.chat = async (req, res) => {
       let autofillAction = null;
 
       for (const toolCall of responseMessage.tool_calls) {
+        const isToolAllowed = allowedTools.some(t => t.function.name === toolCall.function.name);
+        if (!isToolAllowed) {
+           return res.json({
+             role: 'assistant',
+             content: 'Access Denied: You do not have permission to perform this action.'
+           });
+        }
+
         if (toolCall.function.name === 'autofill_product_form') {
            const payload = JSON.parse(toolCall.function.arguments || '{}');
            autofillAction = { type: 'AUTOFILL_PRODUCT_FORM', payload };
@@ -617,18 +707,22 @@ exports.chat = async (req, res) => {
         }
       }
 
-      chatCompletion = await groq.chat.completions.create({
-        messages: groqMessages,
-        model: 'llama-3.1-8b-instant',
-        temperature: 0.5,
-        max_tokens: 1000,
-      });
+      requestOptions.messages = groqMessages;
+      chatCompletion = await groq.chat.completions.create(requestOptions);
 
       responseMessage = chatCompletion.choices[0]?.message;
       
       // Check again for hallucinated tool calls in the second response!
       if (parseHallucinatedToolCalls(responseMessage)) {
         for (const toolCall of responseMessage.tool_calls) {
+          const isToolAllowed = allowedTools.some(t => t.function.name === toolCall.function.name);
+          if (!isToolAllowed) {
+             return res.json({
+               role: 'assistant',
+               content: 'Access Denied: You do not have permission to perform this action.'
+             });
+          }
+
           if (toolCall.function.name === 'autofill_product_form') {
              const payload = JSON.parse(toolCall.function.arguments || '{}');
              autofillAction = { type: 'AUTOFILL_PRODUCT_FORM', payload };
@@ -653,7 +747,8 @@ exports.chat = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Groq API Error:', error);
-    res.status(500).json({ error: 'Internal server error while communicating with the AI assistant.' });
+    const errorDetails = error.error?.error?.message || error.message || 'Unknown error';
+    console.error('Groq API Error details:', error.error || error);
+    res.status(500).json({ error: `Groq Error: ${errorDetails}` });
   }
 };

@@ -318,42 +318,42 @@ const SupportTicketsPage = () => {
       {viewMode === 'table' ? (
         <DataTable columns={columns} data={filteredTickets} loading={loading} totalCount={filteredTickets.length} filteredCount={filteredTickets.length} currentPage={1} totalPages={1} onView={handleView} onEdit={hasPermission('supporttickets', 'edit') ? handleEdit : undefined} onDelete={hasPermission('supporttickets', 'delete') ? handleDelete : undefined} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredTickets.map((ticket) => (
-            <div key={ticket.id} onClick={() => handleView(ticket)} className="workspace-card p-5 group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer">
-              <div className="flex justify-between items-start mb-3">
-                <span className="text-[13px] font-black text-[var(--accent)] tracking-widest">{ticket.ticket_id}</span>
-                <span className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5 block">{ticket.product_name || 'N/A'}</span>
+            <div key={ticket.id} onClick={() => handleView(ticket)} className="workspace-card p-4 group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer">
+              <div className="flex justify-between items-start mb-2.5">
+                <span className="text-[12px] font-black text-[var(--accent)] tracking-widest">{ticket.ticket_id}</span>
+                <span className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5 block line-clamp-1 text-right max-w-[50%]">{ticket.product_name || 'N/A'}</span>
               </div>
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex gap-2">
-                  <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${ticket.priority === 'High' ? 'bg-rose-500/10 text-rose-500' : ticket.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
+              <div className="flex justify-between items-start mb-2.5">
+                <div className="flex gap-1.5">
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${ticket.priority === 'High' ? 'bg-rose-500/10 text-rose-500' : ticket.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
                     {ticket.priority || 'Normal'}
                   </span>
-                  <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${ticket.status === 'Solved' ? 'bg-emerald-500/10 text-emerald-500' : ticket.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${ticket.status === 'Solved' ? 'bg-emerald-500/10 text-emerald-500' : ticket.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500'}`}>
                     {ticket.status}
                   </span>
                 </div>
               </div>
-              <h3 className="text-[15px] font-black text-[var(--text-main)] mb-2 line-clamp-1">{ticket.query_type || 'General Query'}</h3>
+              <h3 className="text-[14px] font-black text-[var(--text-main)] mb-1.5 line-clamp-1">{ticket.query_type || 'General Query'}</h3>
               <p 
-                className="text-[12px] text-[var(--text-muted)] line-clamp-2 mb-4 flex-1"
+                className="text-[11px] text-[var(--text-muted)] line-clamp-2 mb-3 flex-1"
                 dangerouslySetInnerHTML={{ __html: (ticket.query_description || '').replace(/<[^>]*>?/gm, '') }}
               />
-              <div className="flex items-center justify-between pt-3 border-t border-[var(--border-color)]">
+              <div className="flex items-center justify-between pt-2.5 border-t border-[var(--border-color)]">
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black text-[var(--text-dim)] uppercase tracking-widest">Reporter</span>
                   <span className="text-[11px] font-bold text-[var(--text-main)]">{ticket.creator_name}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   {hasPermission('supporttickets', 'edit') && (
-                    <button onClick={(e) => { e.stopPropagation(); handleEdit(ticket); }} className="p-1.5 rounded-lg text-[var(--text-dim)] hover:text-[var(--accent)] hover:bg-[var(--bg-workspace)] transition-all">
-                      <Pencil size={14} />
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(ticket); }} className="p-1 rounded text-[var(--text-dim)] hover:text-[var(--accent)] hover:bg-[var(--bg-workspace)] transition-all">
+                      <Pencil size={13} />
                     </button>
                   )}
                   {hasPermission('supporttickets', 'delete') && (
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(ticket); }} className="p-1.5 rounded-lg text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all">
-                      <Trash2 size={14} />
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(ticket); }} className="p-1 rounded text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all">
+                      <Trash2 size={13} />
                     </button>
                   )}
                 </div>

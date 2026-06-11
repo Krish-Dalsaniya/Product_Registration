@@ -7,7 +7,7 @@ import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
 import UserAccessModal from './components/UserAccessModal';
-import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List, Building } from 'lucide-react';
+import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List, Building, Briefcase } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
 import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
@@ -107,7 +107,8 @@ const UserListPage = ({ initialRole = '' }) => {
       formData.append('full_name', data.full_name);
       formData.append('email', data.email);
       if (data.password) formData.append('password', data.password);
-      if (data.company) formData.append('company', data.company);
+      if (data.company !== undefined) formData.append('company', data.company);
+      if (data.designation !== undefined) formData.append('designation', data.designation);
       
       const finalRoleName = data.role_name || (modalMode === 'edit' ? selectedUser?.role_name : (initialRole || 'Designer'));
       formData.append('role_name', finalRoleName);
@@ -576,6 +577,21 @@ const UserListPage = ({ initialRole = '' }) => {
                   <div>
                     <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Company</p>
                     <p className="text-sm font-semibold text-[var(--text-main)]">{selectedUser.company}</p>
+                  </div>
+                </div>
+              )}
+
+              {selectedUser?.designation && (
+                <div className="flex items-center gap-4 p-3 hover:bg-[var(--bg-workspace)] transition-colors rounded-xl group">
+                  <div 
+                    className="p-2.5 rounded-lg group-hover:scale-110 transition-transform"
+                    style={{ background: 'var(--nav-hover)', color: 'var(--accent)' }}
+                  >
+                    <Briefcase size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Designation</p>
+                    <p className="text-sm font-semibold text-[var(--text-main)]">{selectedUser.designation}</p>
                   </div>
                 </div>
               )}

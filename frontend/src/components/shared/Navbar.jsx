@@ -1,11 +1,12 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, X, Briefcase, ChevronLeft, ChevronRight, Trash2, Package, Bell, AlertTriangle, PackagePlus, Loader2, LifeBuoy } from 'lucide-react';
+import { Menu, X, Briefcase, ChevronLeft, ChevronRight, Trash2, Package, Bell, AlertTriangle, PackagePlus, Loader2, LifeBuoy, LogOut } from 'lucide-react';
 import { Home, Users, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid } from 'lucide-react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { getNotifications, addPCBStock, addElectronicsStock, addElectricalStock, addStructuralStock } from '../../api/inventory';
 import { useAuth } from '../../context/AuthContext';
 import Modal from './Modal';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 const IconMap = {
   Home,
@@ -27,10 +28,29 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsRef = useRef(null);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
+  const handleLogout = () => {
+    Swal.fire({
+      title: 'Sign Out?',
+      text: 'Are you sure you want to log out?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#f06532',
+      cancelButtonColor: '#a89b96',
+      confirmButtonText: 'Yes, sign out',
+      background: 'var(--bg-card)',
+      color: 'var(--text-main)',
+      iconColor: '#f06532'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        logout();
+      }
+    });
+  };
+
   const basePath = user?.role_name ? `/${user.role_name.toLowerCase()}` : '/admin';
 
   const hasInventoryAccess = user?.role_name === 'Admin' || user?.permissions?.includes('inventory.view') || user?.permissions?.includes('admin');
@@ -281,7 +301,14 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
               )}
             </div>
           )}
-          {/* Theme toggle removed per user request */}
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            title="Log out"
+            className="p-1.5 h-[32px] w-[32px] flex-shrink-0 flex items-center justify-center bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-rose-500 hover:border-rose-500 rounded-lg shadow-sm transition-all"
+          >
+            <LogOut size={16} strokeWidth={2} />
+          </button>
         </div>
       </div>
 

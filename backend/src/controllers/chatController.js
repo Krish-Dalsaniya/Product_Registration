@@ -19,13 +19,19 @@ const getChatUsers = async (req, res, next) => {
            FROM chat_messages cm 
            WHERE cm.sender_id = u.user_id 
              AND cm.receiver_id = $1 
-             AND cm.is_read = FALSE), 
+             AND cm.is_read = FALSE
+             AND NOT EXISTS (
+               SELECT 1 FROM chat_message_deletions cmd WHERE cmd.message_id = cm.message_id AND cmd.user_id = $1
+             )), 
           0
         )::int as unread_count,
         (SELECT MAX(created_at) 
          FROM chat_messages cm 
-         WHERE (cm.sender_id = u.user_id AND cm.receiver_id = $1)
-            OR (cm.sender_id = $1 AND cm.receiver_id = u.user_id)
+         WHERE ((cm.sender_id = u.user_id AND cm.receiver_id = $1)
+            OR (cm.sender_id = $1 AND cm.receiver_id = u.user_id))
+           AND NOT EXISTS (
+             SELECT 1 FROM chat_message_deletions cmd WHERE cmd.message_id = cm.message_id AND cmd.user_id = $1
+           )
         ) as last_message_at
       FROM users u
       JOIN roles r ON u.role_id = r.role_id
@@ -53,8 +59,11 @@ const getChatHistory = async (req, res, next) => {
     const query = `
       SELECT message_id, sender_id, receiver_id, message, is_read, created_at
       FROM chat_messages
-      WHERE (sender_id = $1 AND receiver_id = $2)
-         OR (sender_id = $2 AND receiver_id = $1)
+      WHERE ((sender_id = $1 AND receiver_id = $2)
+         OR (sender_id = $2 AND receiver_id = $1))
+        AND NOT EXISTS (
+          SELECT 1 FROM chat_message_deletions cmd WHERE cmd.message_id = chat_messages.message_id AND cmd.user_id = $1
+        )
       ORDER BY created_at ASC
     `;
 
@@ -136,6 +145,9 @@ const getUnreadCount = async (req, res, next) => {
       SELECT COUNT(*) as total_unread
       FROM chat_messages
       WHERE receiver_id = $1 AND is_read = FALSE
+        AND NOT EXISTS (
+          SELECT 1 FROM chat_message_deletions cmd WHERE cmd.message_id = chat_messages.message_id AND cmd.user_id = $1
+        )
     `;
 
     const result = await db.query(query, [currentUserId]);
@@ -176,9 +188,12 @@ const clearChat = async (req, res, next) => {
     const { userId: otherUserId } = req.params;
 
     const query = `
-      DELETE FROM chat_messages 
-      WHERE (sender_id = $1 AND receiver_id = $2)
-         OR (sender_id = $2 AND receiver_id = $1)
+      INSERT INTO chat_message_deletions (message_id, user_id)
+      SELECT message_id, $1 
+      FROM chat_messages 
+      WHERE ((sender_id = $1 AND receiver_id = $2)
+         OR (sender_id = $2 AND receiver_id = $1))
+      ON CONFLICT (message_id, user_id) DO NOTHING
     `;
     await db.query(query, [currentUserId, otherUserId]);
 

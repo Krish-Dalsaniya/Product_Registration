@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Pencil, Trash2, Mail, Users, Building } from 'lucide-react';
+import { Eye, Pencil, Trash2, Mail, Users, Building, Briefcase } from 'lucide-react';
 import RoleBadge from '../../../../components/shared/RoleBadge';
 
 const UserGridView = ({
@@ -79,27 +79,14 @@ const UserGridView = ({
                     <span className="truncate">{user.company}</span>
                   </div>
                 )}
-              </div>
-
-              <div className="mt-4">
-                <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 text-center">Assigned Teams</p>
-                {userTeams.length > 0 ? (
-                  <div className="flex flex-wrap gap-1 justify-center max-h-[46px] overflow-hidden">
-                    {userTeams.slice(0, 3).map(t => (
-                      <span key={t.team_id} className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[var(--nav-hover)] text-[var(--accent)] border border-[var(--border-color)]">
-                        {t.team_name}
-                      </span>
-                    ))}
-                    {userTeams.length > 3 && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[var(--bg-workspace)] text-[var(--text-muted)] border border-[var(--border-color)]">
-                        +{userTeams.length - 3}
-                      </span>
-                    )}
+                {user.designation && (
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
+                    <Briefcase size={12} className="shrink-0" />
+                    <span className="truncate">{user.designation}</span>
                   </div>
-                ) : (
-                  <p className="text-center text-[10px] text-[var(--text-muted)] italic">No teams</p>
                 )}
               </div>
+
 
               <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
                 <div className="flex items-center">

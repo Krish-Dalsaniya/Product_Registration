@@ -9,8 +9,26 @@ const getUsers = async (req, res, next) => {
   try {
     // Use DISTINCT ON to prevent duplicate rows caused by users belonging to multiple teams
     let queryText = `
+      WITH user_panel AS (
+        SELECT u.user_id,
+            u.full_name,
+            u.email,
+            u.company,
+            u.designation,
+            u.image_url,
+            r.role_name,
+            u.is_active,
+            u.created_at,
+            COALESCE(json_agg(json_build_object('team_id', t.team_id, 'team_name', t.team_name)) FILTER (WHERE t.team_id IS NOT NULL), '[]'::json) AS teams
+          FROM users u
+            JOIN roles r ON r.role_id = u.role_id
+            LEFT JOIN team_members tm ON tm.user_id = u.user_id
+            LEFT JOIN teams t ON t.team_id = tm.team_id
+          WHERE r.role_name::text <> 'Admin'::text AND u.is_active = true
+          GROUP BY u.user_id, u.full_name, u.email, u.company, u.designation, u.image_url, r.role_name, u.is_active, u.created_at
+      )
       SELECT DISTINCT ON (v.user_id) v.*, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions, COUNT(*) OVER() as total_count
-      FROM v_admin_user_panel v
+      FROM user_panel v
       LEFT JOIN user_custom_access uca ON v.user_id = uca.user_id
       WHERE 1=1
     `;
@@ -42,8 +60,26 @@ const getUserById = async (req, res, next) => {
 
   try {
     const userResult = await db.query(
-      `SELECT v.*, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions 
-       FROM v_admin_user_panel v 
+      `WITH user_panel AS (
+        SELECT u.user_id,
+            u.full_name,
+            u.email,
+            u.company,
+            u.designation,
+            u.image_url,
+            r.role_name,
+            u.is_active,
+            u.created_at,
+            COALESCE(json_agg(json_build_object('team_id', t.team_id, 'team_name', t.team_name)) FILTER (WHERE t.team_id IS NOT NULL), '[]'::json) AS teams
+          FROM users u
+            JOIN roles r ON r.role_id = u.role_id
+            LEFT JOIN team_members tm ON tm.user_id = u.user_id
+            LEFT JOIN teams t ON t.team_id = tm.team_id
+          WHERE r.role_name::text <> 'Admin'::text AND u.is_active = true
+          GROUP BY u.user_id, u.full_name, u.email, u.company, u.designation, u.image_url, r.role_name, u.is_active, u.created_at
+       )
+       SELECT v.*, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions 
+       FROM user_panel v 
        LEFT JOIN user_custom_access uca ON v.user_id = uca.user_id 
        WHERE v.user_id = $1`,
       [userId]
@@ -377,16 +413,16 @@ const updateUser = async (req, res, next) => {
         if (image_url) {
           updateResult = await client.query(
             `UPDATE users 
-             SET full_name = $1, email = $2, role_id = $3, image_url = $4, company = $5
-             WHERE user_id = $6 RETURNING user_id, full_name, email, image_url, company`,
-            [full_name, email, role_id, image_url, company, userId]
+             SET full_name = $1, email = $2, role_id = $3, image_url = $4, company = $5, designation = $7
+             WHERE user_id = $6 RETURNING user_id, full_name, email, image_url, company, designation`,
+            [full_name, email, role_id, image_url, company, userId, designation]
           );
         } else {
           updateResult = await client.query(
             `UPDATE users 
-             SET full_name = $1, email = $2, role_id = $3, company = $4
-             WHERE user_id = $5 RETURNING user_id, full_name, email, image_url, company`,
-            [full_name, email, role_id, company, userId]
+             SET full_name = $1, email = $2, role_id = $3, company = $4, designation = $6
+             WHERE user_id = $5 RETURNING user_id, full_name, email, image_url, company, designation`,
+            [full_name, email, role_id, company, userId, designation]
           );
         }
 

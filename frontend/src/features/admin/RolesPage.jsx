@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DataTable from '../../components/shared/DataTable';
 import RoleModal from './components/RoleModal';
 import { useRoles, usePermissions, useDeleteRole } from '../../hooks/useRoles';
-import { Plus, Shield } from 'lucide-react';
+import { Plus, Building2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
 
@@ -59,7 +59,7 @@ const RolesPage = () => {
     { key: 'role_name', label: 'Role Name', render: (row) => (
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
-          <Shield size={16} />
+          <Building2 size={16} />
         </div>
         <span className="font-bold">{row.role_name}</span>
       </div>
@@ -74,18 +74,28 @@ const RolesPage = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12 pt-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] uppercase tracking-tight">Access Control</h1>
-          <p className="text-[13px] font-bold text-[var(--text-dim)] uppercase tracking-widest mt-1">Manage Roles and Permissions</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
+        <div className="flex items-center gap-5">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <Building2 className="text-[var(--accent)] md:w-[28px] md:h-[28px] group-hover:scale-110 transition-transform duration-300" size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+              Roles Access
+            </h1>
+            <p className="text-[11px] text-[var(--text-muted)] font-bold mt-2 uppercase tracking-[0.2em] opacity-70">
+              Manage Roles and Permissions
+            </p>
+          </div>
         </div>
         {hasPermission('roles', 'create') && (
           <button
             onClick={() => { setEditingItem(null); setModalMode('create'); setIsModalOpen(true); }}
-            className="btn-primary flex items-center justify-center gap-2"
+            className="btn-primary shadow-lg px-8 py-3 group"
+            style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
           >
-            <Plus size={16} strokeWidth={3} />
-            <span>New Role</span>
+            <Plus size={18} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] md:text-[14px]">New Role</span>
           </button>
         )}
       </div>

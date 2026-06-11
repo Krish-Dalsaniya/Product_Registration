@@ -144,7 +144,8 @@ const AssistantPanel = ({ isOpen, onClose }) => {
       }
     } catch (error) {
       console.error('Chatbot API Error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I am having trouble connecting right now. Please try again later.' }]);
+      const errorMessage = error.response?.data?.error || 'Sorry, I am having trouble connecting right now. Please try again later.';
+      setMessages(prev => [...prev, { role: 'assistant', content: errorMessage }]);
     } finally {
       setIsLoading(false);
     }
@@ -226,7 +227,7 @@ const AssistantPanel = ({ isOpen, onClose }) => {
               </div>
               <div className="px-4 py-3 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-tl-sm flex items-center gap-2">
                 <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
-                <span className="text-xs text-[var(--text-muted)] font-medium">AI is thinking...</span>
+                <span className="text-xs text-[var(--text-muted)] font-medium">Thinking...</span>
               </div>
             </div>
           )}
