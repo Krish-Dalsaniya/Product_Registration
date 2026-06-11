@@ -350,6 +350,24 @@ const Router = () => {
           <Route path="/maintenance/chat" element={<ChatPage />} />
         </Route>
 
+        {/* Accountant Workspace Dashboard & Specifics */}
+        <Route element={<AuthGuard><RoleGuard allowedRoles={['Accountant']}><DashboardLayout /></RoleGuard></AuthGuard>}>
+          <Route path="/accountant" element={<Navigate to="/accountant/dashboard" />} />
+          <Route path="/accountant/dashboard" element={<GenericDashboard />} />
+          <Route path="/accountant/support-tickets" element={<SupportTicketsPage />} />
+          <Route path="/accountant/support-tickets/:id" element={<SupportTicketProfilePage />} />
+          <Route path="/accountant/chat" element={<ChatPage />} />
+        </Route>
+
+        {/* HR Workspace Dashboard & Specifics */}
+        <Route element={<AuthGuard><RoleGuard allowedRoles={['HR']}><DashboardLayout /></RoleGuard></AuthGuard>}>
+          <Route path="/hr" element={<Navigate to="/hr/dashboard" />} />
+          <Route path="/hr/dashboard" element={<GenericDashboard />} />
+          <Route path="/hr/support-tickets" element={<SupportTicketsPage />} />
+          <Route path="/hr/support-tickets/:id" element={<SupportTicketProfilePage />} />
+          <Route path="/hr/chat" element={<ChatPage />} />
+        </Route>
+
         {/* Generic Fallback Dashboard */}
         <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
           <Route path="/dashboard" element={<GenericDashboard />} />
