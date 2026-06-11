@@ -408,7 +408,8 @@ const setup2FA = async (req, res, next) => {
     const email = userRes.rows[0]?.email || 'User';
 
     const secret = speakeasy.generateSecret({
-      name: `ProductRegistration (${email})`
+      name: email,
+      issuer: 'Product Registration'
     });
     
     await db.query(`
