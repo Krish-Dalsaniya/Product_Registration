@@ -65,11 +65,11 @@ export const ThemeProvider = ({ children }) => {
   const getThemeKey = () => `theme_${user?.user_id || 'guest'}`;
   const getFontKey = () => `font_${user?.user_id || 'guest'}`;
 
-  const [theme, setThemeState] = useState(localStorage.getItem(getThemeKey()) || 'light');
+  const [theme, setThemeState] = useState(localStorage.getItem(getThemeKey()) || 'default-white');
   const [font, setFontState] = useState(localStorage.getItem(getFontKey()) || 'font-inter');
 
   useEffect(() => {
-    setThemeState(localStorage.getItem(getThemeKey()) || 'light');
+    setThemeState(localStorage.getItem(getThemeKey()) || 'default-white');
     setFontState(localStorage.getItem(getFontKey()) || 'font-inter');
   }, [user?.user_id]);
 
@@ -102,7 +102,7 @@ export const ThemeProvider = ({ children }) => {
 
   const setTheme = (newTheme) => setThemeState(newTheme);
   const setFont = (newFont) => setFontState(newFont);
-  const toggleTheme = () => setThemeState(prev => prev === 'light' ? 'dark' : 'light');
+  const toggleTheme = () => setThemeState(prev => prev === 'default-white' ? 'dark' : 'default-white');
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, font, setFont, AVAILABLE_THEMES, AVAILABLE_FONTS }}>

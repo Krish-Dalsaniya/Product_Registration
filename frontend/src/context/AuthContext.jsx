@@ -131,9 +131,10 @@ export const AuthProvider = ({ children }) => {
 
   const hasPermission = (moduleName, action, subsection = null) => {
     if (!state.user) return false;
-    if (state.user.role_name === 'Admin') return true;
+    if (state.user.role_name?.toLowerCase() === 'admin') return true;
     
     if (!state.user.permissions) return false;
+    if (state.user.permissions.includes('admin')) return true;
     
     const actionLower = action.toLowerCase();
     const modKey = moduleName.replace(/\s+/g, '').toLowerCase();

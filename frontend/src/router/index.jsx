@@ -32,7 +32,7 @@ const getTabMetadata = (pathname, search) => {
   const params = new URLSearchParams(search);
   const role = params.get('role') || '';
   
-  if (pathname === '/admin/dashboard' || pathname === '/designer/dashboard' || pathname === '/sales/dashboard' || pathname === '/maintenance/dashboard') {
+  if (pathname === '/admin/dashboard' || pathname === '/designer/dashboard' || pathname === '/sales/dashboard' || pathname === '/maintenance/dashboard' || pathname === '/accountant/dashboard' || pathname === '/dashboard') {
     return { label: 'Dashboard', iconType: 'Home' };
   }
   if (pathname === '/admin/users') {
@@ -107,6 +107,7 @@ const AdminDashboard = lazy(() => import('../features/admin/AdminDashboard'));
 const SalesDashboard = lazy(() => import('../features/admin/dashboards/SalesDashboard'));
 const MaintenanceDashboard = lazy(() => import('../features/admin/dashboards/MaintenanceDashboard'));
 const DesignerDashboard = lazy(() => import('../features/admin/dashboards/DesignerDashboard'));
+const GenericDashboard = lazy(() => import('../features/admin/dashboards/GenericDashboard'));
 const UserListPage = lazy(() => import('../features/admin/UserListPage'));
 const UserAccessPage = lazy(() => import('../features/admin/UserAccessPage'));
 const TeamsPage = lazy(() => import('../features/admin/TeamsPage'));
@@ -191,7 +192,8 @@ const DashboardLayout = () => {
     
     if (newTabs.length === 0) {
       const isStandardRole = ['Admin', 'Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
-      const defaultPath = isStandardRole ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard';
+      let roleKey = user?.role_name?.toLowerCase() || 'admin';
+      const defaultPath = isStandardRole ? `/${roleKey}/dashboard` : '/dashboard';
       setTabs([]);
       localStorage.removeItem(storageKey);
       navigate(defaultPath);
@@ -223,7 +225,8 @@ const DashboardLayout = () => {
     
     if (result.isConfirmed) {
       const isStandardRole = ['Admin', 'Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
-      const defaultPath = isStandardRole ? `/${user.role_name.toLowerCase()}/dashboard` : '/admin/dashboard';
+      let roleKey = user?.role_name?.toLowerCase() || 'admin';
+      const defaultPath = isStandardRole ? `/${roleKey}/dashboard` : '/dashboard';
       
       setTabs([]);
       localStorage.removeItem(storageKey);
@@ -345,6 +348,11 @@ const Router = () => {
           <Route path="/maintenance/support-tickets" element={<SupportTicketsPage />} />
           <Route path="/maintenance/support-tickets/:id" element={<SupportTicketProfilePage />} />
           <Route path="/maintenance/chat" element={<ChatPage />} />
+        </Route>
+
+        {/* Generic Fallback Dashboard */}
+        <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
+          <Route path="/dashboard" element={<GenericDashboard />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/admin/dashboard" />} />
