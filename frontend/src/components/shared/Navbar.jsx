@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, X, Briefcase, ChevronLeft, ChevronRight, Trash2, Package, Bell, AlertTriangle, PackagePlus, Loader2, LifeBuoy, LogOut } from 'lucide-react';
+import { Menu, X, Briefcase, ChevronLeft, ChevronRight, Trash2, Package, Bell, AlertTriangle, PackagePlus, Loader2, LifeBuoy, LogOut, Shield } from 'lucide-react';
 import { Home, Users, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid } from 'lucide-react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { getNotifications, addPCBStock, addElectronicsStock, addElectricalStock, addStructuralStock } from '../../api/inventory';

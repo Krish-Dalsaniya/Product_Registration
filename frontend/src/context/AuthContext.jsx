@@ -34,16 +34,36 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+    const initAuth = async () => {
+      const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
 
-    if (user) {
-      dispatch({
-        type: 'LOGIN',
-        payload: { user }
-      });
-    } else {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
+      if (user) {
+        dispatch({
+          type: 'LOGIN',
+          payload: { user }
+        });
+
+        try {
+          const { getMeApi } = await import('../api/auth');
+          const res = await getMeApi();
+          if (res.data?.data?.user) {
+            const freshUser = res.data.data.user;
+            if (localStorage.getItem('user')) {
+              localStorage.setItem('user', JSON.stringify(freshUser));
+            } else {
+              sessionStorage.setItem('user', JSON.stringify(freshUser));
+            }
+            dispatch({ type: 'LOGIN', payload: { user: freshUser } });
+          }
+        } catch (error) {
+          console.error("Failed to refresh user data silently:", error);
+        }
+      } else {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    };
+
+    initAuth();
 
     const handleUnauthorized = () => {
       logout();
@@ -73,8 +93,50 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const res = await loginApi(email, password);
+      
+      if (res.data.data.require2FA) {
+        dispatch({ type: 'SET_LOADING', payload: false });
+        return { require2FA: true, tempToken: res.data.data.tempToken };
+      }
+
+      if (res.data.data.require2FASetup) {
+        dispatch({ type: 'SET_LOADING', payload: false });
+        return { 
+          require2FASetup: true, 
+          tempToken: res.data.data.tempToken, 
+          qrCodeUrl: res.data.data.qrCodeUrl, 
+          secret: res.data.data.secret 
+        };
+      }
+
       const { user } = res.data.data;
       
+      if (rememberMe) {
+        localStorage.setItem('user', JSON.stringify(user));
+        sessionStorage.removeItem('user');
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(user));
+        localStorage.removeItem('user');
+      }
+      
+      dispatch({
+        type: 'LOGIN',
+        payload: { user }
+      });
+      return { require2FA: false, user };
+    } catch (error) {
+      dispatch({ type: 'SET_LOADING', payload: false });
+      throw error;
+    }
+  };
+
+  const loginWith2FA = async (tempToken, otp, rememberMe = false) => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      const { login2FaApi } = await import('../api/auth');
+      const res = await login2FaApi(tempToken, otp);
+      const { user } = res.data.data;
+
       if (rememberMe) {
         localStorage.setItem('user', JSON.stringify(user));
         sessionStorage.removeItem('user');
@@ -158,7 +220,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, updateUserImage, hasPermission }}>
+    <AuthContext.Provider value={{ ...state, login, loginWith2FA, logout, updateUserImage, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );
