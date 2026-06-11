@@ -1,19 +1,23 @@
-const { pool } = require('./src/config/db');
+const { Pool } = require('pg');
+require('dotenv').config();
 
-async function fix() {
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+async function runMigration() {
   try {
-    console.log("Creating user_custom_access table...");
+    console.log('Running migration to add reset_otp...');
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_custom_access (
-          user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-          has_custom_permissions BOOLEAN DEFAULT false
-      );
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(10);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_expires TIMESTAMP WITH TIME ZONE;
     `);
-    console.log("Table created successfully.");
-  } catch(e) {
-    console.error(e);
+    console.log('Migration successful.');
+  } catch (error) {
+    console.error('Migration failed:', error);
   } finally {
     pool.end();
   }
 }
-fix();
+
+runMigration();

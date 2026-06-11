@@ -22,5 +22,20 @@ router.post('/logout', authController.logout);
 
 router.post('/profile/image', verifyToken, upload.single('image'), authController.updateProfileImage);
 router.delete('/profile/image', verifyToken, authController.removeProfileImage);
+router.get('/me', verifyToken, authController.getMe);
+
+router.post(
+  '/reset-password',
+  [
+    body('email').isEmail().withMessage('Enter a valid email'),
+    body('newPassword').notEmpty().withMessage('Password is required')
+  ],
+  authController.resetPassword
+);
+
+router.post('/2fa/setup', verifyToken, authController.setup2FA);
+router.post('/2fa/verify', verifyToken, authController.verify2FA);
+router.post('/2fa/disable', verifyToken, authController.disable2FA);
+router.post('/login/2fa', authController.login2FA);
 
 module.exports = router;

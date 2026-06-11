@@ -13,13 +13,20 @@ import {
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import backgroundImage from '../../assets/crudex_background_1780402204249.png';
+import { resetPasswordApi } from '../../api/auth';
 
 const LoginPage = () => {
-  const { login, isAuthenticated, user } = useAuth();
+  const { login, loginWith2FA, isAuthenticated, user } = useAuth();
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Password Reset and 2FA State
+  const [viewState, setViewState] = useState('login'); // 'login', 'reset', '2fa', '2fa-setup'
+  const [tempToken, setTempToken] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [secret, setSecret] = useState('');
 
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
@@ -168,7 +175,23 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const loggedUser = await login(data.email, data.password, data.rememberMe);
+      const loginResponse = await login(data.email, data.password, data.rememberMe);
+      
+      if (loginResponse.require2FA) {
+        setTempToken(loginResponse.tempToken);
+        setViewState('2fa');
+        return;
+      }
+      
+      if (loginResponse.require2FASetup) {
+        setTempToken(loginResponse.tempToken);
+        setQrCodeUrl(loginResponse.qrCodeUrl);
+        setSecret(loginResponse.secret);
+        setViewState('2fa-setup');
+        return;
+      }
+
+      const loggedUser = loginResponse.user;
       
       if (data.rememberMe) {
         localStorage.setItem('rememberedEmail', data.email);
@@ -199,6 +222,59 @@ const LoginPage = () => {
     } catch (error) {
       setErrorMessage(error.message || 'Authentication failed.');
       toast.error(error.message || 'Authentication failed.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetSubmit = async (data) => {
+    setErrorMessage('');
+    setIsLoading(true);
+    try {
+      if (data.newPassword !== data.confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+      await resetPasswordApi(data.email, data.newPassword);
+      toast.success('Password successfully reset! Please login.', { icon: '🎉' });
+      setViewState('login');
+      setValue('password', '');
+    } catch (error) {
+      toast.error(error.message || 'Failed to reset password.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handle2FASubmit = async (data) => {
+    setErrorMessage('');
+    setIsLoading(true);
+    try {
+      const loggedUser = await loginWith2FA(tempToken, data.otp, data.rememberMe);
+      
+      await Swal.fire({
+        title: 'Login Successful',
+        text: `Welcome back, ${loggedUser.full_name}.`,
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        background: 'var(--bg-card)',
+        color: 'var(--text-main)',
+        iconColor: '#10b981'
+      });
+
+      const roleRoutes = {
+        Admin: '/admin/dashboard',
+        Designer: '/designer/dashboard',
+        Sales: '/sales/dashboard',
+        Maintenance: '/maintenance/dashboard',
+        Accountant: '/accountant/dashboard',
+        HR: '/hr/dashboard'
+      };
+      
+      navigate(roleRoutes[loggedUser.role_name] || '/dashboard');
+    } catch (error) {
+      setErrorMessage(error.message || 'Invalid 2FA code.');
+      toast.error(error.message || 'Invalid 2FA code.');
     } finally {
       setIsLoading(false);
     }
@@ -282,93 +358,283 @@ const LoginPage = () => {
               />
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative z-10">
-              
-              {/* USERNAME */}
-              <div className="group flex flex-col space-y-2">
-                <label htmlFor="email" className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279] transition-colors duration-200 group-focus-within:text-[#ff7944]">
-                  Username / Email
-                </label>
-                <div className="relative">
-                  <input
-                    id="email"
-                    type="text"
-                    disabled={isLoading}
-                    {...register('email', { 
-                      required: 'Email address is required',
-                      pattern: { value: /^\S+@\S+$/i, message: 'Invalid email format' }
-                    })}
-                    placeholder="Enter Username or Email"
-                    className={`w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border ${errors.email ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 placeholder-[#b0a59a] text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300 disabled:opacity-70`}
-                  />
-                </div>
-                {errors.email && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase">{errors.email.message}</p>}
-              </div>
-
-              {/* PASSWORD */}
-              <div className="group flex flex-col space-y-2">
-                <div className="flex justify-between items-center">
-                  <label htmlFor="password" className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279] transition-colors duration-200 group-focus-within:text-[#ff7944]">
-                    Password
+            {viewState === 'login' && (
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative z-10">
+                {/* USERNAME */}
+                <div className="group flex flex-col space-y-2">
+                  <label htmlFor="email" className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279] transition-colors duration-200 group-focus-within:text-[#ff7944]">
+                    Username / Email
                   </label>
-                </div>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    disabled={isLoading}
-                    {...register('password', { required: 'Password is required' })}
-                    placeholder="••••••••"
-                    className={`w-full h-14 pl-5 pr-12 bg-[#faf5f0]/70 border ${errors.password ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 placeholder-[#b0a59a]/70 text-sm tracking-widest focus:ring-4 focus:bg-white outline-none transition-all duration-300 disabled:opacity-70`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#b0a59a] hover:text-[#ff7944] hover:bg-[#ff7944]/5 transition-all outline-none"
-                  >
-                    {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
-                  </button>
-                </div>
-                {errors.password && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase">{errors.password.message}</p>}
-              </div>
-
-              {/* REMEMBER */}
-              <div className="flex items-center justify-between pt-1">
-                <label className="flex items-center gap-3 cursor-pointer group">
                   <div className="relative">
                     <input
-                      type="checkbox"
-                      {...register('rememberMe')}
-                      className="sr-only"
+                      id="email"
+                      type="text"
                       disabled={isLoading}
+                      {...register('email', { 
+                        required: 'Email address is required',
+                        pattern: { value: /^\S+@\S+$/i, message: 'Invalid email format' }
+                      })}
+                      placeholder="Enter Username or Email"
+                      className={`w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border ${errors.email ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 placeholder-[#b0a59a] text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300 disabled:opacity-70`}
                     />
-                    <div className={`w-[22px] h-[22px] border rounded-lg flex items-center justify-center transition-all duration-300 ${rememberMeVal ? 'bg-[#ff7944] border-[#ff7944] shadow-[0_4px_10px_rgba(255,121,68,0.25)]' : 'bg-neutral-50 border-[#eddcd0] group-hover:border-[#ff7944]/60'}`}>
-                      {rememberMeVal && <Check className="w-4.5 h-4.5 text-white stroke-[3px]" />}
-                    </div>
                   </div>
-                  <span className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279] group-hover:text-stone-700 transition-colors">
-                    Remember Me
-                  </span>
-                </label>
-              </div>
+                  {errors.email && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase">{errors.email.message}</p>}
+                </div>
 
-              {/* SUBMIT BUTTON */}
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-14 bg-gradient-to-r from-[#ff8753] to-[#fc6736] text-white rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase shadow-[0_12px_28px_rgba(252,103,54,0.3)] hover:shadow-[0_16px_36px_rgba(252,103,54,0.45)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-300 flex items-center justify-center gap-2 group border border-white/10 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-[0_12px_28px_rgba(252,103,54,0.3)]"
-                >
-                  {isLoading ? <Loader2 className="animate-spin w-5 h-5 text-white" /> : (
-                    <>
-                      Login
-                      <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-                    </>
-                  )}
-                </button>
-              </div>
+                {/* PASSWORD */}
+                <div className="group flex flex-col space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label htmlFor="password" className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279] transition-colors duration-200 group-focus-within:text-[#ff7944]">
+                      Password
+                    </label>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setViewState('reset');
+                        setValue('email', '');
+                        setValue('newPassword', '');
+                        setValue('confirmPassword', '');
+                      }}
+                      className="text-[10px] font-bold text-[#ff7944] uppercase tracking-wider hover:underline"
+                    >
+                      Reset Password?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      disabled={isLoading}
+                      {...register('password', { required: 'Password is required' })}
+                      placeholder="••••••••"
+                      className={`w-full h-14 pl-5 pr-12 bg-[#faf5f0]/70 border ${errors.password ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 placeholder-[#b0a59a]/70 text-sm tracking-widest focus:ring-4 focus:bg-white outline-none transition-all duration-300 disabled:opacity-70`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#b0a59a] hover:text-[#ff7944] hover:bg-[#ff7944]/5 transition-all outline-none"
+                    >
+                      {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase">{errors.password.message}</p>}
+                </div>
 
-            </form>
+                {/* REMEMBER */}
+                <div className="flex items-center justify-between pt-1">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        {...register('rememberMe')}
+                        className="sr-only"
+                        disabled={isLoading}
+                      />
+                      <div className={`w-[22px] h-[22px] border rounded-lg flex items-center justify-center transition-all duration-300 ${rememberMeVal ? 'bg-[#ff7944] border-[#ff7944] shadow-[0_4px_10px_rgba(255,121,68,0.25)]' : 'bg-neutral-50 border-[#eddcd0] group-hover:border-[#ff7944]/60'}`}>
+                        {rememberMeVal && <Check className="w-4.5 h-4.5 text-white stroke-[3px]" />}
+                      </div>
+                    </div>
+                    <span className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279] group-hover:text-stone-700 transition-colors">
+                      Remember Me
+                    </span>
+                  </label>
+                </div>
+
+                {/* SUBMIT BUTTON */}
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-14 bg-gradient-to-r from-[#ff8753] to-[#fc6736] text-white rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase shadow-[0_12px_28px_rgba(252,103,54,0.3)] hover:shadow-[0_16px_36px_rgba(252,103,54,0.45)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-300 flex items-center justify-center gap-2 group border border-white/10 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-[0_12px_28px_rgba(252,103,54,0.3)]"
+                  >
+                    {isLoading ? <Loader2 className="animate-spin w-5 h-5 text-white" /> : (
+                      <>
+                        Login
+                        <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {viewState === 'reset' && (
+              <form onSubmit={handleSubmit(handleResetSubmit)} className="space-y-6 relative z-10">
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-black text-stone-800 tracking-wide uppercase">Reset Password</h3>
+                  <p className="text-xs text-[#8c8279] mt-2 font-medium">Enter your email and new password.</p>
+                </div>
+
+                <div className="group flex flex-col space-y-2">
+                  <label htmlFor="reset-email" className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279] transition-colors duration-200 group-focus-within:text-[#ff7944]">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="reset-email"
+                      type="text"
+                      disabled={isLoading}
+                      {...register('email', { 
+                        required: 'Email address is required',
+                        pattern: { value: /^\S+@\S+$/i, message: 'Invalid email format' }
+                      })}
+                      placeholder="Enter your email"
+                      className={`w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border ${errors.email ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 placeholder-[#b0a59a] text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300 disabled:opacity-70`}
+                    />
+                  </div>
+                  {errors.email && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase">{errors.email.message}</p>}
+                </div>
+
+                <div className="group flex flex-col space-y-2">
+                  <label className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279]">New Password</label>
+                  <input
+                    type="password"
+                    disabled={isLoading}
+                    {...register('newPassword', { required: 'New password is required' })}
+                    placeholder="••••••••"
+                    className="w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944] rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300"
+                  />
+                  {errors.newPassword && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase">{errors.newPassword.message}</p>}
+                </div>
+
+                <div className="group flex flex-col space-y-2">
+                  <label className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279]">Confirm Password</label>
+                  <input
+                    type="password"
+                    disabled={isLoading}
+                    {...register('confirmPassword', { required: 'Confirm password is required' })}
+                    placeholder="••••••••"
+                    className="w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944] rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300"
+                  />
+                </div>
+
+                <div className="pt-2 flex flex-col gap-3">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-14 bg-gradient-to-r from-[#ff8753] to-[#fc6736] text-white rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase shadow-[0_12px_28px_rgba(252,103,54,0.3)] hover:shadow-[0_16px_36px_rgba(252,103,54,0.45)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-300"
+                  >
+                    {isLoading ? <Loader2 className="animate-spin w-5 h-5 text-white" /> : 'Reset Password'}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setViewState('login')}
+                    className="text-xs font-bold text-[#8c8279] hover:text-[#ff7944] uppercase tracking-wider transition-colors"
+                  >
+                    Back to Login
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {viewState === '2fa' && (
+              <form onSubmit={handleSubmit(handle2FASubmit)} className="space-y-6 relative z-10">
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-black text-stone-800 tracking-wide uppercase">Two-Factor Authentication</h3>
+                  <p className="text-xs text-[#8c8279] mt-2 font-medium">Enter the 6-digit code from your authenticator app.</p>
+                </div>
+
+                <div className="group flex flex-col space-y-2">
+                  <label htmlFor="otp" className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279] transition-colors duration-200 group-focus-within:text-[#ff7944]">
+                    Authenticator Code
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="otp"
+                      type="text"
+                      disabled={isLoading}
+                      {...register('otp', { 
+                        required: 'Code is required',
+                        pattern: { value: /^[0-9]{6}$/, message: 'Must be exactly 6 digits' }
+                      })}
+                      placeholder="000000"
+                      maxLength={6}
+                      className={`w-full h-14 text-center text-xl tracking-[0.5em] bg-[#faf5f0]/70 border ${errors.otp ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 placeholder-[#b0a59a] font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300 disabled:opacity-70`}
+                    />
+                  </div>
+                  {errors.otp && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase text-center">{errors.otp.message}</p>}
+                </div>
+
+                <div className="pt-2 flex gap-4">
+                  <button
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => {
+                      setViewState('login');
+                      setTempToken('');
+                    }}
+                    className="flex-1 h-14 bg-stone-100 text-stone-600 rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase hover:bg-stone-200 transition-all duration-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-1 h-14 bg-gradient-to-r from-[#ff8753] to-[#fc6736] text-white rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase shadow-[0_12px_28px_rgba(252,103,54,0.3)] hover:shadow-[0_16px_36px_rgba(252,103,54,0.45)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? <Loader2 className="animate-spin w-5 h-5 text-white" /> : 'Verify'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {viewState === '2fa-setup' && (
+              <form onSubmit={handleSubmit(handle2FASubmit)} className="space-y-6 relative z-10">
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-black text-stone-800 tracking-wide uppercase">Setup 2FA to Continue</h3>
+                  <p className="text-xs text-[#8c8279] mt-2 font-medium">Scan the QR code with your Authenticator App.</p>
+                </div>
+
+                <div className="flex flex-col items-center justify-center bg-white rounded-2xl p-4 shadow-sm border border-[#eddcd0]">
+                  {qrCodeUrl && <img src={qrCodeUrl} alt="2FA QR Code" className="w-32 h-32 rounded-lg" />}
+                  <p className="text-[10px] text-[#8c8279] mt-3 font-mono font-bold tracking-widest">{secret}</p>
+                </div>
+
+                <div className="group flex flex-col space-y-2">
+                  <label htmlFor="otp" className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279] transition-colors duration-200 group-focus-within:text-[#ff7944]">
+                    Verify Code
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="otp"
+                      type="text"
+                      disabled={isLoading}
+                      {...register('otp', { 
+                        required: 'Code is required',
+                        pattern: { value: /^[0-9]{6}$/, message: 'Must be exactly 6 digits' }
+                      })}
+                      placeholder="000000"
+                      maxLength={6}
+                      className={`w-full h-14 text-center text-xl tracking-[0.5em] bg-[#faf5f0]/70 border ${errors.otp ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 placeholder-[#b0a59a] font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300 disabled:opacity-70`}
+                    />
+                  </div>
+                  {errors.otp && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase text-center">{errors.otp.message}</p>}
+                </div>
+
+                <div className="pt-2 flex gap-4">
+                  <button
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => {
+                      setViewState('login');
+                      setTempToken('');
+                      setQrCodeUrl('');
+                      setSecret('');
+                    }}
+                    className="flex-1 h-14 bg-stone-100 text-stone-600 rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase hover:bg-stone-200 transition-all duration-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-1 h-14 bg-gradient-to-r from-[#ff8753] to-[#fc6736] text-white rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase shadow-[0_12px_28px_rgba(252,103,54,0.3)] hover:shadow-[0_16px_36px_rgba(252,103,54,0.45)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? <Loader2 className="animate-spin w-5 h-5 text-white" /> : 'Complete Setup'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 const { sendError } = require('../utils/response');
 const { pool } = require('../config/db');
-const redisClient = require('../config/redis');
+const { redisClient } = require('../config/redis');
 
 const requireRole = (...allowedRoles) => {
   return (req, res, next) => {

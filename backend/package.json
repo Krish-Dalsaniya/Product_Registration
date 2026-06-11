@@ -31,8 +31,10 @@
     "multer": "^2.1.1",
     "multer-storage-cloudinary": "^4.0.0",
     "pg": "^8.20.0",
+    "qrcode": "^1.5.4",
     "rate-limit-redis": "^5.0.0",
-    "redis": "^5.12.1"
+    "redis": "^5.12.1",
+    "speakeasy": "^2.0.0"
   },
   "devDependencies": {
     "jest": "^30.4.2",

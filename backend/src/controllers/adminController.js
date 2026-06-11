@@ -613,6 +613,12 @@ const updateUserPermissions = async (req, res, next) => {
       }
     });
 
+    // Clear Redis cache for this user
+    const { redisClient } = require('../config/redis');
+    if (redisClient && redisClient.isReady) {
+      await redisClient.del(`user_custom_perms:${userId}`);
+    }
+
     sendSuccess(res, null, 'User permissions updated successfully');
   } catch (error) {
     next(error);
