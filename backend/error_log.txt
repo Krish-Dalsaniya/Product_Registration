@@ -249,3 +249,28 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async login (D:\Product_Registration\backend\src\controllers\authController.js:18:20)
 
+2026-06-12T03:39:10.755Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:23:20)
+
+2026-06-12T03:39:55.958Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:23:20)
+
+2026-06-12T03:40:41.944Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:23:20)
+
+2026-06-12T03:44:16.079Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:23:20)
+
+2026-06-12T03:51:44.108Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:23:20)
+

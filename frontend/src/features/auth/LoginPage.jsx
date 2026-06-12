@@ -736,13 +736,6 @@ const LoginPage = () => {
                       <span>Save this recovery key in a secure place. If you lose your authenticator app, this key can be used to reconfigure 2FA on a new device.</span>
                     </div>
 
-                    <p className="text-[10px] text-stone-500 mb-1.5 font-bold uppercase tracking-wider text-center">Manual Setup Key</p>
-                    <div className="flex items-center justify-center gap-1.5 mb-3">
-                      <code className="text-xs font-mono bg-stone-50 px-2 py-1.5 rounded-lg border border-stone-200 text-stone-800 tracking-wider font-bold">{secret}</code>
-                      <button type="button" onClick={copySecret} className="p-1.5 text-stone-400 hover:text-[#ff7944] hover:bg-[#ff7944]/10 rounded-lg transition-all" title="Copy Key">
-                        {isCopied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
-                      </button>
-                    </div>
 
                     <button
                       type="button"

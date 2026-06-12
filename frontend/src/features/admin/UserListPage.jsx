@@ -7,7 +7,7 @@ import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
 import UserAccessModal from './components/UserAccessModal';
-import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List, Building, Briefcase } from 'lucide-react';
+import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List, Building, Briefcase, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
 import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
@@ -61,6 +61,8 @@ const UserListPage = ({ initialRole = '' }) => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedUser, setSelectedUser] = useState(null);
@@ -730,10 +732,51 @@ const UserListPage = ({ initialRole = '' }) => {
             </div>
 
             {modalMode === 'create' && (
-              <div>
-                <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Password</label>
-                <input {...register('password', { required: 'Password is required' })} type="password" autoComplete="new-password" className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)]" placeholder="••••••••" />
-                {errors.password && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.password.message}</p>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Password</label>
+                  <div className="relative">
+                    <input 
+                      {...register('password', { required: 'Password is required' })} 
+                      type={showPassword ? 'text' : 'password'} 
+                      autoComplete="new-password" 
+                      className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg pl-4 pr-10 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)]" 
+                      placeholder="••••••••" 
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.password.message}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Confirm Password</label>
+                  <div className="relative">
+                    <input 
+                      {...register('confirmPassword', { 
+                        required: 'Confirm Password is required',
+                        validate: value => value === watch('password') || 'Passwords do not match'
+                      })} 
+                      type={showConfirmPassword ? 'text' : 'password'} 
+                      autoComplete="new-password" 
+                      className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg pl-4 pr-10 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)]" 
+                      placeholder="••••••••" 
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.confirmPassword.message}</p>}
+                </div>
               </div>
             )}
 

@@ -166,14 +166,6 @@ const TwoFactorModal = ({ isOpen, onClose }) => {
                   <span>Save this recovery key in a secure place. If you lose your authenticator app, this key can be used to reconfigure 2FA on a new device.</span>
                 </div>
                 
-                <p className="text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Manual Setup Key</p>
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <code className="text-sm font-mono bg-white px-3 py-2 rounded-lg border border-gray-200 text-gray-800 tracking-wider shadow-sm">{secret}</code>
-                  <button type="button" onClick={copySecret} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 rounded-lg transition-all" title="Copy Key">
-                    {isCopied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
-                  </button>
-                </div>
-                
                 <button
                   type="button"
                   onClick={downloadRecoveryKey}

@@ -24,7 +24,7 @@ const getUsers = async (req, res, next) => {
             JOIN roles r ON r.role_id = u.role_id
             LEFT JOIN team_members tm ON tm.user_id = u.user_id
             LEFT JOIN teams t ON t.team_id = tm.team_id
-          WHERE r.role_name::text <> 'Admin'::text AND u.is_active = true
+          WHERE u.is_active = true
           GROUP BY u.user_id, u.full_name, u.email, u.company, u.designation, u.image_url, r.role_name, u.is_active, u.created_at
       )
       SELECT DISTINCT ON (v.user_id) v.*, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions, COUNT(*) OVER() as total_count
@@ -75,7 +75,7 @@ const getUserById = async (req, res, next) => {
             JOIN roles r ON r.role_id = u.role_id
             LEFT JOIN team_members tm ON tm.user_id = u.user_id
             LEFT JOIN teams t ON t.team_id = tm.team_id
-          WHERE r.role_name::text <> 'Admin'::text AND u.is_active = true
+          WHERE u.is_active = true
           GROUP BY u.user_id, u.full_name, u.email, u.company, u.designation, u.image_url, r.role_name, u.is_active, u.created_at
        )
        SELECT v.*, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions 

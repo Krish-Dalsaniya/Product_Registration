@@ -1291,3 +1291,13 @@ input[type="range"]::-moz-range-thumb {
 body, input, select, textarea, button {
   font-family: var(--font-body) !important;
 }
+
+/* Hide native password reveal icon (Edge) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+}

@@ -35,6 +35,9 @@ const getTabMetadata = (pathname, search) => {
   if (pathname === '/admin/dashboard' || pathname === '/designer/dashboard' || pathname === '/sales/dashboard' || pathname === '/maintenance/dashboard' || pathname === '/accountant/dashboard' || pathname === '/dashboard') {
     return { label: 'Dashboard', iconType: 'Home' };
   }
+  if (pathname === '/admin/user-management') {
+    return { label: 'User Management', iconType: 'UserCog' };
+  }
   if (pathname === '/admin/users') {
     return { label: 'Users', iconType: 'Users' };
   }
@@ -108,6 +111,7 @@ const SalesDashboard = lazy(() => import('../features/admin/dashboards/SalesDash
 const MaintenanceDashboard = lazy(() => import('../features/admin/dashboards/MaintenanceDashboard'));
 const DesignerDashboard = lazy(() => import('../features/admin/dashboards/DesignerDashboard'));
 const GenericDashboard = lazy(() => import('../features/admin/dashboards/GenericDashboard'));
+const UserManagementDashboard = lazy(() => import('../features/admin/dashboards/UserManagementDashboard'));
 const UserListPage = lazy(() => import('../features/admin/UserListPage'));
 const UserAccessPage = lazy(() => import('../features/admin/UserAccessPage'));
 const TeamsPage = lazy(() => import('../features/admin/TeamsPage'));
@@ -299,6 +303,7 @@ const Router = () => {
         <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
           <Route path="/admin" element={<Navigate to="/admin/dashboard" />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/user-management" element={<UserManagementDashboard />} />
           <Route path="/admin/users" element={<UserListPage />} />
           <Route path="/admin/user-access" element={<UserAccessPage />} />
           <Route path="/admin/roles" element={<RolesPage />} />
