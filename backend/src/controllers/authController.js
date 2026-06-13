@@ -152,6 +152,7 @@ const login = async (req, res, next) => {
       permissions = permsResult.rows.map(r => r.permission_key);
     }
 
+    await logAudit({ userId: user.user_id, action: 'LOGIN', entityType: 'USER', entityId: user.user_id, description: 'User successfully logged in', ipAddress: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || req.ip });
     sendSuccess(res, {
       user: {
         user_id: user.user_id,
@@ -378,6 +379,7 @@ const getMe = async (req, res, next) => {
       permissions = permsResult.rows.map(r => r.permission_key);
     }
 
+    await logAudit({ userId: user.user_id, action: 'LOGIN', entityType: 'USER', entityId: user.user_id, description: 'User successfully logged in', ipAddress: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || req.ip });
     sendSuccess(res, {
       user: {
         user_id: user.user_id,
@@ -679,6 +681,7 @@ const login2FA = async (req, res, next) => {
       permissions = permsResult.rows.map(r => r.permission_key);
     }
 
+    await logAudit({ userId: user.user_id, action: 'LOGIN', entityType: 'USER', entityId: user.user_id, description: 'User successfully logged in', ipAddress: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || req.ip });
     sendSuccess(res, {
       user: {
         user_id: user.user_id,
