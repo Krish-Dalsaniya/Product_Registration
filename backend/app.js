@@ -25,9 +25,10 @@ const chatRoutes = require('./src/routes/chatRoutes');
 const chatbotRoutes = require('./src/routes/chatbotRoutes');
 const rolesRoutes = require('./src/routes/roles');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
+const auditRoutes = require('./src/routes/audit');
 
 const app = express();
-app.set('trust proxy', 1); // Trust first proxy (necessary for Secure cookies behind Render/Heroku load balancers)
+app.set('trust proxy', true); // Trust first proxy (necessary for Secure cookies behind Render/Heroku load balancers)
 
 const fs = require('fs');
 const uploadDir = path.join(__dirname, 'uploads');
@@ -98,6 +99,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/roles', rolesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/audit', auditRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));

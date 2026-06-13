@@ -11,6 +11,7 @@ const path = require('path');
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const { sendEmail } = require('../utils/email');
+const { logAudit } = require('../utils/audit');
 
 const login = async (req, res, next) => {
   const errors = validationResult(req);
@@ -250,6 +251,7 @@ const logout = async (req, res) => {
   res.clearCookie('accessToken', cookieOptions);
   res.clearCookie('refreshToken', cookieOptions);
 
+  if (refreshToken) { try { const d = jwt.decode(refreshToken); if (d && d.user_id) await logAudit({ userId: d.user_id, action: 'LOGOUT', entityType: 'USER', entityId: d.user_id, description: 'User successfully logged out', ipAddress: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || req.ip }); } catch(e){} }
   sendSuccess(res, { message: 'Logged out' });
 };
 const updateProfileImage = async (req, res, next) => {
@@ -523,6 +525,7 @@ const resetPassword = async (req, res, next) => {
       );
     });
 
+    await logAudit({ userId: user_id, action: 'PASSWORD_RESET', entityType: 'USER', entityId: user_id, description: 'User successfully reset their password', ipAddress: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || req.ip });
     sendSuccess(res, null, 'Password successfully reset.');
   } catch (error) {
     next(error);

@@ -3,6 +3,7 @@ const { sendSuccess } = require('../utils/response');
 const { parsePagination } = require('../utils/pagination');
 const crypto = require('crypto');
 const env = require('../config/env');
+const { logAudit } = require('../utils/audit');
 const { sendEmail } = require('../utils/email');
 
 const getUsers = async (req, res, next) => {
@@ -412,6 +413,7 @@ const createUser = async (req, res, next) => {
         return insertResult.rows[0];
     });
 
+    await logAudit({ userId: req.user ? req.user.user_id : null, action: 'CREATE_USER', entityType: 'USER', entityId: result.user_id, description: `Created new user: ${result.email}`, newValue: result, ipAddress: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || req.ip });
     sendSuccess(res, result, null, 201);
   } catch (error) {
     if (error.message === 'Invalid role') {
@@ -459,8 +461,9 @@ const updateUser = async (req, res, next) => {
         const role_id = roleResult.rows[0].role_id;
 
         // Fetch old image to delete later if needed
-        const currentUser = await client.query('SELECT image_url FROM users WHERE user_id = $1', [userId]);
-        const oldImageUrl = currentUser.rows.length > 0 ? currentUser.rows[0].image_url : null;
+        const currentUser = await client.query('SELECT user_id, full_name, email, image_url, company, designation, role_id FROM users WHERE user_id = $1', [userId]);
+        const oldUserRecord = currentUser.rows.length > 0 ? currentUser.rows[0] : null;
+        const oldImageUrl = oldUserRecord ? oldUserRecord.image_url : null;
 
         let updateResult;
         if (image_url) {
@@ -509,7 +512,7 @@ const updateUser = async (req, res, next) => {
           );
         }
         
-        return { user: updateResult.rows[0], oldImageUrl };
+        return { user: updateResult.rows[0], oldImageUrl, oldUserRecord };
     });
 
     // Cleanup old image from Cloudinary or local
@@ -531,6 +534,7 @@ const updateUser = async (req, res, next) => {
       }
     }
 
+    await logAudit({ userId: req.user ? req.user.user_id : null, action: 'UPDATE_USER', entityType: 'USER', entityId: userId, description: `Updated user profile for: ${result.user.email}`, oldValue: result.oldUserRecord, newValue: result.user, ipAddress: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || req.ip });
     sendSuccess(res, result.user, 'User updated successfully');
   } catch (error) {
     if (error.message === 'Invalid role') {
@@ -566,6 +570,7 @@ const deleteUser = async (req, res, next) => {
         }
     });
 
+    await logAudit({ userId: req.user ? req.user.user_id : null, action: 'DELETE_USER', entityType: 'USER', entityId: userId, description: `Deleted user ID: ${userId}`, ipAddress: req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || req.ip });
     sendSuccess(res, null, 'User deleted successfully');
   } catch (error) {
     if (error.message === 'User not found') {

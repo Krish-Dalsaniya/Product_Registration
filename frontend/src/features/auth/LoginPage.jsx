@@ -20,6 +20,8 @@ const LoginPage = () => {
   const { login, loginWith2FA, isAuthenticated, user } = useAuth();
   const { register, handleSubmit, setValue, watch, getValues, formState: { errors } } = useForm();
   const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -629,25 +631,43 @@ const LoginPage = () => {
 
                 <div className="group flex flex-col space-y-2">
                   <label className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279]">New Password</label>
-                  <input
-                    type="password"
-                    disabled={isLoading}
-                    {...register('newPassword', { required: 'New password is required' })}
-                    placeholder="••••••••"
-                    className="w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944] rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      disabled={isLoading}
+                      {...register('newPassword', { required: 'New password is required' })}
+                      placeholder="••••••••"
+                      className={`w-full h-14 pl-5 pr-12 bg-[#faf5f0]/70 border ${errors.newPassword ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#b0a59a] hover:text-[#ff7944] hover:bg-[#ff7944]/5 transition-all outline-none"
+                    >
+                      {showNewPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+                    </button>
+                  </div>
                   {errors.newPassword && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase">{errors.newPassword.message}</p>}
                 </div>
 
                 <div className="group flex flex-col space-y-2">
                   <label className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279]">Confirm Password</label>
-                  <input
-                    type="password"
-                    disabled={isLoading}
-                    {...register('confirmPassword', { required: 'Confirm password is required' })}
-                    placeholder="••••••••"
-                    className="w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944] rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      disabled={isLoading}
+                      {...register('confirmPassword', { required: 'Confirm password is required' })}
+                      placeholder="••••••••"
+                      className={`w-full h-14 pl-5 pr-12 bg-[#faf5f0]/70 border ${errors.confirmPassword ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#b0a59a] hover:text-[#ff7944] hover:bg-[#ff7944]/5 transition-all outline-none"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="pt-2 flex flex-col gap-3">
@@ -682,25 +702,43 @@ const LoginPage = () => {
 
                 <div className="group flex flex-col space-y-2">
                   <label className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279]">New Password</label>
-                  <input
-                    type="password"
-                    disabled={isLoading}
-                    {...register('newPassword', { required: 'New password is required' })}
-                    placeholder="••••••••"
-                    className="w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944] rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      disabled={isLoading}
+                      {...register('newPassword', { required: 'New password is required' })}
+                      placeholder="••••••••"
+                      className={`w-full h-14 pl-5 pr-12 bg-[#faf5f0]/70 border ${errors.newPassword ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#b0a59a] hover:text-[#ff7944] hover:bg-[#ff7944]/5 transition-all outline-none"
+                    >
+                      {showNewPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+                    </button>
+                  </div>
                   {errors.newPassword && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase">{errors.newPassword.message}</p>}
                 </div>
 
                 <div className="group flex flex-col space-y-2">
                   <label className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279]">Confirm Password</label>
-                  <input
-                    type="password"
-                    disabled={isLoading}
-                    {...register('confirmPassword', { required: 'Confirm password is required' })}
-                    placeholder="••••••••"
-                    className="w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944] rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      disabled={isLoading}
+                      {...register('confirmPassword', { required: 'Confirm password is required' })}
+                      placeholder="••••••••"
+                      className={`w-full h-14 pl-5 pr-12 bg-[#faf5f0]/70 border ${errors.confirmPassword ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[#b0a59a] hover:text-[#ff7944] hover:bg-[#ff7944]/5 transition-all outline-none"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="pt-2 flex flex-col gap-3">

@@ -9,7 +9,9 @@ import AssistantPanel from '../components/shared/AssistantPanel';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare, Shield, LockKeyhole } from 'lucide-react';
+const AuditLogsPage = lazy(() => import('../features/admin/AuditLogsPage'));
+const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
+import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare, Shield, LockKeyhole, Settings } from 'lucide-react';
 
 const IconMap = {
   Home,
@@ -25,7 +27,8 @@ const IconMap = {
   LifeBuoy,
   MessageSquare,
   Shield,
-  LockKeyhole
+  LockKeyhole,
+  Settings
 };
 
 const getTabMetadata = (pathname, search) => {
@@ -49,6 +52,12 @@ const getTabMetadata = (pathname, search) => {
   }
   if (pathname === '/admin/roles') {
     return { label: 'Roles Access', iconType: 'Shield' };
+  }
+  if (pathname === '/admin/audit-logs') {
+    return { label: 'Audit Logs', iconType: 'LockKeyhole' };
+  }
+  if (pathname === '/settings') {
+    return { label: 'Settings', iconType: 'Settings' };
   }
   if (pathname === '/admin/maintenance') {
     return { label: 'Maintenance', iconType: 'Wrench' };
@@ -324,6 +333,7 @@ const Router = () => {
           <Route path="/admin/support-tickets" element={<SupportTicketsPage />} />
           <Route path="/admin/support-tickets/:id" element={<SupportTicketProfilePage />} />
           <Route path="/admin/chat" element={<ChatPage />} />
+          <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
 
         </Route>
 
@@ -376,6 +386,7 @@ const Router = () => {
         {/* Generic Fallback Dashboard */}
         <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
           <Route path="/dashboard" element={<GenericDashboard />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/admin/dashboard" />} />

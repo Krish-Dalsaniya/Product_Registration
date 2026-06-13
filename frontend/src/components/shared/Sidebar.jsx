@@ -34,7 +34,8 @@ import {
   LockKeyhole,
   Loader2,
   Camera,
-  Trash2
+  Trash2,
+  Settings
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
@@ -453,6 +454,15 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
                     </div>
 
                     <div className="h-px bg-[var(--border-color)]" />
+                    
+                    <button
+                      onClick={() => { setIsSettingsOpen(false); navigate('/settings'); }}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-[11px] font-bold text-[var(--text-main)] hover:bg-[var(--bg-workspace)] transition-all"
+                      aria-label="Account settings"
+                    >
+                      <Settings size={14} />
+                      <span className="uppercase tracking-widest font-bold text-[9px]">Account Settings</span>
+                    </button>
                     
                     <button
                       onClick={() => { setIsSettingsOpen(false); handleLogout(); }}
