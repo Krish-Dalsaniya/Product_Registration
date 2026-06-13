@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Pencil, Trash2, Mail, Users, Building, Briefcase } from 'lucide-react';
+import { Eye, Pencil, Trash2, Mail, Users, Building, Briefcase, Phone } from 'lucide-react';
 import RoleBadge from '../../../../components/shared/RoleBadge';
 
 const UserGridView = ({
@@ -73,6 +73,12 @@ const UserGridView = ({
                   <Mail size={12} className="shrink-0" />
                   <span className="truncate">{user.email}</span>
                 </div>
+                {user.mobile_number && (
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
+                    <Phone size={12} className="shrink-0" />
+                    <span className="truncate">{user.mobile_number}</span>
+                  </div>
+                )}
                 {user.company && (
                   <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
                     <Building size={12} className="shrink-0" />

@@ -94,6 +94,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await loginApi(email, password);
       
+      if (res.data.data.requirePasswordChange) {
+        dispatch({ type: 'SET_LOADING', payload: false });
+        return { requirePasswordChange: true, tempToken: res.data.data.tempToken };
+      }
+
       if (res.data.data.require2FA) {
         dispatch({ type: 'SET_LOADING', payload: false });
         return { require2FA: true, tempToken: res.data.data.tempToken };

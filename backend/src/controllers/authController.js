@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
+const { sendEmail } = require('../utils/email');
 
 const login = async (req, res, next) => {
   const errors = validationResult(req);
@@ -22,11 +23,15 @@ const login = async (req, res, next) => {
   try {
     const result = await db.query(
       `SELECT u.*, r.role_name, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions,
-              COALESCE(u2f.is_two_factor_enabled, false) as is_two_factor_enabled
+              COALESCE(u2f.is_two_factor_enabled, false) as is_two_factor_enabled,
+              COALESCE(upr.requires_password_change, false) as requires_password_change,
+              COALESCE(uev.is_verified, true) as is_email_verified
        FROM users u 
        JOIN roles r ON r.role_id = u.role_id 
        LEFT JOIN user_custom_access uca ON u.user_id = uca.user_id
        LEFT JOIN user_two_factor u2f ON u.user_id = u2f.user_id
+       LEFT JOIN user_password_reset upr ON u.user_id = upr.user_id
+       LEFT JOIN user_email_verified uev ON u.user_id = uev.user_id
        WHERE LOWER(u.email) = LOWER($1) AND u.is_active = true`,
       [email]
     );
@@ -42,6 +47,18 @@ const login = async (req, res, next) => {
     if (!isPasswordValid) {
       console.log(`[Login] Invalid password for user: ${email}`);
       return sendError(res, 'UNAUTHORIZED', 'Invalid email or password', 401);
+    }
+
+    if (user.requires_password_change) {
+      const tempToken = jwt.sign(
+        { user_id: user.user_id, email: user.email, action: 'setup-password' },
+        env.JWT_SECRET,
+        { expiresIn: '15m' }
+      );
+      return sendSuccess(res, {
+        requirePasswordChange: true,
+        tempToken: tempToken
+      });
     }
 
     if (user.is_two_factor_enabled) {
@@ -374,62 +391,92 @@ const getMe = async (req, res, next) => {
   }
 };
 
-const verifyResetPassword = async (req, res, next) => {
+const forgotPassword = async (req, res, next) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return sendError(res, 'BAD_REQUEST', errors.array()[0].msg, 400);
-  }
+  if (!errors.isEmpty()) return sendError(res, 'BAD_REQUEST', errors.array()[0].msg, 400);
 
-  const { email, otp } = req.body;
-
+  const { email } = req.body;
   try {
-    const userResult = await db.query(
-      `SELECT u.user_id, u.is_active, u2f.two_factor_secret, u2f.is_two_factor_enabled 
-       FROM users u 
-       LEFT JOIN user_two_factor u2f ON u.user_id = u2f.user_id 
-       WHERE LOWER(u.email) = LOWER($1) AND u.is_active = true`,
-      [email]
-    );
-
-    if (userResult.rowCount === 0) {
-      // Return a generic error or require2FA to prevent email enumeration, but here we just say User not found
-      return sendError(res, 'BAD_REQUEST', 'User not found.', 400);
+    const userResult = await db.query('SELECT user_id, full_name, email FROM users WHERE LOWER(email) = LOWER($1) AND is_active = true', [email]);
+    if (userResult.rows.length === 0) {
+      // Don't leak whether user exists or not
+      return sendSuccess(res, null, 'If an account with that email exists, we have sent a reset link.');
     }
-
     const user = userResult.rows[0];
 
-    if (user.is_two_factor_enabled) {
-      if (!otp) {
-        return sendSuccess(res, { require2FA: true }, '2FA verification required to reset password');
-      }
+    // Generate token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-      // Check if OTP matches Recovery Key (base32 secret)
-      const isRecoveryKey = otp === user.two_factor_secret;
-      
-      let verified = false;
-      if (isRecoveryKey) {
-        verified = true;
-      } else {
-        verified = speakeasy.totp.verify({
-          secret: user.two_factor_secret,
-          encoding: 'base32',
-          token: otp
-        });
-      }
-
-      if (!verified) {
-        return sendError(res, 'BAD_REQUEST', 'Invalid 2FA code or Recovery Key.', 400);
-      }
-    }
-
-    // Generate reset token
-    const resetToken = jwt.sign(
-      { user_id: user.user_id, action: 'reset-password' },
-      env.JWT_SECRET,
-      { expiresIn: '10m' }
+    await db.query(
+      'INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
+      [tokenHash, user.user_id, expiresAt]
     );
 
-    sendSuccess(res, { resetToken }, 'Verification successful. You can now reset your password.');
+    const resetLink = `${env.FRONTEND_URL}/login?action=reset&token=${resetToken}`;
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>Password Reset Request</h2>
+        <p>Hello ${user.full_name},</p>
+        <p>You requested to reset your password. Click the button below to set a new password.</p>
+        <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #ff7944; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">Reset My Password</a>
+        <p style="margin-top: 20px; font-size: 12px; color: #888;">This link will expire in 1 hour. If you didn't request this, you can safely ignore this email.</p>
+      </div>
+    `;
+
+    sendEmail({
+      to: user.email,
+      subject: 'Password Reset Request',
+      html: emailHtml
+    }).catch(err => console.error('Failed to send reset email:', err));
+
+    sendSuccess(res, null, 'If an account with that email exists, we have sent a reset link.');
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyEmail = async (req, res, next) => {
+  const { token } = req.body;
+  if (!token) return sendError(res, 'BAD_REQUEST', 'Token is required', 400);
+
+  try {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    const result = await db.query(
+      'SELECT user_id, expires_at, used FROM email_verification_tokens WHERE token_hash = $1',
+      [tokenHash]
+    );
+
+    if (result.rows.length === 0) {
+      return sendError(res, 'BAD_REQUEST', 'Invalid verification link.', 400);
+    }
+
+    const { user_id, expires_at, used } = result.rows[0];
+
+    if (used) {
+      return sendError(res, 'BAD_REQUEST', 'Email is already verified.', 400);
+    }
+
+    if (new Date() > new Date(expires_at)) {
+      return sendError(res, 'BAD_REQUEST', 'Verification link has expired.', 400);
+    }
+
+    await db.withTransaction(async (client) => {
+      // Mark as verified
+      await client.query(
+        'UPDATE user_email_verified SET is_verified = true WHERE user_id = $1',
+        [user_id]
+      );
+      // Invalidate token
+      await client.query(
+        'UPDATE email_verification_tokens SET used = true WHERE token_hash = $1',
+        [tokenHash]
+      );
+    });
+
+    sendSuccess(res, null, 'Email successfully verified. You can now log in.');
   } catch (error) {
     next(error);
   }
@@ -437,36 +484,47 @@ const verifyResetPassword = async (req, res, next) => {
 
 const resetPassword = async (req, res, next) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return sendError(res, 'BAD_REQUEST', errors.array()[0].msg, 400);
-  }
+  if (!errors.isEmpty()) return sendError(res, 'BAD_REQUEST', errors.array()[0].msg, 400);
 
   const { resetToken, newPassword } = req.body;
 
   try {
-    const decoded = jwt.verify(resetToken, env.JWT_SECRET);
-    if (decoded.action !== 'reset-password') {
-      return sendError(res, 'UNAUTHORIZED', 'Invalid token type', 401);
-    }
-
-    // Hash new password
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-
-    // Update password
-    const result = await db.query(
-      'UPDATE users SET password_hash = $1 WHERE user_id = $2 AND is_active = true RETURNING user_id',
-      [passwordHash, decoded.user_id]
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    
+    const tokenResult = await db.query(
+      'SELECT user_id, expires_at, used FROM password_reset_tokens WHERE token_hash = $1',
+      [tokenHash]
     );
 
-    if (result.rowCount === 0) {
-       return sendError(res, 'BAD_REQUEST', 'Failed to reset password. User not found.', 400);
+    if (tokenResult.rows.length === 0) {
+      return sendError(res, 'BAD_REQUEST', 'Invalid reset link.', 400);
     }
+
+    const { user_id, expires_at, used } = tokenResult.rows[0];
+
+    if (used) {
+      return sendError(res, 'BAD_REQUEST', 'Reset link has already been used.', 400);
+    }
+
+    if (new Date() > new Date(expires_at)) {
+      return sendError(res, 'BAD_REQUEST', 'Reset link has expired.', 400);
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    await db.withTransaction(async (client) => {
+      await client.query(
+        'UPDATE users SET password_hash = $1 WHERE user_id = $2 AND is_active = true',
+        [passwordHash, user_id]
+      );
+      await client.query(
+        'UPDATE password_reset_tokens SET used = true WHERE token_hash = $1',
+        [tokenHash]
+      );
+    });
 
     sendSuccess(res, null, 'Password successfully reset.');
   } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return sendError(res, 'UNAUTHORIZED', 'Reset session expired. Please try again.', 401);
-    }
     next(error);
   }
 };
@@ -634,17 +692,73 @@ const login2FA = async (req, res, next) => {
   }
 };
 
+const setupPassword = async (req, res, next) => {
+  const { tempToken, newPassword } = req.body;
+  if (!tempToken || !newPassword) return sendError(res, 'BAD_REQUEST', 'Missing token or password', 400);
+
+  try {
+    const decoded = jwt.verify(tempToken, env.JWT_SECRET);
+    if (decoded.action !== 'setup-password') {
+      return sendError(res, 'UNAUTHORIZED', 'Invalid token action', 401);
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    
+    // Check if user still needs password change
+    const checkRes = await db.query('SELECT requires_password_change FROM user_password_reset WHERE user_id = $1', [decoded.user_id]);
+    if (checkRes.rowCount === 0 || !checkRes.rows[0].requires_password_change) {
+       return sendError(res, 'BAD_REQUEST', 'Password change no longer required', 400);
+    }
+
+    // Update password
+    await db.query('UPDATE users SET password_hash = $1 WHERE user_id = $2', [passwordHash, decoded.user_id]);
+    
+    // Clear flag
+    await db.query('UPDATE user_password_reset SET requires_password_change = false WHERE user_id = $1', [decoded.user_id]);
+
+    // Now check 2FA status to continue the flow seamlessly
+    const result = await db.query(
+      `SELECT u.*, COALESCE(u2f.is_two_factor_enabled, false) as is_two_factor_enabled
+       FROM users u 
+       LEFT JOIN user_two_factor u2f ON u.user_id = u2f.user_id
+       WHERE u.user_id = $1 AND u.is_active = true`,
+      [decoded.user_id]
+    );
+    const user = result.rows[0];
+
+    if (user.is_two_factor_enabled) {
+      const newToken = jwt.sign({ user_id: user.user_id, email: user.email }, env.JWT_SECRET, { expiresIn: '5m' });
+      return sendSuccess(res, { require2FA: true, tempToken: newToken }, 'Password updated.');
+    } else {
+      const secret = speakeasy.generateSecret({ name: `ProductRegistration (${user.email})` });
+      await db.query(`
+        INSERT INTO user_two_factor (user_id, two_factor_secret, is_two_factor_enabled)
+        VALUES ($1, $2, false)
+        ON CONFLICT (user_id) DO UPDATE SET two_factor_secret = EXCLUDED.two_factor_secret, is_two_factor_enabled = false
+      `, [user.user_id, secret.base32]);
+      const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
+      const newToken = jwt.sign({ user_id: user.user_id, email: user.email }, env.JWT_SECRET, { expiresIn: '15m' });
+      return sendSuccess(res, { require2FASetup: true, tempToken: newToken, qrCodeUrl: qrCodeUrl, secret: secret.base32 }, 'Password updated.');
+    }
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') return sendError(res, 'UNAUTHORIZED', 'Session expired, please login again', 401);
+    next(error);
+  }
+};
+
 module.exports = {
   login,
   refresh,
   logout,
   updateProfileImage,
   removeProfileImage,
-  verifyResetPassword,
-  resetPassword,
   getMe,
+  forgotPassword,
+  resetPassword,
+  verifyEmail,
   setup2FA,
   verify2FA,
   disable2FA,
-  login2FA
+  login2FA,
+  setupPassword
 };

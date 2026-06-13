@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { 
   Eye, 
   EyeOff, 
@@ -14,7 +14,7 @@ import {
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import backgroundImage from '../../assets/crudex_background_1780402204249.png';
-import { resetPasswordApi, verifyResetPasswordApi } from '../../api/auth';
+import { resetPasswordApi, forgotPasswordApi, verifyEmailApi } from '../../api/auth';
 
 const LoginPage = () => {
   const { login, loginWith2FA, isAuthenticated, user } = useAuth();
@@ -39,6 +39,35 @@ const LoginPage = () => {
   const canvasRef = useRef(null);
   const cardRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const action = params.get('action');
+    const token = params.get('token');
+
+    if (action === 'reset' && token) {
+      setResetToken(token);
+      setViewState('reset-password');
+      // Clear URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (action === 'verify' && token) {
+      const verify = async () => {
+        try {
+          setIsLoading(true);
+          await verifyEmailApi(token);
+          toast.success('Email successfully verified! You can now log in.');
+        } catch (error) {
+          toast.error(error.response?.data?.error?.message || 'Verification link expired or invalid.');
+        } finally {
+          setIsLoading(false);
+          // Clear URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      };
+      verify();
+    }
+  }, [location.search]);
 
   const rememberMeVal = watch('rememberMe');
 
@@ -179,6 +208,12 @@ const LoginPage = () => {
     try {
       const loginResponse = await login(data.email, data.password, data.rememberMe);
       
+      if (loginResponse.requirePasswordChange) {
+        setTempToken(loginResponse.tempToken);
+        setViewState('setup-password');
+        return;
+      }
+
       if (loginResponse.require2FA) {
         setTempToken(loginResponse.tempToken);
         setViewState('2fa');
@@ -233,31 +268,12 @@ const LoginPage = () => {
     setErrorMessage('');
     setIsLoading(true);
     try {
-      const response = await verifyResetPasswordApi(data.email);
-      if (response.data?.data?.require2FA || response.data?.require2FA) {
-        setViewState('reset-2fa');
-      } else if (response.data?.data?.resetToken) {
-        setResetToken(response.data.data.resetToken);
-        setViewState('reset-password');
-      }
+      await forgotPasswordApi(data.email);
+      toast.success('If an account with that email exists, we have sent a reset link.');
+      setViewState('login');
+      setValue('email', '');
     } catch (error) {
-      setErrorMessage(error.message || 'Verification failed.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerify2FASubmit = async (data) => {
-    setErrorMessage('');
-    setIsLoading(true);
-    try {
-      const response = await verifyResetPasswordApi(data.email, data.otp);
-      if (response.data?.data?.resetToken) {
-        setResetToken(response.data.data.resetToken);
-        setViewState('reset-password');
-      }
-    } catch (error) {
-      setErrorMessage(error.message || 'Invalid 2FA code or Recovery Key.');
+      toast.error(error.response?.data?.error?.message || 'Failed to request password reset.');
     } finally {
       setIsLoading(false);
     }
@@ -278,6 +294,42 @@ const LoginPage = () => {
       setResetToken('');
     } catch (error) {
       toast.error(error.message || 'Failed to reset password.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSetupPasswordSubmit = async (data) => {
+    setErrorMessage('');
+    setIsLoading(true);
+    try {
+      if (data.newPassword !== data.confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+      const { setupPasswordApi } = await import('../../api/auth');
+      const res = await setupPasswordApi(tempToken, data.newPassword);
+      
+      toast.success('Password setup successful!', { icon: '🎉' });
+      
+      const loginResponse = res.data.data;
+      if (loginResponse.require2FA) {
+        setTempToken(loginResponse.tempToken);
+        setViewState('2fa');
+        return;
+      }
+      
+      if (loginResponse.require2FASetup) {
+        setTempToken(loginResponse.tempToken);
+        setQrCodeUrl(loginResponse.qrCodeUrl);
+        setSecret(loginResponse.secret);
+        setViewState('2fa-setup');
+        return;
+      }
+
+      setViewState('login');
+      setValue('password', '');
+    } catch (error) {
+      toast.error(error.response?.data?.error?.message || error.message || 'Failed to set password.');
     } finally {
       setIsLoading(false);
     }
@@ -552,7 +604,7 @@ const LoginPage = () => {
                     disabled={isLoading}
                     className="w-full h-14 bg-gradient-to-r from-[#ff8753] to-[#fc6736] text-white rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase shadow-[0_12px_28px_rgba(252,103,54,0.3)] hover:shadow-[0_16px_36px_rgba(252,103,54,0.45)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-300"
                   >
-                    {isLoading ? <Loader2 className="animate-spin w-5 h-5 text-white" /> : 'Next'}
+                    {isLoading ? <Loader2 className="animate-spin w-5 h-5 text-white" /> : 'Send Reset Link'}
                   </button>
                   <button 
                     type="button" 
@@ -568,50 +620,54 @@ const LoginPage = () => {
               </form>
             )}
 
-            {viewState === 'reset-2fa' && (
-              <form onSubmit={handleSubmit(handleVerify2FASubmit)} className="space-y-6 relative z-10">
+            {viewState === 'setup-password' && (
+              <form onSubmit={handleSubmit(handleSetupPasswordSubmit)} className="space-y-6 relative z-10">
                 <div className="text-center mb-6">
-                  <h3 className="text-lg font-black text-stone-800 tracking-wide uppercase">Identity Verification</h3>
-                  <p className="text-xs text-[#8c8279] mt-2 font-medium">Enter your 6-digit authenticator code or full Recovery Key.</p>
+                  <h3 className="text-lg font-black text-stone-800 tracking-wide uppercase">Setup Your Password</h3>
+                  <p className="text-xs text-[#8c8279] mt-2 font-medium">Please set a new permanent password to continue.</p>
                 </div>
 
                 <div className="group flex flex-col space-y-2">
-                  <label htmlFor="reset-otp" className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279] transition-colors duration-200 group-focus-within:text-[#ff7944]">
-                    Code / Recovery Key
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="reset-otp"
-                      type="text"
-                      disabled={isLoading}
-                      {...register('otp', { 
-                        required: 'Verification code is required'
-                      })}
-                      placeholder="000000 or Recovery Key"
-                      className={`w-full h-14 text-center text-xl tracking-widest bg-[#faf5f0]/70 border ${errors.otp ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : 'border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944]'} rounded-2xl text-stone-800 placeholder-[#b0a59a] font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300 disabled:opacity-70`}
-                    />
-                  </div>
-                  {errors.otp && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase text-center">{errors.otp.message}</p>}
+                  <label className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279]">New Password</label>
+                  <input
+                    type="password"
+                    disabled={isLoading}
+                    {...register('newPassword', { required: 'New password is required' })}
+                    placeholder="••••••••"
+                    className="w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944] rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300"
+                  />
+                  {errors.newPassword && <p className="text-red-400 text-[10px] mt-1 font-bold tracking-wide uppercase">{errors.newPassword.message}</p>}
                 </div>
 
-                <div className="pt-2 flex gap-4">
-                  <button
-                    type="button"
+                <div className="group flex flex-col space-y-2">
+                  <label className="text-[0.68rem] tracking-[0.16em] uppercase font-bold text-[#8c8279]">Confirm Password</label>
+                  <input
+                    type="password"
                     disabled={isLoading}
-                    onClick={() => {
-                      setViewState('login');
-                      setResetToken('');
-                    }}
-                    className="flex-1 h-14 bg-stone-100 text-stone-600 rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase hover:bg-stone-200 transition-all duration-300"
-                  >
-                    Cancel
-                  </button>
+                    {...register('confirmPassword', { required: 'Confirm password is required' })}
+                    placeholder="••••••••"
+                    className="w-full h-14 pl-5 pr-5 bg-[#faf5f0]/70 border border-[#eddcd0] focus:ring-[#ff7944]/10 focus:border-[#ff7944] rounded-2xl text-stone-800 text-sm font-medium focus:ring-4 focus:bg-white outline-none transition-all duration-300"
+                  />
+                </div>
+
+                <div className="pt-2 flex flex-col gap-3">
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="flex-1 h-14 bg-gradient-to-r from-[#ff8753] to-[#fc6736] text-white rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase shadow-[0_12px_28px_rgba(252,103,54,0.3)] hover:shadow-[0_16px_36px_rgba(252,103,54,0.45)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full h-14 bg-gradient-to-r from-[#ff8753] to-[#fc6736] text-white rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase shadow-[0_12px_28px_rgba(252,103,54,0.3)] hover:shadow-[0_16px_36px_rgba(252,103,54,0.45)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-300"
                   >
-                    {isLoading ? <Loader2 className="animate-spin w-5 h-5 text-white" /> : 'Verify'}
+                    {isLoading ? <Loader2 className="animate-spin w-5 h-5 text-white" /> : 'Save Password'}
+                  </button>
+                  <button 
+                    type="button" 
+                    disabled={isLoading}
+                    onClick={() => {
+                      setViewState('login');
+                      setValue('password', '');
+                    }}
+                    className="w-full h-14 bg-stone-100 text-stone-600 rounded-2xl text-sm tracking-[0.16em] font-extrabold uppercase hover:bg-stone-200 transition-all duration-300"
+                  >
+                    Back to Login
                   </button>
                 </div>
               </form>

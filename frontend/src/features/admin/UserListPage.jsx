@@ -7,7 +7,7 @@ import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
 import UserAccessModal from './components/UserAccessModal';
-import { Search, Plus, Loader2, User, Mail, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List, Building, Briefcase, Eye, EyeOff } from 'lucide-react';
+import { Search, Plus, Loader2, User, Mail, Phone, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List, Building, Briefcase, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
 import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
@@ -109,6 +109,7 @@ const UserListPage = ({ initialRole = '' }) => {
       const formData = new FormData();
       formData.append('full_name', data.full_name);
       formData.append('email', data.email);
+      if (data.mobile_number) formData.append('mobile_number', data.mobile_number);
       if (data.password) formData.append('password', data.password);
       if (data.company !== undefined) formData.append('company', data.company);
       if (data.designation !== undefined) formData.append('designation', data.designation);
@@ -160,7 +161,7 @@ const UserListPage = ({ initialRole = '' }) => {
     if (draft && draft.data && Object.keys(draft.data).length > 0) {
       reset(draft.data);
     } else {
-      reset({ full_name: '', email: '', password: '', role_name: initialRole || 'Designer', company: '', designation: '' });
+      reset({ full_name: '', email: '', mobile_number: '', password: '', role_name: initialRole || 'Designer', company: '', designation: '' });
     }
     
     setIsModalOpen(true);
@@ -189,6 +190,7 @@ const UserListPage = ({ initialRole = '' }) => {
     const resetData = {
       full_name: user.full_name,
       email: user.email,
+      mobile_number: user.mobile_number || '',
       role_name: user.role_name,
       company: user.company || '',
       designation: user.designation || ''
@@ -441,7 +443,6 @@ const UserListPage = ({ initialRole = '' }) => {
             >
               <option value="">ALL ROLES</option>
               {(rolesData?.map(r => r.role_name) || [])
-                .filter(role => role.toLowerCase() !== 'admin')
                 .map((role) => (
                   <option key={role} value={role}>
                     {role.toUpperCase()}
@@ -588,6 +589,21 @@ const UserListPage = ({ initialRole = '' }) => {
                 </div>
               </div>
 
+              {selectedUser?.mobile_number && (
+                <div className="flex items-center gap-4 p-3 hover:bg-[var(--bg-workspace)] transition-colors rounded-xl group">
+                  <div 
+                    className="p-2.5 rounded-lg group-hover:scale-110 transition-transform"
+                    style={{ background: 'var(--nav-hover)', color: 'var(--accent)' }}
+                  >
+                    <Phone size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Mobile Number</p>
+                    <p className="text-sm font-semibold text-[var(--text-main)]">{selectedUser.mobile_number}</p>
+                  </div>
+                </div>
+              )}
+
               {selectedUser?.company && (
                 <div className="flex items-center gap-4 p-3 hover:bg-[var(--bg-workspace)] transition-colors rounded-xl group">
                   <div 
@@ -715,6 +731,25 @@ const UserListPage = ({ initialRole = '' }) => {
               <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
               <input {...register('email', { required: 'Email is required' })} type="email" autoComplete="off" className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)]" placeholder="john@procore.sys" />
               {errors.email && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.email.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1.5 ml-1">Mobile Number</label>
+              <input 
+                {...register('mobile_number', { 
+                  required: 'Mobile Number is required',
+                  pattern: {
+                    value: /^[0-9]{10}$/,
+                    message: 'Mobile Number must be exactly 10 digits'
+                  }
+                })} 
+                type="text" 
+                maxLength="10"
+                autoComplete="off" 
+                className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[13px] text-[var(--text-main)]" 
+                placeholder="e.g. 9876543210" 
+              />
+              {errors.mobile_number && <p className="text-red-500 text-[10px] mt-1.5 font-bold uppercase">{errors.mobile_number.message}</p>}
             </div>
 
             <div>

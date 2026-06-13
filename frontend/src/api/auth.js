@@ -7,10 +7,12 @@ export const updateProfileImageApi = (formData) => axiosInstance.post('/auth/pro
   headers: { 'Content-Type': 'multipart/form-data' }
 });
 export const deleteProfileImageApi = () => axiosInstance.delete('/auth/profile/image');
-export const verifyResetPasswordApi = (email, otp) => axiosInstance.post('/auth/reset-password/verify', { email, otp });
+export const forgotPasswordApi = (email) => axiosInstance.post('/auth/forgot-password', { email });
+export const verifyEmailApi = (token) => axiosInstance.post('/auth/verify-email', { token });
 export const resetPasswordApi = (resetToken, newPassword) => axiosInstance.post('/auth/reset-password', { resetToken, newPassword });
 export const getMeApi = () => axiosInstance.get('/auth/me');
 export const setup2FaApi = () => axiosInstance.post('/auth/2fa/setup');
 export const verify2FaApi = (otp) => axiosInstance.post('/auth/2fa/verify', { otp });
 export const disable2FaApi = () => axiosInstance.post('/auth/2fa/disable');
 export const login2FaApi = (tempToken, otp) => axiosInstance.post('/auth/login/2fa', { tempToken, otp });
+export const setupPasswordApi = (tempToken, newPassword) => axiosInstance.post('/auth/setup-password', { tempToken, newPassword });

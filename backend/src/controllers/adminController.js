@@ -1,6 +1,9 @@
 const db = require('../config/db');
 const { sendSuccess } = require('../utils/response');
 const { parsePagination } = require('../utils/pagination');
+const crypto = require('crypto');
+const env = require('../config/env');
+const { sendEmail } = require('../utils/email');
 
 const getUsers = async (req, res, next) => {
   const { page, limit, offset } = parsePagination(req);
@@ -19,13 +22,15 @@ const getUsers = async (req, res, next) => {
             r.role_name,
             u.is_active,
             u.created_at,
+            COALESCE(um.mobile_number, '') AS mobile_number,
             COALESCE(json_agg(json_build_object('team_id', t.team_id, 'team_name', t.team_name)) FILTER (WHERE t.team_id IS NOT NULL), '[]'::json) AS teams
           FROM users u
             JOIN roles r ON r.role_id = u.role_id
             LEFT JOIN team_members tm ON tm.user_id = u.user_id
             LEFT JOIN teams t ON t.team_id = tm.team_id
+            LEFT JOIN user_mobile um ON um.user_id = u.user_id
           WHERE u.is_active = true
-          GROUP BY u.user_id, u.full_name, u.email, u.company, u.designation, u.image_url, r.role_name, u.is_active, u.created_at
+          GROUP BY u.user_id, u.full_name, u.email, u.company, u.designation, u.image_url, r.role_name, u.is_active, u.created_at, um.mobile_number
       )
       SELECT DISTINCT ON (v.user_id) v.*, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions, COUNT(*) OVER() as total_count
       FROM user_panel v
@@ -70,13 +75,15 @@ const getUserById = async (req, res, next) => {
             r.role_name,
             u.is_active,
             u.created_at,
+            COALESCE(um.mobile_number, '') AS mobile_number,
             COALESCE(json_agg(json_build_object('team_id', t.team_id, 'team_name', t.team_name)) FILTER (WHERE t.team_id IS NOT NULL), '[]'::json) AS teams
           FROM users u
             JOIN roles r ON r.role_id = u.role_id
             LEFT JOIN team_members tm ON tm.user_id = u.user_id
             LEFT JOIN teams t ON t.team_id = tm.team_id
+            LEFT JOIN user_mobile um ON um.user_id = u.user_id
           WHERE u.is_active = true
-          GROUP BY u.user_id, u.full_name, u.email, u.company, u.designation, u.image_url, r.role_name, u.is_active, u.created_at
+          GROUP BY u.user_id, u.full_name, u.email, u.company, u.designation, u.image_url, r.role_name, u.is_active, u.created_at, um.mobile_number
        )
        SELECT v.*, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions 
        FROM user_panel v 
@@ -291,7 +298,7 @@ const fs = require('fs');
 const path = require('path');
 
 const createUser = async (req, res, next) => {
-  const { full_name, email, password, role_name, team_id, team_ids, company, designation } = req.body;
+  const { full_name, email, password, role_name, team_id, team_ids, company, designation, mobile_number } = req.body;
 
   let image_url = null;
   if (req.file) {
@@ -332,6 +339,9 @@ const createUser = async (req, res, next) => {
 
         // Create profile based on role
         const userId = insertResult.rows[0].user_id;
+        
+        // Force password change on first login
+        await client.query('INSERT INTO user_password_reset (user_id, requires_password_change) VALUES ($1, true)', [userId]);
         if (role_name === 'Designer') {
           await client.query('INSERT INTO designer_profiles (designer_id) VALUES ($1)', [userId]);
         } else if (role_name === 'Sales') {
@@ -339,6 +349,49 @@ const createUser = async (req, res, next) => {
         } else if (role_name === 'Maintenance') {
           await client.query('INSERT INTO maintenance_profiles (maintenance_id) VALUES ($1)', [userId]);
         }
+        
+        if (mobile_number) {
+          await client.query('INSERT INTO user_mobile (user_id, mobile_number) VALUES ($1, $2)', [userId, mobile_number]);
+        }
+
+        // Email Verification Token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        
+        await client.query(
+          'INSERT INTO email_verification_tokens (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
+          [tokenHash, userId, expiresAt]
+        );
+        
+        // Also insert into user_email_verified
+        await client.query(
+          'INSERT INTO user_email_verified (user_id, is_verified) VALUES ($1, false) ON CONFLICT (user_id) DO NOTHING',
+          [userId]
+        );
+
+        // Send Email
+        const frontendUrl = env.FRONTEND_URL;
+        const loginLink = `${frontendUrl}/login`;
+        
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2>Welcome to Leon's Group Product Registration!</h2>
+            <p>Hello ${full_name},</p>
+            <p>An administrator has created an account for you.</p>
+            <p><strong>Your email:</strong> ${email}</p>
+            <p><strong>Your temporary password is:</strong> ${password}</p>
+            <p>Please log in using these credentials. You will be asked to set a permanent password upon your first login.</p>
+            <a href="${loginLink}" style="display: inline-block; padding: 10px 20px; background-color: #ff7944; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">Log In to Your Account</a>
+          </div>
+        `;
+        
+        // Don't wait for email to send, run in background to prevent blocking
+        sendEmail({
+          to: email,
+          subject: 'Welcome to Leon\'s Group - Your Account Details',
+          html: emailHtml
+        }).catch(err => console.error('Failed to send welcome email:', err));
 
         // Assign to teams if provided
         if (Array.isArray(parsedTeamIds) && parsedTeamIds.length > 0) {
@@ -373,7 +426,7 @@ const createUser = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   const { userId } = req.params;
-  const { full_name, email, role_name, team_id, team_ids, company, designation } = req.body;
+  const { full_name, email, role_name, team_id, team_ids, company, designation, mobile_number } = req.body;
 
   let image_url = null;
   if (req.file) {
@@ -428,6 +481,14 @@ const updateUser = async (req, res, next) => {
 
         if (updateResult.rows.length === 0) {
           throw new Error('User not found');
+        }
+
+        if (mobile_number !== undefined) {
+          await client.query(`
+            INSERT INTO user_mobile (user_id, mobile_number) 
+            VALUES ($1, $2)
+            ON CONFLICT (user_id) DO UPDATE SET mobile_number = EXCLUDED.mobile_number
+          `, [userId, mobile_number]);
         }
 
         // Sync team assignment

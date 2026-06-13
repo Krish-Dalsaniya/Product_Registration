@@ -25,11 +25,19 @@ router.delete('/profile/image', verifyToken, authController.removeProfileImage);
 router.get('/me', verifyToken, authController.getMe);
 
 router.post(
-  '/reset-password/verify',
+  '/forgot-password',
   [
     body('email').isEmail().withMessage('Enter a valid email')
   ],
-  authController.verifyResetPassword
+  authController.forgotPassword
+);
+
+router.post(
+  '/verify-email',
+  [
+    body('token').notEmpty().withMessage('Token is required')
+  ],
+  authController.verifyEmail
 );
 
 router.post(
@@ -45,5 +53,6 @@ router.post('/2fa/setup', verifyToken, authController.setup2FA);
 router.post('/2fa/verify', verifyToken, authController.verify2FA);
 router.post('/2fa/disable', verifyToken, authController.disable2FA);
 router.post('/login/2fa', authController.login2FA);
+router.post('/setup-password', authController.setupPassword);
 
 module.exports = router;
