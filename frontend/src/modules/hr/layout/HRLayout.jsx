@@ -6,6 +6,7 @@ import { updateProfileImageApi, deleteProfileImageApi } from '../../../api/auth'
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import Navbar from '../../../components/shared/Navbar';
+import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 import { 
   LayoutDashboard, 
   Users, 
@@ -19,7 +20,8 @@ import {
   Trash2,
   Loader2,
   Settings,
-  Layers
+  Layers,
+  ChevronDown
 } from 'lucide-react';
 
 const HRSidebar = ({ isOpen, onClose }) => {
@@ -33,6 +35,13 @@ const HRSidebar = ({ isOpen, onClose }) => {
   const settingsDropdownRef = useRef(null);
   const fileInputRef = useRef(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [openMenus, setOpenMenus] = useState({
+    workforceMgt: true
+  });
+
+  const toggleMenu = (menu) => {
+    setOpenMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
+  };
 
   const handleLogout = () => {
     Swal.fire({
@@ -144,24 +153,26 @@ const HRSidebar = ({ isOpen, onClose }) => {
           <div 
             className="absolute pointer-events-none" 
             style={{
-              left: '41px',
+              left: '46px',
               top: 0,
               height: '50%',
-              width: '13px',
-              borderLeft: '1px solid var(--border-color)',
-              borderBottom: '1px solid var(--border-color)',
+              width: '26px',
+              borderLeft: '2px solid var(--text-dim)',
+              borderBottom: '2px solid var(--text-dim)',
               borderBottomLeftRadius: '6px',
+              opacity: 0.4,
               zIndex: 10
             }}
           />
           {!isLastSubItem && (
             <div 
-              className="absolute bg-[var(--border-color)] pointer-events-none" 
+              className="absolute bg-[var(--text-dim)] pointer-events-none" 
               style={{
-                left: '41px',
+                left: '46px',
                 top: '50%',
                 bottom: 0,
-                width: '1px',
+                width: '2px',
+                opacity: 0.4,
                 zIndex: 10
               }}
             />
@@ -174,7 +185,7 @@ const HRSidebar = ({ isOpen, onClose }) => {
           location.pathname === to
             ? 'font-bold'
             : 'hover:bg-[var(--nav-hover)]'
-        } ${isSubItem ? 'pl-14 pr-4 py-1.5' : ''}`}
+        } ${isSubItem ? 'pl-[72px] pr-4 py-1.5' : ''}`}
         style={{
           color: location.pathname === to ? 'var(--accent)' : 'var(--text-muted)',
           background: location.pathname === to ? 'var(--nav-active)' : undefined,
@@ -207,6 +218,17 @@ const HRSidebar = ({ isOpen, onClose }) => {
           {label}
         </span>
       </button>
+    </div>
+  );
+
+  const SubMenu = ({ isOpen, children }) => (
+    <div
+      className="grid transition-all duration-500 ease-in-out overflow-hidden"
+      style={{ gridTemplateRows: isOpen ? '1fr' : '0fr', opacity: isOpen ? 1 : 0 }}
+    >
+      <div className="min-h-0">
+        {children}
+      </div>
     </div>
   );
 
@@ -418,7 +440,10 @@ const HRSidebar = ({ isOpen, onClose }) => {
           
           <div 
             className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
-            onClick={() => handleNavigate('/hr/employees')}
+            onClick={() => {
+              toggleMenu('workforceMgt');
+              handleNavigate('/hr/employees');
+            }}
             style={{
               color: location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/recruitment' || location.pathname === '/hr/leaves' || location.pathname === '/hr/attendance' ? 'var(--accent)' : 'var(--text-muted)',
               background: location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/recruitment' || location.pathname === '/hr/leaves' || location.pathname === '/hr/attendance' ? 'var(--nav-active)' : undefined,
@@ -441,13 +466,18 @@ const HRSidebar = ({ isOpen, onClose }) => {
                 Workforce Mgt
               </span>
             </div>
+            <div className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors">
+              <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.workforceMgt ? 'rotate-180' : ''}`} />
+            </div>
           </div>
-          <div className="flex flex-col">
-            <NavItem to="/hr/employees" label="Employees" icon={Users} isSubItem />
-            <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} isSubItem />
-            <NavItem to="/hr/leaves" label="Leaves" icon={Calendar} isSubItem />
-            <NavItem to="/hr/attendance" label="Attendance" icon={Clock} isSubItem isLastSubItem />
-          </div>
+          <SubMenu isOpen={openMenus.workforceMgt}>
+            <div className="flex flex-col py-1">
+              <NavItem to="/hr/employees" label="Employees" icon={Users} isSubItem />
+              <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} isSubItem />
+              <NavItem to="/hr/leaves" label="Leaves" icon={Calendar} isSubItem />
+              <NavItem to="/hr/attendance" label="Attendance" icon={Clock} isSubItem isLastSubItem />
+            </div>
+          </SubMenu>
 
         </div>
       </aside>
@@ -472,7 +502,14 @@ const HRLayout = () => {
       />
       <div className="flex">
         <HRSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        <main className="flex-1 md:ml-64 px-4 md:px-8 pt-[80px] pb-8 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]">
+        <main className="flex-1 md:ml-64 px-4 md:px-8 pt-[60px] pb-8 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]">
+          {!location.pathname.match(/\/(employees)\/[^\/]+$/) && (
+            <div className="max-w-[1600px] mx-auto h-0 overflow-visible flex justify-end pt-0 relative z-20 pointer-events-none">
+              <div className="pointer-events-auto">
+                <Breadcrumbs />
+              </div>
+            </div>
+          )}
           <Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--accent)]"></div></div>}>
             <Outlet />
           </Suspense>

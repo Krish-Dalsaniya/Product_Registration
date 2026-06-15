@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, UserPlus, Calendar, Clock, Loader2 } from 'lucide-react';
+import { Users, UserPlus, Calendar, Clock, Loader2, TrendingUp, UserCheck, Briefcase, ChevronRight } from 'lucide-react';
 import { fetchHRDashboardMetricsApi } from '../../../api/hr';
 import toast from 'react-hot-toast';
 
@@ -80,11 +80,79 @@ const HRDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm min-h-[400px] flex items-center justify-center">
-          <p className="text-[var(--text-muted)] font-bold text-sm tracking-widest uppercase">Chart: Employee Growth</p>
+        {/* CSS-Based Bar Chart: Employee Growth */}
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm min-h-[400px] flex flex-col">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-[16px] font-black text-[var(--text-main)]">Employee Growth</h3>
+              <p className="text-[13px] text-[var(--text-muted)] font-medium mt-1">Net headcount over the last 6 months</p>
+            </div>
+            <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg text-[12px] font-bold">
+              <TrendingUp size={14} />
+              <span>+12.5%</span>
+            </div>
+          </div>
+          
+          <div className="flex-1 flex items-end justify-between gap-2 mt-auto pt-4 border-t border-[var(--border-color)]">
+            {[
+              { month: 'Jan', val: 65, height: '60%' },
+              { month: 'Feb', val: 72, height: '65%' },
+              { month: 'Mar', val: 80, height: '70%' },
+              { month: 'Apr', val: 78, height: '68%' },
+              { month: 'May', val: 95, height: '85%' },
+              { month: 'Jun', val: 112, height: '100%' },
+            ].map((d, i) => (
+              <div key={i} className="flex flex-col items-center flex-1 group">
+                <div className="w-full relative h-[250px] flex items-end justify-center rounded-t-md">
+                  {/* Tooltip */}
+                  <div className="absolute -top-10 bg-black text-white text-[11px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                    {d.val} Emp
+                  </div>
+                  {/* Bar */}
+                  <div 
+                    className="w-3/4 max-w-[40px] bg-[var(--accent)] rounded-t-lg transition-all duration-500 group-hover:opacity-80"
+                    style={{ height: d.height }}
+                  ></div>
+                </div>
+                <span className="text-[12px] font-bold text-[var(--text-muted)] mt-3 uppercase tracking-wider">{d.month}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm min-h-[400px] flex items-center justify-center">
-          <p className="text-[var(--text-muted)] font-bold text-sm tracking-widest uppercase">Recent Activity</p>
+
+        {/* Recent Activity Feed */}
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm min-h-[400px] flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-[16px] font-black text-[var(--text-main)]">Recent Activity</h3>
+            <button className="text-[13px] font-bold text-[var(--accent)] hover:underline flex items-center">
+              View All <ChevronRight size={14} />
+            </button>
+          </div>
+          
+          <div className="space-y-6 flex-1">
+            {[
+              { title: 'New Employee Onboarded', desc: 'Sarah Jenkins joined Engineering', time: '2 hours ago', icon: UserPlus, color: 'text-blue-500 bg-blue-50' },
+              { title: 'Leave Approved', desc: 'Mike Ross (3 days Annual Leave)', time: '4 hours ago', icon: Calendar, color: 'text-emerald-500 bg-emerald-50' },
+              { title: 'Role Updated', desc: 'David Kim promoted to Senior Dev', time: '1 day ago', icon: Briefcase, color: 'text-purple-500 bg-purple-50' },
+              { title: 'Profile Updated', desc: 'HR Admin updated 5 profiles', time: '2 days ago', icon: UserCheck, color: 'text-amber-500 bg-amber-50' },
+            ].map((activity, i) => {
+              const ActivityIcon = activity.icon;
+              return (
+                <div key={i} className="flex items-start gap-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${activity.color}`}>
+                    <ActivityIcon size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-bold text-[var(--text-main)]">{activity.title}</p>
+                    <p className="text-[13px] text-[var(--text-secondary)] truncate mt-0.5">{activity.desc}</p>
+                  </div>
+                  <span className="text-[11px] font-bold text-[var(--text-muted)] flex-shrink-0 whitespace-nowrap">
+                    {activity.time}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

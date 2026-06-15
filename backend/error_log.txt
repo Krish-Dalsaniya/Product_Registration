@@ -319,3 +319,13 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async createEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:107:20)
 
+2026-06-15T10:24:25.770Z - error: value too long for type character varying(255)
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:223:7)
+
+2026-06-15T10:24:42.777Z - error: value too long for type character varying(255)
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:223:7)
+

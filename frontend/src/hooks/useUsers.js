@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUsers, createUser, updateUser, deleteUser, getAdminStats, removeUserImage, resetUser2FA } from '../api/admin';
+import { getUsers, createUser, updateUser, deleteUser, getAdminStats, removeUserImage, resetUser2FA, resetUserPassword } from '../api/admin';
 
 export const useUsers = (params) => {
   return useQuery({
@@ -71,5 +71,11 @@ export const useRemoveUserImage = () => {
 export const useResetUser2FA = () => {
   return useMutation({
     mutationFn: resetUser2FA,
+  });
+};
+
+export const useResetUserPassword = () => {
+  return useMutation({
+    mutationFn: resetUserPassword,
   });
 };

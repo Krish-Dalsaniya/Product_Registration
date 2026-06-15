@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchHREmployeeByIdApi, updateHREmployeeApi } from '../../../api/hr';
-import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ImageCropperModal from '../../../components/shared/ImageCropperModal';
+import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 
 
 const FormField = ({ label, value, isEditing, type = 'text', options = [], onChange, disabled = false, readOnlyText = null, isCustomView = false, customView = null }) => {
@@ -35,6 +37,29 @@ const EmployeeProfile = () => {
   const [isEditing, setIsEditing] = useState(queryParams.get('edit') === 'true');
   const [activeTab, setActiveTab] = useState('Personal');
 
+  // Avatar Upload States
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [imageUploadSrc, setImageUploadSrc] = useState(null);
+
+  // Empty State Fallbacks for View Mode
+  useEffect(() => {
+    if (!isEditing) {
+      const inputs = document.querySelectorAll('.read-only-profile input');
+      inputs.forEach(el => {
+        if (!el.value) {
+          el.placeholder = "—";
+        }
+      });
+      const selects = document.querySelectorAll('.read-only-profile select');
+      selects.forEach(el => {
+        if (!el.value || el.value === "") {
+          const defaultOpt = el.querySelector('option[value=""]');
+          if (defaultOpt) defaultOpt.text = "—";
+        }
+      });
+    }
+  }, [isEditing, activeTab]);
+
   // Info States
   const [personalInfo, setPersonalInfo] = useState({
     nickname: '', gender: 'Male', dob: '', blood_group: '', fathers_name: '',
@@ -49,7 +74,9 @@ const EmployeeProfile = () => {
   const [jobInfo, setJobInfo] = useState({
     date_of_hiring: '', probation_period: '', notice_period: '',
     confirmation_date: '', current_company_experience: '', referred_by: '',
-    reporting_manager: ''
+    reporting_manager: '',
+    contract_details: [],
+    previous_employment: []
   });
 
   const [payInfo, setPayInfo] = useState({
@@ -95,6 +122,58 @@ const EmployeeProfile = () => {
     }
   };
 
+  const handleAddContractDetail = () => {
+    if (!isEditing) return toast.error('Enable edit mode to add details');
+    setJobInfo({ ...jobInfo, contract_details: [...(jobInfo.contract_details || []), { contract_type: '', start_date: '', end_date: '' }] });
+  };
+
+  const handleRemoveContractDetail = (index) => {
+    const newDetails = [...jobInfo.contract_details];
+    newDetails.splice(index, 1);
+    setJobInfo({ ...jobInfo, contract_details: newDetails });
+  };
+
+  const handleAddPreviousEmployment = () => {
+    if (!isEditing) return toast.error('Enable edit mode to add employment');
+    setJobInfo({ ...jobInfo, previous_employment: [...(jobInfo.previous_employment || []), { company_name: '', designation: '', start_date: '', end_date: '' }] });
+  };
+
+  const handleRemovePreviousEmployment = (index) => {
+    const newEmployment = [...jobInfo.previous_employment];
+    newEmployment.splice(index, 1);
+    setJobInfo({ ...jobInfo, previous_employment: newEmployment });
+  };
+
+  const handleImageSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageUploadSrc(reader.result);
+        setIsCropperOpen(true);
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+    // reset input
+    e.target.value = null;
+  };
+
+  const handleCropComplete = async (croppedFile) => {
+    setIsCropperOpen(false);
+    
+    if (!croppedFile) {
+      toast.error("Failed to crop image.");
+      return;
+    }
+
+    // Convert blob to base64 for immediate frontend preview and mock save
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEmployee(prev => ({ ...prev, image_url: reader.result }));
+      toast.success('Profile picture updated!');
+    };
+    reader.readAsDataURL(croppedFile);
+  };
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -103,7 +182,8 @@ const EmployeeProfile = () => {
         job_info: jobInfo,
         pay_info: payInfo,
         statutory_info: statutoryInfo,
-        identities_info: identitiesInfo
+        identities_info: identitiesInfo,
+        image_url: employee.image_url
       };
       const res = await updateHREmployeeApi(id, payload);
       if (res.data?.success) {
@@ -135,8 +215,18 @@ const EmployeeProfile = () => {
     { id: 'Identities', icon: Fingerprint }
   ];
 
+  const breadcrumbItems = [
+    { label: 'Employees', path: '/hr/employees' },
+    { label: employee.full_name, path: '' }
+  ];
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1200px] mx-auto pb-12">
+      {/* Breadcrumbs Row */}
+      <div className="mb-4">
+        <Breadcrumbs items={breadcrumbItems} />
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
@@ -163,13 +253,21 @@ const EmployeeProfile = () => {
 
       {/* Profile Summary Card */}
       <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 mb-6 shadow-sm flex items-center gap-6">
-        <div className="w-20 h-20 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] flex items-center justify-center overflow-hidden flex-shrink-0">
+        <div className="relative w-20 h-20 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] flex items-center justify-center overflow-hidden flex-shrink-0 group">
           {employee.image_url ? (
             <img src={employee.image_url} alt="Profile" className="w-full h-full object-cover" />
           ) : (
             <span className="text-3xl font-black text-[var(--accent)]">
               {employee.full_name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
             </span>
+          )}
+          
+          {/* Avatar Upload Overlay */}
+          {isEditing && (
+            <label className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer transition-all">
+              <Camera size={24} className="text-white" />
+              <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+            </label>
           )}
         </div>
         <div>
@@ -342,11 +440,82 @@ const EmployeeProfile = () => {
               <span className="p-2 bg-[var(--bg-workspace)] rounded-lg text-[var(--accent)]"><Briefcase size={20} /></span>
               Contract Details & Previous Employment
             </h3>
-            <div className="h-[150px] border-2 border-dashed border-[var(--border-color)] rounded-xl flex items-center justify-center text-[var(--text-muted)] font-bold text-[13px] bg-[var(--bg-workspace)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors cursor-pointer">
-              + Add Contract Details
+            
+            <div className="mb-6">
+              <h4 className="text-md font-bold text-[var(--text-main)] mb-4">Contract Details</h4>
+              {jobInfo.contract_details?.map((contract, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 p-4 pt-8 border border-[var(--border-color)] rounded-xl relative">
+                  {isEditing && (
+                    <button onClick={() => handleRemoveContractDetail(index)} className="absolute top-3 right-3 text-red-500 hover:text-red-700 bg-red-50 p-1 rounded-md">
+                      <X size={16} />
+                    </button>
+                  )}
+                  <FormField label="Contract Type" value={contract.contract_type} onChange={e => {
+                    const newDetails = [...jobInfo.contract_details];
+                    newDetails[index].contract_type = e.target.value;
+                    setJobInfo({...jobInfo, contract_details: newDetails});
+                  }} isEditing={isEditing} />
+                  <FormField label="Start Date" type="date" value={contract.start_date} onChange={e => {
+                    const newDetails = [...jobInfo.contract_details];
+                    newDetails[index].start_date = e.target.value;
+                    setJobInfo({...jobInfo, contract_details: newDetails});
+                  }} isEditing={isEditing} />
+                  <FormField label="End Date" type="date" value={contract.end_date} onChange={e => {
+                    const newDetails = [...jobInfo.contract_details];
+                    newDetails[index].end_date = e.target.value;
+                    setJobInfo({...jobInfo, contract_details: newDetails});
+                  }} isEditing={isEditing} />
+                </div>
+              ))}
+              {isEditing && (
+                <div onClick={handleAddContractDetail} className="h-[60px] border-2 border-dashed border-[var(--border-color)] rounded-xl flex items-center justify-center text-[var(--text-muted)] font-bold text-[13px] bg-[var(--bg-workspace)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors cursor-pointer">
+                  + Add Contract Details
+                </div>
+              )}
+              {!isEditing && (!jobInfo.contract_details || jobInfo.contract_details.length === 0) && (
+                <p className="text-[13px] text-[var(--text-muted)] italic">No contract details added.</p>
+              )}
             </div>
-            <div className="h-[150px] border-2 border-dashed border-[var(--border-color)] rounded-xl flex items-center justify-center text-[var(--text-muted)] font-bold text-[13px] bg-[var(--bg-workspace)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors cursor-pointer mt-6">
-              + Add Previous Employment
+
+            <div>
+              <h4 className="text-md font-bold text-[var(--text-main)] mb-4">Previous Employment</h4>
+              {jobInfo.previous_employment?.map((emp, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 p-4 pt-8 border border-[var(--border-color)] rounded-xl relative">
+                  {isEditing && (
+                    <button onClick={() => handleRemovePreviousEmployment(index)} className="absolute top-3 right-3 text-red-500 hover:text-red-700 bg-red-50 p-1 rounded-md">
+                      <X size={16} />
+                    </button>
+                  )}
+                  <FormField label="Company Name" value={emp.company_name} onChange={e => {
+                    const newEmp = [...jobInfo.previous_employment];
+                    newEmp[index].company_name = e.target.value;
+                    setJobInfo({...jobInfo, previous_employment: newEmp});
+                  }} isEditing={isEditing} />
+                  <FormField label="Designation" value={emp.designation} onChange={e => {
+                    const newEmp = [...jobInfo.previous_employment];
+                    newEmp[index].designation = e.target.value;
+                    setJobInfo({...jobInfo, previous_employment: newEmp});
+                  }} isEditing={isEditing} />
+                  <FormField label="Start Date" type="date" value={emp.start_date} onChange={e => {
+                    const newEmp = [...jobInfo.previous_employment];
+                    newEmp[index].start_date = e.target.value;
+                    setJobInfo({...jobInfo, previous_employment: newEmp});
+                  }} isEditing={isEditing} />
+                  <FormField label="End Date" type="date" value={emp.end_date} onChange={e => {
+                    const newEmp = [...jobInfo.previous_employment];
+                    newEmp[index].end_date = e.target.value;
+                    setJobInfo({...jobInfo, previous_employment: newEmp});
+                  }} isEditing={isEditing} />
+                </div>
+              ))}
+              {isEditing && (
+                <div onClick={handleAddPreviousEmployment} className="h-[60px] border-2 border-dashed border-[var(--border-color)] rounded-xl flex items-center justify-center text-[var(--text-muted)] font-bold text-[13px] bg-[var(--bg-workspace)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors cursor-pointer">
+                  + Add Previous Employment
+                </div>
+              )}
+              {!isEditing && (!jobInfo.previous_employment || jobInfo.previous_employment.length === 0) && (
+                <p className="text-[13px] text-[var(--text-muted)] italic">No previous employment details added.</p>
+              )}
             </div>
           </div>
         </div>
@@ -537,6 +706,16 @@ const EmployeeProfile = () => {
             <span>{isSaving ? 'Saving Profile...' : `Save ${activeTab} Info`}</span>
           </button>
         </div>
+      )}
+
+      {/* Image Cropper Modal */}
+      {isCropperOpen && (
+        <ImageCropperModal
+          isOpen={isCropperOpen}
+          onClose={() => setIsCropperOpen(false)}
+          imageSrc={imageUploadSrc}
+          onCropComplete={handleCropComplete}
+        />
       )}
 
     </div>

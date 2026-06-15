@@ -210,25 +210,27 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
           <div 
             className="absolute pointer-events-none" 
             style={{
-              left: '41px',
+              left: '46px',
               top: 0,
               height: '50%',
-              width: '13px',
-              borderLeft: '1px solid var(--border-color)',
-              borderBottom: '1px solid var(--border-color)',
+              width: '26px',
+              borderLeft: '2px solid var(--text-dim)',
+              borderBottom: '2px solid var(--text-dim)',
               borderBottomLeftRadius: '6px',
+              opacity: 0.4,
               zIndex: 10
             }}
           />
           {/* Continuation vertical line for non-last items */}
           {!isLastSubItem && (
             <div 
-              className="absolute bg-[var(--border-color)] pointer-events-none" 
+              className="absolute bg-[var(--text-dim)] pointer-events-none" 
               style={{
-                left: '41px',
+                left: '46px',
                 top: '50%',
                 bottom: 0,
-                width: '1px',
+                width: '2px',
+                opacity: 0.4,
                 zIndex: 10
               }}
             />
@@ -248,7 +250,7 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
           location.pathname === to
             ? 'font-bold'
             : 'hover:bg-[var(--nav-hover)]'
-        } ${isSubItem ? 'pl-14 pr-4 py-1.5' : ''}`}
+        } ${isSubItem ? 'pl-[72px] pr-4 py-1.5' : ''}`}
         style={{
           color: location.pathname === to ? 'var(--accent)' : 'var(--text-muted)',
           background: location.pathname === to ? 'var(--nav-active)' : undefined,
@@ -504,36 +506,44 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             <div className="animate-entrance-right" style={{ animationDelay: '200ms' }}>
               <div 
                 className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
-                onClick={() => handleNavigate('/admin/user-management')}
+                onClick={() => {
+                  toggleMenu('userManagement');
+                  handleNavigate('/admin/user-management');
+                }}
                 style={{
-                  color: location.pathname === '/admin/user-management' ? 'var(--accent)' : 'var(--text-muted)',
-                  background: location.pathname === '/admin/user-management' ? 'var(--nav-active)' : undefined,
+                  color: location.pathname === '/admin/user-management' || isUserSection ? 'var(--accent)' : 'var(--text-muted)',
+                  background: location.pathname === '/admin/user-management' || isUserSection ? 'var(--nav-active)' : undefined,
                 }}
               >
                 <div
                   className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
                   style={{
                     background: 'var(--accent)',
-                    transform: location.pathname === '/admin/user-management' ? 'scaleY(1)' : 'scaleY(0)',
-                    opacity: location.pathname === '/admin/user-management' ? 1 : 0,
+                    transform: location.pathname === '/admin/user-management' || isUserSection ? 'scaleY(1)' : 'scaleY(0)',
+                    opacity: location.pathname === '/admin/user-management' || isUserSection ? 1 : 0,
                     transformOrigin: 'center',
                   }}
                 />
                 <div className="flex items-center gap-4 relative z-10">
                   <div className="w-6 flex justify-center">
-                    <UserCog size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: location.pathname === '/admin/user-management' ? 'var(--accent)' : 'var(--text-dim)' }} />
+                    <UserCog size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: location.pathname === '/admin/user-management' || isUserSection ? 'var(--accent)' : 'var(--text-dim)' }} />
                   </div>
                   <span className="text-[12px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
                     User Management
                   </span>
                 </div>
+                <div className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors">
+                  <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.userManagement ? 'rotate-180' : ''}`} />
+                </div>
               </div>
-              <div className="flex flex-col">
-                <NavItem to="/admin/users" label="Users" icon={Users} isSubItem />
-                <NavItem to="/admin/roles" label="Roles Access" icon={Building2} isSubItem />
-                <NavItem to="/admin/user-access" label="User Access" icon={LockKeyhole} isSubItem />
-                <NavItem to="/admin/teams" label="Teams" icon={Layers} isSubItem isLastSubItem />
-              </div>
+              <SubMenu isOpen={openMenus.userManagement}>
+                <div className="flex flex-col py-1">
+                  <NavItem to="/admin/users" label="Users" icon={Users} isSubItem />
+                  <NavItem to="/admin/roles" label="Roles Access" icon={Building2} isSubItem />
+                  <NavItem to="/admin/user-access" label="User Access" icon={LockKeyhole} isSubItem />
+                  <NavItem to="/admin/teams" label="Teams" icon={Layers} isSubItem isLastSubItem />
+                </div>
+              </SubMenu>
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '300ms' }}>

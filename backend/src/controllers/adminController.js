@@ -642,6 +642,50 @@ const resetUser2FA = async (req, res, next) => {
   }
 };
 
+const resetUserPassword = async (req, res, next) => {
+  const { userId } = req.params;
+  try {
+    const userResult = await db.query('SELECT full_name, email FROM users WHERE user_id = $1', [userId]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: { message: 'User not found' } });
+    }
+    const user = userResult.rows[0];
+    
+    // Generate an 8-character random password
+    const tempPassword = crypto.randomBytes(4).toString('hex');
+    const password_hash = await bcrypt.hash(tempPassword, 10);
+
+    await db.withTransaction(async (client) => {
+      await client.query('UPDATE users SET password_hash = $1 WHERE user_id = $2', [password_hash, userId]);
+      await client.query(
+        'INSERT INTO user_password_reset (user_id, requires_password_change) VALUES ($1, true) ON CONFLICT (user_id) DO UPDATE SET requires_password_change = true',
+        [userId]
+      );
+    });
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>Password Reset</h2>
+        <p>Hello ${user.full_name},</p>
+        <p>An administrator has reset your password.</p>
+        <p><strong>Your new temporary password is:</strong> ${tempPassword}</p>
+        <p>Please log in using this password. You will be asked to set a permanent password upon your first login.</p>
+        <a href="${env.FRONTEND_URL}/login" style="display: inline-block; padding: 10px 20px; background-color: #ff7944; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">Log In to Your Account</a>
+      </div>
+    `;
+
+    sendEmail({
+      to: user.email,
+      subject: 'Password Reset - Your New Temporary Password',
+      html: emailHtml
+    }).catch(err => console.error('Failed to send reset password email:', err));
+
+    sendSuccess(res, { tempPassword }, 'User password reset successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getUserPermissions = async (req, res, next) => {
   const { userId } = req.params;
   try {
@@ -734,6 +778,7 @@ module.exports = {
   deleteUser,
   removeUserImage,
   resetUser2FA,
+  resetUserPassword,
   getUserPermissions,
   updateUserPermissions
 };

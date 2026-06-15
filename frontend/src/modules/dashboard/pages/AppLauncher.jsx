@@ -112,7 +112,7 @@ const AppLauncher = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-workspace)] p-8">
       {/* Top Bar */}
-      <div className="flex justify-between items-center mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
+      <div className="flex justify-between items-center mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm">
             <LayoutDashboard size={28} className="text-[var(--accent)]" />
@@ -145,29 +145,34 @@ const AppLauncher = () => {
       </div>
 
       {/* Module Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 max-w-[1600px]">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 max-w-[1600px]">
         {authorizedModules.map((mod, index) => {
           const Icon = mod.icon;
           return (
             <button
               key={mod.id}
               onClick={() => navigate(mod.path)}
-              className="workspace-card group flex flex-col items-center justify-center p-8 text-center border border-[var(--border-color)] hover:border-[var(--accent)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4"
+              className="workspace-card group flex flex-col items-center justify-center p-6 text-center border border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--accent)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 relative overflow-hidden"
               style={{ animationDelay: `${index * 50}ms` }}
             >
+              <div 
+                className="absolute inset-0 opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300 pointer-events-none"
+                style={{ backgroundColor: mod.color }}
+              />
+
               {/* App Icon Bubble */}
               <div 
-                className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform duration-300"
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300"
                 style={{ backgroundColor: mod.bg, color: mod.color }}
               >
-                <Icon size={36} strokeWidth={2} />
+                <Icon size={28} strokeWidth={2} />
               </div>
               
               {/* App Title & Description */}
-              <h2 className="text-[16px] font-bold text-[var(--text-main)] mb-2 group-hover:text-[var(--accent)] transition-colors">
+              <h2 className="text-[15px] font-black text-[var(--text-main)] mb-1.5 group-hover:text-[var(--accent)] transition-colors tracking-tight">
                 {mod.name}
               </h2>
-              <p className="text-[12px] text-[var(--text-muted)] font-semibold leading-relaxed line-clamp-2">
+              <p className="text-[11px] text-[var(--text-muted)] font-medium leading-relaxed line-clamp-2 px-2">
                 {mod.description}
               </p>
             </button>

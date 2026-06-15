@@ -22,11 +22,13 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-draggable": "^4.5.0",
+    "react-easy-crop": "^6.0.2",
     "react-hook-form": "^7.74.0",
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^10.1.0",
     "react-quill-new": "^3.8.3",
     "react-router-dom": "^7.14.2",
+    "react-water-wave": "^2.0.1",
     "recharts": "^3.8.1",
     "sweetalert2": "^11.26.24",
     "tailwindcss": "^4.2.4"

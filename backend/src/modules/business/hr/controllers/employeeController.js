@@ -1,5 +1,7 @@
 const db = require('../../../../config/db');
 const { sendSuccess, sendError } = require('../../../../utils/response');
+const fs = require('fs');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 
 const getEmployees = async (req, res, next) => {
@@ -169,7 +171,7 @@ const updateEmployee = async (req, res, next) => {
       department_id, designation_id,
       date_of_joining, employment_status, base_salary, work_location,
       personal_info, address_info, education_info, emergency_contacts,
-      job_info, pay_info, statutory_info, identities_info
+      job_info, pay_info, statutory_info, identities_info, image_url
     } = req.body;
 
     const query = `
@@ -217,6 +219,38 @@ const updateEmployee = async (req, res, next) => {
       return sendError(res, 'NOT_FOUND', 'Employee not found', 404);
     }
     
+    // Handle Base64 image upload
+    let finalImageUrl = image_url;
+    if (image_url && image_url.startsWith('data:image')) {
+      try {
+        const matches = image_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const buffer = Buffer.from(matches[2], 'base64');
+          const filename = `avatar_${id}_${Date.now()}.jpg`;
+          // Go up 5 levels: hr/business/modules/src/backend -> /uploads
+          const uploadDir = path.join(__dirname, '../../../../../uploads');
+          
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+          
+          fs.writeFileSync(path.join(uploadDir, filename), buffer);
+          finalImageUrl = `/uploads/${filename}`;
+        }
+      } catch (err) {
+        console.error('Error saving profile image:', err);
+      }
+    }
+
+    // If image_url is provided, update the users table since image_url belongs to the user
+    if (finalImageUrl) {
+      const userId = result.rows[0].user_id;
+      await db.query(`UPDATE users SET image_url = $1 WHERE user_id = $2`, [finalImageUrl, userId]);
+      
+      // Add it to the result so the frontend gets the updated URL immediately
+      result.rows[0].image_url = finalImageUrl;
+    }
+
     sendSuccess(res, result.rows[0], 'Employee updated successfully');
   } catch (error) {
     next(error);

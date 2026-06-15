@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUsers, useAdminStats, useCreateUser, useUpdateUser, useDeleteUser, useRemoveUserImage, useResetUser2FA } from '../../hooks/useUsers';
+import { useUsers, useAdminStats, useCreateUser, useUpdateUser, useDeleteUser, useRemoveUserImage, useResetUser2FA, useResetUserPassword } from '../../hooks/useUsers';
 import { useTeams } from '../../hooks/useTeams';
 import { useRoles, usePermissions } from '../../hooks/useRoles';
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
 import UserAccessModal from './components/UserAccessModal';
-import { Search, Plus, Loader2, User, Mail, Phone, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List, Building, Briefcase, Eye, EyeOff } from 'lucide-react';
+import { Search, Plus, Loader2, User, Mail, Phone, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List, Building, Briefcase, Eye, EyeOff, Key } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
 import { saveDraft, clearDraft } from '../../store/slices/draftSlice';
@@ -47,6 +47,7 @@ const UserListPage = ({ initialRole = '' }) => {
   const deleteUserMutation = useDeleteUser();
   const removeUserImageMutation = useRemoveUserImage();
   const resetUser2FAMutation = useResetUser2FA();
+  const resetUserPasswordMutation = useResetUserPassword();
 
   const users = usersData?.data || [];
   const loading = usersLoading;
@@ -267,6 +268,29 @@ const UserListPage = ({ initialRole = '' }) => {
       toast.success('2FA configuration reset successfully');
     } catch (error) {
       toast.error(error.message || 'Failed to reset 2FA');
+    }
+  };
+
+  const handleResetPassword = async (user) => {
+    const result = await Swal.fire({
+      title: 'Reset Password?',
+      text: `This will reset the password for "${user.full_name}" to a randomly generated temporary password. The password will be emailed to them and shown to you. Are you sure?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'Yes, reset password'
+    });
+    if (!result.isConfirmed) return;
+    try {
+      const res = await resetUserPasswordMutation.mutateAsync(user.user_id);
+      Swal.fire({
+        title: 'Password Reset Successful',
+        html: `The temporary password for <strong>${user.full_name}</strong> is:<br/><br/><strong style="font-size: 1.5rem; padding: 10px 20px; background: #f1f5f9; border-radius: 8px; border: 1px solid #cbd5e1; display: inline-block; margin-top: 10px; color: #334155">${res.data.data.tempPassword}</strong><br/><br/>It has also been emailed to them.`,
+        icon: 'success'
+      });
+    } catch (error) {
+      toast.error(error.message || 'Failed to reset password');
     }
   };
 
@@ -933,7 +957,15 @@ const UserListPage = ({ initialRole = '' }) => {
             {modalMode === 'edit' && hasPermission('users', 'edit') && (
               <div className="pt-4 mt-6 border-t border-[var(--border-color)] border-opacity-50">
                 <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-3">Admin Actions</p>
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-col sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => handleResetPassword(selectedUser)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6] hover:text-white transition-all text-xs font-bold uppercase tracking-wider"
+                  >
+                    <Key size={16} />
+                    Reset Password
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleReset2FA(selectedUser)}

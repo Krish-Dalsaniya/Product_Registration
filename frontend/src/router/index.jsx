@@ -203,6 +203,19 @@ const DashboardLayout = () => {
     });
   }, [activePath, location.pathname, location.search]);
 
+  // Helper to get module dashboard
+  const getModuleDashboard = () => {
+    const segments = location.pathname.split('/').filter(Boolean);
+    if (segments.length > 0) {
+      const module = segments[0];
+      // Treat specific known modules to redirect to their dashboard
+      if (['admin', 'hr', 'sales', 'inventory', 'customer', 'support'].includes(module)) {
+        return `/${module}/dashboard`;
+      }
+    }
+    return '/dashboard';
+  };
+
   // Function to close a tab
   const handleCloseTab = (e, pathToDelete) => {
     e.stopPropagation(); // Prevent navigating to the tab being closed
@@ -213,7 +226,7 @@ const DashboardLayout = () => {
     if (newTabs.length === 0) {
       setTabs([]);
       localStorage.removeItem(storageKey);
-      navigate('/dashboard');
+      navigate(getModuleDashboard());
       return;
     }
 
@@ -243,7 +256,7 @@ const DashboardLayout = () => {
     if (result.isConfirmed) {
       setTabs([]);
       localStorage.removeItem(storageKey);
-      navigate('/dashboard');
+      navigate(getModuleDashboard());
       toast.success('All tabs cleared');
     }
   };
