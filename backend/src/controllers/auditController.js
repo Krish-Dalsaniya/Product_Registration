@@ -6,9 +6,10 @@ exports.getAuditLogs = async (req, res) => {
     const offset = (page - 1) * limit;
 
     let query = `
-      SELECT a.*, u.full_name as user_name, u.email as user_email
+      SELECT a.*, u.full_name as user_name, u.email as user_email, eu.full_name as entity_user_name, eu.email as entity_user_email
       FROM audit_logs a
       LEFT JOIN users u ON a.user_id = u.user_id
+      LEFT JOIN users eu ON a.entity_type = 'USER' AND a.entity_id::text = eu.user_id::text
       WHERE 1=1
     `;
     const params = [];

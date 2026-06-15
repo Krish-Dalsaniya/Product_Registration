@@ -88,11 +88,40 @@ const UserManagementDashboard = () => {
     </button>
   );
 
-  const personnelData = [
-    { name: 'Admin', value: 1, color: '#f59e0b' }, // Default estimation for layout purposes, Admin dashboard usually has custom stats
-    { name: 'Designers', value: stats?.designers || 0, color: '#0ea5e9' },
-    { name: 'Sales', value: stats?.sales || 0, color: '#f43f5e' },
-    { name: 'Maintenance', value: stats?.maintenance || 0, color: '#eab308' }
+  const rawDist = stats?.designationsDistribution || [];
+  
+  // Group by department
+  const depsMap = {};
+  const uniqueDesignationsSet = new Set();
+
+  rawDist.forEach(d => {
+    if (!depsMap[d.department]) {
+      depsMap[d.department] = { name: d.department, total: 0 };
+    }
+    // Clean up empty/null designations visually
+    const desigName = d.designation ? d.designation : 'Unassigned';
+    depsMap[d.department][desigName] = (depsMap[d.department][desigName] || 0) + d.count;
+    depsMap[d.department].total += d.count;
+    uniqueDesignationsSet.add(desigName);
+  });
+
+  let personnelData = Object.values(depsMap);
+  const uniqueDesignations = Array.from(uniqueDesignationsSet);
+
+  // Fallback for visual layout if no data yet
+  if (personnelData.length === 0) {
+    personnelData = [
+      { name: 'Admin', Unassigned: 1, total: 1 },
+      { name: 'Designers', Unassigned: stats?.designers || 0, total: stats?.designers || 0 },
+      { name: 'Sales', Unassigned: stats?.sales || 0, total: stats?.sales || 0 },
+      { name: 'Maintenance', Unassigned: stats?.maintenance || 0, total: stats?.maintenance || 0 }
+    ];
+    uniqueDesignations.push('Unassigned');
+  }
+
+  const colors = [
+    '#0ea5e9', '#f43f5e', '#eab308', '#10b981', '#8b5cf6', 
+    '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#64748b'
   ];
 
   return (
@@ -159,20 +188,25 @@ const UserManagementDashboard = () => {
           </h3>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={personnelData} margin={{ top: 20, right: 30, left: -20, bottom: 0 }} style={{ outline: 'none' }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} opacity={0.5} />
-                <XAxis dataKey="name" stroke="var(--text-dim)" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--text-dim)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(128, 128, 128, 0.1)' }}
-                  contentStyle={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-color)', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}
-                />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={60} style={{ outline: 'none' }}>
-                  {personnelData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} style={{ outline: 'none' }} />
+                <BarChart data={personnelData} margin={{ top: 20, right: 30, left: -20, bottom: 0 }} style={{ outline: 'none' }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} opacity={0.5} />
+                  <XAxis dataKey="name" stroke="var(--text-dim)" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-dim)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(128, 128, 128, 0.1)' }}
+                    contentStyle={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-color)', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}
+                  />
+                  {uniqueDesignations.map((desig, idx) => (
+                    <Bar 
+                      key={desig} 
+                      dataKey={desig} 
+                      stackId="a" 
+                      fill={colors[idx % colors.length]} 
+                      maxBarSize={60} 
+                      style={{ outline: 'none' }} 
+                    />
                   ))}
-                </Bar>
-              </BarChart>
+                </BarChart>
             </ResponsiveContainer>
           </div>
         </div>

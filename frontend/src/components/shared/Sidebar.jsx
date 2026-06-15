@@ -322,7 +322,11 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
         </button>
 
         {/* LOGO */}
-        <div className="h-[52px] flex items-center justify-center flex-shrink-0" style={{ borderBottom: '1px solid var(--border-color)' }}>
+        <div 
+          className="h-[52px] flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-[var(--nav-hover)] transition-colors" 
+          onClick={() => navigate('/dashboard')}
+          style={{ borderBottom: '1px solid var(--border-color)' }}
+        >
           <div className="flex items-center gap-2">
             <span className="text-[22px] font-bold uppercase tracking-widest text-[var(--text-main)]">
               CRUD<span className="text-[var(--accent)]">EX</span>

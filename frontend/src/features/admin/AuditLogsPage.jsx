@@ -34,13 +34,43 @@ const AuditLogsPage = ({ isEmbedded = false }) => {
   const logs = data?.logs || [];
   const totalPages = data?.totalPages || 1;
 
+  const renderActionBadge = (action) => {
+    const colors = {
+      LOGIN: 'bg-green-500/10 text-green-600 border-green-500/20',
+      LOGOUT: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+      CREATE: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+      UPDATE: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+      DELETE: 'bg-red-500/10 text-red-600 border-red-500/20'
+    };
+    
+    let colorClass = 'bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/20';
+    if (action.includes('LOGIN')) colorClass = colors.LOGIN;
+    else if (action.includes('LOGOUT')) colorClass = colors.LOGOUT;
+    else if (action.includes('CREATE')) colorClass = colors.CREATE;
+    else if (action.includes('UPDATE')) colorClass = colors.UPDATE;
+    else if (action.includes('DELETE')) colorClass = colors.DELETE;
+
+    return (
+      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase border ${colorClass}`}>
+        {action}
+      </span>
+    );
+  };
+
   const columns = [
     { key: 'timestamp', label: 'Timestamp', render: (row) => format(new Date(row.created_at), 'MMM dd, yyyy HH:mm:ss') },
     { key: 'user', label: 'User', render: (row) => row.user_name ? `${row.user_name} (${row.user_email})` : 'System / Unknown' },
-    { key: 'action', label: 'Action', render: (row) => row.action },
+    { key: 'action', label: 'Action', render: (row) => renderActionBadge(row.action) },
     { key: 'description', label: 'Description', render: (row) => <span className="text-[11px] text-[var(--text-secondary)]">{row.description || '-'}</span> },
     { key: 'entity_type', label: 'Entity Type', render: (row) => row.entity_type },
-    { key: 'entity_id', label: 'Entity ID', render: (row) => row.entity_id },
+    { key: 'entity_id', label: 'Entity ID', render: (row) => {
+      if (row.entity_type === 'USER') {
+        if (row.entity_user_name) return `${row.entity_user_name} (${row.entity_user_email})`;
+        if (row.action.includes('DELETE')) return <span className="text-[var(--text-muted)] italic text-[11px]">Deleted User</span>;
+        return <span className="text-[var(--text-muted)] italic text-[11px]">Unknown User</span>;
+      }
+      return <span className="font-mono text-[11px] text-[var(--text-muted)] truncate block max-w-[120px]">{row.entity_id}</span>;
+    }},
     { key: 'ip_address', label: 'IP Address', render: (row) => row.ip_address }
   ];
 

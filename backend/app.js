@@ -27,6 +27,9 @@ const rolesRoutes = require('./src/routes/roles');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const auditRoutes = require('./src/routes/audit');
 
+// Modular Routes
+const hrRoutes = require('./src/modules/business/hr/routes/hrRoutes');
+
 const app = express();
 app.set('trust proxy', true); // Trust first proxy (necessary for Secure cookies behind Render/Heroku load balancers)
 
@@ -100,6 +103,9 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/roles', rolesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/audit', auditRoutes);
+
+// Modular Endpoints
+app.use('/api/hr', hrRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));

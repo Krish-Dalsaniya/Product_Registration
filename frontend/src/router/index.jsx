@@ -137,6 +137,13 @@ const SupportTicketsPage = lazy(() => import('../features/admin/SupportTicketsPa
 const SupportTicketProfilePage = lazy(() => import('../features/admin/SupportTicketProfilePage'));
 const ChatPage = lazy(() => import('../features/chat/ChatPage'));
 const RolesPage = lazy(() => import('../features/admin/RolesPage'));
+const AppLauncher = lazy(() => import('../modules/dashboard/pages/AppLauncher'));
+
+// HR Module
+const HRLayout = lazy(() => import('../modules/hr/layout/HRLayout'));
+const HRDashboard = lazy(() => import('../modules/hr/pages/HRDashboard'));
+const EmployeesList = lazy(() => import('../modules/hr/pages/EmployeesList'));
+const EmployeeProfile = lazy(() => import('../modules/hr/pages/EmployeeProfile'));
 
 
 const PageLoader = () => (
@@ -204,12 +211,9 @@ const DashboardLayout = () => {
     const newTabs = tabs.filter(t => t.fullPath !== pathToDelete);
     
     if (newTabs.length === 0) {
-      const isStandardRole = ['Admin', 'Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
-      let roleKey = user?.role_name?.toLowerCase() || 'admin';
-      const defaultPath = isStandardRole ? `/${roleKey}/dashboard` : '/dashboard';
       setTabs([]);
       localStorage.removeItem(storageKey);
-      navigate(defaultPath);
+      navigate('/dashboard');
       return;
     }
 
@@ -237,13 +241,9 @@ const DashboardLayout = () => {
     });
     
     if (result.isConfirmed) {
-      const isStandardRole = ['Admin', 'Designer', 'Sales', 'Maintenance'].includes(user?.role_name);
-      let roleKey = user?.role_name?.toLowerCase() || 'admin';
-      const defaultPath = isStandardRole ? `/${roleKey}/dashboard` : '/dashboard';
-      
       setTabs([]);
       localStorage.removeItem(storageKey);
-      navigate(defaultPath);
+      navigate('/dashboard');
       toast.success('All tabs cleared');
     }
   };
@@ -375,21 +375,31 @@ const Router = () => {
         </Route>
 
         {/* HR Workspace Dashboard & Specifics */}
-        <Route element={<AuthGuard><RoleGuard allowedRoles={['HR']}><DashboardLayout /></RoleGuard></AuthGuard>}>
+        <Route element={<AuthGuard><HRLayout /></AuthGuard>}>
           <Route path="/hr" element={<Navigate to="/hr/dashboard" />} />
-          <Route path="/hr/dashboard" element={<GenericDashboard />} />
-          <Route path="/hr/support-tickets" element={<SupportTicketsPage />} />
-          <Route path="/hr/support-tickets/:id" element={<SupportTicketProfilePage />} />
-          <Route path="/hr/chat" element={<ChatPage />} />
+          <Route path="/hr/dashboard" element={<HRDashboard />} />
+          <Route path="/hr/employees" element={<EmployeesList />} />
+          <Route path="/hr/employees/:id" element={<EmployeeProfile />} />
+        </Route>
+
+        {/* Temporary Routing for other ERP Modules until fully developed */}
+        <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
+          <Route path="/crm" element={<GenericDashboard />} />
+          <Route path="/logistics" element={<GenericDashboard />} />
+          <Route path="/accounts" element={<GenericDashboard />} />
         </Route>
 
         {/* Generic Fallback Dashboard */}
         <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
-          <Route path="/dashboard" element={<GenericDashboard />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
+        
+        {/* App Launcher / ERP Workspace */}
+        <Route element={<AuthGuard><Outlet /></AuthGuard>}>
+          <Route path="/dashboard" element={<AppLauncher />} />
+        </Route>
 
-        <Route path="/" element={<Navigate to="/admin/dashboard" />} />
+        <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="*" element={<div className="p-10 text-center font-black text-[var(--text-main)] bg-[var(--bg-workspace)] h-screen uppercase tracking-widest text-sm">404 — Record Not Found</div>} />
       </Routes>
     </Suspense>

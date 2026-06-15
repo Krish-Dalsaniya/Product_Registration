@@ -249,14 +249,7 @@ const LoginPage = () => {
         iconColor: '#10b981'
       });
 
-      const roleRoutes = {
-        Admin: '/admin/dashboard',
-        Designer: '/designer/dashboard',
-        Sales: '/sales/dashboard',
-        Maintenance: '/maintenance/dashboard'
-      };
-      
-      navigate(roleRoutes[loggedUser.role_name] || '/dashboard');
+      navigate('/dashboard');
 
     } catch (error) {
       setErrorMessage(error.message || 'Authentication failed.');
@@ -354,16 +347,7 @@ const LoginPage = () => {
         iconColor: '#10b981'
       });
 
-      const roleRoutes = {
-        Admin: '/admin/dashboard',
-        Designer: '/designer/dashboard',
-        Sales: '/sales/dashboard',
-        Maintenance: '/maintenance/dashboard',
-        Accountant: '/accountant/dashboard',
-        HR: '/hr/dashboard'
-      };
-      
-      navigate(roleRoutes[loggedUser.role_name] || '/dashboard');
+      navigate('/dashboard');
     } catch (error) {
       setErrorMessage(error.message || 'Invalid 2FA code.');
       toast.error(error.message || 'Invalid 2FA code.');
@@ -396,13 +380,7 @@ const LoginPage = () => {
   };
 
   if (isAuthenticated && user) {
-    const roleRoutes = {
-      Admin: '/admin/dashboard',
-      Designer: '/designer/dashboard',
-      Sales: '/sales/dashboard',
-      Maintenance: '/maintenance/dashboard'
-    };
-    return <Navigate to={roleRoutes[user.role_name] || '/dashboard'} />;
+    return <Navigate to="/dashboard" />;
   }
 
   return (

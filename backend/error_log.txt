@@ -274,3 +274,48 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async login (D:\Product_Registration\backend\src\controllers\authController.js:23:20)
 
+2026-06-13T11:11:03.094Z - error: column u.phone_number does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:27:20)
+
+2026-06-13T11:11:03.283Z - error: column u.phone_number does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:27:20)
+
+2026-06-13T11:11:06.828Z - error: column u.phone_number does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:27:20)
+
+2026-06-13T11:11:07.336Z - error: column u.phone_number does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:27:20)
+
+2026-06-13T11:57:08.220Z - error: column u.phone_number does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:31:20)
+
+2026-06-13T11:58:38.621Z - error: column u.phone_number does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:31:20)
+
+2026-06-13T11:58:38.676Z - error: column u.phone_number does not exist
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:31:20)
+
+2026-06-13T12:23:33.281Z - error: invalid input syntax for type numeric: ""
+    at D:\Product_Registration\backend\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:107:20)
+
+2026-06-13T12:23:50.078Z - error: invalid input syntax for type numeric: ""
+    at D:\Product_Registration\backend\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:107:20)
+

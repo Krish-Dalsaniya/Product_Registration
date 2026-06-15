@@ -253,8 +253,21 @@ const fetchAdminStatsData = async () => {
       (SELECT COUNT(*) FROM support_tickets WHERE status IN ('Pending', 'In Progress')) as support_tickets_active
   `;
 
+
+
   const result = await db.query(queryText);
   const row = result.rows[0];
+
+  // Fetch designations distribution
+  const destQuery = `
+    SELECT r.role_name as department, COALESCE(u.designation, 'Unassigned') as designation, COUNT(u.user_id)::int as count 
+    FROM users u 
+    JOIN roles r ON u.role_id = r.role_id 
+    WHERE u.is_active = TRUE 
+    GROUP BY r.role_name, COALESCE(u.designation, 'Unassigned');
+  `;
+  const destResult = await db.query(destQuery);
+
 
   const stats = {
     designers: parseInt(row.designers),
@@ -266,13 +279,16 @@ const fetchAdminStatsData = async () => {
     teams: parseInt(row.designer_teams) + parseInt(row.sales_teams) + parseInt(row.maintenance_teams),
     products: parseInt(row.products),
     customers: parseInt(row.customers),
+
     finishedGoodsCount: parseInt(row.finished_goods_count),
     finishedGoodsQty: parseInt(row.finished_goods_qty),
     bookASaleCount: parseInt(row.book_a_sale_count),
     bookASaleQty: parseInt(row.book_a_sale_qty),
     supportTicketsTotal: parseInt(row.support_tickets_total),
     supportTicketsActive: parseInt(row.support_tickets_active),
+    designationsDistribution: destResult.rows,
     inventory: {
+
       pcb: parseInt(row.pcb),
       electronics: parseInt(row.electronics),
       electrical: parseInt(row.electrical),
