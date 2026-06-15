@@ -14,7 +14,8 @@ import {
   useDeleteGroup,
   useAddGroupMembers
 } from '../../hooks/useChat';
-import { Search, Send, User, MessageSquare, Circle, CheckCheck, Loader2, Trash2, Users, Plus, X, Info, UserMinus, UserPlus } from 'lucide-react';
+import { Search, Send, User, MessageSquare, Circle, CheckCheck, Loader2, Trash2, Users, Plus, X, Info, UserMinus, UserPlus, Smile, Paperclip, FileText, Download } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import Modal from '../../components/shared/Modal';
@@ -28,12 +29,15 @@ const ChatPage = () => {
   const [selectedGroup, setSelectedGroup] = useState(null);
   
   const [newMessage, setNewMessage] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   
   // Create Group State
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
+  const [isUserInfoOpen, setIsUserInfoOpen] = useState(false);
 
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [newMemberIds, setNewMemberIds] = useState([]);
@@ -69,22 +73,25 @@ const ChatPage = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || sendMessageMutation.isPending) return;
+    if ((!newMessage.trim() && !selectedFile) || sendMessageMutation.isPending) return;
     if (!selectedUser && !selectedGroup) return;
 
     try {
       if (selectedGroup) {
         await sendMessageMutation.mutateAsync({
           group_id: selectedGroup.group_id,
-          message: newMessage
+          message: newMessage,
+          file: selectedFile
         });
       } else if (selectedUser) {
         await sendMessageMutation.mutateAsync({
           receiver_id: selectedUser.user_id,
-          message: newMessage
+          message: newMessage,
+          file: selectedFile
         });
       }
       setNewMessage('');
+      setSelectedFile(null);
     } catch (error) {
       toast.error('Failed to send message');
     }
@@ -451,7 +458,7 @@ const ChatPage = () => {
                   {filteredGroups.map(g => (
                     <div 
                       key={g.group_id}
-                      onClick={() => { setSelectedGroup(g); setSelectedUser(null); }}
+                      onClick={() => { setSelectedGroup(g); setSelectedUser(null); setIsUserInfoOpen(false); }}
                       className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border ${
                         selectedGroup?.group_id === g.group_id
                           ? 'bg-[var(--nav-active)] border-[var(--accent)]/30 text-[var(--text-main)] shadow-sm' 
@@ -501,7 +508,7 @@ const ChatPage = () => {
             <>
               {/* Header */}
               <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-workspace)]/50 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => selectedUser ? setIsUserInfoOpen(true) : setIsGroupInfoOpen(true)}>
                   {selectedUser ? (
                     selectedUser.image_url ? (
                       <img src={getImageUrl(selectedUser.image_url)} alt="Profile" className="w-12 h-12 rounded-full object-cover shadow-sm border border-[var(--border-color)]" />
@@ -535,13 +542,22 @@ const ChatPage = () => {
                     </button>
                   )}
                   {selectedUser && (
-                    <button 
-                      onClick={handleClearChat}
-                      className="p-2.5 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all"
-                      title="Clear Conversation"
-                    >
-                      <Trash2 size={20} />
-                    </button>
+                    <>
+                      <button 
+                        onClick={() => setIsUserInfoOpen(true)}
+                        className="p-2.5 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--nav-hover)] rounded-xl transition-all"
+                        title="User Info"
+                      >
+                        <Info size={20} />
+                      </button>
+                      <button 
+                        onClick={handleClearChat}
+                        className="p-2.5 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all"
+                        title="Clear Conversation"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -596,7 +612,24 @@ const ChatPage = () => {
                                   : 'bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] rounded-bl-sm'
                               }`}
                             >
-                              <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">{msg.message}</p>
+                              {msg.attachment_url && (
+                                <div className="mb-2">
+                                  {msg.attachment_type && msg.attachment_type.startsWith('image/') ? (
+                                    <a href={msg.attachment_url} target="_blank" rel="noreferrer">
+                                      <img src={msg.attachment_url} alt="Attachment" className="max-w-[200px] max-h-[200px] object-cover rounded-lg border border-white/20" />
+                                    </a>
+                                  ) : (
+                                    <a href={msg.attachment_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-3 bg-black/10 dark:bg-white/10 rounded-lg hover:bg-black/20 transition-colors">
+                                      <FileText size={20} />
+                                      <span className="text-sm truncate max-w-[150px]">{msg.attachment_name || 'Attachment'}</span>
+                                      <Download size={16} className="ml-2 opacity-70" />
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                              {msg.message && msg.message.trim() && (
+                                <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">{msg.message}</p>
+                              )}
                             </div>
                             {isMe && (
                               <button 
@@ -633,17 +666,81 @@ const ChatPage = () => {
 
               {/* Message Input */}
               <div className="p-4 bg-[var(--bg-workspace)]/80 backdrop-blur-md border-t border-[var(--border-color)]">
-                <form onSubmit={handleSendMessage} className="flex gap-3">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-5 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
-                  />
+                <form onSubmit={handleSendMessage} className="flex gap-2 items-center relative">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="p-3 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--nav-hover)] transition-all rounded-xl shrink-0"
+                    title="Add Emoji"
+                  >
+                    <Smile size={24} strokeWidth={1.5} />
+                  </button>
+                  
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full left-0 mb-4 z-[100] shadow-2xl rounded-2xl border border-[var(--border-color)] overflow-hidden">
+                      <EmojiPicker 
+                        onEmojiClick={(emojiObject) => {
+                          setNewMessage(prev => prev + emojiObject.emoji);
+                          setShowEmojiPicker(false);
+                        }}
+                        theme="auto"
+                        previewConfig={{ showPreview: false }}
+                      />
+                    </div>
+                  )}
+
+                  <label 
+                    className="p-3 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--nav-hover)] transition-all rounded-xl shrink-0 cursor-pointer"
+                    title="Attach File"
+                  >
+                    <Paperclip size={24} strokeWidth={1.5} />
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      onChange={(e) => {
+                        if(e.target.files && e.target.files.length > 0) {
+                          setSelectedFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <div className="flex-1 flex flex-col relative">
+                    {selectedFile && (
+                      <div className="absolute bottom-[calc(100%+0.5rem)] left-0 p-2 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-xl flex items-center gap-3 shadow-lg z-50">
+                        {selectedFile.type.startsWith('image/') ? (
+                          <img src={URL.createObjectURL(selectedFile)} alt="Preview" className="w-12 h-12 object-cover rounded-md" />
+                        ) : (
+                          <div className="w-12 h-12 bg-[var(--bg-workspace)] rounded-md flex items-center justify-center">
+                            <FileText size={24} className="text-[var(--accent)]" />
+                          </div>
+                        )}
+                        <div className="flex flex-col flex-1 min-w-0 pr-4">
+                          <span className="text-sm font-medium text-[var(--text-main)] truncate max-w-[150px]">{selectedFile.name}</span>
+                          <span className="text-xs text-[var(--text-dim)]">{(selectedFile.size / 1024).toFixed(1)} KB</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => setSelectedFile(null)}
+                          className="p-1 text-[var(--text-muted)] hover:text-rose-500 rounded-lg transition-colors absolute -top-2 -right-2 bg-[var(--bg-elevated)] border border-[var(--border-color)] shadow-sm"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onClick={() => setShowEmojiPicker(false)}
+                      placeholder="Type your message..."
+                      className="w-full bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-5 py-3 focus:outline-none focus:border-[var(--accent)] transition-colors shadow-sm"
+                    />
+                  </div>
+
                   <button 
                     type="submit" 
-                    disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                    disabled={(!newMessage.trim() && !selectedFile) || sendMessageMutation.isPending}
                     className="bg-[var(--accent)] text-white p-3 rounded-xl hover:opacity-90 disabled:opacity-50 transition-all shadow-md flex items-center justify-center min-w-[52px]"
                   >
                     {sendMessageMutation.isPending ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} className="transform translate-x-0.5 -translate-y-0.5" />}
@@ -858,6 +955,35 @@ const ChatPage = () => {
               {addMembersMutation.isPending ? 'Adding Members...' : 'Add Selected Members'}
             </button>
          </form>
+      </Modal>
+      {/* User Info Modal */}
+      <Modal isOpen={isUserInfoOpen} onClose={() => setIsUserInfoOpen(false)} title="User Information">
+        {selectedUser && (
+          <div className="space-y-6">
+            <div className="flex flex-col items-center justify-center p-6 bg-[var(--bg-workspace)] rounded-2xl border border-[var(--border-color)]">
+              {selectedUser.image_url ? (
+                <img src={getImageUrl(selectedUser.image_url)} alt="Profile" className="w-24 h-24 rounded-full object-cover mb-4 border-4 border-[var(--bg-elevated)] shadow-lg" />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-3xl mb-4 shadow-lg border-4 border-[var(--bg-elevated)]">
+                  {selectedUser.full_name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <h3 className="text-xl font-black text-[var(--text-main)]">{selectedUser.full_name}</h3>
+              <p className="text-[var(--accent)] font-medium mt-1">{selectedUser.designation_name || selectedUser.designation || selectedUser.role_name || 'Unassigned'}</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
+                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Mobile Number</div>
+                <div className="text-[var(--text-main)] font-medium">{selectedUser.mobile_number || 'Not provided'}</div>
+              </div>
+              <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
+                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Department</div>
+                <div className="text-[var(--text-main)] font-medium">{selectedUser.department_name || selectedUser.role_name || 'Unassigned'}</div>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
 
     </div>

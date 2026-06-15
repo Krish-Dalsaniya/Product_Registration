@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { fetchHREmployeeByIdApi, updateHREmployeeApi } from '../../../api/hr';
+import { fetchHREmployeeByIdApi, updateHREmployeeApi, fetchHRMetadataApi } from '../../../api/hr';
 import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
@@ -36,6 +36,7 @@ const EmployeeProfile = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(queryParams.get('edit') === 'true');
   const [activeTab, setActiveTab] = useState('Personal');
+  const [metadata, setMetadata] = useState({ departments: [], designations: [] });
 
   // Avatar Upload States
   const [isCropperOpen, setIsCropperOpen] = useState(false);
@@ -105,15 +106,23 @@ const EmployeeProfile = () => {
   const loadEmployee = async () => {
     try {
       setIsLoading(true);
-      const res = await fetchHREmployeeByIdApi(id);
-      if (res.data?.success) {
-        const emp = res.data.data;
+      const [empRes, metaRes] = await Promise.all([
+        fetchHREmployeeByIdApi(id),
+        fetchHRMetadataApi()
+      ]);
+      
+      if (empRes.data?.success) {
+        const emp = empRes.data.data;
         setEmployee(emp);
         if (emp.personal_info) setPersonalInfo({ ...personalInfo, ...emp.personal_info });
         if (emp.job_info) setJobInfo({ ...jobInfo, ...emp.job_info });
         if (emp.pay_info) setPayInfo({ ...payInfo, ...emp.pay_info });
         if (emp.statutory_info) setStatutoryInfo({ ...statutoryInfo, ...emp.statutory_info });
         if (emp.identities_info) setIdentitiesInfo({ ...identitiesInfo, ...emp.identities_info });
+      }
+      
+      if (metaRes.data?.success) {
+        setMetadata(metaRes.data.data);
       }
     } catch (error) {
       toast.error('Failed to load employee profile');
@@ -183,7 +192,9 @@ const EmployeeProfile = () => {
         pay_info: payInfo,
         statutory_info: statutoryInfo,
         identities_info: identitiesInfo,
-        image_url: employee.image_url
+        image_url: employee.image_url,
+        department_id: employee.department_id ? parseInt(employee.department_id) : null,
+        designation_id: employee.designation_id ? parseInt(employee.designation_id) : null
       };
       const res = await updateHREmployeeApi(id, payload);
       if (res.data?.success) {
@@ -427,10 +438,34 @@ const EmployeeProfile = () => {
                 <FormField label="Reporting Manager" type="text" disabled={!isEditing} value={jobInfo.reporting_manager} onChange={e => setJobInfo({...jobInfo, reporting_manager: e.target.value})} isEditing={isEditing} />
               </div>
               <div>
-                <FormField label="Core Department" isCustomView={true} customView={<div className="px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] font-medium text-[var(--text-main)] opacity-70">{employee.department_name || 'N/A'}</div>} isEditing={isEditing} />
+                <FormField 
+                  label="Core Department" 
+                  type="select" 
+                  disabled={!isEditing} 
+                  value={employee.department_id || ''} 
+                  onChange={e => setEmployee({...employee, department_id: e.target.value, designation_id: ''})} 
+                  isEditing={isEditing} 
+                  readOnlyText={employee.department_name}
+                  options={[
+                    { value: '', label: 'Select Department' },
+                    ...(metadata.departments || []).map(d => ({ value: d.department_id, label: d.name }))
+                  ]} 
+                />
               </div>
               <div>
-                <FormField label="Core Designation" isCustomView={true} customView={<div className="px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] font-medium text-[var(--text-main)] opacity-70">{employee.designation_name || 'N/A'}</div>} isEditing={isEditing} />
+                <FormField 
+                  label="Core Designation" 
+                  type="select" 
+                  disabled={!isEditing || !employee.department_id} 
+                  value={employee.designation_id || ''} 
+                  onChange={e => setEmployee({...employee, designation_id: e.target.value})} 
+                  isEditing={isEditing} 
+                  readOnlyText={employee.designation_name}
+                  options={[
+                    { value: '', label: 'Select Designation' },
+                    ...(metadata.designations || []).filter(d => String(d.department_id) === String(employee.department_id)).map(d => ({ value: d.designation_id, label: d.name }))
+                  ]} 
+                />
               </div>
             </div>
           </div>

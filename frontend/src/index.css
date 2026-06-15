@@ -1016,6 +1016,17 @@
     color: var(--text-main);
   }
 
+  /* Global Select Arrow for Dropdowns */
+  select:not([multiple]) {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    padding-right: 2.5rem !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+    background-size: 1.2em !important;
+    background-position: right 1rem center !important;
+    background-repeat: no-repeat !important;
+  }
+
   /* Improved link accessibility */
   a:not([class]) {
     color: var(--accent);

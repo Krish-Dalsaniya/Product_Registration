@@ -907,7 +907,7 @@ const StructuralPartsPage = () => {
                                setSelectedCategory(cat); 
                                setModalTab('general'); 
                            }}
-                           className="p-5 w-full bg-white/40 backdrop-blur-md border border-[var(--border-color)] rounded-[28px] hover:border-[var(--accent)] hover:bg-[var(--nav-hover)] transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden"
+                           className="p-5 w-full bg-[var(--bg-card)] backdrop-blur-md border border-[var(--border-color)] rounded-[28px] hover:border-[var(--accent)] hover:bg-[var(--nav-hover)] transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden"
                         >
                            <div className="w-10 h-10 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-[14px] flex items-center justify-center shadow-sm group-hover:border-[var(--accent)] transition-all duration-500 group-hover:scale-110 relative z-10">
                                <Icon size={20} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors duration-500" />

@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { sendSuccess } = require('../utils/response');
+const cloudinary = require('../config/cloudinary');
 
 // Fetch all active users to chat with (excluding the current user)
 const getChatUsers = async (req, res, next) => {
@@ -14,6 +15,10 @@ const getChatUsers = async (req, res, next) => {
         u.email, 
         u.image_url,
         r.role_name,
+        u.designation,
+        um.mobile_number,
+        COALESCE(hd.name, r.role_name) as department_name,
+        COALESCE(hdes.name, u.designation) as designation_name,
         COALESCE(
           (SELECT COUNT(*) 
            FROM chat_messages cm 
@@ -35,6 +40,10 @@ const getChatUsers = async (req, res, next) => {
         ) as last_message_at
       FROM users u
       JOIN roles r ON u.role_id = r.role_id
+      LEFT JOIN user_mobile um ON um.user_id = u.user_id
+      LEFT JOIN hr_employees he ON he.user_id = u.user_id
+      LEFT JOIN hr_departments hd ON hd.department_id = he.department_id
+      LEFT JOIN hr_designations hdes ON hdes.designation_id = he.designation_id
       WHERE u.user_id != $1 AND u.is_active = TRUE
       ORDER BY last_message_at DESC NULLS LAST, r.role_name, u.full_name
     `;
@@ -57,14 +66,16 @@ const getChatHistory = async (req, res, next) => {
     const { userId: otherUserId } = req.params;
 
     const query = `
-      SELECT message_id, sender_id, receiver_id, message, is_read, created_at
-      FROM chat_messages
-      WHERE ((sender_id = $1 AND receiver_id = $2)
-         OR (sender_id = $2 AND receiver_id = $1))
+      SELECT cm.message_id, cm.sender_id, cm.receiver_id, cm.message, cm.is_read, cm.created_at,
+             ca.attachment_url, ca.attachment_type, ca.attachment_name
+      FROM chat_messages cm
+      LEFT JOIN chat_attachments ca ON cm.message_id = ca.message_id
+      WHERE ((cm.sender_id = $1 AND cm.receiver_id = $2)
+         OR (cm.sender_id = $2 AND cm.receiver_id = $1))
         AND NOT EXISTS (
-          SELECT 1 FROM chat_message_deletions cmd WHERE cmd.message_id = chat_messages.message_id AND cmd.user_id = $1
+          SELECT 1 FROM chat_message_deletions cmd WHERE cmd.message_id = cm.message_id AND cmd.user_id = $1
         )
-      ORDER BY created_at ASC
+      ORDER BY cm.created_at ASC
     `;
 
     const result = await db.query(query, [currentUserId, otherUserId]);
@@ -79,11 +90,46 @@ const getChatHistory = async (req, res, next) => {
 const sendMessage = async (req, res, next) => {
   try {
     const currentUserId = req.user.user_id;
-    const { receiver_id, group_id, message } = req.body;
+    let { receiver_id, group_id, message } = req.body;
 
-    if ((!receiver_id && !group_id) || !message || !message.trim()) {
-      return res.status(400).json({ success: false, error: { message: 'Receiver ID or Group ID and message content are required' } });
+    if (!receiver_id && !group_id) {
+      return res.status(400).json({ success: false, error: { message: 'Receiver ID or Group ID is required' } });
     }
+
+    if (!message?.trim() && !req.file) {
+      return res.status(400).json({ success: false, error: { message: 'Message content or an attachment is required' } });
+    }
+
+    // Ensure message is at least a space if only an attachment is sent (to satisfy NOT NULL DB constraints)
+    if (!message) {
+      message = " ";
+    }
+
+    let attachmentDetails = null;
+
+    // Handle File Upload to Cloudinary
+    if (req.file) {
+      try {
+        const result = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'chat_attachments',
+          resource_type: 'auto'
+        });
+        attachmentDetails = {
+          attachment_url: result.secure_url,
+          attachment_type: req.file.mimetype,
+          attachment_name: req.file.originalname
+        };
+        // Clean up local file
+        const fs = require('fs');
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      } catch (uploadError) {
+        console.error("Cloudinary upload failed:", uploadError);
+        return res.status(500).json({ success: false, error: { message: 'File upload failed' } });
+      }
+    }
+
+    let resultMsg;
+    await db.query('BEGIN');
 
     if (group_id) {
       const roleName = req.user.role_name;
@@ -91,6 +137,7 @@ const sendMessage = async (req, res, next) => {
       if (roleName !== 'Admin' && roleName !== 'Superadmin' && roleName !== 'Super Admin') {
         const memberCheck = await db.query('SELECT 1 FROM chat_group_members WHERE group_id = $1 AND user_id = $2', [group_id, currentUserId]);
         if (memberCheck.rows.length === 0) {
+          await db.query('ROLLBACK');
           return res.status(403).json({ success: false, error: { message: 'You are not a member of this group' } });
         }
       }
@@ -100,18 +147,37 @@ const sendMessage = async (req, res, next) => {
         VALUES ($1, $2, $3)
         RETURNING message_id, sender_id, group_id, message, is_read, created_at
       `;
-      const result = await db.query(query, [currentUserId, group_id, message.trim()]);
-      return sendSuccess(res, result.rows[0], 'Group message sent successfully', 201);
+      resultMsg = (await db.query(query, [currentUserId, group_id, message])).rows[0];
     } else {
       const query = `
         INSERT INTO chat_messages (sender_id, receiver_id, message)
         VALUES ($1, $2, $3)
         RETURNING message_id, sender_id, receiver_id, message, is_read, created_at
       `;
-      const result = await db.query(query, [currentUserId, receiver_id, message.trim()]);
-      return sendSuccess(res, result.rows[0], 'Message sent successfully', 201);
+      resultMsg = (await db.query(query, [currentUserId, receiver_id, message])).rows[0];
     }
+
+    // Insert attachment if exists
+    if (attachmentDetails) {
+      const attachQuery = `
+        INSERT INTO chat_attachments (message_id, attachment_url, attachment_type, attachment_name)
+        VALUES ($1, $2, $3, $4)
+        RETURNING attachment_url, attachment_type, attachment_name
+      `;
+      const attachRes = await db.query(attachQuery, [
+        resultMsg.message_id, 
+        attachmentDetails.attachment_url, 
+        attachmentDetails.attachment_type, 
+        attachmentDetails.attachment_name
+      ]);
+      resultMsg = { ...resultMsg, ...attachRes.rows[0] };
+    }
+
+    await db.query('COMMIT');
+
+    return sendSuccess(res, resultMsg, 'Message sent successfully', 201);
   } catch (error) {
+    await db.query('ROLLBACK');
     next(error);
   }
 };
@@ -291,9 +357,11 @@ const getGroupHistory = async (req, res, next) => {
     }
 
     const query = `
-      SELECT cm.message_id, cm.sender_id, u.full_name as sender_name, u.image_url, cm.group_id, cm.message, cm.created_at
+      SELECT cm.message_id, cm.sender_id, u.full_name as sender_name, u.image_url, cm.group_id, cm.message, cm.created_at,
+             ca.attachment_url, ca.attachment_type, ca.attachment_name
       FROM chat_messages cm
       JOIN users u ON cm.sender_id = u.user_id
+      LEFT JOIN chat_attachments ca ON cm.message_id = ca.message_id
       WHERE cm.group_id = $1
       ORDER BY cm.created_at ASC
     `;

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chatController');
 const { verifyToken } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 // All chat routes require authentication
 router.use(verifyToken);
@@ -15,8 +16,8 @@ router.get('/unread-count', chatController.getUnreadCount);
 // Get chat history with a specific user
 router.get('/messages/:userId', chatController.getChatHistory);
 
-// Send a message
-router.post('/messages', chatController.sendMessage);
+// Send a message (now supports file uploads)
+router.post('/messages', upload.single('attachment'), chatController.sendMessage);
 
 // Mark messages from a specific user as read
 router.put('/messages/read/:userId', chatController.markAsRead);

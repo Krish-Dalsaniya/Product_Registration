@@ -93,7 +93,7 @@ const EmployeesList = () => {
                           emp.emp_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           emp.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDept = departmentFilter ? emp.department_id === parseInt(departmentFilter) : true;
-    const matchesDesig = designationFilter ? emp.designation_id === parseInt(designationFilter) : true;
+    const matchesDesig = designationFilter ? String(emp.designation_id) === String(designationFilter) : true;
     
     return matchesSearch && matchesDept && matchesDesig;
   });
@@ -542,7 +542,7 @@ const EmployeesList = () => {
                         <label className="block text-[13px] font-bold text-[var(--text-main)] mb-1">Designation *</label>
                         <select value={formData.designation_id} onChange={e => setFormData({...formData, designation_id: e.target.value})} className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--accent)] disabled:opacity-50" disabled={!formData.department_id}>
                           <option value="">Select Designation</option>
-                          {metadata.designations.filter(d => d.department_id === formData.department_id).map(d => (
+                          {metadata.designations.filter(d => String(d.department_id) === String(formData.department_id)).map(d => (
                             <option key={d.designation_id} value={d.designation_id}>{d.name}</option>
                           ))}
                         </select>

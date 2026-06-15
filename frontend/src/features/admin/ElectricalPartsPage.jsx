@@ -1014,9 +1014,9 @@ const ElectricalPartsPage = () => {
                                    setValue('category_name', cat, { shouldValidate: true }); 
                                    setModalTab('general'); 
                                }}
-                               className="p-5 w-full bg-white/40 backdrop-blur-md border border-white/20 rounded-[28px] hover:border-[#f59e0b] hover:bg-white/60 transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden"
+                               className="p-5 w-full bg-[var(--bg-card)] backdrop-blur-md border border-[var(--border-color)] rounded-[28px] hover:border-[#f59e0b] hover:bg-[var(--nav-hover)] transition-all duration-500 group flex flex-col items-center gap-3 hover:-translate-y-1.5 hover:shadow-xl relative overflow-hidden"
                             >
-                               <div className="w-10 h-10 bg-gradient-to-br from-white to-[var(--nav-hover)] rounded-[14px] flex items-center justify-center shadow-sm group-hover:shadow-[#f59e0b]/10 transition-all duration-500 group-hover:scale-110 relative z-10">
+                               <div className="w-10 h-10 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-[14px] flex items-center justify-center shadow-sm group-hover:border-[#f59e0b] transition-all duration-500 group-hover:scale-110 relative z-10">
                                    <Icon size={20} className="text-[var(--text-dim)] group-hover:text-[#f59e0b] transition-colors duration-500" />
                                </div>
                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-main)] group-hover:text-[#f59e0b] transition-colors duration-500 text-center relative z-10">{cat}</span>

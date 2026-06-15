@@ -31,8 +31,18 @@ export const useChatMessages = (userId) => {
 export const useSendMessage = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ receiver_id, group_id, message }) => {
-      const response = await chatApi.sendMessage({ receiver_id, group_id, message });
+    mutationFn: async ({ receiver_id, group_id, message, file }) => {
+      let payload;
+      if (file) {
+        payload = new FormData();
+        if (receiver_id) payload.append('receiver_id', receiver_id);
+        if (group_id) payload.append('group_id', group_id);
+        if (message) payload.append('message', message);
+        payload.append('attachment', file);
+      } else {
+        payload = { receiver_id, group_id, message };
+      }
+      const response = await chatApi.sendMessage(payload);
       if (!response.success) throw new Error('Failed to send message');
       return response.data;
     },
