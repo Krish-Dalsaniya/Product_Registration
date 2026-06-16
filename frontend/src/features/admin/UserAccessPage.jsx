@@ -4,7 +4,7 @@ import UserAccessModal from './components/UserAccessModal';
 import { useUsers } from '../../hooks/useUsers';
 import { usePermissions } from '../../hooks/useRoles';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldAlert, ShieldCheck, LockKeyhole } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, LockKeyhole, Search } from 'lucide-react';
 
 const UserAccessPage = () => {
   const { hasPermission } = useAuth();
@@ -14,6 +14,23 @@ const UserAccessPage = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [accessFilter, setAccessFilter] = useState('');
+
+  const baseUsers = users?.filter(u => u.role_name !== 'Admin') || [];
+  const uniqueRoles = [...new Set(baseUsers.map(u => u.role_name))];
+
+  const filteredUsers = baseUsers.filter(user => {
+    const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter ? user.role_name === roleFilter : true;
+    const matchesAccess = accessFilter ? 
+      (accessFilter === 'custom' ? user.has_custom_permissions : !user.has_custom_permissions) : true;
+    
+    return matchesSearch && matchesRole && matchesAccess;
+  });
 
   const handleManageAccess = (user) => {
     setSelectedUser(user);
@@ -94,10 +111,60 @@ const UserAccessPage = () => {
         </div>
       </div>
 
+      <div className="workspace-card p-3.5 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl md:rounded-[32px] mb-6">
+        <div className="relative flex-1 group w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
+          <input
+            type="text"
+            placeholder="Search personnel by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-12 pr-4 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
+          />
+        </div>
+
+        <div className="relative min-w-[160px] md:w-auto w-full">
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="w-full appearance-none bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-4 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black tracking-wider text-[var(--text-main)] uppercase cursor-pointer shadow-sm hover:border-[var(--accent)]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238888aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundSize: '1.2em',
+              backgroundPosition: 'right 0.6rem center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
+            <option value="">ALL ROLES</option>
+            {uniqueRoles.map(role => (
+              <option key={role} value={role}>{role.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="relative min-w-[160px] md:w-auto w-full">
+          <select
+            value={accessFilter}
+            onChange={(e) => setAccessFilter(e.target.value)}
+            className="w-full appearance-none bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-4 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black tracking-wider text-[var(--text-main)] uppercase cursor-pointer shadow-sm hover:border-[var(--accent)]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238888aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundSize: '1.2em',
+              backgroundPosition: 'right 0.6rem center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
+            <option value="">ALL ACCESS TYPES</option>
+            <option value="inherited">INHERITED FROM ROLE</option>
+            <option value="custom">CUSTOM OVERRIDE</option>
+          </select>
+        </div>
+      </div>
+
       <div className="workspace-card p-6 border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl md:rounded-[32px] overflow-hidden relative shadow-sm">
         <DataTable
           columns={columns}
-          data={users?.filter(u => u.role_name !== 'Admin') || []}
+          data={filteredUsers}
           loading={isLoading}
           onView={handleManageAccess}
         />

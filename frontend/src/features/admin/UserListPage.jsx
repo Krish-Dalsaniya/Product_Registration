@@ -6,6 +6,7 @@ import { useRoles, usePermissions } from '../../hooks/useRoles';
 import DataTable from '../../components/shared/DataTable';
 import RoleBadge from '../../components/shared/RoleBadge';
 import Modal from '../../components/shared/Modal';
+import ImageCropperModal from '../../components/shared/ImageCropperModal';
 import UserAccessModal from './components/UserAccessModal';
 import { Search, Plus, Loader2, User, Mail, Phone, Shield, Calendar, Users, PenTool, ShoppingBag, Wrench, Trash2, ChevronDown, ChevronRight, LayoutGrid, List, Building, Briefcase, Eye, EyeOff, Key } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -73,6 +74,9 @@ const UserListPage = ({ initialRole = '' }) => {
   const [teamSearch, setTeamSearch] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm();
   const selectedRole = watch('role_name');
@@ -171,6 +175,13 @@ const UserListPage = ({ initialRole = '' }) => {
   const handleView = (user) => {
     setModalMode('view');
     setSelectedUser(user);
+    if (user.image_url || user.profile_image_url) {
+       const u = user.image_url || user.profile_image_url;
+       setImagePreview(u.startsWith('http') ? u : `${import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:3000'}/${u.startsWith('/') ? u.substring(1) : u}`);
+    } else {
+       const defaultAvatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.full_name)}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
+       setImagePreview(defaultAvatarUrl);
+    }
     setIsModalOpen(true);
   };
 
@@ -231,6 +242,16 @@ const UserListPage = ({ initialRole = '' }) => {
         toast.error(error.message || 'Failed to remove image');
       }
     }
+  };
+
+  const handleCropComplete = (croppedFile) => {
+    setImageFile(croppedFile);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+      setIsCropperOpen(false);
+    };
+    reader.readAsDataURL(croppedFile);
   };
 
   const handleDelete = async (user) => {
@@ -571,8 +592,9 @@ const UserListPage = ({ initialRole = '' }) => {
           <div className="space-y-6">
             <div className="flex items-center gap-5 p-4 bg-[var(--bg-workspace)] rounded-2xl border-[0.5px] border-[var(--border-color)]">
               <div 
-                className="w-16 h-16 rounded-full flex items-center justify-center border-2 overflow-hidden transition-all bg-[var(--bg-card)] shadow-sm group"
+                className="w-16 h-16 rounded-full flex items-center justify-center border-2 overflow-hidden transition-all bg-[var(--bg-card)] shadow-sm group cursor-pointer"
                 style={{ borderColor: 'var(--border-color)' }}
+                onClick={() => setIsViewModalOpen(true)}
               >
                 {(() => {
                   const defaultAvatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(selectedUser?.full_name)}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
@@ -723,16 +745,29 @@ const UserListPage = ({ initialRole = '' }) => {
                   onChange={(e) => {
                     const file = e.target.files[0];
                     if (file) {
-                      setImageFile(file);
                       const reader = new FileReader();
-                      reader.onloadend = () => setImagePreview(reader.result);
+                      reader.onloadend = () => {
+                        setCropImageSrc(reader.result);
+                        setIsCropperOpen(true);
+                      };
                       reader.readAsDataURL(file);
                     }
+                    e.target.value = null;
                   }}
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2 mt-2">
                 <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Profile Picture</p>
+                {imagePreview && (
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setIsViewModalOpen(true); }}
+                    className="text-[var(--accent)] hover:bg-[var(--accent)]/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase transition-colors flex items-center gap-1"
+                    title="View Image"
+                  >
+                    <Eye size={12} /> View
+                  </button>
+                )}
                 {modalMode === 'edit' && selectedUser?.image_url && (
                   <button 
                     type="button" 
@@ -961,7 +996,7 @@ const UserListPage = ({ initialRole = '' }) => {
                   <button
                     type="button"
                     onClick={() => handleResetPassword(selectedUser)}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[#3b82f6] text-[#3b82f6] hover:bg-[#3b82f6] hover:text-white transition-all text-xs font-bold uppercase tracking-wider"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-all text-xs font-bold uppercase tracking-wider"
                   >
                     <Key size={16} />
                     Reset Password
@@ -969,7 +1004,7 @@ const UserListPage = ({ initialRole = '' }) => {
                   <button
                     type="button"
                     onClick={() => handleReset2FA(selectedUser)}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[#f59e0b] text-[#f59e0b] hover:bg-[#f59e0b] hover:text-white transition-all text-xs font-bold uppercase tracking-wider"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-all text-xs font-bold uppercase tracking-wider"
                   >
                     <Shield size={16} />
                     Reset 2FA
@@ -991,6 +1026,24 @@ const UserListPage = ({ initialRole = '' }) => {
           permissionsList={permissionsList}
         />
       )}
+
+      <ImageCropperModal
+        isOpen={isCropperOpen}
+        onClose={() => setIsCropperOpen(false)}
+        imageSrc={cropImageSrc}
+        onCropComplete={handleCropComplete}
+      />
+
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        title="View Profile Picture"
+        maxWidth="max-w-2xl"
+      >
+        <div className="flex justify-center bg-black/5 rounded-xl p-4">
+          <img src={imagePreview} alt="Profile Picture" className="max-w-full max-h-[70vh] rounded-lg shadow-lg object-contain" />
+        </div>
+      </Modal>
     </div>
   );
 };

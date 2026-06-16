@@ -511,22 +511,22 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
                   handleNavigate('/admin/user-management');
                 }}
                 style={{
-                  color: location.pathname === '/admin/user-management' || isUserSection ? 'var(--accent)' : 'var(--text-muted)',
-                  background: location.pathname === '/admin/user-management' || isUserSection ? 'var(--nav-active)' : undefined,
+                  color: location.pathname === '/admin/user-management' ? 'var(--accent)' : 'var(--text-muted)',
+                  background: location.pathname === '/admin/user-management' ? 'var(--nav-active)' : undefined,
                 }}
               >
                 <div
                   className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
                   style={{
                     background: 'var(--accent)',
-                    transform: location.pathname === '/admin/user-management' || isUserSection ? 'scaleY(1)' : 'scaleY(0)',
-                    opacity: location.pathname === '/admin/user-management' || isUserSection ? 1 : 0,
+                    transform: location.pathname === '/admin/user-management' ? 'scaleY(1)' : 'scaleY(0)',
+                    opacity: location.pathname === '/admin/user-management' ? 1 : 0,
                     transformOrigin: 'center',
                   }}
                 />
                 <div className="flex items-center gap-4 relative z-10">
                   <div className="w-6 flex justify-center">
-                    <UserCog size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: location.pathname === '/admin/user-management' || isUserSection ? 'var(--accent)' : 'var(--text-dim)' }} />
+                    <UserCog size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: location.pathname === '/admin/user-management' ? 'var(--accent)' : 'var(--text-dim)' }} />
                   </div>
                   <span className="text-[12px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
                     User Management

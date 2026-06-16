@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Users, UserPlus, Calendar, Clock, Loader2, TrendingUp, UserCheck, Briefcase, ChevronRight } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { fetchHRDashboardMetricsApi } from '../../../api/hr';
 import toast from 'react-hot-toast';
 
@@ -79,46 +80,117 @@ const HRDashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* CSS-Based Bar Chart: Employee Growth */}
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm min-h-[400px] flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-[16px] font-black text-[var(--text-main)]">Employee Growth</h3>
-              <p className="text-[13px] text-[var(--text-muted)] font-medium mt-1">Net headcount over the last 6 months</p>
-            </div>
-            <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg text-[12px] font-bold">
-              <TrendingUp size={14} />
-              <span>+12.5%</span>
-            </div>
-          </div>
-          
-          <div className="flex-1 flex items-end justify-between gap-2 mt-auto pt-4 border-t border-[var(--border-color)]">
-            {[
-              { month: 'Jan', val: 65, height: '60%' },
-              { month: 'Feb', val: 72, height: '65%' },
-              { month: 'Mar', val: 80, height: '70%' },
-              { month: 'Apr', val: 78, height: '68%' },
-              { month: 'May', val: 95, height: '85%' },
-              { month: 'Jun', val: 112, height: '100%' },
-            ].map((d, i) => (
-              <div key={i} className="flex flex-col items-center flex-1 group">
-                <div className="w-full relative h-[250px] flex items-end justify-center rounded-t-md">
-                  {/* Tooltip */}
-                  <div className="absolute -top-10 bg-black text-white text-[11px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                    {d.val} Emp
-                  </div>
-                  {/* Bar */}
-                  <div 
-                    className="w-3/4 max-w-[40px] bg-[var(--accent)] rounded-t-lg transition-all duration-500 group-hover:opacity-80"
-                    style={{ height: d.height }}
-                  ></div>
-                </div>
-                <span className="text-[12px] font-bold text-[var(--text-muted)] mt-3 uppercase tracking-wider">{d.month}</span>
-              </div>
-            ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Headcount Trend Chart */}
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm flex flex-col h-[400px]">
+          <h3 className="text-[16px] font-black text-[var(--text-main)] mb-6">Headcount Trend</h3>
+          <div className="flex-1 w-full min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={[
+                  { month: 'Feb', headcount: 14 },
+                  { month: 'Mar', headcount: 14 },
+                  { month: 'Apr', headcount: 15 },
+                  { month: 'May', headcount: 15 },
+                  { month: 'Jun', headcount: 16 },
+                  { month: 'Jul', headcount: 16 },
+                  { month: 'Aug', headcount: 17 },
+                  { month: 'Sep', headcount: 18 },
+                  { month: 'Oct', headcount: 18 },
+                  { month: 'Nov', headcount: 19 },
+                  { month: 'Dec', headcount: 19 },
+                  { month: 'Jan', headcount: 20 },
+                ]}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="colorHeadcount" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+                <XAxis 
+                  dataKey="month" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: 'var(--text-muted)' }} 
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: 'var(--text-muted)' }} 
+                  domain={[12, 22]} 
+                  ticks={[12, 14, 16, 18, 20]}
+                />
+                <RechartsTooltip 
+                  contentStyle={{ borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="headcount" 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorHeadcount)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Department Distribution Donut Chart */}
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm flex flex-col h-[400px]">
+          <h3 className="text-[16px] font-black text-[var(--text-main)] mb-2">Department Distribution</h3>
+          <div className="flex-1 w-full min-h-0 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Design', value: 10 },
+                    { name: 'Engineering', value: 25 },
+                    { name: 'Finance', value: 5 },
+                    { name: 'HR', value: 10 },
+                    { name: 'Marketing', value: 15 },
+                    { name: 'Operations', value: 5 },
+                    { name: 'Product', value: 15 },
+                    { name: 'Sales', value: 15 },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={80}
+                  outerRadius={120}
+                  paddingAngle={2}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  <Cell fill="#f43f5e" /> {/* Design - Rose */}
+                  <Cell fill="#6366f1" /> {/* Engineering - Indigo */}
+                  <Cell fill="#0ea5e9" /> {/* Finance - Sky */}
+                  <Cell fill="#f43f5e" /> {/* HR - Rose */}
+                  <Cell fill="#f97316" /> {/* Marketing - Orange */}
+                  <Cell fill="#14b8a6" /> {/* Operations - Teal */}
+                  <Cell fill="#a855f7" /> {/* Product - Purple */}
+                  <Cell fill="#10b981" /> {/* Sales - Emerald */}
+                </Pie>
+                <RechartsTooltip 
+                  contentStyle={{ borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)' }}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36} 
+                  iconType="square"
+                  iconSize={8}
+                  formatter={(value) => <span className="text-[11px] font-medium text-[var(--text-muted)] ml-1">{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
 
         {/* Recent Activity Feed */}
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm min-h-[400px] flex flex-col">

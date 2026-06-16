@@ -106,6 +106,7 @@ app.use('/api/audit', auditRoutes);
 
 // Modular Endpoints
 app.use('/api/hr', hrRoutes);
+app.use('/api/leaves', require('./src/routes/leaves'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));
