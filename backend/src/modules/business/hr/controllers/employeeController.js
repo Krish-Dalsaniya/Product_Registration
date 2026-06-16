@@ -61,13 +61,21 @@ const getDepartmentsAndDesignations = async (req, res, next) => {
   }
 };
 
+const getOrInsertDesignation = async (clientOrDb, name, deptId) => {
+  if (!name || !deptId) return null;
+  const check = await clientOrDb.query('SELECT designation_id FROM hr_designations WHERE name ILIKE $1 AND department_id = $2', [name, deptId]);
+  if (check.rows.length > 0) return check.rows[0].designation_id;
+  const res = await clientOrDb.query('INSERT INTO hr_designations (name, department_id) VALUES ($1, $2) RETURNING designation_id', [name, deptId]);
+  return res.rows[0].designation_id;
+};
+
 const createEmployee = async (req, res, next) => {
   const client = await db.pool.connect(); // Assuming db exposes the pool
   try {
     const { 
       user_id, // New optional field to link existing user
       full_name, email,
-      department_id, designation_id,
+      department_id, designation_id, designation_name,
       date_of_joining, employment_status, base_salary, work_location,
       personal_info, job_info, pay_info, statutory_info, identities_info
     } = req.body;
@@ -105,6 +113,11 @@ const createEmployee = async (req, res, next) => {
     const nextNum = parseInt(countRes.rows[0].count) + 1;
     const empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
 
+    let finalDesignationId = designation_id;
+    if (designation_name && department_id && !designation_id) {
+      finalDesignationId = await getOrInsertDesignation(client, designation_name, department_id);
+    }
+
     // 4. Create the HR Employee record
     const empRes = await client.query(`
       INSERT INTO hr_employees (
@@ -114,7 +127,7 @@ const createEmployee = async (req, res, next) => {
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING employee_id
     `, [
-      finalUserId, empCode, department_id, designation_id, 
+      finalUserId, empCode, department_id, finalDesignationId, 
       date_of_joining, employment_status, base_salary ? parseFloat(base_salary) : null, work_location,
       personal_info ? JSON.stringify(personal_info) : '{}',
       job_info ? JSON.stringify(job_info) : '{}',
@@ -168,7 +181,7 @@ const updateEmployee = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { 
-      department_id, designation_id,
+      department_id, designation_id, designation_name,
       date_of_joining, employment_status, base_salary, work_location,
       personal_info, address_info, education_info, emergency_contacts,
       job_info, pay_info, statutory_info, identities_info, image_url
@@ -196,9 +209,14 @@ const updateEmployee = async (req, res, next) => {
       RETURNING *
     `;
     
+    let finalDesignationId = designation_id;
+    if (designation_name && department_id && !designation_id) {
+      finalDesignationId = await getOrInsertDesignation(db, designation_name, department_id);
+    }
+
     const values = [
       department_id,
-      designation_id,
+      finalDesignationId,
       date_of_joining,
       employment_status,
       base_salary ? parseFloat(base_salary) : null,

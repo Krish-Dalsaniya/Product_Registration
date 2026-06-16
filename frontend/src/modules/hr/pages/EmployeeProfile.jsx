@@ -193,8 +193,9 @@ const EmployeeProfile = () => {
         statutory_info: statutoryInfo,
         identities_info: identitiesInfo,
         image_url: employee.image_url,
-        department_id: employee.department_id ? parseInt(employee.department_id) : null,
-        designation_id: employee.designation_id ? parseInt(employee.designation_id) : null
+        department_id: employee.department_id || null,
+        designation_id: employee.designation_id || null,
+        designation_name: employee.designation_name || null
       };
       const res = await updateHREmployeeApi(id, payload);
       if (res.data?.success) {
@@ -334,7 +335,7 @@ const EmployeeProfile = () => {
                 <FormField label="Date of Birth" type="date" disabled={!isEditing} value={personalInfo.dob} onChange={e => setPersonalInfo({...personalInfo, dob: e.target.value})} isEditing={isEditing} />
               </div>
               <div>
-                <FormField label="Blood Group" type="text" disabled={!isEditing} value={personalInfo.blood_group} onChange={e => setPersonalInfo({...personalInfo, blood_group: e.target.value})} isEditing={isEditing} />
+                <FormField label="Blood Group" type="select" disabled={!isEditing} value={personalInfo.blood_group} onChange={e => setPersonalInfo({...personalInfo, blood_group: e.target.value})} isEditing={isEditing} options={[{ value: "", label: "Select" }, { value: "A+", label: "A+" }, { value: "A-", label: "A-" }, { value: "B+", label: "B+" }, { value: "B-", label: "B-" }, { value: "AB+", label: "AB+" }, { value: "AB-", label: "AB-" }, { value: "O+", label: "O+" }, { value: "O-", label: "O-" }]} />
               </div>
               <div>
                 <FormField label="Father's Name" type="text" disabled={!isEditing} value={personalInfo.fathers_name} onChange={e => setPersonalInfo({...personalInfo, fathers_name: e.target.value})} isEditing={isEditing} />
@@ -455,16 +456,12 @@ const EmployeeProfile = () => {
               <div>
                 <FormField 
                   label="Core Designation" 
-                  type="select" 
+                  type="text" 
                   disabled={!isEditing || !employee.department_id} 
-                  value={employee.designation_id || ''} 
-                  onChange={e => setEmployee({...employee, designation_id: e.target.value})} 
+                  value={employee.designation_name || ''} 
+                  onChange={e => setEmployee({...employee, designation_name: e.target.value, designation_id: null})} 
                   isEditing={isEditing} 
                   readOnlyText={employee.designation_name}
-                  options={[
-                    { value: '', label: 'Select Designation' },
-                    ...(metadata.designations || []).filter(d => String(d.department_id) === String(employee.department_id)).map(d => ({ value: d.designation_id, label: d.name }))
-                  ]} 
                 />
               </div>
             </div>

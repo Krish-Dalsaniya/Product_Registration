@@ -1,39 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Clock, Users, Calendar as CalendarIcon, FileText, Loader2, ChevronLeft, ChevronRight, User } from 'lucide-react';
-import { fetchLeaveSummaryApi, fetchUpcomingLeavesApi, fetchCalendarDataApi } from '../../../api/leaves';
+import { Plus, Clock, Users, Calendar as CalendarIcon, FileText, Loader2, ChevronLeft, ChevronRight, User, Check, X, CheckCircle } from 'lucide-react';
+import { fetchLeaveSummaryApi, fetchUpcomingLeavesApi, fetchCalendarDataApi, fetchAllPendingRequestsApi, updateLeaveStatusApi } from '../../../api/leaves';
 import ApplyLeaveModal from '../components/ApplyLeaveModal';
 import toast from 'react-hot-toast';
 
-const StatCard = ({ title, remaining, total, used, icon: Icon, iconColor, bgClass }) => {
-  const percentUsed = total > 0 ? Math.round((used / total) * 100) : 0;
-  
-  return (
-    <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm flex flex-col hover:-translate-y-1 transition-transform duration-300">
-      <div className="flex items-center gap-3 mb-6">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${bgClass}`}>
-          <Icon size={16} className={iconColor} />
-        </div>
-        <h3 className="text-[14px] font-black text-[var(--text-main)]">{title}</h3>
-      </div>
-      
-      <div className="flex items-baseline gap-2 mb-4">
-        <span className="text-4xl font-black text-[var(--text-main)] tracking-tighter">{remaining}</span>
-        <span className="text-[12px] font-bold text-[var(--text-muted)] tracking-wider">/ {total} days remaining</span>
-      </div>
 
-      <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-main)] mb-2 mt-auto">
-        <span>{used} days used</span>
-        <span>{percentUsed}%</span>
-      </div>
-      <div className="w-full h-1 bg-[var(--bg-workspace)] rounded-full overflow-hidden">
-        <div 
-          className="h-full rounded-full transition-all duration-1000 ease-out"
-          style={{ width: `${percentUsed}%`, backgroundColor: '#10b981' }}
-        />
-      </div>
-    </div>
-  );
-};
 
 const MiniStatCard = ({ title, count, icon: Icon, iconBg, iconColor }) => (
   <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm flex items-center gap-5 hover:-translate-y-1 transition-transform duration-300">
@@ -50,6 +21,7 @@ const MiniStatCard = ({ title, count, icon: Icon, iconBg, iconColor }) => (
 const LeaveManagement = () => {
   const [summary, setSummary] = useState(null);
   const [upcoming, setUpcoming] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [calendarData, setCalendarData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,15 +32,17 @@ const LeaveManagement = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [sumRes, upRes, calRes] = await Promise.all([
+      const [sumRes, upRes, calRes, pendRes] = await Promise.all([
         fetchLeaveSummaryApi(),
         fetchUpcomingLeavesApi(),
-        fetchCalendarDataApi(currentDate.getMonth() + 1, currentDate.getFullYear())
+        fetchCalendarDataApi(currentDate.getMonth() + 1, currentDate.getFullYear()),
+        fetchAllPendingRequestsApi()
       ]);
 
       if (sumRes.data?.success) setSummary(sumRes.data.data);
       if (upRes.data?.success) setUpcoming(upRes.data.data);
       if (calRes.data?.success) setCalendarData(calRes.data.data);
+      if (pendRes.data?.success) setPendingRequests(pendRes.data.data);
 
     } catch (error) {
       console.error(error);
@@ -81,6 +55,19 @@ const LeaveManagement = () => {
   useEffect(() => {
     loadData();
   }, [currentDate]);
+
+  const handleStatusUpdate = async (id, status) => {
+    try {
+      const res = await updateLeaveStatusApi(id, status);
+      if (res.data?.success) {
+        toast.success(`Leave request ${status.toLowerCase()} successfully`);
+        loadData(); // Refresh data
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to update leave status');
+    }
+  };
 
   // Calendar Logic
   const getDaysInMonth = (date) => {
@@ -156,41 +143,10 @@ const LeaveManagement = () => {
         </button>
       </div>
 
-      {/* Main Balances */}
+      {/* Admin Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <StatCard 
-          title="PTO" 
-          total={balances['PTO'].total} 
-          used={balances['PTO'].used}
-          remaining={balances['PTO'].total - balances['PTO'].used}
-          icon={FileText} // Placeholder for tree/leaf
-          bgClass="bg-emerald-50"
-          iconColor="text-emerald-600"
-        />
-        <StatCard 
-          title="Sick Leave" 
-          total={balances['Sick Leave'].total} 
-          used={balances['Sick Leave'].used}
-          remaining={balances['Sick Leave'].total - balances['Sick Leave'].used}
-          icon={FileText} // Placeholder for thermometer
-          bgClass="bg-teal-50"
-          iconColor="text-teal-600"
-        />
-        <StatCard 
-          title="Personal" 
-          total={balances['Personal'].total} 
-          used={balances['Personal'].used}
-          remaining={balances['Personal'].total - balances['Personal'].used}
-          icon={User} 
-          bgClass="bg-emerald-50"
-          iconColor="text-emerald-600"
-        />
-      </div>
-
-      {/* Mini Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <MiniStatCard 
-          title="Pending Requests" 
+          title="Company Pending Requests" 
           count={summary?.pendingRequests || 0} 
           icon={Clock} 
           iconBg="bg-orange-50" 
@@ -202,6 +158,13 @@ const LeaveManagement = () => {
           icon={Users} 
           iconBg="bg-blue-50" 
           iconColor="text-blue-500" 
+        />
+        <MiniStatCard 
+          title="Approved This Month" 
+          count={summary?.approvedThisMonth || 0} 
+          icon={CheckCircle} 
+          iconBg="bg-emerald-50" 
+          iconColor="text-emerald-500" 
         />
       </div>
 
@@ -275,79 +238,93 @@ const LeaveManagement = () => {
           </div>
         </div>
 
-        {/* Upcoming Leaves */}
+        {/* Pending Approvals */}
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm flex flex-col">
           <div className="flex items-center gap-2 mb-6">
             <Clock size={16} className="text-[var(--text-muted)]" />
-            <h3 className="text-[14px] font-black text-[var(--text-main)]">My Upcoming Leaves</h3>
+            <h3 className="text-[14px] font-black text-[var(--text-main)]">Pending Approvals</h3>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center py-10">
-            {upcoming.length > 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-start py-4 overflow-y-auto max-h-[400px]">
+            {pendingRequests.length > 0 ? (
               <div className="w-full space-y-4">
-                {upcoming.map(leave => (
-                  <div key={leave.id} className="flex justify-between items-center p-4 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] transition-colors">
-                    <div>
-                      <h4 className="text-[13px] font-bold text-[var(--text-main)]">{leave.leave_type}</h4>
-                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                        {new Date(leave.start_date).toLocaleDateString()} - {new Date(leave.end_date).toLocaleDateString()}
-                      </p>
+                {pendingRequests.map(req => (
+                  <div key={req.id} className="flex flex-col p-4 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-[var(--text-main)]">{req.employee_name}</h4>
+                        <p className="text-[11px] text-[var(--text-muted)] mt-0.5 font-medium">{req.email}</p>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-orange-50 text-orange-600 border border-orange-200">
+                        {req.leave_type}
+                      </span>
                     </div>
-                    <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-200">
-                      Approved
-                    </span>
+                    
+                    <div className="text-[12px] text-[var(--text-main)] mb-3">
+                      <span className="font-semibold">{new Date(req.start_date).toLocaleDateString()}</span> to <span className="font-semibold">{new Date(req.end_date).toLocaleDateString()}</span>
+                      {req.reason && <p className="mt-1 text-[11px] text-[var(--text-muted)] italic">"{req.reason}"</p>}
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-auto">
+                      <button 
+                        onClick={() => handleStatusUpdate(req.id, 'Approved')}
+                        className="flex-1 flex justify-center items-center gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 py-1.5 rounded-lg text-[11px] font-bold transition-colors"
+                      >
+                        <Check size={14} /> Approve
+                      </button>
+                      <button 
+                        onClick={() => handleStatusUpdate(req.id, 'Rejected')}
+                        className="flex-1 flex justify-center items-center gap-1 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 py-1.5 rounded-lg text-[11px] font-bold transition-colors"
+                      >
+                        <X size={14} /> Reject
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <>
-                <FileText size={32} className="text-[var(--text-dim)] mb-4 opacity-50" />
-                <p className="text-[13px] font-medium text-[var(--text-muted)] mb-4">No upcoming leaves scheduled</p>
-                <button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="px-4 py-2 border border-[var(--border-color)] rounded-xl text-[12px] font-bold hover:bg-[var(--bg-workspace)] transition-colors flex items-center gap-2"
-                >
-                  <Plus size={14} /> Apply for Leave
-                </button>
-              </>
+              <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                <CheckCircle size={32} className="text-emerald-500 mb-4 opacity-80" />
+                <p className="text-[13px] font-medium text-[var(--text-muted)] mb-2">All caught up!</p>
+                <p className="text-[11px] text-[var(--text-dim)]">No pending leave requests to review.</p>
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Policy Summary */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+      {/* Upcoming Company Absences */}
+      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm mb-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <FileText size={16} className="text-[var(--text-muted)]" />
-            <h3 className="text-[14px] font-black text-[var(--text-main)]">Leave Policy Summary</h3>
+            <Clock size={16} className="text-[var(--text-muted)]" />
+            <h3 className="text-[14px] font-black text-[var(--text-main)]">Upcoming Absences (Company-Wide)</h3>
           </div>
-          <button className="text-[11px] font-bold text-[var(--text-main)] hover:underline flex items-center gap-1">
-            View Policies <ChevronRight size={14} />
-          </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
-            <h4 className="text-[12px] font-black text-[var(--text-main)] mb-1">PTO</h4>
-            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-              15-20 days/year, 1.25 days/month accrual, up to 5 days carryover
-            </p>
+        {upcoming.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {upcoming.map(leave => (
+              <div key={leave.id} className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)] flex justify-between items-center">
+                <div>
+                  <h4 className="text-[12px] font-black text-[var(--text-main)] mb-1">{leave.employee_name}</h4>
+                  <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                    {leave.leave_type} • {new Date(leave.start_date).toLocaleDateString()} to {new Date(leave.end_date).toLocaleDateString()}
+                  </p>
+                </div>
+                <span className="px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-200">
+                  Approved
+                </span>
+              </div>
+            ))}
           </div>
-          <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
-            <h4 className="text-[12px] font-black text-[var(--text-main)] mb-1">Sick Leave</h4>
-            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-              10 days/year, granted annually, no carryover
-            </p>
+        ) : (
+          <div className="text-center py-6">
+            <p className="text-[13px] font-medium text-[var(--text-muted)]">No upcoming absences scheduled.</p>
           </div>
-          <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
-            <h4 className="text-[12px] font-black text-[var(--text-main)] mb-1">Personal Days</h4>
-            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-              3 days/year, granted annually, no carryover
-            </p>
-          </div>
-        </div>
+        )}
       </div>
+
 
       <ApplyLeaveModal 
         isOpen={isModalOpen} 

@@ -23,7 +23,7 @@ const EmployeesList = () => {
   const [metadata, setMetadata] = useState({ departments: [], designations: [], available_users: [] });
   const [formData, setFormData] = useState({
     user_id: '', full_name: '', email: '', phone_number: '', 
-    department_id: '', designation_id: '',
+    department_id: '', designation_id: '', designation_name: '',
     date_of_joining: '', employment_status: 'Full-Time', 
     base_salary: '', work_location: '',
     personal_info: {
@@ -92,7 +92,7 @@ const EmployeesList = () => {
     const matchesSearch = emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           emp.emp_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           emp.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDept = departmentFilter ? emp.department_id === parseInt(departmentFilter) : true;
+    const matchesDept = departmentFilter ? emp.department_id === departmentFilter : true;
     const matchesDesig = designationFilter ? String(emp.designation_id) === String(designationFilter) : true;
     
     return matchesSearch && matchesDept && matchesDesig;
@@ -128,7 +128,7 @@ const EmployeesList = () => {
     e.preventDefault();
     
     // Manual validation since HTML5 'required' fails on hidden tabs
-    if (!formData.full_name || !formData.email || !formData.department_id || !formData.designation_id || !formData.date_of_joining) {
+    if (!formData.full_name || !formData.email || !formData.department_id || !(formData.designation_name || formData.designation_id) || !formData.date_of_joining) {
       toast.error('Please fill out all mandatory fields: Name, Email, Department, Designation, and DOJ.');
       return;
     }
@@ -144,6 +144,7 @@ const EmployeesList = () => {
           emp_code: '',
           department_id: '',
           designation_id: '',
+          designation_name: '',
           date_of_joining: '',
           employment_status: 'Full-Time',
           base_salary: '',
@@ -281,7 +282,7 @@ const EmployeesList = () => {
             }}
           >
             <option value="">ALL DESIGNATIONS</option>
-            {metadata.designations?.filter(d => !departmentFilter || d.department_id === parseInt(departmentFilter)).map(d => <option key={d.designation_id} value={d.designation_id}>{d.name.toUpperCase()}</option>)}
+            {metadata.designations?.filter(d => !departmentFilter || d.department_id === departmentFilter).map(d => <option key={d.designation_id} value={d.designation_id}>{d.name.toUpperCase()}</option>)}
           </select>
         </div>
 
@@ -503,7 +504,17 @@ const EmployeesList = () => {
                       </div>
                       <div>
                         <label className="block text-[13px] font-bold text-[var(--text-main)] mb-1">Blood Group</label>
-                        <input type="text" value={formData.personal_info.blood_group} onChange={e => setFormData({...formData, personal_info: {...formData.personal_info, blood_group: e.target.value}})} className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--accent)]" />
+                        <select value={formData.personal_info.blood_group} onChange={e => setFormData({...formData, personal_info: {...formData.personal_info, blood_group: e.target.value}})} className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--accent)]">
+                          <option value="">Select</option>
+                          <option value="A+">A+</option>
+                          <option value="A-">A-</option>
+                          <option value="B+">B+</option>
+                          <option value="B-">B-</option>
+                          <option value="AB+">AB+</option>
+                          <option value="AB-">AB-</option>
+                          <option value="O+">O+</option>
+                          <option value="O-">O-</option>
+                        </select>
                       </div>
                       <div>
                         <label className="block text-[13px] font-bold text-[var(--text-main)] mb-1">Father's Name</label>
@@ -531,7 +542,7 @@ const EmployeesList = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[13px] font-bold text-[var(--text-main)] mb-1">Department *</label>
-                        <select value={formData.department_id} onChange={e => setFormData({...formData, department_id: e.target.value, designation_id: ''})} className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--accent)]">
+                        <select value={formData.department_id} onChange={e => setFormData({...formData, department_id: e.target.value, designation_id: null, designation_name: ''})} className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--accent)]">
                           <option value="">Select Department</option>
                           {metadata.departments.map(d => (
                             <option key={d.department_id} value={d.department_id}>{d.name}</option>
@@ -540,12 +551,7 @@ const EmployeesList = () => {
                       </div>
                       <div>
                         <label className="block text-[13px] font-bold text-[var(--text-main)] mb-1">Designation *</label>
-                        <select value={formData.designation_id} onChange={e => setFormData({...formData, designation_id: e.target.value})} className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--accent)] disabled:opacity-50" disabled={!formData.department_id}>
-                          <option value="">Select Designation</option>
-                          {metadata.designations.filter(d => String(d.department_id) === String(formData.department_id)).map(d => (
-                            <option key={d.designation_id} value={d.designation_id}>{d.name}</option>
-                          ))}
-                        </select>
+                        <input type="text" value={formData.designation_name || ''} onChange={e => setFormData({...formData, designation_name: e.target.value, designation_id: null})} placeholder="e.g. Software Engineer" className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--accent)] disabled:opacity-50" disabled={!formData.department_id} />
                       </div>
                       <div>
                         <label className="block text-[13px] font-bold text-[var(--text-main)] mb-1">Date of Joining *</label>

@@ -329,3 +329,68 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async updateEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:223:7)
 
+2026-06-16T04:17:34.248Z - error: invalid input syntax for type uuid: "371"
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:217:20)
+
+2026-06-16T04:45:36.410Z - TypeError: pool.connect is not a function
+    at updateLeaveStatus (D:\Product_Registration\backend\src\controllers\leavesController.js:153:29)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at next (D:\Product_Registration\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (D:\Product_Registration\backend\node_modules\router\lib\route.js:117:3)
+    at handle (D:\Product_Registration\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at D:\Product_Registration\backend\node_modules\router\index.js:295:15
+    at param (D:\Product_Registration\backend\node_modules\router\index.js:600:14)
+    at param (D:\Product_Registration\backend\node_modules\router\index.js:610:14)
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:664:3)
+
+2026-06-16T04:45:37.744Z - TypeError: pool.connect is not a function
+    at updateLeaveStatus (D:\Product_Registration\backend\src\controllers\leavesController.js:153:29)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at next (D:\Product_Registration\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (D:\Product_Registration\backend\node_modules\router\lib\route.js:117:3)
+    at handle (D:\Product_Registration\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at D:\Product_Registration\backend\node_modules\router\index.js:295:15
+    at param (D:\Product_Registration\backend\node_modules\router\index.js:600:14)
+    at param (D:\Product_Registration\backend\node_modules\router\index.js:610:14)
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:664:3)
+
+2026-06-16T04:45:37.949Z - TypeError: pool.connect is not a function
+    at updateLeaveStatus (D:\Product_Registration\backend\src\controllers\leavesController.js:153:29)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at next (D:\Product_Registration\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (D:\Product_Registration\backend\node_modules\router\lib\route.js:117:3)
+    at handle (D:\Product_Registration\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at D:\Product_Registration\backend\node_modules\router\index.js:295:15
+    at param (D:\Product_Registration\backend\node_modules\router\index.js:600:14)
+    at param (D:\Product_Registration\backend\node_modules\router\index.js:610:14)
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:664:3)
+
+2026-06-16T04:45:45.186Z - TypeError: pool.connect is not a function
+    at updateLeaveStatus (D:\Product_Registration\backend\src\controllers\leavesController.js:153:29)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at next (D:\Product_Registration\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (D:\Product_Registration\backend\node_modules\router\lib\route.js:117:3)
+    at handle (D:\Product_Registration\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at D:\Product_Registration\backend\node_modules\router\index.js:295:15
+    at param (D:\Product_Registration\backend\node_modules\router\index.js:600:14)
+    at param (D:\Product_Registration\backend\node_modules\router\index.js:610:14)
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:664:3)
+
+2026-06-16T04:45:52.337Z - TypeError: pool.connect is not a function
+    at updateLeaveStatus (D:\Product_Registration\backend\src\controllers\leavesController.js:153:29)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at next (D:\Product_Registration\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (D:\Product_Registration\backend\node_modules\router\lib\route.js:117:3)
+    at handle (D:\Product_Registration\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at D:\Product_Registration\backend\node_modules\router\index.js:295:15
+    at param (D:\Product_Registration\backend\node_modules\router\index.js:600:14)
+    at param (D:\Product_Registration\backend\node_modules\router\index.js:610:14)
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:664:3)
+
