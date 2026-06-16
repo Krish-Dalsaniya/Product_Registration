@@ -28,8 +28,11 @@ axiosInstance.interceptors.response.use(
         await axios.post(`${axiosInstance.defaults.baseURL}/auth/refresh`, {}, { withCredentials: true });
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        localStorage.removeItem('user');
-        window.dispatchEvent(new Event('unauthorized'));
+        if (refreshError.response && refreshError.response.status === 401) {
+          localStorage.removeItem('user');
+          window.dispatchEvent(new Event('unauthorized'));
+        }
+        return Promise.reject(refreshError);
       }
     }
     // Global handling for 403 Forbidden (Permission Denied)

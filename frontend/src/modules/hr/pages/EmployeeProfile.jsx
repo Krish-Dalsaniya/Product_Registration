@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { fetchHREmployeeByIdApi, updateHREmployeeApi, fetchHRMetadataApi } from '../../../api/hr';
-import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X } from 'lucide-react';
+import { fetchHREmployeeByIdApi, updateHREmployeeApi, fetchHRMetadataApi, updateHREmployeeRoleApi } from '../../../api/hr';
+import { getRoles } from '../../../api/roles';
+import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
@@ -37,6 +38,8 @@ const EmployeeProfile = () => {
   const [isEditing, setIsEditing] = useState(queryParams.get('edit') === 'true');
   const [activeTab, setActiveTab] = useState('Personal');
   const [metadata, setMetadata] = useState({ departments: [], designations: [] });
+  const [systemRoles, setSystemRoles] = useState([]);
+  const [selectedRoleId, setSelectedRoleId] = useState('');
 
   // Avatar Upload States
   const [isCropperOpen, setIsCropperOpen] = useState(false);
@@ -114,6 +117,7 @@ const EmployeeProfile = () => {
       if (empRes.data?.success) {
         const emp = empRes.data.data;
         setEmployee(emp);
+        if (emp.role_id) setSelectedRoleId(emp.role_id.toString());
         if (emp.personal_info) setPersonalInfo({ ...personalInfo, ...emp.personal_info });
         if (emp.job_info) setJobInfo({ ...jobInfo, ...emp.job_info });
         if (emp.pay_info) setPayInfo({ ...payInfo, ...emp.pay_info });
@@ -124,10 +128,36 @@ const EmployeeProfile = () => {
       if (metaRes.data?.success) {
         setMetadata(metaRes.data.data);
       }
+      
+      // Try fetching roles (might fail if not admin, which is fine)
+      try {
+        const rolesRes = await getRoles();
+        if (rolesRes.data?.success) {
+          setSystemRoles(rolesRes.data.data);
+        }
+      } catch (e) {
+        console.warn('Could not fetch roles, user may not have permission');
+      }
+
     } catch (error) {
       toast.error('Failed to load employee profile');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUpdateRole = async () => {
+    if (!selectedRoleId) return toast.error('Please select a role first');
+    try {
+      setIsSaving(true);
+      const res = await updateHREmployeeRoleApi(id, selectedRoleId);
+      if (res.data?.success) {
+        toast.success('System role updated successfully!');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update system role');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -224,7 +254,8 @@ const EmployeeProfile = () => {
     { id: 'Job', icon: Briefcase },
     { id: 'Pay and Benefits', icon: IndianRupee },
     { id: 'Statutory', icon: ShieldCheck },
-    { id: 'Identities', icon: Fingerprint }
+    { id: 'Identities', icon: Fingerprint },
+    { id: 'Admin Data', icon: Lock }
   ];
 
   const breadcrumbItems = [
@@ -720,6 +751,59 @@ const EmployeeProfile = () => {
                 </div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab Content: Admin Data */}
+      {activeTab === 'Admin Data' && (
+        <div className="space-y-8 animate-in fade-in duration-300">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-[var(--text-main)] mb-6 flex items-center gap-2">
+              <span className="p-2 bg-[var(--bg-workspace)] rounded-lg text-rose-500"><IndianRupee size={20} /></span>
+              Compensation Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
+              <div>
+                <FormField label="Base Salary (LPA / Annual)" type="number" disabled={!isEditing} value={employee.base_salary} onChange={e => setEmployee({...employee, base_salary: e.target.value})} isEditing={isEditing} />
+              </div>
+            </div>
+            {!isEditing && (
+              <div className="mt-4 p-4 bg-rose-50 rounded-xl border border-rose-100 flex items-start gap-3">
+                <Lock className="text-rose-500 mt-0.5" size={16} />
+                <p className="text-[12px] text-rose-700 font-medium">This section contains highly sensitive compensation data. It is only visible to administrators and HR managers.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-[var(--text-main)] mb-6 flex items-center gap-2">
+              <span className="p-2 bg-[var(--bg-workspace)] rounded-lg text-purple-500"><Lock size={20} /></span>
+              System Access Control
+            </h3>
+            <div className="max-w-md">
+              <label className="block text-[12px] font-bold text-[var(--text-muted)] mb-2 uppercase tracking-wide">Assign System Role</label>
+              <div className="flex gap-3 items-center">
+                <select 
+                  className="flex-1 px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--accent)]"
+                  value={selectedRoleId}
+                  onChange={(e) => setSelectedRoleId(e.target.value)}
+                >
+                  <option value="">Select a Role...</option>
+                  {systemRoles.map(role => (
+                    <option key={role.role_id} value={role.role_id}>{role.role_name}</option>
+                  ))}
+                </select>
+                <button 
+                  onClick={handleUpdateRole}
+                  disabled={!selectedRoleId || isSaving}
+                  className="px-4 py-2 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20 disabled:opacity-50"
+                >
+                  Apply Role
+                </button>
+              </div>
+              <p className="text-[11px] text-[var(--text-muted)] mt-2">Changing the role will immediately update the user's permissions and access level across the entire platform.</p>
             </div>
           </div>
         </div>

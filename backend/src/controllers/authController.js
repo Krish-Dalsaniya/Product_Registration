@@ -202,7 +202,7 @@ const refresh = async (req, res, next) => {
     }
 
     const accessToken = jwt.sign(
-      { user_id: user.user_id, role_name: user.role_name },
+      { user_id: user.user_id, role_id: user.role_id, role_name: user.role_name },
       env.JWT_SECRET,
       { expiresIn: '15m' }
     );

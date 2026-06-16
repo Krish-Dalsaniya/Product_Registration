@@ -73,7 +73,7 @@ const createEmployee = async (req, res, next) => {
   const client = await db.pool.connect(); // Assuming db exposes the pool
   try {
     const { 
-      user_id, // New optional field to link existing user
+      user_id, role_id, // New optional field to link existing user and assign role
       full_name, email,
       department_id, designation_id, designation_name,
       date_of_joining, employment_status, base_salary, work_location,
@@ -97,13 +97,16 @@ const createEmployee = async (req, res, next) => {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('Welcome@123', salt);
       
-      const roleRes = await client.query('SELECT role_id FROM roles WHERE role_name = $1 LIMIT 1', ['User']);
-      const roleId = roleRes.rows[0]?.role_id || null;
+      let assignedRoleId = role_id;
+      if (!assignedRoleId) {
+        const roleRes = await client.query('SELECT role_id FROM roles WHERE role_name = $1 LIMIT 1', ['User']);
+        assignedRoleId = roleRes.rows[0]?.role_id || null;
+      }
 
       const userRes = await client.query(`
         INSERT INTO users (full_name, email, password_hash, role_id) 
         VALUES ($1, $2, $3, $4) RETURNING user_id
-      `, [full_name, email, hashedPassword, roleId]);
+      `, [full_name, email, hashedPassword, assignedRoleId]);
       
       finalUserId = userRes.rows[0].user_id;
     }
@@ -159,6 +162,7 @@ const getEmployeeById = async (req, res, next) => {
         u.full_name,
         u.email,
         u.image_url,
+        u.role_id,
         d.name as department_name,
         ds.name as designation_name
       FROM hr_employees e
@@ -291,11 +295,45 @@ const deleteEmployee = async (req, res) => {
   }
 };
 
+const updateEmployeeRole = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role_id } = req.body;
+
+    if (!role_id) {
+      return sendError(res, 'BAD_REQUEST', 'role_id is required', 400);
+    }
+
+    // Find the user_id for this employee
+    const empRes = await db.query('SELECT user_id FROM hr_employees WHERE employee_id = $1', [id]);
+    if (empRes.rows.length === 0) {
+      return sendError(res, 'NOT_FOUND', 'Employee not found', 404);
+    }
+
+    const userId = empRes.rows[0].user_id;
+    if (!userId) {
+      return sendError(res, 'BAD_REQUEST', 'This employee is not linked to a user account', 400);
+    }
+
+    // Update the role in the users table
+    await db.query('UPDATE users SET role_id = $1 WHERE user_id = $2', [role_id, userId]);
+    
+    // Clear any custom access override so the user strictly inherits the new role's permissions
+    await db.query('UPDATE user_custom_access SET has_custom_permissions = false WHERE user_id = $1', [userId]);
+    await db.query('DELETE FROM user_permissions WHERE user_id = $1', [userId]);
+
+    sendSuccess(res, null, 'Employee system role updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getEmployees,
   getEmployeeById,
   createEmployee,
   updateEmployee,
   deleteEmployee,
-  getDepartmentsAndDesignations
+  getDepartmentsAndDesignations,
+  updateEmployeeRole
 };

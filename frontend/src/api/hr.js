@@ -22,3 +22,4 @@ export const fetchHREmployeeByIdApi = async (id) => {
 
 export const updateHREmployeeApi = (id, data) => api.put(`/hr/employees/${id}`, data);
 export const deleteHREmployeeApi = (id) => api.delete(`/hr/employees/${id}`);
+export const updateHREmployeeRoleApi = (id, role_id) => api.put(`/hr/employees/${id}/role`, { role_id });
