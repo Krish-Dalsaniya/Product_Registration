@@ -253,9 +253,13 @@ const getEmployeeLeaveData = async (req, res) => {
     // If id is not a valid UUID (e.g. it's a numeric ID like '4'), look up the user_id from hr_employees
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
-      const userRes = await pool.query('SELECT user_id FROM hr_employees WHERE employee_id = $1', [parseInt(id)]);
+      const numericId = parseInt(id);
+      if (isNaN(numericId)) {
+        return res.status(400).json({ success: false, error: { message: `Invalid ID format: ${id}` } });
+      }
+      const userRes = await pool.query('SELECT user_id FROM hr_employees WHERE employee_id = $1', [numericId]);
       if (userRes.rows.length === 0) {
-        return res.status(404).json({ success: false, error: { message: 'Employee not found' } });
+        return res.status(404).json({ success: false, error: { message: 'Leave mapping failed: Employee not found in database' } });
       }
       userIdUuid = userRes.rows[0].user_id;
     }
