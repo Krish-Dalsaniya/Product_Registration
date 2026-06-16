@@ -1,5 +1,21 @@
 const pool = require('../config/db');
 
+const calculateWorkingDays = (startDate, endDate, isHalfDay = false) => {
+  if (isHalfDay) return 0.5;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  let count = 0;
+  
+  let curDate = new Date(start.getTime());
+  while (curDate <= end) {
+    const dayOfWeek = curDate.getDay();
+    if (dayOfWeek !== 0) count++; // Only skip Sunday (0)
+    curDate.setDate(curDate.getDate() + 1);
+  }
+  return count;
+};
+
 // Get leave summary for admin (company-wide)
 const getLeaveSummary = async (req, res) => {
   try {
@@ -81,19 +97,34 @@ const getUpcomingLeaves = async (req, res) => {
 const applyForLeave = async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const { leaveType, startDate, endDate, reason } = req.body;
+    const { leaveType, startDate, endDate, reason, isHalfDay, halfDayType, attachmentUrl } = req.body;
 
     if (!leaveType || !startDate || !endDate) {
       return res.status(400).json({ success: false, error: { message: 'Missing required fields' } });
     }
 
+    const requestedDays = calculateWorkingDays(startDate, endDate, isHalfDay);
+
+    // Fetch user balances
+    const currentYear = new Date(startDate).getFullYear();
+    const balRes = await pool.query('SELECT total_days, used_days FROM leave_balances WHERE user_id = $1 AND leave_type = $2 AND year = $3', [userId, leaveType, currentYear]);
+    
+    let available = 0;
+    if (balRes.rows.length > 0) {
+      available = parseFloat(balRes.rows[0].total_days) - parseFloat(balRes.rows[0].used_days);
+    }
+
+    if (requestedDays > available && leaveType !== 'Unpaid Leave' && leaveType !== 'LOP (Loss Of Pay)') {
+      return res.status(400).json({ success: false, error: { message: `Insufficient leave balance. You requested ${requestedDays} days but only have ${available} days available.` } });
+    }
+
     // Insert request as 'Pending'
     const insertQuery = `
-      INSERT INTO leave_requests (user_id, leave_type, start_date, end_date, status, reason)
-      VALUES ($1, $2, $3, $4, 'Pending', $5)
+      INSERT INTO leave_requests (user_id, leave_type, start_date, end_date, status, reason, is_half_day, half_day_type, attachment_url)
+      VALUES ($1, $2, $3, $4, 'Pending', $5, $6, $7, $8)
       RETURNING id, status
     `;
-    await pool.query(insertQuery, [userId, leaveType, startDate, endDate, reason]);
+    await pool.query(insertQuery, [userId, leaveType, startDate, endDate, reason, isHalfDay || false, halfDayType || null, attachmentUrl || null]);
 
     res.json({
       success: true,
@@ -112,11 +143,12 @@ const getCalendarData = async (req, res) => {
     const { month, year } = req.query; // E.g., month=03, year=2026
 
     const query = `
-      SELECT start_date, end_date, status, user_id
-      FROM leave_requests
-      WHERE status = 'Approved'
-        AND (EXTRACT(MONTH FROM start_date) = $1 OR EXTRACT(MONTH FROM end_date) = $1)
-        AND (EXTRACT(YEAR FROM start_date) = $2 OR EXTRACT(YEAR FROM end_date) = $2)
+      SELECT lr.start_date, lr.end_date, lr.status, lr.user_id, lr.leave_type, u.full_name as employee_name
+      FROM leave_requests lr
+      JOIN users u ON lr.user_id = u.user_id
+      WHERE lr.status = 'Approved'
+        AND (EXTRACT(MONTH FROM lr.start_date) = $1 OR EXTRACT(MONTH FROM lr.end_date) = $1)
+        AND (EXTRACT(YEAR FROM lr.start_date) = $2 OR EXTRACT(YEAR FROM lr.end_date) = $2)
     `;
     const result = await pool.query(query, [parseInt(month), parseInt(year)]);
 
@@ -162,7 +194,7 @@ const updateLeaveStatus = async (req, res) => {
     await client.query('BEGIN');
 
     // Get the request details
-    const reqRes = await client.query('SELECT user_id, leave_type, start_date, end_date, status FROM leave_requests WHERE id = $1', [id]);
+    const reqRes = await client.query('SELECT user_id, leave_type, start_date, end_date, status, is_half_day FROM leave_requests WHERE id = $1', [id]);
     if (reqRes.rows.length === 0) {
       throw new Error('Leave request not found');
     }
@@ -179,8 +211,7 @@ const updateLeaveStatus = async (req, res) => {
     if (status === 'Approved') {
       const start = new Date(leaveReq.start_date);
       const end = new Date(leaveReq.end_date);
-      const diffTime = Math.abs(end - start);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      const diffDays = calculateWorkingDays(start, end, leaveReq.is_half_day);
       const currentYear = start.getFullYear();
 
       await client.query(`
@@ -201,11 +232,56 @@ const updateLeaveStatus = async (req, res) => {
   }
 };
 
+const getUserLeaveBalances = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const currentYear = new Date().getFullYear();
+    const query = `SELECT leave_type, total_days, used_days FROM leave_balances WHERE user_id = $1 AND year = $2`;
+    const result = await pool.query(query, [userId, currentYear]);
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error fetching balances:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to fetch leave balances' } });
+  }
+};
+
+const getEmployeeLeaveData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let userIdUuid = id;
+
+    // If id is not a valid UUID (e.g. it's a numeric ID like '4'), look up the user_id from hr_employees
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      const userRes = await pool.query('SELECT user_id FROM hr_employees WHERE employee_id = $1', [parseInt(id)]);
+      if (userRes.rows.length === 0) {
+        return res.status(404).json({ success: false, error: { message: 'Employee not found' } });
+      }
+      userIdUuid = userRes.rows[0].user_id;
+    }
+    
+    const currentYear = new Date().getFullYear();
+    const balRes = await pool.query('SELECT leave_type, total_days, used_days FROM leave_balances WHERE user_id = $1 AND year = $2', [userIdUuid, currentYear]);
+    const histRes = await pool.query('SELECT id, leave_type, start_date, end_date, status, reason, is_half_day, half_day_type, attachment_url, created_at FROM leave_requests WHERE user_id = $1 ORDER BY created_at DESC', [userIdUuid]);
+
+    res.json({
+      success: true,
+      data: { balances: balRes.rows, history: histRes.rows }
+    });
+
+  } catch (error) {
+    console.error('Error fetching employee leave data:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to fetch employee leave data' } });
+  }
+};
+
 module.exports = {
   getLeaveSummary,
   getUpcomingLeaves,
-  applyForLeave,
   getCalendarData,
+  applyForLeave,
   getAllPendingRequests,
-  updateLeaveStatus
+  updateLeaveStatus,
+  getUserLeaveBalances,
+  getEmployeeLeaveData
 };

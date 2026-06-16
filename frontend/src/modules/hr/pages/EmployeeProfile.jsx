@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchHREmployeeByIdApi, updateHREmployeeApi, fetchHRMetadataApi, updateHREmployeeRoleApi } from '../../../api/hr';
+import { fetchEmployeeLeavesApi } from '../../../api/leaves';
 import { getRoles } from '../../../api/roles';
-import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X, Lock, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
@@ -63,6 +64,29 @@ const EmployeeProfile = () => {
       });
     }
   }, [isEditing, activeTab]);
+
+  const [employeeLeaves, setEmployeeLeaves] = useState({ balances: [], history: [] });
+  const [isLoadingLeaves, setIsLoadingLeaves] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'Time Off') {
+      loadLeaves();
+    }
+  }, [activeTab]);
+
+  const loadLeaves = async () => {
+    try {
+      setIsLoadingLeaves(true);
+      const res = await fetchEmployeeLeavesApi(id);
+      if (res.data?.success) {
+        setEmployeeLeaves(res.data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load employee leaves');
+    } finally {
+      setIsLoadingLeaves(false);
+    }
+  };
 
   // Info States
   const [personalInfo, setPersonalInfo] = useState({
@@ -255,6 +279,7 @@ const EmployeeProfile = () => {
     { id: 'Pay and Benefits', icon: IndianRupee },
     { id: 'Statutory', icon: ShieldCheck },
     { id: 'Identities', icon: Fingerprint },
+    { id: 'Time Off', icon: Calendar },
     { id: 'Admin Data', icon: Lock }
   ];
 
@@ -805,6 +830,74 @@ const EmployeeProfile = () => {
               </div>
               <p className="text-[11px] text-[var(--text-muted)] mt-2">Changing the role will immediately update the user's permissions and access level across the entire platform.</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Time Off Tab */}
+      {activeTab === 'Time Off' && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+            <h2 className="text-sm font-black text-[var(--text-main)] uppercase tracking-widest mb-6">Leave Balances</h2>
+            {isLoadingLeaves ? (
+              <div className="flex justify-center p-6"><Loader2 className="animate-spin text-[var(--accent)]" /></div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {(() => {
+                  const defaultBalances = { 
+                    'Paid Leave': {total:12,used:0}, 
+                    'Sick Leave': {total:6,used:0}, 
+                    'Complementary Leave': {total:0,used:0},
+                    'Emergency Leave': {total:3,used:0},
+                    'LOP (Loss Of Pay)': {total:0,used:0}
+                  };
+                  let formattedBalances = { ...defaultBalances };
+                  employeeLeaves.balances.forEach(b => {
+                    formattedBalances[b.leave_type] = { total: parseFloat(b.total_days), used: parseFloat(b.used_days) };
+                  });
+                  
+                  return Object.entries(formattedBalances).map(([type, bal], idx) => (
+                    <div key={idx} className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)] flex flex-col items-center justify-center text-center">
+                      <span className="text-3xl font-black text-[var(--accent)]">{bal.total - bal.used}</span>
+                      <span className="text-[11px] font-bold text-[var(--text-muted)] mt-1 uppercase tracking-wider">{type}</span>
+                      <span className="text-[10px] text-[var(--text-dim)] mt-0.5">Used: {bal.used}</span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+            <h2 className="text-sm font-black text-[var(--text-main)] uppercase tracking-widest mb-6">Leave History</h2>
+            {isLoadingLeaves ? (
+              <div className="flex justify-center p-6"><Loader2 className="animate-spin text-[var(--accent)]" /></div>
+            ) : (
+              <div className="space-y-4">
+                {employeeLeaves.history.map(req => (
+                  <div key={req.id} className="flex justify-between items-center bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
+                    <div>
+                      <h4 className="text-[13px] font-bold text-[var(--text-main)]">{req.leave_type}</h4>
+                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5 font-medium">
+                        {new Date(req.start_date).toLocaleDateString()} to {new Date(req.end_date).toLocaleDateString()} 
+                        {req.is_half_day && ` (${req.half_day_type})`}
+                      </p>
+                      {req.reason && <p className="text-[11px] text-[var(--text-dim)] mt-1 italic">"{req.reason}"</p>}
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest ${
+                      req.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
+                      req.status === 'Rejected' ? 'bg-rose-50 text-rose-600 border border-rose-200' :
+                      'bg-orange-50 text-orange-600 border border-orange-200'
+                    }`}>
+                      {req.status}
+                    </span>
+                  </div>
+                ))}
+                {employeeLeaves.history.length === 0 && (
+                  <div className="text-[13px] text-[var(--text-muted)] text-center py-4">No leave history found.</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,65 +1,100 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Loader2, ArrowLeft, Save, User, Briefcase, IndianRupee, FileText, ChevronRight, Check, CreditCard } from 'lucide-react';
+import { Loader2, ArrowLeft, Save, User, Briefcase, IndianRupee, FileText, ChevronRight, Check, CreditCard, ClipboardCheck, UploadCloud, Camera, MapPin, PhoneCall, Trash2 } from 'lucide-react';
 import { fetchHRMetadataApi, createHREmployeeApi } from '../../../api/hr';
 import { getRoles } from '../../../api/roles';
+import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 
 const STEPS = [
   { id: 1, label: 'Personal', icon: User },
   { id: 2, label: 'Job', icon: Briefcase },
   { id: 3, label: 'Pay & Benefits', icon: IndianRupee },
   { id: 4, label: 'Statutory', icon: FileText },
-  { id: 5, label: 'Identities', icon: CreditCard }
+  { id: 5, label: 'Identities', icon: CreditCard },
+  { id: 6, label: 'Review', icon: ClipboardCheck }
 ];
+
+const INITIAL_FORM_DATA = {
+  user_id: '', role_id: '', full_name: '', email: '', phone_number: '', image_url: '',
+  department_id: '', designation_id: '', designation_name: '',
+  date_of_joining: '', employment_status: 'Full-Time', 
+  base_salary: '', work_location: '',
+  personal_info: {
+    nickname: '', gender: 'Male', dob: '', blood_group: '', fathers_name: '',
+    residential_status: '', place_of_birth: '', country_of_origin: '',
+    religion_caste: '', physically_challenged: 'No', disability_type: '',
+    international_employee: 'No', is_director: 'No', hobby: '',
+    height: '', weight: '', identification_mark: '',
+    marital_status: 'Single', spouse_name: '', marriage_date: ''
+  },
+  address_info: {
+    current_address: '', current_city: '', current_state: '', current_zip: '', current_country: 'India',
+    permanent_address: '', permanent_city: '', permanent_state: '', permanent_zip: '', permanent_country: 'India',
+    same_as_current: false
+  },
+  emergency_contacts: [
+    { name: '', relation: '', phone: '', email: '' }
+  ],
+  job_info: {
+    date_of_hiring: '', probation_period: '', notice_period: '',
+    confirmation_date: '', current_company_experience: '', referred_by: '',
+    reporting_manager: ''
+  },
+  pay_info: {
+    name_on_account: '', bank_name: '', bank_branch: '',
+    bank_account_no: '', ifsc_code: '', account_type: '',
+    payment_type: 'Bank Transfer', dd_payable_at: ''
+  },
+  statutory_info: {
+    esi_covered: 'No', esi_number: '',
+    pf_covered: 'No', uan: '', pf_no: '', pf_join_date: '',
+    family_pf_no: '', eps_member: 'No', excess_epf: 'No', excess_eps: 'No', pf_note: '',
+    lwf_covered: 'No'
+  },
+  identities_info: {
+    pan_doc_no: '', pan_name: '',
+    bank_doc_no: '', bank_name_on_doc: '',
+    aadhaar_doc_no: '', aadhaar_name: ''
+  }
+};
 
 const AddEmployeeWizard = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  
+  const [formData, setFormData] = useState(() => {
+    const draft = localStorage.getItem('employee_wizard_draft');
+    if (draft) {
+      try { return JSON.parse(draft).formData; } catch(e){}
+    }
+    return INITIAL_FORM_DATA;
+  });
+
+  const [currentStep, setCurrentStep] = useState(() => {
+    const draft = localStorage.getItem('employee_wizard_draft');
+    if (draft) {
+      try { return JSON.parse(draft).currentStep || 1; } catch(e){}
+    }
+    return 1;
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [metadata, setMetadata] = useState({ departments: [], designations: [], available_users: [] });
   const [systemRoles, setSystemRoles] = useState([]);
-
-  const [formData, setFormData] = useState({
-    user_id: '', role_id: '', full_name: '', email: '', phone_number: '', 
-    department_id: '', designation_id: '', designation_name: '',
-    date_of_joining: '', employment_status: 'Full-Time', 
-    base_salary: '', work_location: '',
-    personal_info: {
-      nickname: '', gender: 'Male', dob: '', blood_group: '', fathers_name: '',
-      residential_status: '', place_of_birth: '', country_of_origin: '',
-      religion_caste: '', physically_challenged: 'No', disability_type: '',
-      international_employee: 'No', is_director: 'No', hobby: '',
-      height: '', weight: '', identification_mark: '',
-      marital_status: 'Single', spouse_name: '', marriage_date: ''
-    },
-    job_info: {
-      date_of_hiring: '', probation_period: '', notice_period: '',
-      confirmation_date: '', current_company_experience: '', referred_by: '',
-      reporting_manager: ''
-    },
-    pay_info: {
-      name_on_account: '', bank_name: '', bank_branch: '',
-      bank_account_no: '', ifsc_code: '', account_type: '',
-      payment_type: 'Bank Transfer', dd_payable_at: ''
-    },
-    statutory_info: {
-      esi_covered: 'No', esi_number: '',
-      pf_covered: 'No', uan: '', pf_no: '', pf_join_date: '',
-      family_pf_no: '', eps_member: 'No', excess_epf: 'No', excess_eps: 'No', pf_note: '',
-      lwf_covered: 'No'
-    },
-    identities_info: {
-      pan_doc_no: '', pan_name: '',
-      bank_doc_no: '', bank_name_on_doc: '',
-      aadhaar_doc_no: '', aadhaar_name: ''
-    }
-  });
+  const [uploadMock, setUploadMock] = useState({ avatar: false, pan: false, aadhaar: false });
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState(null);
+  const [croppedImageUrl, setCroppedImageUrl] = useState(null);
 
   useEffect(() => {
     loadMetadata();
     loadRoles();
   }, []);
+
+  // Auto-save draft
+  useEffect(() => {
+    localStorage.setItem('employee_wizard_draft', JSON.stringify({ formData, currentStep }));
+  }, [formData, currentStep]);
 
   const loadMetadata = async () => {
     try {
@@ -77,6 +112,42 @@ const AddEmployeeWizard = () => {
     } catch (e) {
       console.warn('Could not fetch roles');
     }
+  };
+
+  const handleAvatarSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        setRawImageSrc(reader.result);
+        setIsCropperOpen(true);
+      };
+      reader.readAsDataURL(file);
+      e.target.value = ''; // Reset input so same file can be selected again
+    }
+  };
+
+  const handleCropComplete = async (croppedFile) => {
+    setIsCropperOpen(false);
+    if (!croppedFile) {
+      toast.error("Failed to crop image.");
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCroppedImageUrl(reader.result);
+      setUploadMock(prev => ({...prev, avatar: true}));
+      setFormData(prev => ({...prev, image_url: reader.result}));
+    };
+    reader.readAsDataURL(croppedFile);
+  };
+
+  const handleClearDraft = () => {
+    localStorage.removeItem('employee_wizard_draft');
+    setFormData(INITIAL_FORM_DATA);
+    setCurrentStep(1);
+    toast.success('Draft cleared');
   };
 
   const handleNext = () => {
@@ -112,6 +183,7 @@ const AddEmployeeWizard = () => {
       const res = await createHREmployeeApi(formData);
       if (res.data?.success) {
         toast.success('Employee created successfully');
+        localStorage.removeItem('employee_wizard_draft');
         navigate('/hr/employees');
       }
     } catch (error) {
@@ -121,13 +193,53 @@ const AddEmployeeWizard = () => {
     }
   };
 
-  // Reverting to balanced styling classes (normal font sizes/padding, but tight layout margins)
+  const handlePANChange = (e) => {
+    let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (val.length > 10) val = val.slice(0, 10);
+    setFormData({...formData, identities_info: {...formData.identities_info, pan_doc_no: val}});
+  };
+
+  const handleAadhaarChange = (e) => {
+    let val = e.target.value.replace(/[^0-9]/g, '');
+    if (val.length > 12) val = val.slice(0, 12);
+    let formatted = val.match(/.{1,4}/g)?.join('-') || val;
+    setFormData({...formData, identities_info: {...formData.identities_info, aadhaar_doc_no: formatted}});
+  };
+
+  const DocumentDropzone = ({ label, id, isUploaded }) => (
+    <div className="border-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] transition-colors rounded-xl p-6 flex flex-col items-center justify-center bg-[var(--bg-card)] cursor-pointer relative group h-[140px]">
+       {isUploaded ? (
+         <>
+          <Check size={32} className="text-green-500 mb-3" />
+          <p className="text-[13px] font-bold text-[var(--text-main)]">{label} Uploaded Successfully</p>
+         </>
+       ) : (
+         <>
+          <UploadCloud size={32} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors mb-3" />
+          <p className="text-[13px] font-bold text-[var(--text-main)]">Drop {label} here or click to browse</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1">PDF, JPG, PNG up to 5MB</p>
+         </>
+       )}
+       <input 
+         type="file" 
+         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+         accept=".pdf,image/*" 
+         onChange={(e) => {
+           if(e.target.files?.length) {
+             setUploadMock(prev => ({...prev, [id]: true}));
+             toast.success(`${label} attached`);
+           }
+         }}
+       />
+    </div>
+  );
+
   const inputClass = "w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 px-4 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm";
   const labelClass = "block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-1.5";
   const sectionTitleClass = "text-[14px] font-black uppercase tracking-widest text-[var(--text-main)] border-b border-[var(--border-color)] pb-2 mb-5 flex items-center gap-2";
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-6">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-6 relative">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4 mt-2 animate-entrance-down">
@@ -142,12 +254,16 @@ const AddEmployeeWizard = () => {
             </p>
           </div>
         </div>
+        <button onClick={handleClearDraft} className="text-[12px] font-bold text-[var(--text-muted)] hover:text-red-500 transition-colors uppercase tracking-widest flex items-center gap-2">
+          <Trash2 size={14} /> Clear Draft
+        </button>
       </div>
 
       {/* Stepper */}
       <div className="workspace-card p-5 mb-6 relative z-10">
-        <div className="flex items-center justify-between relative max-w-[800px] mx-auto">
-          <div className="absolute top-6 left-[10%] w-[80%] h-1 bg-[var(--bg-workspace)] -z-10 -translate-y-1/2 rounded-full overflow-hidden border border-[var(--border-color)]">
+        <div className="flex items-center justify-between relative max-w-[900px] mx-auto">
+          {/* For 6 steps, each item gets 1/6 (16.66%). The center of the first is 8.33%, center of last is 91.66%, width = 83.33% */}
+          <div className="absolute top-6 left-[8.33%] w-[83.33%] h-1 bg-[var(--bg-workspace)] -z-10 -translate-y-1/2 rounded-full overflow-hidden border border-[var(--border-color)]">
             <div 
               className="h-full transition-all duration-500 ease-out"
               style={{ 
@@ -189,14 +305,28 @@ const AddEmployeeWizard = () => {
           
           {/* STEP 1: Personal */}
           {currentStep === 1 && (
-            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500">
+            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500 max-w-6xl mx-auto">
+              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                {/* Account Details & Avatar */}
                 <div className="workspace-card p-6 border-none shadow-none bg-transparent">
                   <h3 className={sectionTitleClass}>
                     <User size={18} className="text-[var(--accent)]" /> Account Details
                   </h3>
-                  <div className="space-y-6">
-                    <div>
+                  
+                  <div className="flex items-start gap-6 mb-6">
+                    <div className="relative group">
+                      <div className="w-24 h-24 rounded-full bg-[var(--bg-card)] border-2 border-dashed border-[var(--border-color)] flex items-center justify-center overflow-hidden">
+                        {uploadMock.avatar && croppedImageUrl ? (
+                          <img src={croppedImageUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <Camera size={24} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
+                        )}
+                      </div>
+                      <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleAvatarSelect} />
+                    </div>
+                    <div className="flex-1">
                       <label className={labelClass}>Link Existing System User (Optional)</label>
                       <select 
                         value={formData.user_id} 
@@ -215,7 +345,9 @@ const AddEmployeeWizard = () => {
                       </select>
                       <p className="text-[11px] text-[var(--text-dim)] mt-2 italic">Select an existing account, or leave blank to create a new one.</p>
                     </div>
+                  </div>
 
+                  <div className="space-y-6">
                     <div>
                       <label className={labelClass}>System Role *</label>
                       <select value={formData.role_id} onChange={e => setFormData({...formData, role_id: e.target.value})} className={inputClass} disabled={!!formData.user_id}>
@@ -244,6 +376,7 @@ const AddEmployeeWizard = () => {
                   </div>
                 </div>
 
+                {/* Personal Profile */}
                 <div className="workspace-card p-6 border-none shadow-none bg-transparent">
                   <h3 className={sectionTitleClass}>
                     <User size={18} className="text-[var(--accent)]" /> Personal Profile
@@ -288,6 +421,97 @@ const AddEmployeeWizard = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Address Info */}
+                <div className="workspace-card p-6 border-none shadow-none bg-transparent lg:col-span-2">
+                  <h3 className={sectionTitleClass}>
+                    <MapPin size={18} className="text-[var(--accent)]" /> Address Details
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <h4 className="text-[12px] font-bold text-[var(--text-main)] mb-2">Current Address</h4>
+                      <input type="text" placeholder="Street Address" value={formData.address_info.current_address} onChange={e => setFormData({...formData, address_info: {...formData.address_info, current_address: e.target.value}})} className={inputClass} />
+                      <div className="grid grid-cols-2 gap-4">
+                        <input type="text" placeholder="City" value={formData.address_info.current_city} onChange={e => setFormData({...formData, address_info: {...formData.address_info, current_city: e.target.value}})} className={inputClass} />
+                        <input type="text" placeholder="State" value={formData.address_info.current_state} onChange={e => setFormData({...formData, address_info: {...formData.address_info, current_state: e.target.value}})} className={inputClass} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <input type="text" placeholder="Zip / Postal Code" value={formData.address_info.current_zip} onChange={e => setFormData({...formData, address_info: {...formData.address_info, current_zip: e.target.value}})} className={inputClass} />
+                        <input type="text" placeholder="Country" value={formData.address_info.current_country} onChange={e => setFormData({...formData, address_info: {...formData.address_info, current_country: e.target.value}})} className={inputClass} />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-[12px] font-bold text-[var(--text-main)]">Permanent Address</h4>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" className="accent-[var(--accent)]" checked={formData.address_info.same_as_current} onChange={e => {
+                            const isChecked = e.target.checked;
+                            setFormData({...formData, address_info: {...formData.address_info, same_as_current: isChecked, 
+                              permanent_address: isChecked ? formData.address_info.current_address : formData.address_info.permanent_address,
+                              permanent_city: isChecked ? formData.address_info.current_city : formData.address_info.permanent_city,
+                              permanent_state: isChecked ? formData.address_info.current_state : formData.address_info.permanent_state,
+                              permanent_zip: isChecked ? formData.address_info.current_zip : formData.address_info.permanent_zip,
+                              permanent_country: isChecked ? formData.address_info.current_country : formData.address_info.permanent_country,
+                            }});
+                          }} />
+                          <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Same as Current</span>
+                        </label>
+                      </div>
+                      <input disabled={formData.address_info.same_as_current} type="text" placeholder="Street Address" value={formData.address_info.permanent_address} onChange={e => setFormData({...formData, address_info: {...formData.address_info, permanent_address: e.target.value}})} className={inputClass} />
+                      <div className="grid grid-cols-2 gap-4">
+                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="City" value={formData.address_info.permanent_city} onChange={e => setFormData({...formData, address_info: {...formData.address_info, permanent_city: e.target.value}})} className={inputClass} />
+                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="State" value={formData.address_info.permanent_state} onChange={e => setFormData({...formData, address_info: {...formData.address_info, permanent_state: e.target.value}})} className={inputClass} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="Zip / Postal Code" value={formData.address_info.permanent_zip} onChange={e => setFormData({...formData, address_info: {...formData.address_info, permanent_zip: e.target.value}})} className={inputClass} />
+                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="Country" value={formData.address_info.permanent_country} onChange={e => setFormData({...formData, address_info: {...formData.address_info, permanent_country: e.target.value}})} className={inputClass} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Emergency Contacts */}
+                <div className="workspace-card p-6 border-none shadow-none bg-transparent lg:col-span-2">
+                  <h3 className={sectionTitleClass}>
+                    <PhoneCall size={18} className="text-[var(--accent)]" /> Emergency Contacts
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div>
+                      <label className={labelClass}>Contact Name</label>
+                      <input type="text" value={formData.emergency_contacts[0].name} onChange={e => {
+                        const newContacts = [...formData.emergency_contacts];
+                        newContacts[0].name = e.target.value;
+                        setFormData({...formData, emergency_contacts: newContacts});
+                      }} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Relation</label>
+                      <input type="text" placeholder="e.g. Spouse, Father" value={formData.emergency_contacts[0].relation} onChange={e => {
+                        const newContacts = [...formData.emergency_contacts];
+                        newContacts[0].relation = e.target.value;
+                        setFormData({...formData, emergency_contacts: newContacts});
+                      }} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Phone Number</label>
+                      <input type="text" value={formData.emergency_contacts[0].phone} onChange={e => {
+                        const newContacts = [...formData.emergency_contacts];
+                        newContacts[0].phone = e.target.value;
+                        setFormData({...formData, emergency_contacts: newContacts});
+                      }} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Email (Optional)</label>
+                      <input type="email" value={formData.emergency_contacts[0].email} onChange={e => {
+                        const newContacts = [...formData.emergency_contacts];
+                        newContacts[0].email = e.target.value;
+                        setFormData({...formData, emergency_contacts: newContacts});
+                      }} className={inputClass} />
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
@@ -415,37 +639,102 @@ const AddEmployeeWizard = () => {
 
           {/* STEP 5: Identities */}
           {currentStep === 5 && (
-            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500 max-w-4xl mx-auto">
+            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500 max-w-5xl mx-auto">
               <h3 className={sectionTitleClass}>
                 <CreditCard size={18} className="text-[var(--accent)]" /> Identity Documents
               </h3>
-              <div className="space-y-6">
-                <div className="bg-[var(--bg-workspace)] p-5 rounded-xl border border-[var(--border-color)]">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-[var(--bg-workspace)] p-5 rounded-xl border border-[var(--border-color)] flex flex-col h-full">
                   <h4 className="text-[12px] font-black text-[var(--text-main)] mb-4 uppercase tracking-wider">PAN Details</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-4 mb-6">
                     <div>
-                      <label className={labelClass}>Document No.</label>
-                      <input type="text" value={formData.identities_info.pan_doc_no} onChange={e => setFormData({...formData, identities_info: {...formData.identities_info, pan_doc_no: e.target.value}})} className={inputClass} />
+                      <label className={labelClass}>PAN Number</label>
+                      <input type="text" placeholder="ABCDE1234F" value={formData.identities_info.pan_doc_no} onChange={handlePANChange} className={inputClass} />
                     </div>
                     <div>
                       <label className={labelClass}>Name As Per PAN</label>
                       <input type="text" value={formData.identities_info.pan_name} onChange={e => setFormData({...formData, identities_info: {...formData.identities_info, pan_name: e.target.value}})} className={inputClass} />
                     </div>
                   </div>
+                  <div className="mt-auto">
+                    <DocumentDropzone label="PAN Card" id="pan" isUploaded={uploadMock.pan} />
+                  </div>
                 </div>
-                <div className="bg-[var(--bg-workspace)] p-5 rounded-xl border border-[var(--border-color)]">
+
+                <div className="bg-[var(--bg-workspace)] p-5 rounded-xl border border-[var(--border-color)] flex flex-col h-full">
                   <h4 className="text-[12px] font-black text-[var(--text-main)] mb-4 uppercase tracking-wider">Aadhaar Details</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-4 mb-6">
                     <div>
-                      <label className={labelClass}>Document No.</label>
-                      <input type="text" value={formData.identities_info.aadhaar_doc_no} onChange={e => setFormData({...formData, identities_info: {...formData.identities_info, aadhaar_doc_no: e.target.value}})} className={inputClass} />
+                      <label className={labelClass}>Aadhaar Number</label>
+                      <input type="text" placeholder="1234-5678-9012" value={formData.identities_info.aadhaar_doc_no} onChange={handleAadhaarChange} className={inputClass} />
                     </div>
                     <div>
                       <label className={labelClass}>Name As Per Aadhaar</label>
                       <input type="text" value={formData.identities_info.aadhaar_name} onChange={e => setFormData({...formData, identities_info: {...formData.identities_info, aadhaar_name: e.target.value}})} className={inputClass} />
                     </div>
                   </div>
+                  <div className="mt-auto">
+                    <DocumentDropzone label="Aadhaar Card" id="aadhaar" isUploaded={uploadMock.aadhaar} />
+                  </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 6: Review */}
+          {currentStep === 6 && (
+            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500 max-w-5xl mx-auto">
+              <h3 className={sectionTitleClass}>
+                <ClipboardCheck size={18} className="text-[var(--accent)]" /> Review & Confirm
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <div className="workspace-card p-6 bg-[var(--bg-card)]">
+                  <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-wider mb-4 border-b border-[var(--border-color)] pb-2">Personal & Contact</h4>
+                  <ul className="space-y-3">
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Full Name:</span> <span className="font-medium text-[var(--text-main)]">{formData.full_name || '-'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Email:</span> <span className="font-medium text-[var(--text-main)]">{formData.email || '-'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Phone:</span> <span className="font-medium text-[var(--text-main)]">{formData.phone_number || '-'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">City:</span> <span className="font-medium text-[var(--text-main)]">{formData.address_info.current_city || '-'}</span></li>
+                  </ul>
+                </div>
+
+                <div className="workspace-card p-6 bg-[var(--bg-card)]">
+                  <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-wider mb-4 border-b border-[var(--border-color)] pb-2">Job Assignment</h4>
+                  <ul className="space-y-3">
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Department:</span> <span className="font-medium text-[var(--text-main)]">{metadata.departments.find(d => d.department_id === formData.department_id)?.name || '-'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Designation:</span> <span className="font-medium text-[var(--text-main)]">{formData.designation_name || '-'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Joining Date:</span> <span className="font-medium text-[var(--text-main)]">{formData.date_of_joining || '-'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Status:</span> <span className="font-medium text-[var(--text-main)]">{formData.employment_status || '-'}</span></li>
+                  </ul>
+                </div>
+
+                <div className="workspace-card p-6 bg-[var(--bg-card)]">
+                  <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-wider mb-4 border-b border-[var(--border-color)] pb-2">Pay & Statutory</h4>
+                  <ul className="space-y-3">
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Base Salary:</span> <span className="font-medium text-[var(--text-main)]">{formData.base_salary ? `₹${formData.base_salary}` : '-'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Payment Type:</span> <span className="font-medium text-[var(--text-main)]">{formData.pay_info.payment_type || '-'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">PF Covered:</span> <span className="font-medium text-[var(--text-main)]">{formData.statutory_info.pf_covered}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">ESI Covered:</span> <span className="font-medium text-[var(--text-main)]">{formData.statutory_info.esi_covered}</span></li>
+                  </ul>
+                </div>
+
+                <div className="workspace-card p-6 bg-[var(--bg-card)]">
+                  <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-wider mb-4 border-b border-[var(--border-color)] pb-2">Identities</h4>
+                  <ul className="space-y-3">
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">PAN Number:</span> <span className="font-medium text-[var(--text-main)]">{formData.identities_info.pan_doc_no || '-'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">PAN Uploaded:</span> <span className="font-medium text-[var(--text-main)]">{uploadMock.pan ? 'Yes' : 'No'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Aadhaar Number:</span> <span className="font-medium text-[var(--text-main)]">{formData.identities_info.aadhaar_doc_no || '-'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Aadhaar Uploaded:</span> <span className="font-medium text-[var(--text-main)]">{uploadMock.aadhaar ? 'Yes' : 'No'}</span></li>
+                  </ul>
+                </div>
+
+              </div>
+              
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 flex items-center justify-center text-center mt-6">
+                 <p className="text-[13px] font-bold text-[var(--text-muted)]">Please ensure all details are accurate before proceeding. The system will create the employee profile and automatically map permissions based on the selected role.</p>
               </div>
             </div>
           )}
@@ -489,6 +778,15 @@ const AddEmployeeWizard = () => {
           </div>
         </div>
       </div>
+      
+      {isCropperOpen && (
+        <ImageCropperModal
+          isOpen={isCropperOpen}
+          onClose={() => setIsCropperOpen(false)}
+          imageSrc={rawImageSrc}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 };

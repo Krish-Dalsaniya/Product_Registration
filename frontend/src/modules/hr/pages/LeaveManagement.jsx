@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Clock, Users, Calendar as CalendarIcon, FileText, Loader2, ChevronLeft, ChevronRight, User, Check, X, CheckCircle } from 'lucide-react';
-import { fetchLeaveSummaryApi, fetchUpcomingLeavesApi, fetchCalendarDataApi, fetchAllPendingRequestsApi, updateLeaveStatusApi } from '../../../api/leaves';
+import { fetchLeaveSummaryApi, fetchUpcomingLeavesApi, fetchCalendarDataApi, fetchAllPendingRequestsApi, updateLeaveStatusApi, fetchUserLeaveBalancesApi } from '../../../api/leaves';
 import ApplyLeaveModal from '../components/ApplyLeaveModal';
+import Modal from '../../../components/shared/Modal';
 import toast from 'react-hot-toast';
 
 
@@ -25,24 +26,29 @@ const LeaveManagement = () => {
   const [calendarData, setCalendarData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDayAbsences, setSelectedDayAbsences] = useState(null);
+
+  const [userBalances, setUserBalances] = useState(null);
 
   // Calendar State
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 2, 1)); // March 2026 default as per screenshot
+  const [currentDate, setCurrentDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [sumRes, upRes, calRes, pendRes] = await Promise.all([
+      const [sumRes, upRes, calRes, pendRes, balRes] = await Promise.all([
         fetchLeaveSummaryApi(),
         fetchUpcomingLeavesApi(),
         fetchCalendarDataApi(currentDate.getMonth() + 1, currentDate.getFullYear()),
-        fetchAllPendingRequestsApi()
+        fetchAllPendingRequestsApi(),
+        fetchUserLeaveBalancesApi()
       ]);
 
       if (sumRes.data?.success) setSummary(sumRes.data.data);
       if (upRes.data?.success) setUpcoming(upRes.data.data);
       if (calRes.data?.success) setCalendarData(calRes.data.data);
       if (pendRes.data?.success) setPendingRequests(pendRes.data.data);
+      if (balRes.data?.success) setUserBalances(balRes.data.data);
 
     } catch (error) {
       console.error(error);
@@ -93,23 +99,49 @@ const LeaveManagement = () => {
   const days = getDaysInMonth(currentDate);
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Simplified logic to determine dot color for calendar
-  // In a real app, this would cross-reference team data
+  // Calculate actual dot color based on real company leaves
   const getDayStatus = (day) => {
     if (!day) return null;
     const dayStr = day.toISOString().split('T')[0];
-    const isUserOnLeave = calendarData.some(l => {
+    
+    // Count how many people are on leave this day
+    const peopleOnLeaveCount = calendarData.filter(l => {
+      const start = new Date(l.start_date).toISOString().split('T')[0];
+      const end = new Date(l.end_date).toISOString().split('T')[0];
+      return dayStr >= start && dayStr <= end;
+    }).length;
+
+    // Skip weekends from showing available
+    const dayOfWeek = day.getDay();
+    if (dayOfWeek === 0) return null; // Only skip Sunday
+
+    if (peopleOnLeaveCount === 0) return 'available';
+    if (peopleOnLeaveCount < 3) return 'some';
+    return 'many';
+  };
+
+  const handleDayClick = (day) => {
+    if (!day) return;
+    const dayStr = day.toISOString().split('T')[0];
+    
+    // Find all people on leave this day
+    const peopleOnLeave = calendarData.filter(l => {
       const start = new Date(l.start_date).toISOString().split('T')[0];
       const end = new Date(l.end_date).toISOString().split('T')[0];
       return dayStr >= start && dayStr <= end;
     });
 
-    if (isUserOnLeave) return 'many'; // Red dot for user's own leaves
-    
-    // Randomize some dots for UI mockup purposes
-    if (day.getDate() % 7 === 0) return 'some';
-    if (day.getDate() === 15) return 'available';
-    return null;
+    if (peopleOnLeave.length > 0) {
+      setSelectedDayAbsences({
+        date: day,
+        leaves: peopleOnLeave
+      });
+    } else {
+      // Only show toast if it's a working day
+      if (day.getDay() !== 0) {
+        toast.success("Everyone is available today!");
+      }
+    }
   };
 
   if (isLoading && !summary) {
@@ -120,7 +152,23 @@ const LeaveManagement = () => {
     );
   }
 
-  const balances = summary?.balances || { PTO: {total:0,used:0}, 'Sick Leave': {total:0,used:0}, Personal: {total:0,used:0} };
+  const formatBalances = () => {
+    const defaultBalances = { 
+      'Paid Leave': {total:12,used:0}, 
+      'Sick Leave': {total:6,used:0}, 
+      'Complementary Leave': {total:0,used:0},
+      'Emergency Leave': {total:3,used:0},
+      'LOP (Loss Of Pay)': {total:0,used:0}
+    };
+    if (!userBalances || userBalances.length === 0) return defaultBalances;
+    
+    const formatted = {};
+    userBalances.forEach(b => {
+      formatted[b.leave_type] = { total: parseFloat(b.total_days), used: parseFloat(b.used_days) };
+    });
+    return { ...defaultBalances, ...formatted };
+  };
+  const balances = formatBalances();
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1400px] mx-auto pb-12">
@@ -205,7 +253,11 @@ const LeaveManagement = () => {
             {days.map((day, i) => {
               const status = getDayStatus(day);
               return (
-                <div key={i} className="flex flex-col items-center justify-start h-10">
+                <div 
+                  key={i} 
+                  className={`flex flex-col items-center justify-start h-10 ${day ? 'cursor-pointer hover:bg-[var(--bg-workspace)] rounded-lg transition-colors pt-1' : ''}`}
+                  onClick={() => handleDayClick(day)}
+                >
                   {day ? (
                     <>
                       <span className="text-[13px] font-medium text-[var(--text-main)] mb-1">{day.getDate()}</span>
@@ -331,6 +383,36 @@ const LeaveManagement = () => {
         onClose={() => setIsModalOpen(false)} 
         onSuccess={loadData}
       />
+
+      {selectedDayAbsences && (
+        <Modal
+          isOpen={!!selectedDayAbsences}
+          onClose={() => setSelectedDayAbsences(null)}
+          title={`Absences on ${selectedDayAbsences.date.toLocaleDateString()}`}
+          maxWidth="max-w-md"
+        >
+          <div className="p-6 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-4">
+              {selectedDayAbsences.leaves.map((leave, idx) => (
+                <div key={idx} className="flex justify-between items-center bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)] hover:-translate-y-1 transition-transform">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black shadow-inner">
+                      {leave.employee_name.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="text-[13px] font-bold text-[var(--text-main)]">{leave.employee_name}</h4>
+                      <p className="text-[11px] text-[var(--text-muted)] font-medium mt-0.5">{leave.leave_type}</p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded-md text-[9px] font-black uppercase tracking-widest shadow-sm">
+                    Out
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

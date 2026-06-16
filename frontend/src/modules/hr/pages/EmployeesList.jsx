@@ -63,21 +63,67 @@ const EmployeesList = () => {
   const handleExportCSV = () => {
     if (employees.length === 0) return;
     
-    const headers = ['Emp Code', 'Full Name', 'Email', 'Department', 'Designation', 'Status', 'Date of Joining', 'Work Location'];
-    const rows = filteredEmployees.map(emp => [
-      emp.emp_code,
-      emp.full_name,
-      emp.email,
-      emp.department_name || 'N/A',
-      emp.designation_name || 'N/A',
-      emp.employment_status,
-      emp.date_of_joining ? new Date(emp.date_of_joining).toLocaleDateString() : 'N/A',
-      emp.work_location || 'N/A'
-    ]);
+    const headers = [
+      'Emp Code', 'Full Name', 'Email', 'Department', 'Designation', 'Status', 'Date of Joining', 'Work Location',
+      'Gender', 'Date of Birth', 'Marital Status',
+      'Current City', 'Permanent City', 
+      'Base Salary', 'Payment Type', 'Bank Name', 'Account No', 'IFSC Code',
+      'PAN Number', 'Aadhaar Number',
+      'PF Covered', 'UAN', 'ESI Covered',
+      'Emergency Contact Name', 'Emergency Contact Phone'
+    ];
+    
+    const rows = filteredEmployees.map(emp => {
+      const pInfo = typeof emp.personal_info === 'string' ? JSON.parse(emp.personal_info) : (emp.personal_info || {});
+      const aInfo = typeof emp.address_info === 'string' ? JSON.parse(emp.address_info) : (emp.address_info || {});
+      const payInfo = typeof emp.pay_info === 'string' ? JSON.parse(emp.pay_info) : (emp.pay_info || {});
+      const iInfo = typeof emp.identities_info === 'string' ? JSON.parse(emp.identities_info) : (emp.identities_info || {});
+      const sInfo = typeof emp.statutory_info === 'string' ? JSON.parse(emp.statutory_info) : (emp.statutory_info || {});
+      
+      let eContact = {};
+      try {
+        const eContacts = typeof emp.emergency_contacts === 'string' ? JSON.parse(emp.emergency_contacts) : (emp.emergency_contacts || []);
+        if (eContacts.length > 0) eContact = eContacts[0];
+      } catch(e) {}
+
+      return [
+        emp.emp_code || '',
+        emp.full_name || '',
+        emp.email || '',
+        emp.department_name || 'N/A',
+        emp.designation_name || 'N/A',
+        emp.employment_status || '',
+        emp.date_of_joining ? new Date(emp.date_of_joining).toLocaleDateString() : 'N/A',
+        emp.work_location || 'N/A',
+        
+        pInfo.gender || '',
+        pInfo.dob || '',
+        pInfo.marital_status || '',
+        
+        aInfo.current_city || '',
+        aInfo.permanent_city || '',
+        
+        emp.base_salary || '',
+        payInfo.payment_type || '',
+        payInfo.bank_name || '',
+        payInfo.bank_account_no || '',
+        payInfo.ifsc_code || '',
+        
+        iInfo.pan_doc_no || '',
+        iInfo.aadhaar_doc_no || '',
+        
+        sInfo.pf_covered || 'No',
+        sInfo.uan || '',
+        sInfo.esi_covered || 'No',
+        
+        eContact.name || '',
+        eContact.phone || ''
+      ];
+    });
     
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     ].join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
