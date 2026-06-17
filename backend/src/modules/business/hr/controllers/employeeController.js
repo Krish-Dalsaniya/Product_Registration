@@ -13,6 +13,7 @@ const getEmployees = async (req, res, next) => {
         e.date_of_joining, 
         e.employment_status, 
         e.work_location,
+        e.manager_id,
         u.user_id,
         u.full_name,
         u.email,
@@ -78,6 +79,7 @@ const createEmployee = async (req, res, next) => {
       user_id, role_id, // New optional field to link existing user and assign role
       full_name, email,
       department_id, designation_id, designation_name,
+      manager_id,
       date_of_joining, employment_status, base_salary, work_location,
       personal_info, job_info, pay_info, statutory_info, identities_info
     } = req.body;
@@ -126,13 +128,13 @@ const createEmployee = async (req, res, next) => {
     // 4. Create the HR Employee record
     const empRes = await client.query(`
       INSERT INTO hr_employees (
-        user_id, emp_code, department_id, designation_id, 
+        user_id, emp_code, department_id, designation_id, manager_id,
         date_of_joining, employment_status, base_salary, work_location,
         personal_info, job_info, pay_info, statutory_info, identities_info
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING employee_id
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING employee_id
     `, [
-      finalUserId, empCode, department_id, finalDesignationId, 
+      finalUserId, empCode, department_id, finalDesignationId, manager_id || null,
       date_of_joining, employment_status, base_salary ? parseFloat(base_salary) : null, work_location,
       personal_info ? JSON.stringify(personal_info) : '{}',
       job_info ? JSON.stringify(job_info) : '{}',
@@ -187,7 +189,7 @@ const updateEmployee = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { 
-      department_id, designation_id, designation_name,
+      department_id, designation_id, designation_name, manager_id,
       date_of_joining, employment_status, base_salary, work_location,
       personal_info, address_info, education_info, emergency_contacts,
       job_info, pay_info, statutory_info, identities_info, image_url
@@ -210,8 +212,9 @@ const updateEmployee = async (req, res, next) => {
         pay_info = COALESCE($12, pay_info),
         statutory_info = COALESCE($13, statutory_info),
         identities_info = COALESCE($14, identities_info),
+        manager_id = $15,
         updated_at = CURRENT_TIMESTAMP
-      WHERE employee_id = $15
+      WHERE employee_id = $16
       RETURNING *
     `;
     
@@ -235,6 +238,7 @@ const updateEmployee = async (req, res, next) => {
       pay_info ? JSON.stringify(pay_info) : null,
       statutory_info ? JSON.stringify(statutory_info) : null,
       identities_info ? JSON.stringify(identities_info) : null,
+      manager_id || null,
       id
     ];
 
@@ -330,6 +334,28 @@ const updateEmployeeRole = async (req, res, next) => {
   }
 };
 
+const getEmployeeHierarchy = async (req, res, next) => {
+  try {
+    const query = `
+      SELECT 
+        e.employee_id, 
+        e.manager_id,
+        e.emp_code,
+        u.full_name as name,
+        ds.name as designation_name,
+        u.image_url
+      FROM hr_employees e
+      JOIN users u ON e.user_id = u.user_id
+      LEFT JOIN hr_designations ds ON e.designation_id = ds.designation_id
+      WHERE e.employment_status != 'Terminated'
+    `;
+    const result = await db.query(query);
+    sendSuccess(res, result.rows, 'Employee hierarchy fetched successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getEmployees,
   getEmployeeById,
@@ -337,5 +363,6 @@ module.exports = {
   updateEmployee,
   deleteEmployee,
   getDepartmentsAndDesignations,
-  updateEmployeeRole
+  updateEmployeeRole,
+  getEmployeeHierarchy
 };

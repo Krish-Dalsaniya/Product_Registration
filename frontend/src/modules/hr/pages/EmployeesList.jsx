@@ -191,21 +191,21 @@ const EmployeesList = () => {
           <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
             <Users size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
           </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
-              Employee Directory
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none mr-2">
+              Employees
             </h1>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <button 
-            onClick={handleExportCSV}
-            className="px-6 py-3 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] transition-colors flex items-center gap-2 group shadow-sm bg-[var(--bg-card)]"
-          >
-            <Download size={18} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
-            <span className="text-[12px] md:text-[14px] font-bold text-[var(--text-main)]">Export CSV</span>
-          </button>
+            <button 
+              onClick={handleExportCSV}
+              className="px-6 py-3 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] transition-colors flex items-center gap-2 group shadow-sm bg-[var(--bg-card)]"
+            >
+              <Download size={18} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
+              <span className="text-[12px] md:text-[14px] font-bold text-[var(--text-main)]">Export CSV</span>
+            </button>
           
           <button 
             onClick={() => navigate('/hr/employees/new')}

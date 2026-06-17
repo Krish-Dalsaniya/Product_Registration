@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { fetchHREmployeeByIdApi, updateHREmployeeApi, fetchHRMetadataApi, updateHREmployeeRoleApi } from '../../../api/hr';
+import { fetchHREmployeeByIdApi, updateHREmployeeApi, fetchHRMetadataApi, updateHREmployeeRoleApi, fetchHREmployeesApi } from '../../../api/hr';
 import { fetchEmployeeLeavesApi } from '../../../api/leaves';
 import { getRoles } from '../../../api/roles';
 import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X, Lock, Calendar } from 'lucide-react';
@@ -39,6 +39,7 @@ const EmployeeProfile = () => {
   const [isEditing, setIsEditing] = useState(queryParams.get('edit') === 'true');
   const [activeTab, setActiveTab] = useState('Personal');
   const [metadata, setMetadata] = useState({ departments: [], designations: [] });
+  const [employees, setEmployees] = useState([]);
   const [systemRoles, setSystemRoles] = useState([]);
   const [selectedRoleId, setSelectedRoleId] = useState('');
 
@@ -133,9 +134,10 @@ const EmployeeProfile = () => {
   const loadEmployee = async () => {
     try {
       setIsLoading(true);
-      const [empRes, metaRes] = await Promise.all([
+      const [empRes, metaRes, empsRes] = await Promise.all([
         fetchHREmployeeByIdApi(id),
-        fetchHRMetadataApi()
+        fetchHRMetadataApi(),
+        fetchHREmployeesApi()
       ]);
       
       if (empRes.data?.success) {
@@ -151,6 +153,10 @@ const EmployeeProfile = () => {
       
       if (metaRes.data?.success) {
         setMetadata(metaRes.data.data);
+      }
+      
+      if (empsRes.data?.success) {
+        setEmployees(empsRes.data.data);
       }
       
       // Try fetching roles (might fail if not admin, which is fine)
@@ -249,7 +255,8 @@ const EmployeeProfile = () => {
         image_url: employee.image_url,
         department_id: employee.department_id || null,
         designation_id: employee.designation_id || null,
-        designation_name: employee.designation_name || null
+        designation_name: employee.designation_name || null,
+        manager_id: employee.manager_id || null
       };
       const res = await updateHREmployeeApi(id, payload);
       if (res.data?.success) {
@@ -492,7 +499,19 @@ const EmployeeProfile = () => {
                 <FormField label="Referred By" type="text" disabled={!isEditing} value={jobInfo.referred_by} onChange={e => setJobInfo({...jobInfo, referred_by: e.target.value})} isEditing={isEditing} />
               </div>
               <div>
-                <FormField label="Reporting Manager" type="text" disabled={!isEditing} value={jobInfo.reporting_manager} onChange={e => setJobInfo({...jobInfo, reporting_manager: e.target.value})} isEditing={isEditing} />
+                <FormField 
+                  label="Reporting Manager" 
+                  type="select" 
+                  disabled={!isEditing} 
+                  value={employee.manager_id || ''} 
+                  onChange={e => setEmployee({...employee, manager_id: e.target.value})} 
+                  isEditing={isEditing}
+                  readOnlyText={employee.manager_id ? employees.find(emp => emp.employee_id === employee.manager_id)?.full_name || 'Unknown' : 'None (Top Level)'}
+                  options={[
+                    { value: '', label: 'None (Top Level)' },
+                    ...employees.filter(emp => emp.employment_status !== 'Terminated' && emp.employee_id !== employee.employee_id).map(emp => ({ value: emp.employee_id, label: `${emp.full_name} (${emp.emp_code})` }))
+                  ]}
+                />
               </div>
               <div>
                 <FormField 

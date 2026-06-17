@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Loader2, ArrowLeft, Save, User, Briefcase, IndianRupee, FileText, ChevronRight, Check, CreditCard, ClipboardCheck, UploadCloud, Camera, MapPin, PhoneCall, Trash2 } from 'lucide-react';
-import { fetchHRMetadataApi, createHREmployeeApi } from '../../../api/hr';
+import { fetchHRMetadataApi, createHREmployeeApi, fetchHREmployeesApi } from '../../../api/hr';
 import { getRoles } from '../../../api/roles';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 
@@ -17,7 +17,7 @@ const STEPS = [
 
 const INITIAL_FORM_DATA = {
   user_id: '', role_id: '', full_name: '', email: '', phone_number: '', image_url: '',
-  department_id: '', designation_id: '', designation_name: '',
+  department_id: '', designation_id: '', designation_name: '', manager_id: '',
   date_of_joining: '', employment_status: 'Full-Time', 
   base_salary: '', work_location: '',
   personal_info: {
@@ -80,6 +80,7 @@ const AddEmployeeWizard = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [metadata, setMetadata] = useState({ departments: [], designations: [], available_users: [] });
+  const [employees, setEmployees] = useState([]);
   const [systemRoles, setSystemRoles] = useState([]);
   const [uploadMock, setUploadMock] = useState({ avatar: false, pan: false, aadhaar: false });
   const [isCropperOpen, setIsCropperOpen] = useState(false);
@@ -89,6 +90,7 @@ const AddEmployeeWizard = () => {
   useEffect(() => {
     loadMetadata();
     loadRoles();
+    loadEmployees();
   }, []);
 
   // Auto-save draft
@@ -111,6 +113,15 @@ const AddEmployeeWizard = () => {
       if (rolesRes.data?.success) setSystemRoles(rolesRes.data.data);
     } catch (e) {
       console.warn('Could not fetch roles');
+    }
+  };
+
+  const loadEmployees = async () => {
+    try {
+      const res = await fetchHREmployeesApi();
+      if (res.data?.success) setEmployees(res.data.data);
+    } catch (e) {
+      console.warn('Could not fetch employees');
     }
   };
 
@@ -539,6 +550,17 @@ const AddEmployeeWizard = () => {
                 <div>
                   <label className={labelClass}>Date of Joining *</label>
                   <input type="date" value={formData.date_of_joining} onChange={e => setFormData({...formData, date_of_joining: e.target.value})} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Reporting Manager</label>
+                  <select value={formData.manager_id} onChange={e => setFormData({...formData, manager_id: e.target.value})} className={inputClass}>
+                    <option value="">None (Top Level)</option>
+                    {employees.filter(emp => emp.employment_status !== 'Terminated').map(emp => (
+                      <option key={emp.employee_id} value={emp.employee_id}>
+                        {emp.full_name} ({emp.emp_code})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Employment Status</label>

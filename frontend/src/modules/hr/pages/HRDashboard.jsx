@@ -87,20 +87,7 @@ const HRDashboard = () => {
           <div className="flex-1 w-full min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={[
-                  { month: 'Feb', headcount: 14 },
-                  { month: 'Mar', headcount: 14 },
-                  { month: 'Apr', headcount: 15 },
-                  { month: 'May', headcount: 15 },
-                  { month: 'Jun', headcount: 16 },
-                  { month: 'Jul', headcount: 16 },
-                  { month: 'Aug', headcount: 17 },
-                  { month: 'Sep', headcount: 18 },
-                  { month: 'Oct', headcount: 18 },
-                  { month: 'Nov', headcount: 19 },
-                  { month: 'Dec', headcount: 19 },
-                  { month: 'Jan', headcount: 20 },
-                ]}
+                data={metrics?.headcountTrend || []}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <defs>
@@ -147,16 +134,7 @@ const HRDashboard = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={[
-                    { name: 'Design', value: 10 },
-                    { name: 'Engineering', value: 25 },
-                    { name: 'Finance', value: 5 },
-                    { name: 'HR', value: 10 },
-                    { name: 'Marketing', value: 15 },
-                    { name: 'Operations', value: 5 },
-                    { name: 'Product', value: 15 },
-                    { name: 'Sales', value: 15 },
-                  ]}
+                  data={metrics?.departmentDistribution || []}
                   cx="50%"
                   cy="50%"
                   innerRadius={80}
@@ -165,14 +143,10 @@ const HRDashboard = () => {
                   dataKey="value"
                   stroke="none"
                 >
-                  <Cell fill="#f43f5e" /> {/* Design - Rose */}
-                  <Cell fill="#6366f1" /> {/* Engineering - Indigo */}
-                  <Cell fill="#0ea5e9" /> {/* Finance - Sky */}
-                  <Cell fill="#f43f5e" /> {/* HR - Rose */}
-                  <Cell fill="#f97316" /> {/* Marketing - Orange */}
-                  <Cell fill="#14b8a6" /> {/* Operations - Teal */}
-                  <Cell fill="#a855f7" /> {/* Product - Purple */}
-                  <Cell fill="#10b981" /> {/* Sales - Emerald */}
+                  {metrics?.departmentDistribution?.map((entry, index) => {
+                    const COLORS = ['#6366f1', '#10b981', '#f43f5e', '#0ea5e9', '#f97316', '#a855f7', '#14b8a6', '#eab308'];
+                    return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
+                  })}
                 </Pie>
                 <RechartsTooltip 
                   contentStyle={{ borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-card)' }}
@@ -202,28 +176,40 @@ const HRDashboard = () => {
           </div>
           
           <div className="space-y-6 flex-1">
-            {[
-              { title: 'New Employee Onboarded', desc: 'Sarah Jenkins joined Engineering', time: '2 hours ago', icon: UserPlus, color: 'text-blue-500 bg-blue-50' },
-              { title: 'Leave Approved', desc: 'Mike Ross (3 days Annual Leave)', time: '4 hours ago', icon: Calendar, color: 'text-emerald-500 bg-emerald-50' },
-              { title: 'Role Updated', desc: 'David Kim promoted to Senior Dev', time: '1 day ago', icon: Briefcase, color: 'text-purple-500 bg-purple-50' },
-              { title: 'Profile Updated', desc: 'HR Admin updated 5 profiles', time: '2 days ago', icon: UserCheck, color: 'text-amber-500 bg-amber-50' },
-            ].map((activity, i) => {
-              const ActivityIcon = activity.icon;
-              return (
-                <div key={i} className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${activity.color}`}>
-                    <ActivityIcon size={18} />
+            {(!metrics?.recentActivity || metrics.recentActivity.length === 0) ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-muted)]">
+                <Briefcase size={32} className="mb-2 opacity-50" />
+                <p className="text-[13px] font-medium">No recent activity</p>
+              </div>
+            ) : (
+              metrics.recentActivity.map((activity, i) => {
+                let ActivityIcon = UserCheck;
+                let color = 'text-amber-500 bg-amber-50';
+
+                if (activity.type === 'onboarding') {
+                  ActivityIcon = UserPlus;
+                  color = 'text-blue-500 bg-blue-50';
+                } else if (activity.type === 'leave') {
+                  ActivityIcon = Calendar;
+                  color = 'text-emerald-500 bg-emerald-50';
+                }
+
+                return (
+                  <div key={i} className="flex items-start gap-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${color}`}>
+                      <ActivityIcon size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-bold text-[var(--text-main)]">{activity.title}</p>
+                      <p className="text-[13px] text-[var(--text-secondary)] truncate mt-0.5">{activity.desc}</p>
+                    </div>
+                    <span className="text-[11px] font-bold text-[var(--text-muted)] flex-shrink-0 whitespace-nowrap">
+                      {activity.time}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-bold text-[var(--text-main)]">{activity.title}</p>
-                    <p className="text-[13px] text-[var(--text-secondary)] truncate mt-0.5">{activity.desc}</p>
-                  </div>
-                  <span className="text-[11px] font-bold text-[var(--text-muted)] flex-shrink-0 whitespace-nowrap">
-                    {activity.time}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>

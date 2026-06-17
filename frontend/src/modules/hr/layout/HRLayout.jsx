@@ -21,7 +21,8 @@ import {
   Loader2,
   Settings,
   Layers,
-  ChevronDown
+  ChevronDown,
+  Network
 } from 'lucide-react';
 
 const HRSidebar = ({ isOpen, onClose }) => {
@@ -36,7 +37,7 @@ const HRSidebar = ({ isOpen, onClose }) => {
   const fileInputRef = useRef(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [openMenus, setOpenMenus] = useState({
-    workforceMgt: true
+    employees: location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/organization-chart'
   });
 
   const toggleMenu = (menu) => {
@@ -140,6 +141,12 @@ const HRSidebar = ({ isOpen, onClose }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/organization-chart') {
+      setOpenMenus(prev => ({ ...prev, employees: true }));
+    }
+  }, [location.pathname]);
 
   const handleNavigate = (path) => {
     navigate(path);
@@ -420,64 +427,62 @@ const HRSidebar = ({ isOpen, onClose }) => {
 
         {/* Navigation Links */}
         <div className="flex-1 overflow-y-auto py-4 custom-scrollbar space-y-1">
-          <p className="px-8 mb-2 uppercase font-bold text-[10px] tracking-[0.1em] text-[var(--text-muted)]">
-            Application
-          </p>
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="w-full flex items-center gap-4 px-8 py-3 transition-all duration-300 relative group hover:bg-[var(--nav-hover)] mb-4"
-          >
-            <ArrowLeft size={20} className="text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors duration-300" />
-            <span className="text-[12px] font-bold tracking-wider uppercase text-[var(--text-muted)] group-hover:text-[var(--text-main)] transition-colors duration-300">
-              App Launcher
-            </span>
-          </button>
-
           <p className="px-8 mt-6 mb-2 uppercase font-bold text-[10px] tracking-[0.1em] text-[var(--text-muted)]">
             Human Resources
           </p>
           <NavItem to="/hr/dashboard" label="Dashboard" icon={LayoutDashboard} />
           
-          <div 
-            className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
-            onClick={() => {
-              toggleMenu('workforceMgt');
-              handleNavigate('/hr/employees');
-            }}
-            style={{
-              color: location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/recruitment' || location.pathname === '/hr/leaves' || location.pathname === '/hr/attendance' ? 'var(--accent)' : 'var(--text-muted)',
-              background: location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/recruitment' || location.pathname === '/hr/leaves' || location.pathname === '/hr/attendance' ? 'var(--nav-active)' : undefined,
-            }}
-          >
-            <div
-              className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
-              style={{
-                background: 'var(--accent)',
-                transform: location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/recruitment' || location.pathname === '/hr/leaves' || location.pathname === '/hr/attendance' ? 'scaleY(1)' : 'scaleY(0)',
-                opacity: location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/recruitment' || location.pathname === '/hr/leaves' || location.pathname === '/hr/attendance' ? 1 : 0,
-                transformOrigin: 'center',
+          {/* Employees Collapsible Menu */}
+          <div>
+            <div 
+              className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
+              onClick={() => {
+                handleNavigate('/hr/employees');
+                toggleMenu('employees');
               }}
-            />
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="w-6 flex justify-center">
-                <Users size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/recruitment' || location.pathname === '/hr/leaves' || location.pathname === '/hr/attendance' ? 'var(--accent)' : 'var(--text-dim)' }} />
+              style={{
+                color: (location.pathname === '/hr/employees' || location.pathname === '/hr/organization-chart') ? 'var(--accent)' : 'var(--text-muted)',
+                background: location.pathname === '/hr/employees' ? 'var(--nav-active)' : undefined,
+              }}
+            >
+              <div
+                className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
+                style={{
+                  background: 'var(--accent)',
+                  transform: location.pathname === '/hr/employees' ? 'scaleY(1)' : 'scaleY(0)',
+                  opacity: location.pathname === '/hr/employees' ? 1 : 0,
+                  transformOrigin: 'center',
+                }}
+              />
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-6 flex justify-center">
+                  <Users size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: (location.pathname === '/hr/employees' || location.pathname === '/hr/organization-chart') ? 'var(--accent)' : 'var(--text-dim)' }} />
+                </div>
+                <span className="text-[12px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
+                  Employees
+                </span>
               </div>
-              <span className="text-[12px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
-                Workforce Mgt
-              </span>
+              <div 
+                className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors p-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMenu('employees');
+                }}
+              >
+                <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.employees ? 'rotate-180' : ''}`} />
+              </div>
             </div>
-            <div className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors">
-              <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.workforceMgt ? 'rotate-180' : ''}`} />
-            </div>
+            
+            <SubMenu isOpen={openMenus.employees}>
+              <div className="flex flex-col py-1">
+                <NavItem to="/hr/organization-chart" label="Org Chart" icon={Network} isSubItem isLastSubItem />
+              </div>
+            </SubMenu>
           </div>
-          <SubMenu isOpen={openMenus.workforceMgt}>
-            <div className="flex flex-col py-1">
-              <NavItem to="/hr/employees" label="Employees" icon={Users} isSubItem />
-              <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} isSubItem />
-              <NavItem to="/hr/leaves" label="Leaves" icon={Calendar} isSubItem />
-              <NavItem to="/hr/attendance" label="Attendance" icon={Clock} isSubItem isLastSubItem />
-            </div>
-          </SubMenu>
+
+          <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} />
+          <NavItem to="/hr/leaves" label="Leaves" icon={Calendar} />
+          <NavItem to="/hr/attendance" label="Attendance" icon={Clock} />
 
         </div>
       </aside>
