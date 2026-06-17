@@ -147,4 +147,114 @@ BEGIN
     END LOOP;
 END $$;
 
+-- 5. User Security & Extensions
+CREATE TABLE IF NOT EXISTS audit_logs (
+    log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(100),
+    entity_id VARCHAR(255),
+    old_value JSONB,
+    new_value JSONB,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_password_reset (
+    user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    requires_password_change BOOLEAN DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS user_email_verified (
+    user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    is_verified BOOLEAN DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS user_mobile (
+    user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    mobile_number VARCHAR(20)
+);
+
+CREATE TABLE IF NOT EXISTS user_two_factor (
+    user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    two_factor_secret VARCHAR(255),
+    is_two_factor_enabled BOOLEAN DEFAULT false
+);
+
+-- 6. HR Module Tables
+CREATE TABLE IF NOT EXISTS hr_departments (
+    department_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS hr_designations (
+    designation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    department_id UUID REFERENCES hr_departments(department_id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(department_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS hr_employees (
+    employee_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+    emp_code VARCHAR(50) UNIQUE NOT NULL,
+    department_id UUID REFERENCES hr_departments(department_id) ON DELETE SET NULL,
+    designation_id UUID REFERENCES hr_designations(designation_id) ON DELETE SET NULL,
+    manager_id UUID REFERENCES hr_employees(employee_id) ON DELETE SET NULL,
+    date_of_joining DATE NOT NULL,
+    employment_status VARCHAR(50) DEFAULT 'Full-Time',
+    work_location VARCHAR(100),
+    base_salary DECIMAL(12,2),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS hr_attendance (
+    attendance_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    clock_in TIMESTAMP,
+    clock_out TIMESTAMP,
+    status VARCHAR(50) DEFAULT 'Present',
+    work_hours NUMERIC(5,2),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(employee_id, date)
+);
+
+CREATE TABLE IF NOT EXISTS leave_balances (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    leave_type VARCHAR(50) NOT NULL,
+    total_days NUMERIC(5,2) DEFAULT 0,
+    used_days NUMERIC(5,2) DEFAULT 0,
+    year INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, leave_type, year)
+);
+
+CREATE TABLE IF NOT EXISTS leave_requests (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    leave_type VARCHAR(50) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    status VARCHAR(50) DEFAULT 'Pending',
+    reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS hr_holidays (
+    holiday_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    date DATE NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 COMMIT;

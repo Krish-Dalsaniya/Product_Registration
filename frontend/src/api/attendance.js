@@ -23,3 +23,7 @@ export const clockInApi = (data) => {
 export const clockOutApi = (data) => {
   return api.post('/hr/attendance/clock-out', data);
 };
+
+export const fetchAttendanceMusterApi = (params) => {
+  return api.get('/hr/attendance/muster', { params });
+};

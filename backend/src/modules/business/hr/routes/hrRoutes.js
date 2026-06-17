@@ -18,13 +18,19 @@ router.delete('/employees/:id', deleteEmployee);
 router.put('/employees/:id/role', updateEmployeeRole);
 router.get('/metadata', getDepartmentsAndDesignations);
 
-const { getAttendance, getAttendanceMetrics, clockIn, clockOut, updateAttendance, createManualAttendance } = require('../controllers/attendanceController');
+const { getAttendance, getAttendanceMetrics, clockIn, clockOut, updateAttendance, createManualAttendance, getAttendanceMuster } = require('../controllers/attendanceController');
 
 router.get('/attendance', getAttendance);
 router.post('/attendance', createManualAttendance);
 router.get('/attendance/metrics', getAttendanceMetrics);
+router.get('/attendance/muster', getAttendanceMuster);
 router.post('/attendance/clock-in', clockIn);
 router.post('/attendance/clock-out', clockOut);
 router.put('/attendance/:id', updateAttendance);
+
+const { getHolidays, createHoliday, deleteHoliday } = require('../controllers/holidayController');
+router.get('/holidays', getHolidays);
+router.post('/holidays', createHoliday);
+router.delete('/holidays/:id', deleteHoliday);
 
 module.exports = router;

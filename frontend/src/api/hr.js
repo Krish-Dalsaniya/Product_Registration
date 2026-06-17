@@ -23,3 +23,13 @@ export const fetchHREmployeeByIdApi = async (id) => {
 export const updateHREmployeeApi = (id, data) => api.put(`/hr/employees/${id}`, data);
 export const deleteHREmployeeApi = (id) => api.delete(`/hr/employees/${id}`);
 export const updateHREmployeeRoleApi = (id, role_id) => api.put(`/hr/employees/${id}/role`, { role_id });
+
+export const fetchHolidaysApi = async (year) => {
+  return await api.get('/hr/holidays', { params: { year } });
+};
+export const createHolidayApi = async (data) => {
+  return await api.post('/hr/holidays', data);
+};
+export const deleteHolidayApi = async (id) => {
+  return await api.delete(`/hr/holidays/${id}`);
+};

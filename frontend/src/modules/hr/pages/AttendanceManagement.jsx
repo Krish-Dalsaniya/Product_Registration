@@ -4,8 +4,10 @@ import { fetchHREmployeesApi, fetchHRMetadataApi } from '../../../api/hr';
 import { Clock, Search, Filter, Calendar as CalendarIcon, UserCheck, UserX, AlertCircle, Edit, Plus, X, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DataTable from '../../../components/shared/DataTable';
+import AttendanceMuster from '../components/AttendanceMuster';
 
 const AttendanceManagement = () => {
+  const [activeTab, setActiveTab] = useState('daily'); // 'daily' or 'muster'
   const [records, setRecords] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -212,27 +214,51 @@ const AttendanceManagement = () => {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6 mt-8 md:mt-10 animate-entrance-down">
-        <div className="flex items-center gap-5">
-          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
-            <Clock size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-6 mt-4 animate-entrance-down">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+          <div className="flex items-center gap-5">
+            <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+              <Clock size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+                Attendance Records
+              </h1>
+              <p className="text-sm font-medium text-[var(--text-muted)] mt-1.5">Manage daily punch-ins, punch-outs, and shift tracking.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
-              Attendance Records
-            </h1>
-            <p className="text-sm font-medium text-[var(--text-muted)] mt-1.5">Manage daily punch-ins, punch-outs, and shift tracking.</p>
+          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-sm w-fit">
+            <button
+              onClick={() => setActiveTab('daily')}
+              className={`px-4 py-2 text-[12px] font-bold rounded-lg transition-all ${activeTab === 'daily' ? 'bg-[var(--accent)] shadow-md text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+            >
+              Daily Log
+            </button>
+            <button
+              onClick={() => setActiveTab('muster')}
+              className={`px-4 py-2 text-[12px] font-bold rounded-lg transition-all ${activeTab === 'muster' ? 'bg-[var(--accent)] shadow-md text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+            >
+              Muster Roll
+            </button>
           </div>
         </div>
 
-        <button 
-          onClick={() => openModal()}
-          className="btn-primary shadow-lg px-6 py-3 group flex items-center gap-2"
-        >
-          <Plus size={18} />
-          <span className="text-[12px] md:text-[14px] font-bold">Log Attendance</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          
+          <button 
+            onClick={() => openModal()}
+            className="btn-primary shadow-lg px-6 py-3 group flex items-center gap-2"
+          >
+            <Plus size={18} />
+            <span className="text-[12px] md:text-[14px] font-bold">Log Attendance</span>
+          </button>
+        </div>
       </div>
+
+      {activeTab === 'muster' ? (
+        <AttendanceMuster />
+      ) : (
+        <>
 
       {/* Metrics Dashboard */}
       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
@@ -335,6 +361,9 @@ const AttendanceManagement = () => {
         currentPage={1}
         totalPages={1}
       />
+
+      </>
+      )}
 
       {/* Edit/Add Modal */}
       {isModalOpen && (

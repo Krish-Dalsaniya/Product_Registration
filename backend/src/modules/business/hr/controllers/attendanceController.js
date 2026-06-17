@@ -257,11 +257,141 @@ const createManualAttendance = async (req, res, next) => {
   }
 };
 
+const getAttendanceMuster = async (req, res, next) => {
+  try {
+    const { year, month, department_id } = req.query;
+    
+    if (!year || !month) {
+      return sendError(res, 'BAD_REQUEST', 'Year and month are required', 400);
+    }
+
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    // Get last day of month
+    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+
+    let empQuery = `
+      SELECT e.employee_id, e.emp_code, u.full_name, d.name as department_name, e.employment_status
+      FROM hr_employees e
+      JOIN users u ON e.user_id = u.user_id
+      LEFT JOIN hr_departments d ON e.department_id = d.department_id
+      WHERE e.employment_status != 'Terminated'
+    `;
+    
+    const empValues = [];
+    if (department_id) {
+      empQuery += ` AND e.department_id = $1`;
+      empValues.push(department_id);
+    }
+    
+    empQuery += ` ORDER BY u.full_name ASC`;
+    
+    const employeesRes = await db.query(empQuery, empValues);
+    const employees = employeesRes.rows;
+
+    let attQuery = `
+      SELECT employee_id, date, status 
+      FROM hr_attendance 
+      WHERE date >= $1 AND date <= $2
+    `;
+    const attValues = [startDate, endDate];
+    
+    const attRes = await db.query(attQuery, attValues);
+    const attendanceMap = {};
+
+    const holidaysQuery = `
+      SELECT date, name FROM hr_holidays 
+      WHERE EXTRACT(YEAR FROM date) = $1 AND EXTRACT(MONTH FROM date) = $2
+    `;
+    const holidaysRes = await db.query(holidaysQuery, [year, month]);
+    const holidayMap = {};
+    holidaysRes.rows.forEach(h => {
+        const d = new Date(h.date);
+        const dateStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        const day = parseInt(dateStr.split('-')[2], 10);
+        holidayMap[day] = h.name;
+    });
+    
+    attRes.rows.forEach(record => {
+      // date is likely a Date object or string. Make sure we use local date carefully.
+      const d = new Date(record.date);
+      const dateStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      const day = parseInt(dateStr.split('-')[2], 10);
+      if (!attendanceMap[record.employee_id]) {
+        attendanceMap[record.employee_id] = {};
+      }
+      attendanceMap[record.employee_id][day] = record.status;
+    });
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    
+    const musterData = employees.map(emp => {
+      const records = attendanceMap[emp.employee_id] || {};
+      const row = {
+        employee_id: emp.employee_id,
+        emp_code: emp.emp_code,
+        full_name: emp.full_name,
+        department_name: emp.department_name,
+        days: {}
+      };
+      
+      let present = 0, absent = 0, leave = 0, late = 0, half_day = 0, off = 0, holidayCount = 0, unknown = 0;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateObj = new Date(year, month - 1, d);
+        const dayOfWeek = dateObj.getDay();
+        const isWeekend = dayOfWeek === 0; // Only Sunday is OFF
+        const isHoliday = !!holidayMap[d];
+        
+        let status = records[d];
+        
+        if (!status) {
+          if (isHoliday) {
+            status = 'Holiday';
+            holidayCount++;
+          } else if (isWeekend) {
+            status = 'OFF';
+            off++;
+          } else {
+            status = '?';
+            unknown++;
+          }
+        } else {
+          if (status === 'Present') present++;
+          else if (status === 'Absent') absent++;
+          else if (status === 'On Leave') leave++;
+          else if (status === 'Late') late++;
+          else if (status === 'Half Day') half_day++;
+          else if (status === 'Holiday') holidayCount++;
+        }
+        
+        row.days[d] = status;
+      }
+      
+      row.summary = {
+        P: present,
+        A: absent,
+        L: leave,
+        Late: late,
+        HD: half_day,
+        OFF: off,
+        H: holidayCount,
+        Unknown: unknown 
+      };
+      return row;
+    });
+
+    sendSuccess(res, musterData, 'Muster roll fetched successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAttendance,
   getAttendanceMetrics,
   clockIn,
   clockOut,
   updateAttendance,
-  createManualAttendance
+  createManualAttendance,
+  getAttendanceMuster
 };
