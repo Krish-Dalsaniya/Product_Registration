@@ -394,3 +394,8 @@
     at param (D:\Product_Registration\backend\node_modules\router\index.js:610:14)
     at processParams (D:\Product_Registration\backend\node_modules\router\index.js:664:3)
 
+2026-06-17T03:13:08.801Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:25:20)
+

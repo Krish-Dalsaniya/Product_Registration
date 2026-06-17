@@ -18,4 +18,13 @@ router.delete('/employees/:id', deleteEmployee);
 router.put('/employees/:id/role', updateEmployeeRole);
 router.get('/metadata', getDepartmentsAndDesignations);
 
+const { getAttendance, getAttendanceMetrics, clockIn, clockOut, updateAttendance, createManualAttendance } = require('../controllers/attendanceController');
+
+router.get('/attendance', getAttendance);
+router.post('/attendance', createManualAttendance);
+router.get('/attendance/metrics', getAttendanceMetrics);
+router.post('/attendance/clock-in', clockIn);
+router.post('/attendance/clock-out', clockOut);
+router.put('/attendance/:id', updateAttendance);
+
 module.exports = router;

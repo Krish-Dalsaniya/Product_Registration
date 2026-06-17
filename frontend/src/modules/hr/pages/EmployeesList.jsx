@@ -54,7 +54,7 @@ const EmployeesList = () => {
     const matchesSearch = emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           emp.emp_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           emp.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDept = departmentFilter ? emp.department_id === departmentFilter : true;
+    const matchesDept = departmentFilter ? String(emp.department_id) === String(departmentFilter) : true;
     const matchesDesig = designationFilter ? String(emp.designation_id) === String(designationFilter) : true;
     
     return matchesSearch && matchesDept && matchesDesig;
@@ -302,7 +302,7 @@ const EmployeesList = () => {
             }}
           >
             <option value="">ALL DESIGNATIONS</option>
-            {metadata.designations?.filter(d => !departmentFilter || d.department_id === departmentFilter).map(d => <option key={d.designation_id} value={d.designation_id}>{d.name.toUpperCase()}</option>)}
+            {metadata.designations?.filter(d => !departmentFilter || String(d.department_id) === String(departmentFilter)).map(d => <option key={d.designation_id} value={d.designation_id}>{d.name.toUpperCase()}</option>)}
           </select>
         </div>
 

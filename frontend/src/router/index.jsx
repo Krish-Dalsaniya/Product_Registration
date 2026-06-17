@@ -146,6 +146,7 @@ const EmployeesList = lazy(() => import('../modules/hr/pages/EmployeesList'));
 const AddEmployeeWizard = lazy(() => import('../modules/hr/pages/AddEmployeeWizard'));
 const EmployeeProfile = lazy(() => import('../modules/hr/pages/EmployeeProfile'));
 const LeaveManagement = lazy(() => import('../modules/hr/pages/LeaveManagement'));
+const AttendanceManagement = lazy(() => import('../modules/hr/pages/AttendanceManagement'));
 
 
 const PageLoader = () => (
@@ -397,6 +398,7 @@ const Router = () => {
           <Route path="/hr/employees/new" element={<AddEmployeeWizard />} />
           <Route path="/hr/employees/:id" element={<EmployeeProfile />} />
           <Route path="/hr/leaves" element={<LeaveManagement />} />
+          <Route path="/hr/attendance" element={<AttendanceManagement />} />
         </Route>
 
         {/* Temporary Routing for other ERP Modules until fully developed */}
