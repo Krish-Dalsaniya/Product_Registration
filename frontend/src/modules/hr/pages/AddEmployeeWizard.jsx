@@ -59,7 +59,41 @@ const INITIAL_FORM_DATA = {
   }
 };
 
+const DocumentDropzone = ({ label, id, isUploaded, setUploadMock }) => (
+  <div className="border-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] transition-colors rounded-xl p-6 flex flex-col items-center justify-center bg-[var(--bg-card)] cursor-pointer relative group h-[140px]">
+     {isUploaded ? (
+       <>
+        <Check size={32} className="text-green-500 mb-3" />
+        <p className="text-[13px] font-bold text-[var(--text-main)]">{label} Uploaded Successfully</p>
+       </>
+     ) : (
+       <>
+        <UploadCloud size={32} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors mb-3" />
+        <p className="text-[13px] font-bold text-[var(--text-main)]">Drop {label} here or click to browse</p>
+        <p className="text-[11px] text-[var(--text-muted)] mt-1">PDF, JPG, PNG up to 5MB</p>
+       </>
+     )}
+     <input 
+       type="file" 
+       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+       accept=".pdf,image/*" 
+       onChange={(e) => {
+         if(e.target.files?.length) {
+           setUploadMock(prev => ({...prev, [id]: true}));
+           toast.success(`${label} attached`);
+         }
+       }}
+     />
+  </div>
+);
+
 const AddEmployeeWizard = () => {
+  useEffect(() => {
+    console.log("AddEmployeeWizard MOUNTED", new Date().toISOString());
+    return () => console.log("AddEmployeeWizard UNMOUNTED", new Date().toISOString());
+  }, []);
+  console.log("AddEmployeeWizard RENDERED", new Date().toISOString());
+  
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState(() => {
@@ -93,9 +127,12 @@ const AddEmployeeWizard = () => {
     loadEmployees();
   }, []);
 
-  // Auto-save draft
+  // Auto-save draft (debounced to prevent UI lag on selections)
   useEffect(() => {
-    localStorage.setItem('employee_wizard_draft', JSON.stringify({ formData, currentStep }));
+    const timer = setTimeout(() => {
+      localStorage.setItem('employee_wizard_draft', JSON.stringify({ formData, currentStep }));
+    }, 500);
+    return () => clearTimeout(timer);
   }, [formData, currentStep]);
 
   const loadMetadata = async () => {
@@ -207,53 +244,27 @@ const AddEmployeeWizard = () => {
   const handlePANChange = (e) => {
     let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (val.length > 10) val = val.slice(0, 10);
-    setFormData({...formData, identities_info: {...formData.identities_info, pan_doc_no: val}});
+    setFormData(prev => ({...prev, identities_info: {...prev.identities_info, pan_doc_no: val}}));
   };
 
   const handleAadhaarChange = (e) => {
     let val = e.target.value.replace(/[^0-9]/g, '');
     if (val.length > 12) val = val.slice(0, 12);
     let formatted = val.match(/.{1,4}/g)?.join('-') || val;
-    setFormData({...formData, identities_info: {...formData.identities_info, aadhaar_doc_no: formatted}});
+    setFormData(prev => ({...prev, identities_info: {...prev.identities_info, aadhaar_doc_no: formatted}}));
   };
 
-  const DocumentDropzone = ({ label, id, isUploaded }) => (
-    <div className="border-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] transition-colors rounded-xl p-6 flex flex-col items-center justify-center bg-[var(--bg-card)] cursor-pointer relative group h-[140px]">
-       {isUploaded ? (
-         <>
-          <Check size={32} className="text-green-500 mb-3" />
-          <p className="text-[13px] font-bold text-[var(--text-main)]">{label} Uploaded Successfully</p>
-         </>
-       ) : (
-         <>
-          <UploadCloud size={32} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors mb-3" />
-          <p className="text-[13px] font-bold text-[var(--text-main)]">Drop {label} here or click to browse</p>
-          <p className="text-[11px] text-[var(--text-muted)] mt-1">PDF, JPG, PNG up to 5MB</p>
-         </>
-       )}
-       <input 
-         type="file" 
-         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
-         accept=".pdf,image/*" 
-         onChange={(e) => {
-           if(e.target.files?.length) {
-             setUploadMock(prev => ({...prev, [id]: true}));
-             toast.success(`${label} attached`);
-           }
-         }}
-       />
-    </div>
-  );
+
 
   const inputClass = "w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 px-4 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm";
   const labelClass = "block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-1.5";
   const sectionTitleClass = "text-[14px] font-black uppercase tracking-widest text-[var(--text-main)] border-b border-[var(--border-color)] pb-2 mb-5 flex items-center gap-2";
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-6 relative">
+    <div className="max-w-[1600px] mx-auto pb-6 relative">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4 mt-2 animate-entrance-down">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4 mt-2">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/hr/employees')} className="p-2.5 hover:bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-colors bg-[var(--bg-workspace)] shadow-sm">
             <ArrowLeft size={20} className="text-[var(--text-main)]" />
@@ -316,7 +327,7 @@ const AddEmployeeWizard = () => {
           
           {/* STEP 1: Personal */}
           {currentStep === 1 && (
-            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500 max-w-6xl mx-auto">
+            <div className="space-y-8 max-w-6xl mx-auto">
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
@@ -344,8 +355,8 @@ const AddEmployeeWizard = () => {
                         onChange={e => {
                           const uid = e.target.value;
                           const user = metadata.available_users.find(u => u.user_id === uid);
-                          if (user) setFormData({...formData, user_id: uid, full_name: user.full_name, email: user.email});
-                          else setFormData({...formData, user_id: '', full_name: '', email: ''});
+                          if (user) setFormData(prev => ({...prev, user_id: uid, full_name: user.full_name, email: user.email}));
+                          else setFormData(prev => ({...prev, user_id: '', full_name: '', email: ''}));
                         }}
                         className={inputClass}
                       >
@@ -361,7 +372,7 @@ const AddEmployeeWizard = () => {
                   <div className="space-y-6">
                     <div>
                       <label className={labelClass}>System Role *</label>
-                      <select value={formData.role_id} onChange={e => setFormData({...formData, role_id: e.target.value})} className={inputClass} disabled={!!formData.user_id}>
+                      <select value={formData.role_id} onChange={e => setFormData(prev => ({...prev, role_id: e.target.value}))} className={inputClass} disabled={!!formData.user_id}>
                         <option value="">Default (User)</option>
                         {systemRoles.map(role => (
                           <option key={role.role_id} value={role.role_id}>{role.role_name}</option>
@@ -372,17 +383,17 @@ const AddEmployeeWizard = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div>
                         <label className={labelClass}>Full Name *</label>
-                        <input disabled={!!formData.user_id} type="text" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} className={inputClass} />
+                        <input disabled={!!formData.user_id} type="text" value={formData.full_name} onChange={e => setFormData(prev => ({...prev, full_name: e.target.value}))} className={inputClass} />
                       </div>
                       
                       <div>
                         <label className={labelClass}>Email Address *</label>
-                        <input disabled={!!formData.user_id} type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className={inputClass} />
+                        <input disabled={!!formData.user_id} type="email" value={formData.email} onChange={e => setFormData(prev => ({...prev, email: e.target.value}))} className={inputClass} />
                       </div>
                     </div>
                     <div>
                       <label className={labelClass}>Phone Number</label>
-                      <input type="text" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})} className={inputClass} />
+                      <input type="text" value={formData.phone_number} onChange={e => setFormData(prev => ({...prev, phone_number: e.target.value}))} className={inputClass} />
                     </div>
                   </div>
                 </div>
@@ -395,7 +406,7 @@ const AddEmployeeWizard = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
                       <label className={labelClass}>Gender</label>
-                      <select value={formData.personal_info.gender} onChange={e => setFormData({...formData, personal_info: {...formData.personal_info, gender: e.target.value}})} className={inputClass}>
+                      <select value={formData.personal_info.gender} onChange={e => setFormData(prev => ({...prev, personal_info: {...prev.personal_info, gender: e.target.value}}))} className={inputClass}>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
@@ -403,11 +414,11 @@ const AddEmployeeWizard = () => {
                     </div>
                     <div>
                       <label className={labelClass}>Date of Birth</label>
-                      <input type="date" value={formData.personal_info.dob} onChange={e => setFormData({...formData, personal_info: {...formData.personal_info, dob: e.target.value}})} className={inputClass} />
+                      <input type="date" value={formData.personal_info.dob} onChange={e => setFormData(prev => ({...prev, personal_info: {...prev.personal_info, dob: e.target.value}}))} className={inputClass} />
                     </div>
                     <div>
                       <label className={labelClass}>Blood Group</label>
-                      <select value={formData.personal_info.blood_group} onChange={e => setFormData({...formData, personal_info: {...formData.personal_info, blood_group: e.target.value}})} className={inputClass}>
+                      <select value={formData.personal_info.blood_group} onChange={e => setFormData(prev => ({...prev, personal_info: {...prev.personal_info, blood_group: e.target.value}}))} className={inputClass}>
                         <option value="">Select</option>
                         <option value="A+">A+</option><option value="A-">A-</option>
                         <option value="B+">B+</option><option value="B-">B-</option>
@@ -417,20 +428,33 @@ const AddEmployeeWizard = () => {
                     </div>
                     <div>
                       <label className={labelClass}>Father's Name</label>
-                      <input type="text" value={formData.personal_info.fathers_name} onChange={e => setFormData({...formData, personal_info: {...formData.personal_info, fathers_name: e.target.value}})} className={inputClass} />
+                      <input type="text" value={formData.personal_info.fathers_name} onChange={e => setFormData(prev => ({...prev, personal_info: {...prev.personal_info, fathers_name: e.target.value}}))} className={inputClass} />
                     </div>
                     <div>
                       <label className={labelClass}>Religion & Caste</label>
-                      <input type="text" value={formData.personal_info.religion_caste} onChange={e => setFormData({...formData, personal_info: {...formData.personal_info, religion_caste: e.target.value}})} className={inputClass} />
+                      <input type="text" value={formData.personal_info.religion_caste} onChange={e => setFormData(prev => ({...prev, personal_info: {...prev.personal_info, religion_caste: e.target.value}}))} className={inputClass} />
                     </div>
                     <div>
                       <label className={labelClass}>Marital Status</label>
-                      <select value={formData.personal_info.marital_status} onChange={e => setFormData({...formData, personal_info: {...formData.personal_info, marital_status: e.target.value}})} className={inputClass}>
+                      <select value={formData.personal_info.marital_status} onChange={e => setFormData(prev => ({...prev, personal_info: {...prev.personal_info, marital_status: e.target.value}}))} className={inputClass}>
                         <option value="Single">Single</option>
                         <option value="Married">Married</option>
                       </select>
                     </div>
                   </div>
+                  
+                  {formData.personal_info.marital_status === 'Married' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
+                      <div>
+                        <label className={labelClass}>Spouse Name</label>
+                        <input type="text" value={formData.personal_info.spouse_name} onChange={e => setFormData(prev => ({...prev, personal_info: {...prev.personal_info, spouse_name: e.target.value}}))} className={inputClass} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Date of Marriage</label>
+                        <input type="date" value={formData.personal_info.marriage_date} onChange={e => setFormData(prev => ({...prev, personal_info: {...prev.personal_info, marriage_date: e.target.value}}))} className={inputClass} />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Address Info */}
@@ -441,14 +465,14 @@ const AddEmployeeWizard = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-4">
                       <h4 className="text-[12px] font-bold text-[var(--text-main)] mb-2">Current Address</h4>
-                      <input type="text" placeholder="Street Address" value={formData.address_info.current_address} onChange={e => setFormData({...formData, address_info: {...formData.address_info, current_address: e.target.value}})} className={inputClass} />
+                      <input type="text" placeholder="Street Address" value={formData.address_info.current_address} onChange={e => setFormData(prev => ({...prev, address_info: {...prev.address_info, current_address: e.target.value}}))} className={inputClass} />
                       <div className="grid grid-cols-2 gap-4">
-                        <input type="text" placeholder="City" value={formData.address_info.current_city} onChange={e => setFormData({...formData, address_info: {...formData.address_info, current_city: e.target.value}})} className={inputClass} />
-                        <input type="text" placeholder="State" value={formData.address_info.current_state} onChange={e => setFormData({...formData, address_info: {...formData.address_info, current_state: e.target.value}})} className={inputClass} />
+                        <input type="text" placeholder="City" value={formData.address_info.current_city} onChange={e => setFormData(prev => ({...prev, address_info: {...prev.address_info, current_city: e.target.value}}))} className={inputClass} />
+                        <input type="text" placeholder="State" value={formData.address_info.current_state} onChange={e => setFormData(prev => ({...prev, address_info: {...prev.address_info, current_state: e.target.value}}))} className={inputClass} />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <input type="text" placeholder="Zip / Postal Code" value={formData.address_info.current_zip} onChange={e => setFormData({...formData, address_info: {...formData.address_info, current_zip: e.target.value}})} className={inputClass} />
-                        <input type="text" placeholder="Country" value={formData.address_info.current_country} onChange={e => setFormData({...formData, address_info: {...formData.address_info, current_country: e.target.value}})} className={inputClass} />
+                        <input type="text" placeholder="Zip / Postal Code" value={formData.address_info.current_zip} onChange={e => setFormData(prev => ({...prev, address_info: {...prev.address_info, current_zip: e.target.value}}))} className={inputClass} />
+                        <input type="text" placeholder="Country" value={formData.address_info.current_country} onChange={e => setFormData(prev => ({...prev, address_info: {...prev.address_info, current_country: e.target.value}}))} className={inputClass} />
                       </div>
                     </div>
 
@@ -458,25 +482,25 @@ const AddEmployeeWizard = () => {
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input type="checkbox" className="accent-[var(--accent)]" checked={formData.address_info.same_as_current} onChange={e => {
                             const isChecked = e.target.checked;
-                            setFormData({...formData, address_info: {...formData.address_info, same_as_current: isChecked, 
+                            setFormData(prev => ({...prev, address_info: {...prev.address_info, same_as_current: isChecked, 
                               permanent_address: isChecked ? formData.address_info.current_address : formData.address_info.permanent_address,
                               permanent_city: isChecked ? formData.address_info.current_city : formData.address_info.permanent_city,
                               permanent_state: isChecked ? formData.address_info.current_state : formData.address_info.permanent_state,
                               permanent_zip: isChecked ? formData.address_info.current_zip : formData.address_info.permanent_zip,
                               permanent_country: isChecked ? formData.address_info.current_country : formData.address_info.permanent_country,
-                            }});
+                            }}));
                           }} />
                           <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Same as Current</span>
                         </label>
                       </div>
-                      <input disabled={formData.address_info.same_as_current} type="text" placeholder="Street Address" value={formData.address_info.permanent_address} onChange={e => setFormData({...formData, address_info: {...formData.address_info, permanent_address: e.target.value}})} className={inputClass} />
+                      <input disabled={formData.address_info.same_as_current} type="text" placeholder="Street Address" value={formData.address_info.permanent_address} onChange={e => setFormData(prev => ({...prev, address_info: {...prev.address_info, permanent_address: e.target.value}}))} className={inputClass} />
                       <div className="grid grid-cols-2 gap-4">
-                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="City" value={formData.address_info.permanent_city} onChange={e => setFormData({...formData, address_info: {...formData.address_info, permanent_city: e.target.value}})} className={inputClass} />
-                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="State" value={formData.address_info.permanent_state} onChange={e => setFormData({...formData, address_info: {...formData.address_info, permanent_state: e.target.value}})} className={inputClass} />
+                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="City" value={formData.address_info.permanent_city} onChange={e => setFormData(prev => ({...prev, address_info: {...prev.address_info, permanent_city: e.target.value}}))} className={inputClass} />
+                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="State" value={formData.address_info.permanent_state} onChange={e => setFormData(prev => ({...prev, address_info: {...prev.address_info, permanent_state: e.target.value}}))} className={inputClass} />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="Zip / Postal Code" value={formData.address_info.permanent_zip} onChange={e => setFormData({...formData, address_info: {...formData.address_info, permanent_zip: e.target.value}})} className={inputClass} />
-                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="Country" value={formData.address_info.permanent_country} onChange={e => setFormData({...formData, address_info: {...formData.address_info, permanent_country: e.target.value}})} className={inputClass} />
+                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="Zip / Postal Code" value={formData.address_info.permanent_zip} onChange={e => setFormData(prev => ({...prev, address_info: {...prev.address_info, permanent_zip: e.target.value}}))} className={inputClass} />
+                        <input disabled={formData.address_info.same_as_current} type="text" placeholder="Country" value={formData.address_info.permanent_country} onChange={e => setFormData(prev => ({...prev, address_info: {...prev.address_info, permanent_country: e.target.value}}))} className={inputClass} />
                       </div>
                     </div>
                   </div>
@@ -493,7 +517,7 @@ const AddEmployeeWizard = () => {
                       <input type="text" value={formData.emergency_contacts[0].name} onChange={e => {
                         const newContacts = [...formData.emergency_contacts];
                         newContacts[0].name = e.target.value;
-                        setFormData({...formData, emergency_contacts: newContacts});
+                        setFormData(prev => ({...prev, emergency_contacts: newContacts}));
                       }} className={inputClass} />
                     </div>
                     <div>
@@ -501,7 +525,7 @@ const AddEmployeeWizard = () => {
                       <input type="text" placeholder="e.g. Spouse, Father" value={formData.emergency_contacts[0].relation} onChange={e => {
                         const newContacts = [...formData.emergency_contacts];
                         newContacts[0].relation = e.target.value;
-                        setFormData({...formData, emergency_contacts: newContacts});
+                        setFormData(prev => ({...prev, emergency_contacts: newContacts}));
                       }} className={inputClass} />
                     </div>
                     <div>
@@ -509,7 +533,7 @@ const AddEmployeeWizard = () => {
                       <input type="text" value={formData.emergency_contacts[0].phone} onChange={e => {
                         const newContacts = [...formData.emergency_contacts];
                         newContacts[0].phone = e.target.value;
-                        setFormData({...formData, emergency_contacts: newContacts});
+                        setFormData(prev => ({...prev, emergency_contacts: newContacts}));
                       }} className={inputClass} />
                     </div>
                     <div>
@@ -517,7 +541,7 @@ const AddEmployeeWizard = () => {
                       <input type="email" value={formData.emergency_contacts[0].email} onChange={e => {
                         const newContacts = [...formData.emergency_contacts];
                         newContacts[0].email = e.target.value;
-                        setFormData({...formData, emergency_contacts: newContacts});
+                        setFormData(prev => ({...prev, emergency_contacts: newContacts}));
                       }} className={inputClass} />
                     </div>
                   </div>
@@ -527,16 +551,16 @@ const AddEmployeeWizard = () => {
             </div>
           )}
 
-          {/* STEP 2: Job */}
+          {/* STEP 2: Job Info */}
           {currentStep === 2 && (
-            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500 max-w-4xl mx-auto">
+            <div className="space-y-8 max-w-4xl mx-auto">
               <h3 className={sectionTitleClass}>
                 <Briefcase size={18} className="text-[var(--accent)]" /> Core Job Info
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label className={labelClass}>Department *</label>
-                  <select value={formData.department_id} onChange={e => setFormData({...formData, department_id: e.target.value, designation_id: null, designation_name: ''})} className={inputClass}>
+                  <select value={formData.department_id} onChange={e => setFormData(prev => ({...prev, department_id: e.target.value, designation_id: null, designation_name: ''}))} className={inputClass}>
                     <option value="">Select Department</option>
                     {metadata.departments.map(d => (
                       <option key={d.department_id} value={d.department_id}>{d.name}</option>
@@ -545,26 +569,26 @@ const AddEmployeeWizard = () => {
                 </div>
                 <div>
                   <label className={labelClass}>Designation *</label>
-                  <input type="text" value={formData.designation_name || ''} onChange={e => setFormData({...formData, designation_name: e.target.value, designation_id: null})} placeholder="e.g. Software Engineer" className={inputClass} disabled={!formData.department_id} />
+                  <input type="text" value={formData.designation_name || ''} onChange={e => setFormData(prev => ({...prev, designation_name: e.target.value, designation_id: null}))} placeholder="e.g. Software Engineer" className={inputClass} disabled={!formData.department_id} />
                 </div>
                 <div>
                   <label className={labelClass}>Date of Joining *</label>
-                  <input type="date" value={formData.date_of_joining} onChange={e => setFormData({...formData, date_of_joining: e.target.value})} className={inputClass} />
+                  <input type="date" value={formData.date_of_joining} onChange={e => setFormData(prev => ({...prev, date_of_joining: e.target.value}))} className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Reporting Manager</label>
-                  <select value={formData.manager_id} onChange={e => setFormData({...formData, manager_id: e.target.value})} className={inputClass}>
+                  <select value={formData.manager_id} onChange={e => setFormData(prev => ({...prev, manager_id: e.target.value}))} className={inputClass}>
                     <option value="">None (Top Level)</option>
                     {employees.filter(emp => emp.employment_status !== 'Terminated').map(emp => (
                       <option key={emp.employee_id} value={emp.employee_id}>
-                        {emp.full_name} ({emp.emp_code})
+                        {emp.full_name} ({emp.emp_code}))
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className={labelClass}>Employment Status</label>
-                  <select value={formData.employment_status} onChange={e => setFormData({...formData, employment_status: e.target.value})} className={inputClass}>
+                  <select value={formData.employment_status} onChange={e => setFormData(prev => ({...prev, employment_status: e.target.value}))} className={inputClass}>
                     <option value="Full-Time">Full-Time</option>
                     <option value="Part-Time">Part-Time</option>
                     <option value="Contract">Contract</option>
@@ -573,7 +597,7 @@ const AddEmployeeWizard = () => {
                 </div>
                 <div className="col-span-full">
                   <label className={labelClass}>Work Location</label>
-                  <input type="text" placeholder="e.g. New York, Remote" value={formData.work_location} onChange={e => setFormData({...formData, work_location: e.target.value})} className={inputClass} />
+                  <input type="text" placeholder="e.g. New York, Remote" value={formData.work_location} onChange={e => setFormData(prev => ({...prev, work_location: e.target.value}))} className={inputClass} />
                 </div>
               </div>
             </div>
@@ -581,31 +605,31 @@ const AddEmployeeWizard = () => {
 
           {/* STEP 3: Pay & Benefits */}
           {currentStep === 3 && (
-            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500 max-w-4xl mx-auto">
+            <div className="space-y-8 max-w-4xl mx-auto">
               <h3 className={sectionTitleClass}>
                 <IndianRupee size={18} className="text-[var(--accent)]" /> Salary & Bank Details
               </h3>
               <div className="space-y-6">
                 <div>
                   <label className={labelClass}>Base Salary (Annual)</label>
-                  <input type="number" placeholder="e.g. 75000" value={formData.base_salary} onChange={e => setFormData({...formData, base_salary: e.target.value})} className={inputClass} />
+                  <input type="number" placeholder="e.g. 75000" value={formData.base_salary} onChange={e => setFormData(prev => ({...prev, base_salary: e.target.value}))} className={inputClass} />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <label className={labelClass}>Bank Name</label>
-                    <input type="text" value={formData.pay_info.bank_name} onChange={e => setFormData({...formData, pay_info: {...formData.pay_info, bank_name: e.target.value}})} className={inputClass} />
+                    <input type="text" value={formData.pay_info.bank_name} onChange={e => setFormData(prev => ({...prev, pay_info: {...prev.pay_info, bank_name: e.target.value}}))} className={inputClass} />
                   </div>
                   <div>
                     <label className={labelClass}>Account No.</label>
-                    <input type="text" value={formData.pay_info.bank_account_no} onChange={e => setFormData({...formData, pay_info: {...formData.pay_info, bank_account_no: e.target.value}})} className={inputClass} />
+                    <input type="text" value={formData.pay_info.bank_account_no} onChange={e => setFormData(prev => ({...prev, pay_info: {...prev.pay_info, bank_account_no: e.target.value}}))} className={inputClass} />
                   </div>
                   <div>
                     <label className={labelClass}>IFSC Code</label>
-                    <input type="text" value={formData.pay_info.ifsc_code} onChange={e => setFormData({...formData, pay_info: {...formData.pay_info, ifsc_code: e.target.value}})} className={inputClass} />
+                    <input type="text" value={formData.pay_info.ifsc_code} onChange={e => setFormData(prev => ({...prev, pay_info: {...prev.pay_info, ifsc_code: e.target.value}}))} className={inputClass} />
                   </div>
                   <div>
                     <label className={labelClass}>Payment Type</label>
-                    <select value={formData.pay_info.payment_type} onChange={e => setFormData({...formData, pay_info: {...formData.pay_info, payment_type: e.target.value}})} className={inputClass}>
+                    <select value={formData.pay_info.payment_type} onChange={e => setFormData(prev => ({...prev, pay_info: {...prev.pay_info, payment_type: e.target.value}}))} className={inputClass}>
                       <option value="Bank Transfer">Bank Transfer</option>
                       <option value="Cheque">Cheque</option>
                       <option value="Cash">Cash</option>
@@ -618,14 +642,14 @@ const AddEmployeeWizard = () => {
 
           {/* STEP 4: Statutory */}
           {currentStep === 4 && (
-            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500 max-w-5xl mx-auto">
+            <div className="space-y-8 max-w-5xl mx-auto">
               <h3 className={sectionTitleClass}>Statutory Declarations</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="workspace-card p-6 bg-[var(--bg-card)] space-y-5">
                   <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
                     <span className="font-black text-[var(--text-main)] uppercase tracking-wider text-sm">Provident Fund (PF)</span>
-                    <select value={formData.statutory_info.pf_covered} onChange={e => setFormData({...formData, statutory_info: {...formData.statutory_info, pf_covered: e.target.value}})} className="px-3 py-1.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-[13px] font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent)] outline-none">
+                    <select value={formData.statutory_info.pf_covered} onChange={e => setFormData(prev => ({...prev, statutory_info: {...prev.statutory_info, pf_covered: e.target.value}}))} className="px-3 py-1.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-[13px] font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent)] outline-none">
                       <option value="No">Not Covered</option>
                       <option value="Yes">Covered</option>
                     </select>
@@ -633,11 +657,11 @@ const AddEmployeeWizard = () => {
                   <div className={`grid grid-cols-1 sm:grid-cols-2 gap-5 transition-opacity duration-300 ${formData.statutory_info.pf_covered === 'No' ? 'opacity-40 pointer-events-none' : ''}`}>
                     <div>
                       <label className={labelClass}>UAN</label>
-                      <input type="text" value={formData.statutory_info.uan} onChange={e => setFormData({...formData, statutory_info: {...formData.statutory_info, uan: e.target.value}})} className={inputClass} />
+                      <input type="text" value={formData.statutory_info.uan} onChange={e => setFormData(prev => ({...prev, statutory_info: {...prev.statutory_info, uan: e.target.value}}))} className={inputClass} />
                     </div>
                     <div>
                       <label className={labelClass}>PF No.</label>
-                      <input type="text" value={formData.statutory_info.pf_no} onChange={e => setFormData({...formData, statutory_info: {...formData.statutory_info, pf_no: e.target.value}})} className={inputClass} />
+                      <input type="text" value={formData.statutory_info.pf_no} onChange={e => setFormData(prev => ({...prev, statutory_info: {...prev.statutory_info, pf_no: e.target.value}}))} className={inputClass} />
                     </div>
                   </div>
                 </div>
@@ -645,14 +669,14 @@ const AddEmployeeWizard = () => {
                 <div className="workspace-card p-6 bg-[var(--bg-card)] space-y-5">
                   <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
                     <span className="font-black text-[var(--text-main)] uppercase tracking-wider text-sm">ESIC Account</span>
-                    <select value={formData.statutory_info.esi_covered} onChange={e => setFormData({...formData, statutory_info: {...formData.statutory_info, esi_covered: e.target.value}})} className="px-3 py-1.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-[13px] font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent)] outline-none">
+                    <select value={formData.statutory_info.esi_covered} onChange={e => setFormData(prev => ({...prev, statutory_info: {...prev.statutory_info, esi_covered: e.target.value}}))} className="px-3 py-1.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-[13px] font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent)] outline-none">
                       <option value="No">Not Covered</option>
                       <option value="Yes">Covered</option>
                     </select>
                   </div>
                   <div className={`transition-opacity duration-300 ${formData.statutory_info.esi_covered === 'No' ? 'opacity-40 pointer-events-none' : ''}`}>
                     <label className={labelClass}>ESI Number</label>
-                    <input type="text" value={formData.statutory_info.esi_number} onChange={e => setFormData({...formData, statutory_info: {...formData.statutory_info, esi_number: e.target.value}})} className={inputClass} />
+                    <input type="text" value={formData.statutory_info.esi_number} onChange={e => setFormData(prev => ({...prev, statutory_info: {...prev.statutory_info, esi_number: e.target.value}}))} className={inputClass} />
                   </div>
                 </div>
               </div>
@@ -661,7 +685,7 @@ const AddEmployeeWizard = () => {
 
           {/* STEP 5: Identities */}
           {currentStep === 5 && (
-            <div className="space-y-8 animate-in slide-in-from-right-8 duration-500 max-w-5xl mx-auto">
+            <div className="space-y-8 max-w-5xl mx-auto">
               <h3 className={sectionTitleClass}>
                 <CreditCard size={18} className="text-[var(--accent)]" /> Identity Documents
               </h3>
@@ -676,11 +700,11 @@ const AddEmployeeWizard = () => {
                     </div>
                     <div>
                       <label className={labelClass}>Name As Per PAN</label>
-                      <input type="text" value={formData.identities_info.pan_name} onChange={e => setFormData({...formData, identities_info: {...formData.identities_info, pan_name: e.target.value}})} className={inputClass} />
+                      <input type="text" value={formData.identities_info.pan_name} onChange={e => setFormData(prev => ({...prev, identities_info: {...prev.identities_info, pan_name: e.target.value}}))} className={inputClass} />
                     </div>
                   </div>
                   <div className="mt-auto">
-                    <DocumentDropzone label="PAN Card" id="pan" isUploaded={uploadMock.pan} />
+                    <DocumentDropzone label="PAN Card" id="pan" isUploaded={uploadMock.pan} setUploadMock={setUploadMock} />
                   </div>
                 </div>
 
@@ -693,11 +717,11 @@ const AddEmployeeWizard = () => {
                     </div>
                     <div>
                       <label className={labelClass}>Name As Per Aadhaar</label>
-                      <input type="text" value={formData.identities_info.aadhaar_name} onChange={e => setFormData({...formData, identities_info: {...formData.identities_info, aadhaar_name: e.target.value}})} className={inputClass} />
+                      <input type="text" value={formData.identities_info.aadhaar_name} onChange={e => setFormData(prev => ({...prev, identities_info: {...prev.identities_info, aadhaar_name: e.target.value}}))} className={inputClass} />
                     </div>
                   </div>
                   <div className="mt-auto">
-                    <DocumentDropzone label="Aadhaar Card" id="aadhaar" isUploaded={uploadMock.aadhaar} />
+                    <DocumentDropzone label="Aadhaar Card" id="aadhaar" isUploaded={uploadMock.aadhaar} setUploadMock={setUploadMock} />
                   </div>
                 </div>
               </div>

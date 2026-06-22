@@ -104,7 +104,13 @@ const createEmployee = async (req, res, next) => {
       let assignedRoleId = role_id;
       if (!assignedRoleId) {
         const roleRes = await client.query('SELECT role_id FROM roles WHERE role_name = $1 LIMIT 1', ['User']);
-        assignedRoleId = roleRes.rows[0]?.role_id || null;
+        if (roleRes.rows.length > 0) {
+          assignedRoleId = roleRes.rows[0].role_id;
+        } else {
+          // Fallback if 'User' role doesn't exist
+          const anyRole = await client.query('SELECT role_id FROM roles ORDER BY role_id DESC LIMIT 1');
+          assignedRoleId = anyRole.rows[0]?.role_id || null;
+        }
       }
 
       const userRes = await client.query(`
@@ -130,13 +136,17 @@ const createEmployee = async (req, res, next) => {
       INSERT INTO hr_employees (
         user_id, emp_code, department_id, designation_id, manager_id,
         date_of_joining, employment_status, base_salary, work_location,
-        personal_info, job_info, pay_info, statutory_info, identities_info
+        personal_info, address_info, education_info, emergency_contacts, 
+        job_info, pay_info, statutory_info, identities_info
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING employee_id
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING employee_id
     `, [
       finalUserId, empCode, department_id, finalDesignationId, manager_id || null,
       date_of_joining, employment_status, base_salary ? parseFloat(base_salary) : null, work_location,
       personal_info ? JSON.stringify(personal_info) : '{}',
+      req.body.address_info ? JSON.stringify(req.body.address_info) : '{}',
+      req.body.education_info ? JSON.stringify(req.body.education_info) : '[]',
+      req.body.emergency_contacts ? JSON.stringify(req.body.emergency_contacts) : '[]',
       job_info ? JSON.stringify(job_info) : '{}',
       pay_info ? JSON.stringify(pay_info) : '{}',
       statutory_info ? JSON.stringify(statutory_info) : '{}',

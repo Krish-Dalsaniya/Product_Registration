@@ -1065,6 +1065,13 @@
   transform: translateY(0) scale(0.98);
 }
 
+/* Prevent layout jumping and scale-down effects on form container cards */
+.workspace-card:focus-within,
+.workspace-card:has(input, select, textarea):hover,
+.workspace-card:has(input, select, textarea):active {
+  transform: none !important;
+}
+
 /* ═══════════════════════════════════════
    GLASS CARD
    ═══════════════════════════════════════ */

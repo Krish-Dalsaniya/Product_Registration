@@ -404,3 +404,235 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async getAttendance (D:\Product_Registration\backend\src\modules\business\hr\controllers\attendanceController.js:59:20)
 
+2026-06-17T10:37:22.049Z - error: null value in column "role_id" of relation "users" violates not-null constraint
+    at D:\Product_Registration\backend\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:110:23)
+
+2026-06-17T10:40:43.189Z - error: null value in column "role_id" of relation "users" violates not-null constraint
+    at D:\Product_Registration\backend\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:110:23)
+
+2026-06-17T10:46:06.139Z - error: null value in column "role_id" of relation "users" violates not-null constraint
+    at D:\Product_Registration\backend\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:110:23)
+
+2026-06-17T10:46:16.719Z - error: null value in column "role_id" of relation "users" violates not-null constraint
+    at D:\Product_Registration\backend\node_modules\pg\lib\client.js:631:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:110:23)
+
+2026-06-17T10:49:46.724Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:76:18)
+
+2026-06-17T10:52:28.152Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getDepartmentsAndDesignations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:48:19)
+
+2026-06-17T10:52:38.169Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getDepartmentsAndDesignations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:48:19)
+
+2026-06-17T10:52:42.860Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getMe (D:\Product_Registration\backend\src\controllers\authController.js:349:20)
+
+2026-06-17T10:52:43.157Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-17T10:52:43.183Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getDepartmentsAndDesignations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:48:19)
+
+2026-06-17T10:52:43.193Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:39:20)
+
+2026-06-17T10:52:53.217Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:39:20)
+
+2026-06-17T10:52:53.237Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getDepartmentsAndDesignations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:48:19)
+
+2026-06-17T10:53:04.491Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getMe (D:\Product_Registration\backend\src\controllers\authController.js:349:20)
+
+2026-06-17T10:53:04.989Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-17T10:53:05.305Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getDepartmentsAndDesignations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:48:19)
+
+2026-06-17T10:53:05.312Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:39:20)
+
+2026-06-17T10:53:14.504Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getMe (D:\Product_Registration\backend\src\controllers\authController.js:349:20)
+
+2026-06-17T10:53:15.332Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:39:20)
+
+2026-06-17T10:53:15.336Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getDepartmentsAndDesignations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:48:19)
+
+2026-06-17T10:53:24.588Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\controllers\authController.js:25:20)
+
+2026-06-18T03:45:02.260Z - Error: Connection terminated unexpectedly
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getMe (D:\Product_Registration\backend\src\controllers\authController.js:349:20)
+
+2026-06-18T03:45:02.276Z - Error: Connection terminated unexpectedly
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-18T03:45:02.511Z - Error: Connection terminated unexpectedly
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getCompanies (D:\Product_Registration\backend\src\controllers\companyController.js:6:20)
+
+2026-06-18T03:45:02.520Z - Error: Connection terminated unexpectedly
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getCategories (D:\Product_Registration\backend\src\controllers\categoryController.js:6:20)
+
+2026-06-18T03:51:46.103Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-18T03:51:57.124Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-18T03:52:09.156Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-18T04:10:42.250Z - Error: Connection terminated unexpectedly
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:207:26)
+
+2026-06-18T04:10:48.045Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getDepartmentsAndDesignations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:48:19)
+
+2026-06-18T04:10:48.052Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:39:20)
+
+2026-06-18T04:10:58.228Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-18T04:10:58.234Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getDepartmentsAndDesignations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:48:19)
+
+2026-06-18T04:10:58.242Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployees (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:39:20)
+
+2026-06-18T04:13:11.534Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-18T04:13:22.561Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-18T04:13:34.600Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-18T04:13:41.066Z - Error: connect ECONNABORTED 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-22T05:57:28.944Z - Error: connect EHOSTUNREACH 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\controllers\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\controllers\dashboardController.js:193:23)
+
+2026-06-22T09:02:38.166Z - Error: Not allowed by CORS
+    at origin (D:\Product_Registration\backend\app.js:78:16)
+    at D:\Product_Registration\backend\node_modules\cors\lib\index.js:219:13
+    at optionsCallback (D:\Product_Registration\backend\node_modules\cors\lib\index.js:199:9)
+    at corsMiddleware (D:\Product_Registration\backend\node_modules\cors\lib\index.js:204:7)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Product_Registration\backend\node_modules\router\index.js:342:13)
+    at D:\Product_Registration\backend\node_modules\router\index.js:297:9
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:582:12)
+    at next (D:\Product_Registration\backend\node_modules\router\index.js:291:5)
+    at cookieParser (D:\Product_Registration\backend\node_modules\cookie-parser\index.js:57:14)
+
+2026-06-22T09:02:38.179Z - Error: Not allowed by CORS
+    at origin (D:\Product_Registration\backend\app.js:78:16)
+    at D:\Product_Registration\backend\node_modules\cors\lib\index.js:219:13
+    at optionsCallback (D:\Product_Registration\backend\node_modules\cors\lib\index.js:199:9)
+    at corsMiddleware (D:\Product_Registration\backend\node_modules\cors\lib\index.js:204:7)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Product_Registration\backend\node_modules\router\index.js:342:13)
+    at D:\Product_Registration\backend\node_modules\router\index.js:297:9
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:582:12)
+    at next (D:\Product_Registration\backend\node_modules\router\index.js:291:5)
+    at cookieParser (D:\Product_Registration\backend\node_modules\cookie-parser\index.js:57:14)
+
