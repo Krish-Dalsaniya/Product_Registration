@@ -2,6 +2,107 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { Search, Bell, User, ChevronDown } from 'lucide-react';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import ThreeBackground from '../components/ThreeBackground';
+
+const MotionCard = ({ mod, onClick }) => {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  // High stiffness, moderate damping = snappy but smooth physical response
+  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 20 });
+  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 20 });
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
+
+  // Stable 2.5D Parallax instead of buggy CSS translateZ
+  const translateX = useTransform(mouseXSpring, [-0.5, 0.5], ["-15px", "15px"]);
+  const translateY = useTransform(mouseYSpring, [-0.5, 0.5], ["-15px", "15px"]);
+
+  const glareX = useTransform(mouseXSpring, [-0.5, 0.5], ["-20%", "120%"]);
+  const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["-20%", "120%"]);
+
+  // Add shine movement for a metallic glass feel
+  const shineX = useTransform(mouseXSpring, [-0.5, 0.5], ["100%", "-100%"]);
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <div className={`col-span-12 ${mod.colSpan} perspective-[1500px]`}>
+      <motion.button 
+        onClick={onClick}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{
+          rotateX,
+          rotateY,
+        }}
+        whileHover={{ scale: 1.02 }}
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+        className={`w-full h-full text-left flex items-center p-6 rounded-[24px] border-[1.5px] border-white/60 backdrop-blur-xl shadow-[0_10px_30px_rgb(0,0,0,0.05),inset_0_2px_10px_rgb(255,255,255,0.8),inset_0_-2px_10px_rgb(255,255,255,0.2)] hover:shadow-[0_40px_80px_rgb(0,0,0,0.12),inset_0_2px_15px_rgb(255,255,255,1)] relative overflow-hidden group bg-white/40 transition-colors duration-300`}
+      >
+        {/* Dynamic Glare */}
+        <motion.div 
+          className="absolute inset-0 z-0 pointer-events-none mix-blend-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(circle at var(--glare-x) var(--glare-y), rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 50%)`,
+            '--glare-x': glareX,
+            '--glare-y': glareY
+          }}
+        />
+        
+        {/* Shine Sweep */}
+        <motion.div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+          style={{
+            background: `linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.4) 25%, transparent 30%)`,
+            backgroundSize: '200% 100%',
+            backgroundPositionX: shineX
+          }}
+        />
+        
+        {/* Stable 2.5D Parallax Content Wrapper */}
+        <motion.div 
+          className="relative z-10 flex items-center gap-5 w-full pointer-events-none" 
+          style={{ x: translateX, y: translateY }}
+        >
+          {/* Floating Icon Base */}
+          <div className="w-[72px] h-[72px] rounded-[20px] bg-white/60 border border-white/80 shadow-[0_10px_20px_rgb(0,0,0,0.05)] flex items-center justify-center p-3 backdrop-blur-md">
+            <img 
+              src={mod.iconUrl} 
+              alt={`${mod.name} icon`} 
+              className="w-full h-full object-contain filter drop-shadow-lg group-hover:scale-110 transition-all duration-300 mix-blend-multiply" 
+            />
+          </div>
+
+          {/* Floating Text */}
+          <div>
+            <h3 className="font-extrabold text-slate-800 text-[19px] tracking-tight mb-1">{mod.name}</h3>
+            <p className="text-slate-500 text-[14px] font-semibold leading-relaxed">{mod.description}</p>
+          </div>
+        </motion.div>
+      </motion.button>
+    </div>
+  );
+};
 
 const AppLauncher = () => {
   const { user, hasPermission, logout } = useAuth();
@@ -99,11 +200,9 @@ const AppLauncher = () => {
   });
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#faf8f3] text-slate-800 font-sans p-6 md:p-10">
-      {/* Mesh Background Blobs to match reference */}
-      <div className="absolute top-0 right-[10%] w-[60vw] h-[60vw] bg-[#fff1ec] rounded-full blur-[100px] pointer-events-none transform -translate-y-1/2 opacity-80" />
-      <div className="absolute bottom-0 left-[-10%] w-[50vw] h-[50vw] bg-[#fff6e5] rounded-full blur-[100px] pointer-events-none transform translate-y-1/3 opacity-80" />
-      <div className="absolute top-[30%] right-[-10%] w-[40vw] h-[40vw] bg-[#fdf3ec] rounded-full blur-[80px] pointer-events-none opacity-60" />
+    <div className="min-h-screen relative overflow-hidden bg-[#faf8f3] text-slate-800 font-sans p-6 md:p-10 perspective-[1000px]">
+      {/* 3D Interactive Background */}
+      <ThreeBackground />
       
       {/* Content Container */}
       <div className="relative z-10 max-w-[1200px] mx-auto animate-in fade-in duration-700">
@@ -119,7 +218,7 @@ const AppLauncher = () => {
                 <line x1="12" y1="22" x2="12" y2="12"></line>
               </svg>
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">ERP Hub</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900">Crudex</span>
           </div>
 
           {/* Center: Search */}
@@ -158,7 +257,7 @@ const AppLauncher = () => {
         {/* Hero Section */}
         <div className="text-center mb-14">
           <h1 className="text-[48px] md:text-[56px] font-black mb-3 font-['Fraunces',serif] tracking-tight text-[#1a1c20] leading-tight">
-            ERP Workspace
+            Crudex Workspace
           </h1>
           <p className="text-slate-600 text-[15px] font-medium max-w-2xl mx-auto">
             Streamline your entire business operation from one central hub.
@@ -167,24 +266,8 @@ const AppLauncher = () => {
 
         {/* Module Grid */}
         <div className="grid grid-cols-12 gap-5 mb-14 max-w-[1100px] mx-auto">
-          {authorizedModules.map((mod, index) => (
-            <button 
-              key={mod.id}
-              onClick={() => navigate(mod.path)}
-              className={`col-span-12 ${mod.colSpan} text-left flex items-center p-6 rounded-[16px] border-t border-l border-white/90 border-b border-r border-slate-100 shadow-[0_10px_30px_rgb(0,0,0,0.03)] backdrop-blur-2xl hover:-translate-y-1 hover:shadow-[0_15px_40px_rgb(0,0,0,0.06)] transition-all duration-300 relative overflow-hidden group ${mod.gradient} ${mod.shadowColor}`}
-            >
-              <div className="relative z-10 flex items-center gap-4 w-full">
-                <img 
-                  src={mod.iconUrl} 
-                  alt={`${mod.name} icon`} 
-                  className="w-12 h-12 object-contain filter drop-shadow-sm group-hover:scale-110 transition-transform duration-300 mix-blend-multiply" 
-                />
-                <div>
-                  <h3 className="font-bold text-slate-900 text-[15px] tracking-tight mb-0.5">{mod.name}</h3>
-                  <p className="text-slate-500 text-[12px] font-medium leading-snug">{mod.description}</p>
-                </div>
-              </div>
-            </button>
+          {authorizedModules.map((mod) => (
+            <MotionCard key={mod.id} mod={mod} onClick={() => navigate(mod.path)} />
           ))}
         </div>
 
