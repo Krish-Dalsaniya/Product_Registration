@@ -12,6 +12,5 @@ router.post('/generate', payrollController.generatePayroll);
 router.delete('/generate', payrollController.deleteDraft);
 router.post('/process', payrollController.processPayroll);
 router.post('/email', payrollController.emailPayslip);
-router.get('/download/:payroll_id', payrollController.downloadPayslip);
 
 module.exports = router;

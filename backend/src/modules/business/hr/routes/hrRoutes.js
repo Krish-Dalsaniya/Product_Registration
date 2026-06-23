@@ -3,8 +3,10 @@ const router = express.Router();
 const { getDashboardMetrics } = require('../controllers/hrController');
 const { getEmployees, getDepartmentsAndDesignations, createEmployee, getEmployeeById, updateEmployee, deleteEmployee, updateEmployeeRole, getEmployeeHierarchy } = require('../controllers/employeeController');
 const { verifyToken } = require('../../../../middleware/auth');
-// In a full implementation, we would import requireModuleAccess middleware here
-// const { requireModuleAccess } = require('../../../core/permissions/middleware');
+const payrollController = require('../controllers/payrollController');
+
+// Public route for email downloads (secured by unguessable UUID)
+router.get('/payrolls/download/:payroll_id', payrollController.downloadPayslip);
 
 router.use(verifyToken);
 // router.use(requireModuleAccess('hr'));
