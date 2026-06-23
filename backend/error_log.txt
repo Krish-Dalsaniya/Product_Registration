@@ -636,3 +636,51 @@
     at next (D:\Product_Registration\backend\node_modules\router\index.js:291:5)
     at cookieParser (D:\Product_Registration\backend\node_modules\cookie-parser\index.js:57:14)
 
+2026-06-23T06:15:56.534Z - TypeError: pool.connect is not a function
+    at generatePayroll (D:\Product_Registration\backend\src\modules\business\hr\controllers\payrollController.js:78:31)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at next (D:\Product_Registration\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (D:\Product_Registration\backend\node_modules\router\lib\route.js:117:3)
+    at handle (D:\Product_Registration\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at D:\Product_Registration\backend\node_modules\router\index.js:295:15
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:582:12)
+    at next (D:\Product_Registration\backend\node_modules\router\index.js:291:5)
+    at router.handle (D:\Product_Registration\backend\node_modules\router\index.js:186:3)
+
+2026-06-23T06:16:20.229Z - TypeError: pool.connect is not a function
+    at generatePayroll (D:\Product_Registration\backend\src\modules\business\hr\controllers\payrollController.js:78:31)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at next (D:\Product_Registration\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (D:\Product_Registration\backend\node_modules\router\lib\route.js:117:3)
+    at handle (D:\Product_Registration\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at D:\Product_Registration\backend\node_modules\router\index.js:295:15
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:582:12)
+    at next (D:\Product_Registration\backend\node_modules\router\index.js:291:5)
+    at router.handle (D:\Product_Registration\backend\node_modules\router\index.js:186:3)
+
+2026-06-23T06:17:45.919Z - TypeError: pool.connect is not a function
+    at generatePayroll (D:\Product_Registration\backend\src\modules\business\hr\controllers\payrollController.js:78:31)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at next (D:\Product_Registration\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (D:\Product_Registration\backend\node_modules\router\lib\route.js:117:3)
+    at handle (D:\Product_Registration\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at D:\Product_Registration\backend\node_modules\router\index.js:295:15
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:582:12)
+    at next (D:\Product_Registration\backend\node_modules\router\index.js:291:5)
+    at router.handle (D:\Product_Registration\backend\node_modules\router\index.js:186:3)
+
+2026-06-23T06:20:07.608Z - TypeError: pool.connect is not a function
+    at generatePayroll (D:\Product_Registration\backend\src\modules\business\hr\controllers\payrollController.js:78:31)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at next (D:\Product_Registration\backend\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (D:\Product_Registration\backend\node_modules\router\lib\route.js:117:3)
+    at handle (D:\Product_Registration\backend\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (D:\Product_Registration\backend\node_modules\router\lib\layer.js:152:17)
+    at D:\Product_Registration\backend\node_modules\router\index.js:295:15
+    at processParams (D:\Product_Registration\backend\node_modules\router\index.js:582:12)
+    at next (D:\Product_Registration\backend\node_modules\router\index.js:291:5)
+    at router.handle (D:\Product_Registration\backend\node_modules\router\index.js:186:3)
+

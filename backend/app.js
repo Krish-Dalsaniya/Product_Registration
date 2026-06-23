@@ -8,24 +8,24 @@ const requestLogger = require('./src/middleware/requestLogger');
 const errorHandler = require('./src/middleware/errorHandler');
 
 // Route imports
-const authRoutes = require('./src/routes/auth');
-const adminRoutes = require('./src/routes/admin');
-const designerRoutes = require('./src/routes/designer');
-const salesRoutes = require('./src/routes/sales');
-const maintenanceRoutes = require('./src/routes/maintenance');
-const productRoutes = require('./src/routes/products');
-const categoryRoutes = require('./src/routes/categories');
-const customerRoutes = require('./src/routes/customers');
-const companyRoutes = require('./src/routes/companies');
-const inventoryRoutes = require('./src/routes/inventory');
-const finishedGoodsRoutes = require('./src/routes/finishedGoodsRoutes');
-const bookASaleRoutes = require('./src/routes/bookASaleRoutes');
-const supportTicketsRoutes = require('./src/routes/supportTicketsRoutes');
-const chatRoutes = require('./src/routes/chatRoutes');
-const chatbotRoutes = require('./src/routes/chatbotRoutes');
-const rolesRoutes = require('./src/routes/roles');
-const dashboardRoutes = require('./src/routes/dashboardRoutes');
-const auditRoutes = require('./src/routes/audit');
+const authRoutes = require('./src/modules/auth/auth');
+const adminRoutes = require('./src/modules/admin/admin');
+const designerRoutes = require('./src/modules/operations/designer');
+const salesRoutes = require('./src/modules/sales/sales');
+const maintenanceRoutes = require('./src/modules/operations/maintenance');
+const productRoutes = require('./src/modules/inventory/products');
+const categoryRoutes = require('./src/modules/inventory/categories');
+const customerRoutes = require('./src/modules/sales/customers');
+const companyRoutes = require('./src/modules/sales/companies');
+const inventoryRoutes = require('./src/modules/inventory/inventory');
+const finishedGoodsRoutes = require('./src/modules/inventory/finishedGoodsRoutes');
+const bookASaleRoutes = require('./src/modules/sales/bookASaleRoutes');
+const supportTicketsRoutes = require('./src/modules/communication/supportTicketsRoutes');
+const chatRoutes = require('./src/modules/communication/chatRoutes');
+const chatbotRoutes = require('./src/modules/communication/chatbotRoutes');
+const rolesRoutes = require('./src/modules/auth/roles');
+const dashboardRoutes = require('./src/modules/admin/dashboardRoutes');
+const auditRoutes = require('./src/modules/operations/audit');
 
 // Modular Routes
 const hrRoutes = require('./src/modules/business/hr/routes/hrRoutes');
@@ -106,7 +106,7 @@ app.use('/api/audit', auditRoutes);
 
 // Modular Endpoints
 app.use('/api/hr', hrRoutes);
-app.use('/api/leaves', require('./src/routes/leaves'));
+app.use('/api/leaves', require('./src/modules/hr/leaves'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));
