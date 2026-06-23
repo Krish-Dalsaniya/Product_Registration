@@ -56,6 +56,21 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSuccess }) => {
       return;
     }
 
+    if (formData.leaveType !== 'Emergency Leave') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(formData.startDate);
+      start.setHours(0, 0, 0, 0);
+      
+      const diffTime = start.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 3) {
+        toast.error('Leaves (except Emergency) must be applied at least 3 days in advance');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const res = await applyForLeaveApi(formData);

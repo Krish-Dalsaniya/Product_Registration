@@ -17,22 +17,52 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/login' && originalRequest.url !== '/auth/refresh') {
+      
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          return axiosInstance(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
       
       try {
         await axios.post(`${axiosInstance.defaults.baseURL}/auth/refresh`, {}, { withCredentials: true });
-        return axiosInstance(originalRequest);
+        processQueue(null, 'refreshed');
+        return await axiosInstance(originalRequest);
       } catch (refreshError) {
+        processQueue(refreshError, null);
         if (refreshError.response && refreshError.response.status === 401) {
           localStorage.removeItem('user');
           window.dispatchEvent(new Event('unauthorized'));
         }
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
     // Global handling for 403 Forbidden (Permission Denied)

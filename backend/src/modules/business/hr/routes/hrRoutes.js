@@ -34,4 +34,7 @@ router.get('/holidays', getHolidays);
 router.post('/holidays', createHoliday);
 router.delete('/holidays/:id', deleteHoliday);
 
+const payrollRoutes = require('./payrollRoutes');
+router.use('/payrolls', payrollRoutes);
+
 module.exports = router;

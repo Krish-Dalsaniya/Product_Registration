@@ -22,7 +22,8 @@ import {
   Settings,
   Layers,
   ChevronDown,
-  Network
+  Network,
+  Banknote
 } from 'lucide-react';
 
 const HRSidebar = ({ isOpen, onClose }) => {
@@ -483,6 +484,7 @@ const HRSidebar = ({ isOpen, onClose }) => {
           <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} />
           <NavItem to="/hr/leaves" label="Leaves" icon={Calendar} />
           <NavItem to="/hr/attendance" label="Attendance" icon={Clock} />
+          <NavItem to="/hr/payrolls" label="Payrolls" icon={Banknote} />
 
         </div>
       </aside>

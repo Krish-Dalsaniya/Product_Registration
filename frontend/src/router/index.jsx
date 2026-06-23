@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import AuthGuard from '../features/auth/AuthGuard';
-import RoleGuard from '../features/auth/RoleGuard';
+import AuthGuard from '../modules/auth/AuthGuard';
+import RoleGuard from '../modules/auth/RoleGuard';
 import Navbar from '../components/shared/Navbar';
 import Sidebar from '../components/shared/Sidebar';
 import Breadcrumbs from '../components/shared/Breadcrumbs';
@@ -9,8 +9,8 @@ import AssistantPanel from '../components/shared/AssistantPanel';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-const AuditLogsPage = lazy(() => import('../features/admin/AuditLogsPage'));
-const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
+const AuditLogsPage = lazy(() => import('../modules/admin/AuditLogsPage'));
+const SettingsPage = lazy(() => import('../modules/settings/SettingsPage'));
 import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare, Shield, LockKeyhole, Settings } from 'lucide-react';
 
 const IconMap = {
@@ -114,29 +114,29 @@ const getTabMetadata = (pathname, search) => {
 };
 
 // Lazy load components
-const LoginPage = lazy(() => import('../features/auth/LoginPage'));
-const AdminDashboard = lazy(() => import('../features/admin/AdminDashboard'));
-const SalesDashboard = lazy(() => import('../features/admin/dashboards/SalesDashboard'));
-const MaintenanceDashboard = lazy(() => import('../features/admin/dashboards/MaintenanceDashboard'));
-const DesignerDashboard = lazy(() => import('../features/admin/dashboards/DesignerDashboard'));
-const GenericDashboard = lazy(() => import('../features/admin/dashboards/GenericDashboard'));
-const UserManagementDashboard = lazy(() => import('../features/admin/dashboards/UserManagementDashboard'));
-const UserListPage = lazy(() => import('../features/admin/UserListPage'));
-const UserAccessPage = lazy(() => import('../features/admin/UserAccessPage'));
-const TeamsPage = lazy(() => import('../features/admin/TeamsPage'));
-const ProductListPage = lazy(() => import('../features/admin/ProductListPage'));
-const ProductProfilePage = lazy(() => import('../features/admin/ProductProfilePage'));
-const CustomerListPage = lazy(() => import('../features/admin/CustomerListPage'));
-const FinishedGoodsPage = lazy(() => import('../features/admin/FinishedGoodsPage'));
-const InventoryListPage = lazy(() => import('../features/admin/InventoryListPage'));
-const ElectronicsPartsPage = lazy(() => import('../features/admin/ElectronicsPartsPage'));
-const ElectricalPartsPage = lazy(() => import('../features/admin/ElectricalPartsPage'));
-const StructuralPartsPage = lazy(() => import('../features/admin/StructuralPartsPage'));
-const BookASalePage = lazy(() => import('../features/admin/BookASalePage'));
-const SupportTicketsPage = lazy(() => import('../features/admin/SupportTicketsPage'));
-const SupportTicketProfilePage = lazy(() => import('../features/admin/SupportTicketProfilePage'));
-const ChatPage = lazy(() => import('../features/chat/ChatPage'));
-const RolesPage = lazy(() => import('../features/admin/RolesPage'));
+const LoginPage = lazy(() => import('../modules/auth/LoginPage'));
+const AdminDashboard = lazy(() => import('../modules/admin/AdminDashboard'));
+const SalesDashboard = lazy(() => import('../modules/admin/dashboards/SalesDashboard'));
+const MaintenanceDashboard = lazy(() => import('../modules/admin/dashboards/MaintenanceDashboard'));
+const DesignerDashboard = lazy(() => import('../modules/admin/dashboards/DesignerDashboard'));
+const GenericDashboard = lazy(() => import('../modules/admin/dashboards/GenericDashboard'));
+const UserManagementDashboard = lazy(() => import('../modules/admin/dashboards/UserManagementDashboard'));
+const UserListPage = lazy(() => import('../modules/admin/UserListPage'));
+const UserAccessPage = lazy(() => import('../modules/admin/UserAccessPage'));
+const TeamsPage = lazy(() => import('../modules/admin/TeamsPage'));
+const ProductListPage = lazy(() => import('../modules/admin/ProductListPage'));
+const ProductProfilePage = lazy(() => import('../modules/admin/ProductProfilePage'));
+const CustomerListPage = lazy(() => import('../modules/admin/CustomerListPage'));
+const FinishedGoodsPage = lazy(() => import('../modules/admin/FinishedGoodsPage'));
+const InventoryListPage = lazy(() => import('../modules/admin/InventoryListPage'));
+const ElectronicsPartsPage = lazy(() => import('../modules/admin/ElectronicsPartsPage'));
+const ElectricalPartsPage = lazy(() => import('../modules/admin/ElectricalPartsPage'));
+const StructuralPartsPage = lazy(() => import('../modules/admin/StructuralPartsPage'));
+const BookASalePage = lazy(() => import('../modules/admin/BookASalePage'));
+const SupportTicketsPage = lazy(() => import('../modules/admin/SupportTicketsPage'));
+const SupportTicketProfilePage = lazy(() => import('../modules/admin/SupportTicketProfilePage'));
+const ChatPage = lazy(() => import('../modules/chat/ChatPage'));
+const RolesPage = lazy(() => import('../modules/admin/RolesPage'));
 const AppLauncher = lazy(() => import('../modules/dashboard/pages/AppLauncher'));
 
 // HR Module
@@ -148,6 +148,7 @@ const EmployeeProfile = lazy(() => import('../modules/hr/pages/EmployeeProfile')
 const OrganizationChartPage = lazy(() => import('../modules/hr/pages/OrganizationChartPage'));
 const LeaveManagement = lazy(() => import('../modules/hr/pages/LeaveManagement'));
 const AttendanceManagement = lazy(() => import('../modules/hr/pages/AttendanceManagement'));
+const PayrollManagement = lazy(() => import('../modules/hr/pages/PayrollManagement'));
 
 
 const PageLoader = () => (
@@ -401,6 +402,7 @@ const Router = () => {
           <Route path="/hr/organization-chart" element={<OrganizationChartPage />} />
           <Route path="/hr/leaves" element={<LeaveManagement />} />
           <Route path="/hr/attendance" element={<AttendanceManagement />} />
+          <Route path="/hr/payrolls" element={<PayrollManagement />} />
         </Route>
 
         {/* Temporary Routing for other ERP Modules until fully developed */}
