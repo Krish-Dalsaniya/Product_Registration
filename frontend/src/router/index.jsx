@@ -9,6 +9,7 @@ import AssistantPanel from '../components/shared/AssistantPanel';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import PayslipDownload from '../modules/hr/pages/PayslipDownload';
 const AuditLogsPage = lazy(() => import('../modules/admin/AuditLogsPage'));
 const SettingsPage = lazy(() => import('../modules/settings/SettingsPage'));
 import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare, Shield, LockKeyhole, Settings } from 'lucide-react';
@@ -324,6 +325,7 @@ const Router = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/payslip/:payrollId" element={<PayslipDownload />} />
         <Route path="/unauthorized" element={<div className="p-10 text-center text-rose-500 font-bold bg-[var(--bg-workspace)] h-screen uppercase tracking-widest text-sm">Unauthorized Access Restricted</div>} />
         
         {/* Shared Workspace Routes */}
