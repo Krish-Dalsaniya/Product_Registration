@@ -246,8 +246,12 @@ const AppLauncher = () => {
                 {user?.full_name?.charAt(0) || <User size={16} />}
               </div>
               <div className="hidden sm:block text-left">
-                <div className="font-bold text-[13px] text-slate-900 leading-none">Admin User</div>
-                <div className="text-slate-500 text-[11px] font-medium mt-1">Admin</div>
+                <div className="font-bold text-[13px] text-slate-900 leading-none">
+                  {user?.full_name || user?.username || 'User'}
+                </div>
+                <div className="text-slate-500 text-[11px] font-medium mt-1 capitalize">
+                  {user?.role_name || 'Role'}
+                </div>
               </div>
               <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors ml-1" />
             </button>
