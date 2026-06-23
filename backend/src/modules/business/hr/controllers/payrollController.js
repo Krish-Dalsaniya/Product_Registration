@@ -201,12 +201,15 @@ const emailPayslip = async (req, res, next) => {
     // Assuming we have the email utility
     const { sendEmail } = require('../../../../utils/email');
     
+    const baseUrl = req.protocol + '://' + req.get('host');
+    const downloadUrl = `${baseUrl}/api/hr/payrolls/download/${payslip.payroll_id}`;
+
     const html = `
       <h2>Payslip for ${payslip.month}/${payslip.year}</h2>
       <p>Hello ${payslip.full_name},</p>
       <p>Your payslip for the period ${payslip.month}/${payslip.year} has been processed.</p>
       <div style="margin-top: 25px;">
-        <a href="${process.env.BACKEND_URL || 'http://localhost:3000'}/api/hr/payrolls/download/${payslip.payroll_id}" style="background-color: #0369a1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Download Salary Slip</a>
+        <a href="${downloadUrl}" style="background-color: #0369a1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Download Salary Slip</a>
       </div>
     `;
 
