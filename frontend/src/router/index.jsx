@@ -151,6 +151,10 @@ const LeaveManagement = lazy(() => import('../modules/hr/pages/LeaveManagement')
 const AttendanceManagement = lazy(() => import('../modules/hr/pages/AttendanceManagement'));
 const PayrollManagement = lazy(() => import('../modules/hr/pages/PayrollManagement'));
 
+// PMS Module
+const Closures = lazy(() => import('../modules/pms/pages/Closures'));
+const Projects = lazy(() => import('../modules/pms/pages/Projects'));
+
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-[60vh]">
@@ -405,6 +409,8 @@ const Router = () => {
           <Route path="/hr/leaves" element={<LeaveManagement />} />
           <Route path="/hr/attendance" element={<AttendanceManagement />} />
           <Route path="/hr/payrolls" element={<PayrollManagement />} />
+          <Route path="/hr/pms/closure" element={<Closures />} />
+          <Route path="/hr/pms/projects" element={<Projects />} />
         </Route>
 
         {/* Temporary Routing for other ERP Modules until fully developed */}
@@ -414,7 +420,7 @@ const Router = () => {
           <Route path="/accounts" element={<GenericDashboard />} />
         </Route>
 
-        {/* Generic Fallback Dashboard */}
+        {/* Generic Fallback Dashboard & New Modules */}
         <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
           <Route path="/settings" element={<SettingsPage />} />
         </Route>

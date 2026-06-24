@@ -240,7 +240,15 @@ const AppLauncher = () => {
               className="flex items-center gap-3 cursor-pointer group hover:bg-white/50 p-1.5 pr-2 rounded-full transition-colors"
             >
               <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold overflow-hidden border-2 border-white shadow-sm">
-                {user?.full_name?.charAt(0) || <User size={16} />}
+                {user?.image_url ? (
+                  <img
+                    src={user.image_url.startsWith('http') ? user.image_url : `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:3000'}/${user.image_url.startsWith('/') ? user.image_url.substring(1) : user.image_url}`}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  user?.full_name?.charAt(0)?.toUpperCase() || <User size={16} />
+                )}
               </div>
               <div className="hidden sm:block text-left">
                 <div className="font-bold text-[13px] text-slate-900 leading-none">

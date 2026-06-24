@@ -658,6 +658,7 @@ const HRSidebar = ({ isOpen, onClose }) => {
             
             <SubMenu isOpen={openMenus.pms}>
               <div className="flex flex-col py-1">
+
                 <NavItem to="/hr/pms/closure" label="Closure" icon={CheckSquare} isSubItem />
                 <NavItem to="/hr/pms/projects" label="Projects" icon={FolderGit2} isSubItem />
                 <NavItem to="/hr/pms/teams" label="Teams" icon={Users} isSubItem />

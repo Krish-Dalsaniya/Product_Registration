@@ -488,3 +488,61 @@ CREATE TABLE IF NOT EXISTS hr_payrolls (
 );
 
 COMMIT;
+
+
+-- ==============================================================================
+-- MODULE: PMS
+-- TABLES: pms_closures, pms_closure_items
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS pms_closures (
+    closure_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    employee_id UUID NOT NULL,
+    closure_date DATE NOT NULL,
+    total_hours NUMERIC(5,2) DEFAULT 0,
+    remarks TEXT,
+    status VARCHAR(50) DEFAULT 'Submitted',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS pms_closure_items (
+    item_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    closure_id UUID NOT NULL,
+    project_id UUID NULL,
+    task_description TEXT NOT NULL,
+    hours_spent NUMERIC(5,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (closure_id) REFERENCES pms_closures(closure_id) ON DELETE CASCADE
+);
+
+-- ==============================================================================
+-- MODULE: PMS
+-- TABLES: pms_projects
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS pms_projects (
+    project_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_code VARCHAR(50) UNIQUE NOT NULL,
+    project_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    team_id INTEGER NULL,
+    product_id INTEGER NULL,
+    start_date DATE,
+    end_date DATE,
+    status VARCHAR(50) DEFAULT 'Planned',
+    priority VARCHAR(50) DEFAULT 'Medium',
+    progress_percentage NUMERIC(5,2) DEFAULT 0,
+    team_lead_id UUID NULL,
+    client_handler_id UUID NULL,
+    project_members JSONB DEFAULT '[]'::jsonb,
+    created_by UUID,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (team_id) REFERENCES teams(team_id) ON DELETE SET NULL,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE SET NULL,
+    FOREIGN KEY (team_lead_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (client_handler_id) REFERENCES users(user_id) ON DELETE SET NULL
+);

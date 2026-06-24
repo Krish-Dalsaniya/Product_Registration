@@ -35,7 +35,8 @@ import {
   Loader2,
   Camera,
   Trash2,
-  Settings
+  Settings,
+  Clock
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
@@ -68,7 +69,8 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
     designers: false,
     sales: false,
     maintenance: false,
-    inventory: false
+    inventory: false,
+    pms: false
   });
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -164,6 +166,9 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
       location.pathname === '/admin/teams'
     ) {
       setOpenMenus(prev => ({ ...prev, userManagement: true }));
+    }
+    if (location.pathname.startsWith('/pms/')) {
+      setOpenMenus(prev => ({ ...prev, pms: true }));
     }
   }, [location.pathname]);
 
@@ -568,7 +573,7 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             <div className="animate-entrance-right" style={{ animationDelay: '800ms' }}>
               <NavItem to="/admin/chat" label="Chat" icon={MessageSquare} />
             </div>
-            <div className="animate-entrance-right" style={{ animationDelay: '850ms' }}>
+            <div className="animate-entrance-right" style={{ animationDelay: '825ms' }}>
               <NavItem to="#" label="AI Assistant" icon={Bot} onClick={onToggleAssistant} />
             </div>
           </div>
