@@ -1,30 +1,118 @@
-const fs = require('fs');
-const path = require('path');
-const converter = require('number-to-words');
+const generateTable = (payslip, copyType, monthName, lastDay, earningsTotal, deductionsTotal) => {
+    return `
+      <table>
+        <tr>
+            <td colspan="4" class="text-center font-bold header-title">SmarTec Solutions</td>
+            <td colspan="1" class="text-right font-bold">${copyType}</td>
+        </tr>
+        <tr>
+            <td colspan="5" class="text-center font-bold">10 Desai Appartement, Gotri Rd, opp. Dev Commercial Center, Vadodara, Gujarat 390021</td>
+        </tr>
+        <tr>
+            <td class="font-bold">Name Of Employee</td>
+            <td colspan="1">${payslip.employee_name || 'N/A'}</td>
+            <td class="font-bold">Bank IFSC</td>
+            <td>N/A</td>
+            <td class="font-bold">Employee Code :- ${payslip.emp_code || 'N/A'}</td>
+        </tr>
+        <tr>
+            <td class="font-bold">Department</td>
+            <td colspan="1">N/A</td>
+            <td class="font-bold">Bank A/c No</td>
+            <td>N/A</td>
+            <td class="font-bold">Date Of Joining:- N/A</td>
+        </tr>
+        <tr>
+            <td class="font-bold">Designation</td>
+            <td colspan="1">N/A</td>
+            <td colspan="2" class="text-center font-bold">Salary Slip</td>
+            <td class="font-bold">Month : ${monthName}/${payslip.year}</td>
+        </tr>
+        <tr class="bg-gray font-bold text-center">
+            <td>Total Days of Month</td>
+            <td>Op. PL</td>
+            <td>Utilized PL</td>
+            <td>Leave of Current Month</td>
+            <td>Total Working Days</td>
+        </tr>
+        <tr class="text-center">
+            <td>${lastDay}</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>${lastDay}</td>
+        </tr>
+        <tr class="bg-gray font-bold">
+            <td colspan="2" class="text-center">Income/ Earnings</td>
+            <td colspan="3" class="text-center">Deductions</td>
+        </tr>
+        <tr class="bg-gray font-bold text-center">
+            <td>Fixed Pay (A)</td>
+            <td>Amount (Rs.)</td>
+            <td colspan="2">Deduction</td>
+            <td>Amount (Rs.)</td>
+        </tr>
+        <tr>
+            <td>Basic</td>
+            <td class="text-right">${parseFloat(payslip.basic_salary || 0).toFixed(2)}</td>
+            <td colspan="2">TDS</td>
+            <td class="text-right">${parseFloat(payslip.tds || 0).toFixed(2)}</td>
+        </tr>
+        <tr>
+            <td>House Rent Allowance (HRA)</td>
+            <td class="text-right">${parseFloat(payslip.hra || 0).toFixed(2)}</td>
+            <td colspan="2">Professional Tax</td>
+            <td class="text-right">${parseFloat(payslip.professional_tax || 0).toFixed(2)}</td>
+        </tr>
+        <tr>
+            <td>Medical Allowance</td>
+            <td class="text-right">${parseFloat(payslip.medical_allowance || 0).toFixed(2)}</td>
+            <td colspan="2">Provident Fund (PF)</td>
+            <td class="text-right">${parseFloat(payslip.pf_deduction || 0).toFixed(2)}</td>
+        </tr>
+        <tr>
+            <td>Travel Allowance</td>
+            <td class="text-right">${parseFloat(payslip.travel_allowance || 0).toFixed(2)}</td>
+            <td colspan="2">-</td>
+            <td class="text-right">-</td>
+        </tr>
+        <tr>
+            <td>Special Allowance</td>
+            <td class="text-right">${parseFloat(payslip.special_allowance || 0).toFixed(2)}</td>
+            <td colspan="2">-</td>
+            <td class="text-right">-</td>
+        </tr>
+        <tr class="bg-gray font-bold">
+            <td>Sub Total (A)</td>
+            <td class="text-right">${earningsTotal.toFixed(2)}</td>
+            <td colspan="2">Total Deductions (B)</td>
+            <td class="text-right">${deductionsTotal.toFixed(2)}</td>
+        </tr>
+        <tr class="bg-gray font-bold">
+            <td colspan="4" class="text-right">Net Payable For Current Month (A-B)</td>
+            <td class="text-right">${parseFloat(payslip.net_salary || 0).toFixed(2)}</td>
+        </tr>
+        <tr>
+            <td colspan="5">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px;">
+                    <div class="signature-box">Stamp<br/>Here</div>
+                    <div>Receiver's Signature : _________________________</div>
+                    <div>Authorised Signature : _________________________</div>
+                </div>
+                <div class="text-center font-bold" style="margin-top: 10px;">This is electronically generated slip hence does not require signature.</div>
+            </td>
+        </tr>
+      </table>
+    `;
+};
 
 const getPdfHtml = (payslip, isFrontend = false) => {
-    const toCamelCase = (str) => {
-      return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-    };
-    const words = toCamelCase(converter.toWords(parseFloat(payslip.net_salary || 0)));
-
     const monthName = new Date(payslip.year, payslip.month - 1).toLocaleString('default', { month: 'long' });
     const shortMonth = new Date(payslip.year, payslip.month - 1).toLocaleString('default', { month: 'short' });
     const lastDay = new Date(payslip.year, payslip.month, 0).getDate();
 
     const earningsTotal = parseFloat(payslip.basic_salary) + parseFloat(payslip.hra) + parseFloat(payslip.special_allowance) + parseFloat(payslip.travel_allowance) + parseFloat(payslip.medical_allowance);
     const deductionsTotal = parseFloat(payslip.pf_deduction) + parseFloat(payslip.professional_tax) + parseFloat(payslip.tds);
-
-    let logoSrc = '/text_logo.png';
-    if (!isFrontend) {
-        try {
-            const logoPath = path.join(__dirname, '../../../../text_logo.png');
-            const logoBase64 = fs.readFileSync(logoPath, 'base64');
-            logoSrc = `data:image/png;base64,${logoBase64}`;
-        } catch(e) {
-            console.error('Error loading logo', e);
-        }
-    }
 
     return `
 <!DOCTYPE html>
@@ -35,325 +123,40 @@ const getPdfHtml = (payslip, isFrontend = false) => {
     <style>
         body {
             margin: 0;
-            padding: 2rem;
+            padding: 20px;
             background-color: #ffffff;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
+            font-family: Arial, sans-serif;
         }
-
-        .slip-container {
-            max-width: 800px;
-            width: 100%;
-            background-color: #ffffff;
-            position: relative;
-            z-index: 1;
-            padding: 2rem;
-            color: #1e293b;
-            box-sizing: border-box;
-        }
-
-        .header {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
-        .logo-img {
-            max-width: 350px;
-            max-height: 100px;
-            object-fit: contain;
-            margin-bottom: 10px;
-        }
-
-        .payslip-title {
-            font-size: 18px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #334155;
-            margin: 0;
-        }
-
-        .section-title {
-            background-color: #f1f5f9;
-            border: 1px solid #1e293b;
-            padding: 8px 16px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 1.5rem;
-            margin-bottom: 0;
-            font-size: 14px;
-            color: #0f172a;
-        }
-
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
-            border: 1px solid #1e293b;
+            font-size: 11px;
+            margin-bottom: 20px;
         }
-
         th, td {
-            border: 1px solid #1e293b;
-            padding: 10px 16px;
+            border: 1px solid #000;
+            padding: 4px 6px;
         }
-
-        th {
-            background-color: #f8fafc;
-            text-align: left;
-            font-weight: 600;
-            color: #0f172a;
-        }
-
-        td {
-            color: #334155;
-        }
-
-        .td-label {
-            font-weight: 600;
-            color: #0f172a;
-            background-color: #f8fafc;
-            width: 20%;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-bold {
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .split-tables {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0;
-            margin-top: 1.5rem;
-            border: 1px solid #1e293b;
-        }
-
-        .split-tables table {
-            border: none;
-            margin: 0;
-        }
-
-        .split-tables .left-table {
-            border-right: 1px solid #1e293b;
-        }
-
-        .split-tables th, .split-tables td {
-            border-top: none;
-            border-left: none;
-            border-right: none;
-        }
-        
-        .split-tables tr:last-child td {
-            border-bottom: none;
-        }
-
-        .total-row td {
-            background-color: #f1f5f9;
-            font-weight: 700;
-            color: #0f172a;
-            border-top: 1px solid #1e293b !important;
-        }
-
-        .net-salary-container {
-            margin-top: 1.5rem;
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .bg-gray { background-color: #d1d5db; }
+        .header-title { font-size: 14px; }
+        .signature-box {
+            height: 60px;
+            border: 1px solid #000;
+            width: 80px;
             display: flex;
-            justify-content: flex-end;
-        }
-
-        .net-salary-table {
-            width: 450px;
-        }
-
-        .net-salary-table td {
-            font-size: 16px;
-        }
-
-        .net-salary-table .amount {
-            font-size: 20px;
-            font-weight: 800;
-            background-color: #f1f5f9;
-        }
-
-        .footer {
-            margin-top: 4rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-
-        .signatory {
-            width: 200px;
-            border-top: 1px solid #1e293b;
-            padding-top: 8px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .generated-info {
-            text-align: right;
-            font-size: 12px;
-            color: #64748b;
-        }
-        
-        .company-info-bar {
-            text-align: center;
-            font-size: 12px;
-            color: #64748b;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 1rem;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="slip-container" id="payslip-content">
-        <!-- Header -->
-        <div class="header">
-            <img src="${logoSrc}" alt="Logo" class="logo-img">
-            <p class="payslip-title">Payslip for ${monthName} ${payslip.year}</p>
-        </div>
-
-        <div class="company-info-bar">
-            Income Tax: 00001-47 &nbsp;|&nbsp; contact@crudex.com &nbsp;|&nbsp; CRUDEX Enterprises Pvt Ltd
-        </div>
-
-        <!-- Employee Details -->
-        <div class="section-title">Employee Details</div>
-        <table>
-            <tr>
-                <td class="td-label">Employee ID</td>
-                <td width="30%">${payslip.emp_code}</td>
-                <td class="td-label">Name</td>
-                <td width="30%">${payslip.employee_name}</td>
-            </tr>
-            <tr>
-                <td class="td-label">Department</td>
-                <td>Engineering</td>
-                <td class="td-label">Designation</td>
-                <td>Software Engineer</td>
-            </tr>
-        </table>
-
-        <!-- Payment Period -->
-        <div class="section-title">Payment Period</div>
-        <table>
-            <tr>
-                <td>Payslip for ${monthName} ${payslip.year}</td>
-                <td class="text-right">01 ${shortMonth} ${payslip.year} – ${lastDay} ${shortMonth} ${payslip.year}</td>
-            </tr>
-        </table>
-
-        <!-- Earnings & Deductions -->
-        <div class="split-tables">
-            <!-- Earnings -->
-            <div class="left-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Earnings</th>
-                            <th class="text-right">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Basic Salary</td>
-                            <td class="text-right">Rs.${parseFloat(payslip.basic_salary).toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td>HRA (40% of Basic)</td>
-                            <td class="text-right">Rs.${parseFloat(payslip.hra).toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td>DA</td>
-                            <td class="text-right">Rs.0.00</td>
-                        </tr>
-                        <tr>
-                            <td>Special Allowance</td>
-                            <td class="text-right">Rs.${parseFloat(payslip.special_allowance).toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td>Other Allowances</td>
-                            <td class="text-right">Rs.${(parseFloat(payslip.travel_allowance)+parseFloat(payslip.medical_allowance)).toFixed(2)}</td>
-                        </tr>
-                        <tr class="total-row">
-                            <td>Total Earnings</td>
-                            <td class="text-right">Rs.${earningsTotal.toFixed(2)}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Deductions -->
-            <div class="right-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Deductions</th>
-                            <th class="text-right">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Provident Fund (PF)</td>
-                            <td class="text-right" style="color: #ef4444;">Rs.${parseFloat(payslip.pf_deduction).toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td>Professional Tax (PT)</td>
-                            <td class="text-right" style="color: #ef4444;">Rs.${parseFloat(payslip.professional_tax).toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td>Income Tax (TDS)</td>
-                            <td class="text-right" style="color: #ef4444;">Rs.${parseFloat(payslip.tds).toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td>Other Deductions</td>
-                            <td class="text-right" style="color: #ef4444;">–</td>
-                        </tr>
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr class="total-row">
-                            <td>Total Deductions</td>
-                            <td class="text-right" style="color: #ef4444;">Rs.${deductionsTotal.toFixed(2)}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Net Salary -->
-        <div class="net-salary-container">
-            <table class="net-salary-table">
-                <tr>
-                    <td class="td-label">Net Salary<br><span style="font-size: 11px; font-weight: normal; font-style: italic;">Amount in Words: ${words} Rupees Only</span></td>
-                    <td class="text-right text-bold amount">Rs.${parseFloat(payslip.net_salary).toFixed(2)}</td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <div class="signatory">
-                Authorized Signatory
-            </div>
-            <div class="generated-info">
-                <p style="margin: 0;">Generated on ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
-                <p style="margin: 4px 0 0; color: #94a3b8;">System-generated payslip. No signature required.</p>
-            </div>
-        </div>
-    </div>
+    ${generateTable(payslip, 'Receiver Copy', monthName, lastDay, earningsTotal, deductionsTotal)}
+    <br/>
+    ${generateTable(payslip, 'Office Copy', monthName, lastDay, earningsTotal, deductionsTotal)}
 </body>
 </html>
     `;

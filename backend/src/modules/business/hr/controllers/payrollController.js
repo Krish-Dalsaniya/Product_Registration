@@ -201,8 +201,8 @@ const emailPayslip = async (req, res, next) => {
     // Assuming we have the email utility
     const { sendEmail } = require('../../../../utils/email');
     
-    const baseUrl = req.protocol + '://' + req.get('host');
-    const downloadUrl = `${baseUrl}/api/hr/payrolls/download/${payslip.payroll_id}`;
+    const baseUrl = process.env.FRONTEND_URL;
+    const downloadUrl = `${baseUrl}/payslip/${payslip.payroll_id}`;
 
     const html = `
       <h2>Payslip for ${payslip.month}/${payslip.year}</h2>
@@ -241,7 +241,7 @@ const downloadPayslip = async (req, res, next) => {
     
     const payslip = result.rows[0];
 
-    const { getPdfHtml } = require('../utils/pdfTemplate');
+    const { getPdfHtml } = require('../../../../utils/pdfTemplate');
     const htmlContent = getPdfHtml(payslip, false);
 
     const htmlPdf = require('html-pdf-node');

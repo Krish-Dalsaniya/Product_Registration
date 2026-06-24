@@ -23,7 +23,17 @@ import {
   Layers,
   ChevronDown,
   Network,
-  Banknote
+  Banknote,
+  UserCheck,
+  GraduationCap,
+  CalendarDays,
+  Palmtree,
+  Briefcase,
+  CheckSquare,
+  FolderGit2,
+  CheckCircle,
+  Zap,
+  BookOpen
 } from 'lucide-react';
 
 const HRSidebar = ({ isOpen, onClose }) => {
@@ -38,7 +48,9 @@ const HRSidebar = ({ isOpen, onClose }) => {
   const fileInputRef = useRef(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [openMenus, setOpenMenus] = useState({
-    employees: location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/organization-chart'
+    payrolls: location.pathname.startsWith('/hr/payrolls') || location.pathname.startsWith('/hr/leaves') || location.pathname.startsWith('/hr/roaster') || location.pathname.startsWith('/hr/attendance'),
+    roaster: location.pathname.startsWith('/hr/roaster'),
+    pms: location.pathname.startsWith('/hr/pms'),
   });
 
   const toggleMenu = (menu) => {
@@ -144,8 +156,14 @@ const HRSidebar = ({ isOpen, onClose }) => {
   }, []);
 
   useEffect(() => {
-    if (location.pathname.startsWith('/hr/employees') || location.pathname === '/hr/organization-chart') {
-      setOpenMenus(prev => ({ ...prev, employees: true }));
+    if (location.pathname.startsWith('/hr/payrolls') || location.pathname.startsWith('/hr/leaves') || location.pathname.startsWith('/hr/roaster') || location.pathname.startsWith('/hr/attendance')) {
+      setOpenMenus(prev => ({ ...prev, payrolls: true }));
+    }
+    if (location.pathname.startsWith('/hr/roaster')) {
+      setOpenMenus(prev => ({ ...prev, roaster: true }));
+    }
+    if (location.pathname.startsWith('/hr/pms')) {
+      setOpenMenus(prev => ({ ...prev, pms: true }));
     }
   }, [location.pathname]);
 
@@ -154,9 +172,9 @@ const HRSidebar = ({ isOpen, onClose }) => {
     if (onClose) onClose();
   };
 
-  const NavItem = ({ to, label, icon: Icon, isSubItem = false, isLastSubItem = false }) => (
+  const NavItem = ({ to, label, icon: Icon, isSubItem = false, isDeepSubItem = false, isLastSubItem = false }) => (
     <div className="relative w-full">
-      {isSubItem && (
+      {isSubItem && !isDeepSubItem && (
         <>
           <div 
             className="absolute pointer-events-none" 
@@ -187,13 +205,57 @@ const HRSidebar = ({ isOpen, onClose }) => {
           )}
         </>
       )}
+
+      {isDeepSubItem && (
+        <>
+          <div 
+            className="absolute bg-[var(--text-dim)] pointer-events-none" 
+            style={{
+              left: '46px',
+              top: 0,
+              bottom: 0,
+              width: '2px',
+              opacity: 0.4,
+              zIndex: 10
+            }}
+          />
+          <div 
+            className="absolute pointer-events-none" 
+            style={{
+              left: '70px',
+              top: 0,
+              height: '50%',
+              width: '18px',
+              borderLeft: '2px solid var(--text-dim)',
+              borderBottom: '2px solid var(--text-dim)',
+              borderBottomLeftRadius: '6px',
+              opacity: 0.4,
+              zIndex: 10
+            }}
+          />
+          {!isLastSubItem && (
+            <div 
+              className="absolute bg-[var(--text-dim)] pointer-events-none" 
+              style={{
+                left: '70px',
+                top: '50%',
+                bottom: 0,
+                width: '2px',
+                opacity: 0.4,
+                zIndex: 10
+              }}
+            />
+          )}
+        </>
+      )}
+      
       <button
         onClick={() => handleNavigate(to)}
         className={`w-full flex items-center gap-4 px-8 py-2.5 transition-all duration-300 relative group ${
           location.pathname === to
             ? 'font-bold'
             : 'hover:bg-[var(--nav-hover)]'
-        } ${isSubItem ? 'pl-[72px] pr-4 py-1.5' : ''}`}
+        } ${isDeepSubItem ? 'pl-[96px] pr-4 py-1.5' : isSubItem ? 'pl-[72px] pr-4 py-1.5' : ''}`}
         style={{
           color: location.pathname === to ? 'var(--accent)' : 'var(--text-muted)',
           background: location.pathname === to ? 'var(--nav-active)' : undefined,
@@ -221,7 +283,7 @@ const HRSidebar = ({ isOpen, onClose }) => {
         </div>
         <span
           className="text-[12px] font-bold tracking-wider uppercase relative z-20 transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap"
-          style={{ fontSize: isSubItem ? '11px' : undefined }}
+          style={{ fontSize: (isSubItem || isDeepSubItem) ? '11px' : undefined }}
         >
           {label}
         </span>
@@ -432,59 +494,180 @@ const HRSidebar = ({ isOpen, onClose }) => {
             Human Resources
           </p>
           <NavItem to="/hr/dashboard" label="Dashboard" icon={LayoutDashboard} />
+          <NavItem to="/hr/organization-chart" label="Organogram" icon={Network} />
+          <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} />
+          <NavItem to="/hr/onboarding" label="Onboarding/Offboarding" icon={UserCheck} />
+          <NavItem to="/hr/trainee" label="Trainee" icon={GraduationCap} />
+          <NavItem to="/hr/employees" label="Employee" icon={Users} />
           
-          {/* Employees Collapsible Menu */}
+          {/* Payrolls Menu */}
           <div>
             <div 
               className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
               onClick={() => {
-                handleNavigate('/hr/employees');
-                toggleMenu('employees');
+                handleNavigate('/hr/payrolls');
+                toggleMenu('payrolls');
               }}
               style={{
-                color: (location.pathname === '/hr/employees' || location.pathname === '/hr/organization-chart') ? 'var(--accent)' : 'var(--text-muted)',
-                background: location.pathname === '/hr/employees' ? 'var(--nav-active)' : undefined,
+                color: (location.pathname.startsWith('/hr/payrolls') || location.pathname.startsWith('/hr/leaves') || location.pathname.startsWith('/hr/roaster') || location.pathname.startsWith('/hr/attendance')) ? 'var(--accent)' : 'var(--text-muted)',
+                background: location.pathname === '/hr/payrolls' ? 'var(--nav-active)' : undefined,
               }}
             >
               <div
                 className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
                 style={{
                   background: 'var(--accent)',
-                  transform: location.pathname === '/hr/employees' ? 'scaleY(1)' : 'scaleY(0)',
-                  opacity: location.pathname === '/hr/employees' ? 1 : 0,
+                  transform: location.pathname === '/hr/payrolls' ? 'scaleY(1)' : 'scaleY(0)',
+                  opacity: location.pathname === '/hr/payrolls' ? 1 : 0,
                   transformOrigin: 'center',
                 }}
               />
               <div className="flex items-center gap-4 relative z-10">
                 <div className="w-6 flex justify-center">
-                  <Users size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: (location.pathname === '/hr/employees' || location.pathname === '/hr/organization-chart') ? 'var(--accent)' : 'var(--text-dim)' }} />
+                  <Banknote size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: (location.pathname.startsWith('/hr/payrolls') || location.pathname.startsWith('/hr/leaves') || location.pathname.startsWith('/hr/roaster') || location.pathname.startsWith('/hr/attendance')) ? 'var(--accent)' : 'var(--text-dim)' }} />
                 </div>
                 <span className="text-[12px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
-                  Employees
+                  Payrolls
                 </span>
               </div>
               <div 
                 className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors p-1"
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleMenu('employees');
+                  toggleMenu('payrolls');
                 }}
               >
-                <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.employees ? 'rotate-180' : ''}`} />
+                <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.payrolls ? 'rotate-180' : ''}`} />
               </div>
             </div>
             
-            <SubMenu isOpen={openMenus.employees}>
+            <SubMenu isOpen={openMenus.payrolls}>
               <div className="flex flex-col py-1">
-                <NavItem to="/hr/organization-chart" label="Org Chart" icon={Network} isSubItem isLastSubItem />
+                <NavItem to="/hr/leaves" label="Leaves" icon={Calendar} isSubItem />
+                
+                {/* Roaster Submenu */}
+                <div>
+                  <div 
+                    className="w-full flex items-center justify-between pl-[72px] pr-4 py-1.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
+                    onClick={() => {
+                      handleNavigate('/hr/roaster');
+                      toggleMenu('roaster');
+                    }}
+                    style={{
+                      color: location.pathname.startsWith('/hr/roaster') ? 'var(--accent)' : 'var(--text-muted)',
+                      background: location.pathname === '/hr/roaster' ? 'var(--nav-active)' : undefined,
+                    }}
+                  >
+                    <div 
+                      className="absolute pointer-events-none" 
+                      style={{
+                        left: '46px',
+                        top: 0,
+                        height: '50%',
+                        width: '26px',
+                        borderLeft: '2px solid var(--text-dim)',
+                        borderBottom: '2px solid var(--text-dim)',
+                        borderBottomLeftRadius: '6px',
+                        opacity: 0.4,
+                        zIndex: 10
+                      }}
+                    />
+                    <div 
+                      className="absolute bg-[var(--text-dim)] pointer-events-none" 
+                      style={{
+                        left: '46px',
+                        top: '50%',
+                        bottom: 0,
+                        width: '2px',
+                        opacity: 0.4,
+                        zIndex: 10
+                      }}
+                    />
+
+                    <div className="flex items-center gap-4 relative z-10">
+                      <div className="w-6 flex justify-center">
+                        <CalendarDays size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: location.pathname.startsWith('/hr/roaster') ? 'var(--accent)' : 'var(--text-dim)' }} />
+                      </div>
+                      <span className="text-[11px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
+                        Roaster
+                      </span>
+                    </div>
+                    <div 
+                      className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors p-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMenu('roaster');
+                      }}
+                    >
+                      <ChevronDown size={14} className={`transition-transform duration-300 ${openMenus.roaster ? 'rotate-180' : ''}`} />
+                    </div>
+                  </div>
+                  
+                  <SubMenu isOpen={openMenus.roaster}>
+                    <div className="flex flex-col py-1">
+                      <NavItem to="/hr/roaster/holiday" label="Holiday" icon={Palmtree} isDeepSubItem isLastSubItem />
+                    </div>
+                  </SubMenu>
+                </div>
+                
+                <NavItem to="/hr/attendance" label="Attendance" icon={Clock} isSubItem isLastSubItem />
               </div>
             </SubMenu>
           </div>
 
-          <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} />
-          <NavItem to="/hr/leaves" label="Leaves" icon={Calendar} />
-          <NavItem to="/hr/attendance" label="Attendance" icon={Clock} />
-          <NavItem to="/hr/payrolls" label="Payrolls" icon={Banknote} />
+          {/* PMS Menu */}
+          <div>
+            <div 
+              className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
+              onClick={() => {
+                handleNavigate('/hr/pms');
+                toggleMenu('pms');
+              }}
+              style={{
+                color: location.pathname.startsWith('/hr/pms') ? 'var(--accent)' : 'var(--text-muted)',
+                background: location.pathname === '/hr/pms' ? 'var(--nav-active)' : undefined,
+              }}
+            >
+              <div
+                className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
+                style={{
+                  background: 'var(--accent)',
+                  transform: location.pathname === '/hr/pms' ? 'scaleY(1)' : 'scaleY(0)',
+                  opacity: location.pathname === '/hr/pms' ? 1 : 0,
+                  transformOrigin: 'center',
+                }}
+              />
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-6 flex justify-center">
+                  <Briefcase size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: location.pathname.startsWith('/hr/pms') ? 'var(--accent)' : 'var(--text-dim)' }} />
+                </div>
+                <span className="text-[12px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
+                  PMS
+                </span>
+              </div>
+              <div 
+                className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors p-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMenu('pms');
+                }}
+              >
+                <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.pms ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
+            
+            <SubMenu isOpen={openMenus.pms}>
+              <div className="flex flex-col py-1">
+                <NavItem to="/hr/pms/closure" label="Closure" icon={CheckSquare} isSubItem />
+                <NavItem to="/hr/pms/projects" label="Projects" icon={FolderGit2} isSubItem />
+                <NavItem to="/hr/pms/teams" label="Teams" icon={Users} isSubItem />
+                <NavItem to="/hr/pms/task-management" label="Task Management" icon={CheckCircle} isSubItem />
+                <NavItem to="/hr/pms/scrums-and-sprints" label="Scrums & Sprints" icon={Zap} isSubItem isLastSubItem />
+              </div>
+            </SubMenu>
+          </div>
+
+          <NavItem to="/hr/lms" label="LMS" icon={BookOpen} />
 
         </div>
       </aside>
