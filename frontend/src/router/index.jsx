@@ -153,6 +153,7 @@ const PayrollManagement = lazy(() => import('../modules/hr/pages/PayrollManageme
 
 // PMS Module
 const Closures = lazy(() => import('../modules/pms/pages/Closures'));
+const Projects = lazy(() => import('../modules/pms/pages/Projects'));
 
 
 const PageLoader = () => (
@@ -409,6 +410,7 @@ const Router = () => {
           <Route path="/hr/attendance" element={<AttendanceManagement />} />
           <Route path="/hr/payrolls" element={<PayrollManagement />} />
           <Route path="/hr/pms/closure" element={<Closures />} />
+          <Route path="/hr/pms/projects" element={<Projects />} />
         </Route>
 
         {/* Temporary Routing for other ERP Modules until fully developed */}

@@ -516,3 +516,33 @@ CREATE TABLE IF NOT EXISTS pms_closure_items (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (closure_id) REFERENCES pms_closures(closure_id) ON DELETE CASCADE
 );
+
+-- ==============================================================================
+-- MODULE: PMS
+-- TABLES: pms_projects
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS pms_projects (
+    project_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_code VARCHAR(50) UNIQUE NOT NULL,
+    project_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    team_id INTEGER NULL,
+    product_id INTEGER NULL,
+    start_date DATE,
+    end_date DATE,
+    status VARCHAR(50) DEFAULT 'Planned',
+    priority VARCHAR(50) DEFAULT 'Medium',
+    progress_percentage NUMERIC(5,2) DEFAULT 0,
+    team_lead_id UUID NULL,
+    client_handler_id UUID NULL,
+    project_members JSONB DEFAULT '[]'::jsonb,
+    created_by UUID,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (team_id) REFERENCES teams(team_id) ON DELETE SET NULL,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE SET NULL,
+    FOREIGN KEY (team_lead_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (client_handler_id) REFERENCES users(user_id) ON DELETE SET NULL
+);
