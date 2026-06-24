@@ -51,6 +51,7 @@ const HRSidebar = ({ isOpen, onClose }) => {
     payrolls: location.pathname.startsWith('/hr/payrolls') || location.pathname.startsWith('/hr/leaves') || location.pathname.startsWith('/hr/roaster') || location.pathname.startsWith('/hr/attendance'),
     roaster: location.pathname.startsWith('/hr/roaster'),
     pms: location.pathname.startsWith('/hr/pms'),
+    onboarding: location.pathname.startsWith('/hr/onboarding') || location.pathname.startsWith('/hr/offboarding'),
   });
 
   const toggleMenu = (menu) => {
@@ -164,6 +165,9 @@ const HRSidebar = ({ isOpen, onClose }) => {
     }
     if (location.pathname.startsWith('/hr/pms')) {
       setOpenMenus(prev => ({ ...prev, pms: true }));
+    }
+    if (location.pathname.startsWith('/hr/onboarding') || location.pathname.startsWith('/hr/offboarding')) {
+      setOpenMenus(prev => ({ ...prev, onboarding: true }));
     }
   }, [location.pathname]);
 
@@ -496,7 +500,56 @@ const HRSidebar = ({ isOpen, onClose }) => {
           <NavItem to="/hr/dashboard" label="Dashboard" icon={LayoutDashboard} />
           <NavItem to="/hr/organization-chart" label="Organogram" icon={Network} />
           <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} />
-          <NavItem to="/hr/onboarding" label="Onboarding/Offboarding" icon={UserCheck} />
+          
+          {/* Onboarding/Offboarding Menu */}
+          <div>
+            <div 
+              className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
+              onClick={() => {
+                handleNavigate('/hr/onboarding');
+                toggleMenu('onboarding');
+              }}
+              style={{
+                color: (location.pathname.startsWith('/hr/onboarding') || location.pathname.startsWith('/hr/offboarding')) ? 'var(--accent)' : 'var(--text-muted)',
+                background: (location.pathname === '/hr/onboarding' && !location.pathname.startsWith('/hr/offboarding')) ? 'var(--nav-active)' : undefined,
+              }}
+            >
+              <div
+                className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
+                style={{
+                  background: 'var(--accent)',
+                  transform: location.pathname.startsWith('/hr/onboarding') && !location.pathname.startsWith('/hr/offboarding') ? 'scaleY(1)' : 'scaleY(0)',
+                  opacity: location.pathname.startsWith('/hr/onboarding') && !location.pathname.startsWith('/hr/offboarding') ? 1 : 0,
+                  transformOrigin: 'center',
+                }}
+              />
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-6 flex justify-center">
+                  <UserCheck size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: (location.pathname.startsWith('/hr/onboarding') || location.pathname.startsWith('/hr/offboarding')) ? 'var(--accent)' : 'var(--text-dim)' }} />
+                </div>
+                <span className="text-[12px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
+                  On/Offboarding
+                </span>
+              </div>
+              <div 
+                className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors p-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMenu('onboarding');
+                }}
+              >
+                <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.onboarding ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
+            
+            <SubMenu isOpen={openMenus.onboarding}>
+              <div className="flex flex-col py-1">
+                <NavItem to="/hr/onboarding" label="Onboarding" icon={UserPlus} isSubItem />
+                <NavItem to="/hr/offboarding" label="Offboarding" icon={LogOut} isSubItem isLastSubItem />
+              </div>
+            </SubMenu>
+          </div>
+
           <NavItem to="/hr/trainee" label="Trainee" icon={GraduationCap} />
           <NavItem to="/hr/employees" label="Employee" icon={Users} />
           

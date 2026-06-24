@@ -36,7 +36,8 @@ import {
   Camera,
   Trash2,
   Settings,
-  Clock
+  Clock,
+  Target
 } from 'lucide-react';
 
 const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
@@ -546,7 +547,8 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
                   <NavItem to="/admin/users" label="Users" icon={Users} isSubItem />
                   <NavItem to="/admin/roles" label="Roles Access" icon={Building2} isSubItem />
                   <NavItem to="/admin/user-access" label="User Access" icon={LockKeyhole} isSubItem />
-                  <NavItem to="/admin/teams" label="Teams" icon={Layers} isSubItem isLastSubItem />
+                  <NavItem to="/admin/teams" label="Teams" icon={Layers} isSubItem />
+                  <NavItem to="/admin/projects" label="Projects" icon={Target} isSubItem isLastSubItem />
                 </div>
               </SubMenu>
             </div>

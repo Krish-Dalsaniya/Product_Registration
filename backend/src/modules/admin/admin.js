@@ -33,7 +33,12 @@ router.delete('/teams/:id', requirePermission('teams.delete'), adminTeamControll
 router.get('/sales', requirePermission('sales.view'), adminController.getSales);
 router.get('/maintenance', requirePermission('products.view'), adminController.getMaintenance);
 
-router.get('/projects', utilityController.getProjects);
+const adminProjectController = require('./adminProjectController');
+
+router.get('/projects', adminProjectController.getProjects);
+router.post('/projects', adminProjectController.createProject);
+router.put('/projects/:id', adminProjectController.updateProject);
+router.delete('/projects/:id', adminProjectController.deleteProject);
 router.get('/products', utilityController.getProducts);
 
 module.exports = router;
