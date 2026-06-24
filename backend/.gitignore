@@ -4,3 +4,7 @@ node_modules/
 # Environment
 .env
 .env.*
+
+# Local Scratch & Uploads
+scratch/
+uploads/

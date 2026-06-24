@@ -488,3 +488,31 @@ CREATE TABLE IF NOT EXISTS hr_payrolls (
 );
 
 COMMIT;
+
+
+-- ==============================================================================
+-- MODULE: PMS
+-- TABLES: pms_closures, pms_closure_items
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS pms_closures (
+    closure_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    employee_id UUID NOT NULL,
+    closure_date DATE NOT NULL,
+    total_hours NUMERIC(5,2) DEFAULT 0,
+    remarks TEXT,
+    status VARCHAR(50) DEFAULT 'Submitted',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS pms_closure_items (
+    item_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    closure_id UUID NOT NULL,
+    project_id UUID NULL,
+    task_description TEXT NOT NULL,
+    hours_spent NUMERIC(5,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (closure_id) REFERENCES pms_closures(closure_id) ON DELETE CASCADE
+);
