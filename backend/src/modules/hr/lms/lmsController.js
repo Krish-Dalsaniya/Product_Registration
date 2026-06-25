@@ -9,6 +9,9 @@ const createModule = async (req, res) => {
             difficulty_level, duration_hours, training_url, attachment_url, status 
         } = req.body;
 
+        const parsedDuration = duration_hours ? Math.round(parseFloat(duration_hours)) : null;
+        const parsedDepartment = (department_id && department_id.trim() !== '') ? department_id : null;
+
         const insertQuery = `
             INSERT INTO hr_lms_modules 
             (title, description, category, department_id, training_type, difficulty_level, duration_hours, training_url, attachment_url, status, created_by)
@@ -17,8 +20,8 @@ const createModule = async (req, res) => {
         `;
         
         const values = [
-            title, description || null, category || null, department_id || null, 
-            training_type || null, difficulty_level || null, duration_hours || null, 
+            title, description || null, category || null, parsedDepartment, 
+            training_type || null, difficulty_level || null, parsedDuration, 
             training_url || null, attachment_url || null, status || 'Active', userId
         ];
 
@@ -54,6 +57,9 @@ const updateModule = async (req, res) => {
             difficulty_level, duration_hours, training_url, attachment_url, status 
         } = req.body;
 
+        const parsedDuration = duration_hours ? Math.round(parseFloat(duration_hours)) : null;
+        const parsedDepartment = (department_id && department_id.trim() !== '') ? department_id : null;
+
         const updateQuery = `
             UPDATE hr_lms_modules 
             SET title = $1, description = $2, category = $3, department_id = $4, training_type = $5, 
@@ -63,8 +69,8 @@ const updateModule = async (req, res) => {
         `;
         
         const values = [
-            title, description || null, category || null, department_id || null, 
-            training_type || null, difficulty_level || null, duration_hours || null, 
+            title, description || null, category || null, parsedDepartment, 
+            training_type || null, difficulty_level || null, parsedDuration, 
             training_url || null, attachment_url || null, status || 'Active', id
         ];
 
@@ -389,6 +395,53 @@ const deleteQuizQuestion = async (req, res) => {
     }
 };
 
+// --- YouTube Proxy ---
+const getYoutubeTitle = async (req, res) => {
+    try {
+        const { videoId } = req.params;
+        
+        // Fetch oEmbed for the title (lightweight and reliable)
+        const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+        const oembedResponse = await fetch(oembedUrl);
+        let title = `Part`;
+        if (oembedResponse.ok) {
+            const data = await oembedResponse.json();
+            title = data.title;
+        }
+
+        // Fetch HTML to scrape duration (Fallback pattern)
+        let duration = '';
+        try {
+            const htmlResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+            const html = await htmlResponse.text();
+            
+            // Extract itemprop="duration" content="PT3M34S"
+            const durationMatch = html.match(/itemprop="duration"\s+content="([^"]+)"/);
+            if (durationMatch && durationMatch[1]) {
+                const pt = durationMatch[1];
+                const match = pt.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+                if (match) {
+                    const hours = match[1] ? parseInt(match[1]) : 0;
+                    const minutes = match[2] ? parseInt(match[2]) : 0;
+                    const seconds = match[3] ? parseInt(match[3]) : 0;
+                    if (hours > 0) {
+                        duration = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    } else {
+                        duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                }
+            }
+        } catch (scrapeErr) {
+            console.error("Failed to scrape duration:", scrapeErr);
+        }
+        
+        res.json({ success: true, title, duration });
+    } catch (error) {
+        console.error('Error fetching YouTube title:', error);
+        res.status(500).json({ success: false, title: `Part`, duration: '' });
+    }
+};
+
 module.exports = {
     createModule,
     getAllModules,
@@ -405,5 +458,6 @@ module.exports = {
     addQuizQuestion,
     getQuizQuestions,
     submitQuiz,
-    deleteQuizQuestion
+    deleteQuizQuestion,
+    getYoutubeTitle
 };

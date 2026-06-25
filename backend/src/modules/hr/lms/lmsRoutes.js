@@ -14,6 +14,7 @@ router.post('/module', lmsController.createModule);
 router.get('/modules', lmsController.getAllModules);
 router.put('/module/:id', lmsController.updateModule);
 router.delete('/module/:id', lmsController.deleteModule);
+router.get('/youtube-title/:videoId', lmsController.getYoutubeTitle);
 
 // --- Employee Training Assignments ---
 router.post('/assignment', lmsController.assignTraining);

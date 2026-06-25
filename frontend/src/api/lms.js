@@ -66,3 +66,7 @@ export const deleteQuizQuestionApi = async (questionId) => {
 export const submitQuizApi = async (data) => {
     return await axios.post('/hr/lms/quiz/submit', data);
 };
+
+export const getYoutubeTitleApi = async (videoId) => {
+    return await axios.get(`/hr/lms/youtube-title/${videoId}`);
+};
