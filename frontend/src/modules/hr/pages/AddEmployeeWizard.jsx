@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Loader2, ArrowLeft, Save, User, Briefcase, IndianRupee, FileText, ChevronRight, Check, CreditCard, ClipboardCheck, UploadCloud, Camera, MapPin, PhoneCall, Trash2 } from 'lucide-react';
-import { fetchHRMetadataApi, createHREmployeeApi, fetchHREmployeesApi } from '../../../api/hr';
+import { fetchHRMetadataApi, createHREmployeeApi, fetchHREmployeesApi, createOnboardingRecordApi } from '../../../api/hr';
 import { getRoles } from '../../../api/roles';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 
@@ -95,6 +95,8 @@ const AddEmployeeWizard = () => {
   console.log("AddEmployeeWizard RENDERED", new Date().toISOString());
   
   const navigate = useNavigate();
+  const location = useLocation();
+  const isOnboarding = new URLSearchParams(location.search).get('onboarding') === 'true';
   
   const [formData, setFormData] = useState(() => {
     const draft = localStorage.getItem('employee_wizard_draft');
@@ -230,9 +232,20 @@ const AddEmployeeWizard = () => {
       setIsSubmitting(true);
       const res = await createHREmployeeApi(formData);
       if (res.data?.success) {
-        toast.success('Employee created successfully');
-        localStorage.removeItem('employee_wizard_draft');
-        navigate('/hr/employees');
+        if (isOnboarding) {
+            // Automatically create onboarding record
+            await createOnboardingRecordApi({
+                employee_id: res.data.employee_id,
+                offer_acceptance_date: formData.date_of_joining // Assume DOJ or today
+            });
+            toast.success('Onboarding initiated successfully');
+            localStorage.removeItem('employee_wizard_draft');
+            navigate('/hr/onboarding');
+        } else {
+            toast.success('Employee created successfully');
+            localStorage.removeItem('employee_wizard_draft');
+            navigate('/hr/employees');
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create employee');
@@ -266,13 +279,13 @@ const AddEmployeeWizard = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4 mt-2">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/hr/employees')} className="p-2.5 hover:bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-colors bg-[var(--bg-workspace)] shadow-sm">
+          <button onClick={() => navigate(isOnboarding ? '/hr/onboarding' : '/hr/employees')} className="p-2.5 hover:bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-colors bg-[var(--bg-workspace)] shadow-sm">
             <ArrowLeft size={20} className="text-[var(--text-main)]" />
           </button>
           <div>
-            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight">Onboard Employee</h1>
+            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight">{isOnboarding ? 'Onboard New Employee' : 'Add Employee'}</h1>
             <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider mt-1">
-              Add a new team member to the workspace
+              {isOnboarding ? 'Initialize a new hire and add them to the onboarding track' : 'Add a new team member to the workspace'}
             </p>
           </div>
         </div>
@@ -593,6 +606,7 @@ const AddEmployeeWizard = () => {
                     <option value="Part-Time">Part-Time</option>
                     <option value="Contract">Contract</option>
                     <option value="Intern">Intern</option>
+                    <option value="Trainee">Trainee</option>
                   </select>
                 </div>
                 <div className="col-span-full">

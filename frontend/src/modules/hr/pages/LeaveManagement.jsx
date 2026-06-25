@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Clock, Users, Calendar as CalendarIcon, FileText, Loader2, ChevronLeft, ChevronRight, User, Check, X, CheckCircle } from 'lucide-react';
 import { fetchLeaveSummaryApi, fetchUpcomingLeavesApi, fetchCalendarDataApi, fetchAllPendingRequestsApi, updateLeaveStatusApi, fetchUserLeaveBalancesApi } from '../../../api/leaves';
 import ApplyLeaveModal from '../components/ApplyLeaveModal';
-import HolidaysList from '../components/HolidaysList';
 import Modal from '../../../components/shared/Modal';
 import toast from 'react-hot-toast';
 
@@ -26,7 +25,6 @@ const LeaveManagement = () => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [calendarData, setCalendarData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('leaves');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDayAbsences, setSelectedDayAbsences] = useState(null);
 
@@ -179,25 +177,11 @@ const LeaveManagement = () => {
         <div className="flex flex-col lg:flex-row lg:items-center gap-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
-              Leave & Holiday Management
+              Leave Management
             </h1>
             <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">
-              Manage your time off, holidays, and team availability
+              Manage your time off and team availability
             </p>
-          </div>
-          <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-sm w-fit">
-            <button
-              onClick={() => setActiveTab('leaves')}
-              className={`px-4 py-2 text-[12px] font-bold rounded-lg transition-all ${activeTab === 'leaves' ? 'bg-[var(--accent)] shadow-md text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
-            >
-              Leave Management
-            </button>
-            <button
-              onClick={() => setActiveTab('holidays')}
-              className={`px-4 py-2 text-[12px] font-bold rounded-lg transition-all ${activeTab === 'holidays' ? 'bg-[var(--accent)] shadow-md text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
-            >
-              Public Holidays
-            </button>
           </div>
         </div>
         <button
@@ -208,11 +192,6 @@ const LeaveManagement = () => {
           <span className="text-[12px] font-black uppercase tracking-widest">Apply for Leave</span>
         </button>
       </div>
-
-      {activeTab === 'holidays' ? (
-        <HolidaysList />
-      ) : (
-        <>
           {/* Admin Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <MiniStatCard 
@@ -398,8 +377,6 @@ const LeaveManagement = () => {
           </div>
         )}
       </div>
-      </>
-      )}
 
       <ApplyLeaveModal 
         isOpen={isModalOpen} 

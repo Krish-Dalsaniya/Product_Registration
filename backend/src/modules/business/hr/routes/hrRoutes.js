@@ -39,4 +39,10 @@ router.delete('/holidays/:id', deleteHoliday);
 const payrollRoutes = require('./payrollRoutes');
 router.use('/payrolls', payrollRoutes);
 
+const onboardingRoutes = require('./onboardingRoutes');
+router.use('/onboarding', onboardingRoutes);
+
+const offboardingRoutes = require('./offboardingRoutes');
+router.use('/offboarding', offboardingRoutes);
+
 module.exports = router;

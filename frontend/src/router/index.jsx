@@ -69,6 +69,9 @@ const getTabMetadata = (pathname, search) => {
   if (pathname === '/admin/teams') {
     return { label: 'Teams', iconType: 'Users' };
   }
+  if (pathname === '/admin/projects') {
+    return { label: 'Projects', iconType: 'Target' };
+  }
   if (pathname === '/admin/products') {
     return { label: 'Products', iconType: 'Cpu' };
   }
@@ -125,6 +128,7 @@ const UserManagementDashboard = lazy(() => import('../modules/admin/dashboards/U
 const UserListPage = lazy(() => import('../modules/admin/UserListPage'));
 const UserAccessPage = lazy(() => import('../modules/admin/UserAccessPage'));
 const TeamsPage = lazy(() => import('../modules/admin/TeamsPage'));
+const ProjectsPage = lazy(() => import('../modules/admin/ProjectsPage'));
 const ProductListPage = lazy(() => import('../modules/admin/ProductListPage'));
 const ProductProfilePage = lazy(() => import('../modules/admin/ProductProfilePage'));
 const CustomerListPage = lazy(() => import('../modules/admin/CustomerListPage'));
@@ -144,12 +148,16 @@ const AppLauncher = lazy(() => import('../modules/dashboard/pages/AppLauncher'))
 const HRLayout = lazy(() => import('../modules/hr/layout/HRLayout'));
 const HRDashboard = lazy(() => import('../modules/hr/pages/HRDashboard'));
 const EmployeesList = lazy(() => import('../modules/hr/pages/EmployeesList'));
+const TraineeList = lazy(() => import('../modules/hr/pages/TraineeList'));
 const AddEmployeeWizard = lazy(() => import('../modules/hr/pages/AddEmployeeWizard'));
 const EmployeeProfile = lazy(() => import('../modules/hr/pages/EmployeeProfile'));
 const OrganizationChartPage = lazy(() => import('../modules/hr/pages/OrganizationChartPage'));
 const LeaveManagement = lazy(() => import('../modules/hr/pages/LeaveManagement'));
+const HolidayPage = lazy(() => import('../modules/hr/pages/HolidayPage'));
 const AttendanceManagement = lazy(() => import('../modules/hr/pages/AttendanceManagement'));
 const PayrollManagement = lazy(() => import('../modules/hr/pages/PayrollManagement'));
+const OnboardingPage = lazy(() => import('../modules/hr/pages/OnboardingPage'));
+const OffboardingPage = lazy(() => import('../modules/hr/pages/OffboardingPage'));
 
 // PMS Module
 const Closures = lazy(() => import('../modules/pms/pages/Closures'));
@@ -350,6 +358,7 @@ const Router = () => {
           <Route path="/admin/maintenance" element={<UserListPage initialRole="Maintenance" />} />
           <Route path="/admin/sales" element={<UserListPage initialRole="Sales" />} />
           <Route path="/admin/teams" element={<TeamsPage />} />
+          <Route path="/admin/projects" element={<ProjectsPage />} />
           <Route path="/admin/products" element={<ProductListPage />} />
           <Route path="/admin/products/:id" element={<ProductProfilePage />} />
           <Route path="/admin/customers" element={<CustomerListPage />} />
@@ -409,10 +418,12 @@ const Router = () => {
           <Route path="/hr" element={<Navigate to="/hr/dashboard" />} />
           <Route path="/hr/dashboard" element={<HRDashboard />} />
           <Route path="/hr/employees" element={<EmployeesList />} />
+          <Route path="/hr/trainee" element={<TraineeList />} />
           <Route path="/hr/employees/new" element={<AddEmployeeWizard />} />
           <Route path="/hr/employees/:id" element={<EmployeeProfile />} />
           <Route path="/hr/organization-chart" element={<OrganizationChartPage />} />
           <Route path="/hr/leaves" element={<LeaveManagement />} />
+          <Route path="/hr/roaster/holiday" element={<HolidayPage />} />
           <Route path="/hr/attendance" element={<AttendanceManagement />} />
           <Route path="/hr/payrolls" element={<PayrollManagement />} />
           <Route path="/hr/pms/closure" element={<Closures />} />
@@ -423,6 +434,8 @@ const Router = () => {
             <Route path="assignments" element={<AssignedTrainings />} />
             <Route path="assessments" element={<Assessments />} />
           </Route>
+          <Route path="/hr/onboarding" element={<OnboardingPage />} />
+          <Route path="/hr/offboarding" element={<OffboardingPage />} />
         </Route>
 
         {/* Temporary Routing for other ERP Modules until fully developed */}

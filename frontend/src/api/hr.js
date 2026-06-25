@@ -34,3 +34,15 @@ export const createHolidayApi = async (data) => {
 export const deleteHolidayApi = async (id) => {
   return await api.delete(`/hr/holidays/${id}`);
 };
+
+// Onboarding
+export const fetchOnboardingRecordsApi = () => api.get('/hr/onboarding');
+export const createOnboardingRecordApi = (data) => api.post('/hr/onboarding', data);
+export const updateOnboardingStatusApi = (id, status) => api.patch(`/hr/onboarding/${id}/status`, { status });
+export const updateOnboardingChecklistApi = (id, data) => api.patch(`/hr/onboarding/${id}/checklist`, data);
+
+// Offboarding
+export const fetchOffboardingRecordsApi = () => api.get('/hr/offboarding');
+export const createOffboardingRecordApi = (data) => api.post('/hr/offboarding', data);
+export const updateOffboardingStatusApi = (id, status) => api.patch(`/hr/offboarding/${id}/status`, { status });
+export const updateOffboardingChecklistApi = (id, data) => api.patch(`/hr/offboarding/${id}/checklist`, data);

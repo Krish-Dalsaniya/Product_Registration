@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import ViewToggle from '../../../components/shared/ViewToggle';
 import DataTable from '../../../components/shared/DataTable';
 
-const EmployeesList = () => {
+const TraineeList = () => {
   const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,9 +56,9 @@ const EmployeesList = () => {
                           emp.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDept = departmentFilter ? String(emp.department_id) === String(departmentFilter) : true;
     const matchesDesig = designationFilter ? String(emp.designation_id) === String(designationFilter) : true;
-    const notTrainee = emp.employment_status !== 'Trainee' && emp.employment_status !== 'Intern';
+    const isTrainee = emp.employment_status === 'Trainee' || emp.employment_status === 'Intern';
     
-    return matchesSearch && matchesDept && matchesDesig && notTrainee;
+    return matchesSearch && matchesDept && matchesDesig && isTrainee;
   });
 
   const handleExportCSV = () => {
@@ -138,9 +138,9 @@ const EmployeesList = () => {
   };
 
   // Dashboard Metrics
-  const activeCount = employees.filter(e => e.employment_status !== 'Terminated').length;
+  const activeCount = employees.filter(e => e.employment_status !== 'Terminated' && (e.employment_status === 'Trainee' || e.employment_status === 'Intern')).length;
   const recentCount = employees.filter(e => {
-    if (!e.date_of_joining) return false;
+    if (!e.date_of_joining || (e.employment_status !== 'Trainee' && e.employment_status !== 'Intern')) return false;
     const joinDate = new Date(e.date_of_joining);
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -194,7 +194,7 @@ const EmployeesList = () => {
           </div>
           <div className="flex items-center gap-4">
             <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none mr-2">
-              Employees
+              Trainees & Interns
             </h1>
           </div>
         </div>
@@ -427,4 +427,4 @@ const EmployeesList = () => {
   );
 };
 
-export default EmployeesList;
+export default TraineeList;

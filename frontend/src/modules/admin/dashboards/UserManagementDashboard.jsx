@@ -9,7 +9,8 @@ import {
   Layers,
   ChevronRight,
   Activity,
-  Plus
+  Plus,
+  Target
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -144,7 +145,7 @@ const UserManagementDashboard = () => {
       </div>
 
       {/* Core Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0 animate-entrance-up">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 flex-shrink-0 animate-entrance-up">
         <StatCard 
           title="All Users" 
           value={(stats?.designers || 0) + (stats?.sales || 0) + (stats?.maintenance || 0) + 1} 
@@ -176,6 +177,14 @@ const UserManagementDashboard = () => {
           path="/admin/teams" 
           accentBg="var(--badge-teams-bg)"
           accentText="var(--badge-teams-text)"
+        />
+        <StatCard 
+          title="Projects" 
+          value="Manage" 
+          icon={Target} 
+          path="/admin/projects" 
+          accentBg="rgba(236, 72, 153, 0.1)"
+          accentText="#ec4899"
         />
       </div>
 
@@ -221,6 +230,7 @@ const UserManagementDashboard = () => {
             <QuickAction title="Configure Roles" icon={Building2} path="/admin/roles" />
             <QuickAction title="Manage User Access" icon={LockKeyhole} path="/admin/user-access" />
             <QuickAction title="Create Project Team" icon={Layers} path="/admin/teams" />
+            <QuickAction title="Manage Projects" icon={Target} path="/admin/projects" />
           </div>
         </div>
       </div>
