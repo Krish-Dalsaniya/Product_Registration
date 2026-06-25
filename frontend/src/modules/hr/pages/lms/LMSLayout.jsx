@@ -63,40 +63,40 @@ const LMSLayout = () => {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <motion.div 
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between"
             >
                 <div>
-                    <h1 className="text-3xl font-black text-[var(--text-main)] flex items-center gap-3">
-                        <GraduationCap className="w-8 h-8 text-[var(--accent)]" />
+                    <h1 className="text-2xl font-black text-[var(--text-main)] flex items-center gap-2">
+                        <GraduationCap className="w-6 h-6 text-[var(--accent)]" />
                         Learning Management
                     </h1>
-                    <p className="text-[var(--text-muted)] mt-1">
+                    <p className="text-sm text-[var(--text-muted)] mt-0.5">
                         Manage training modules, assign courses, and track employee progress.
                     </p>
                 </div>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {statCards.map((card, idx) => (
                     <motion.div 
                         key={idx}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: idx * 0.1 }}
-                        className="bg-[var(--bg-card)] backdrop-blur-xl p-6 rounded-2xl border border-[var(--border-color)] shadow-sm flex items-center gap-5"
+                        className="bg-[var(--bg-card)] backdrop-blur-xl p-4 rounded-2xl border border-[var(--border-color)] shadow-sm flex items-center gap-4"
                     >
-                        <div className={`p-4 rounded-xl ${card.bg}`}>
-                            <card.icon className={`w-8 h-8 ${card.color}`} />
+                        <div className={`p-3 rounded-xl ${card.bg}`}>
+                            <card.icon className={`w-6 h-6 ${card.color}`} />
                         </div>
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                                 {card.title}
                             </p>
-                            <h3 className="text-3xl font-black text-[var(--text-main)] mt-1">
+                            <h3 className="text-2xl font-black text-[var(--text-main)] leading-none mt-1">
                                 {loading ? '...' : card.value}
                             </h3>
                         </div>
@@ -104,7 +104,7 @@ const LMSLayout = () => {
                 ))}
             </div>
 
-            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-320px)]">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-230px)]">
                 <div className="flex border-b border-[var(--border-color)] bg-[var(--bg-workspace)]/50">
                     {tabs.map((tab) => (
                         <NavLink

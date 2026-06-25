@@ -91,7 +91,7 @@ const DataTable = ({
                 </th>
               )}
               {columns.map((col) => (
-                <th key={col.key} className={`px-3 md:px-4 ${pyClass} ${headerTextClass} font-bold uppercase tracking-[0.07em]`} style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+                <th key={col.key} className={`px-3 md:px-4 ${pyClass} ${headerTextClass} font-bold uppercase tracking-[0.07em] ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`} style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
                   {col.label}
                 </th>
               ))}
@@ -124,7 +124,7 @@ const DataTable = ({
                     </td>
                   )}
                   {columns.map((col) => (
-                    <td key={col.key} className={`px-3 md:px-4 ${pyClass} ${textClass} font-medium`} style={{ color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)' }}>
+                    <td key={col.key} className={`px-3 md:px-4 ${pyClass} ${textClass} font-medium ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`} style={{ color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)' }}>
                       {col.render ? col.render(row) : row[col.key]}
                     </td>
                   ))}

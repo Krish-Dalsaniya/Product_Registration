@@ -168,6 +168,7 @@ const LMSLayout = lazy(() => import('../modules/hr/pages/lms/LMSLayout'));
 const TrainingModules = lazy(() => import('../modules/hr/pages/lms/TrainingModules'));
 const AssignedTrainings = lazy(() => import('../modules/hr/pages/lms/AssignedTrainings'));
 const Assessments = lazy(() => import('../modules/hr/pages/lms/Assessments'));
+const TrainingPlayer = lazy(() => import('../modules/hr/pages/lms/TrainingPlayer'));
 
 
 const PageLoader = () => (
@@ -432,6 +433,7 @@ const Router = () => {
             <Route index element={<Navigate to="modules" replace />} />
             <Route path="modules" element={<TrainingModules />} />
             <Route path="assignments" element={<AssignedTrainings />} />
+            <Route path="assignments/:id/play" element={<TrainingPlayer />} />
             <Route path="assessments" element={<Assessments />} />
           </Route>
           <Route path="/hr/onboarding" element={<OnboardingPage />} />

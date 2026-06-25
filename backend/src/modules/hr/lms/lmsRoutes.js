@@ -19,5 +19,17 @@ router.delete('/module/:id', lmsController.deleteModule);
 router.post('/assignment', lmsController.assignTraining);
 router.get('/assignments', lmsController.getAllAssignments);
 router.patch('/assignment/:id/status', lmsController.updateAssignmentStatus);
+router.patch('/assignment/:id/progress', lmsController.updateAssignmentProgress);
+router.delete('/assignment/:id', lmsController.deleteAssignment);
+
+// --- Assessments & Results ---
+router.post('/assessment', lmsController.logAssessment);
+router.get('/assessments', lmsController.getAllAssessments);
+
+// --- Quiz Engine ---
+router.post('/module/:id/questions', lmsController.addQuizQuestion);
+router.get('/module/:id/questions', lmsController.getQuizQuestions);
+router.delete('/question/:id', lmsController.deleteQuizQuestion);
+router.post('/quiz/submit', lmsController.submitQuiz);
 
 module.exports = router;

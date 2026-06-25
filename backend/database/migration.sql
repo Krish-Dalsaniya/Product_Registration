@@ -517,7 +517,29 @@ CREATE TABLE IF NOT EXISTS hr_lms_assignments (
     assigned_date DATE NOT NULL,
     due_date DATE,
     status VARCHAR(50) DEFAULT 'Assigned',
+    progress_percentage INTEGER DEFAULT 0,
     completed_at TIMESTAMP WITH TIME ZONE NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS hr_lms_assessments (
+    assessment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    assignment_id UUID REFERENCES hr_lms_assignments(assignment_id) ON DELETE CASCADE,
+    score INTEGER NOT NULL,
+    status VARCHAR(50) NOT NULL, -- 'Passed' or 'Failed'
+    remarks TEXT,
+    assessed_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    assessed_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS hr_lms_questions (
+    question_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    module_id UUID REFERENCES hr_lms_modules(module_id) ON DELETE CASCADE,
+    question_text TEXT NOT NULL,
+    options JSONB NOT NULL,
+    correct_answer TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

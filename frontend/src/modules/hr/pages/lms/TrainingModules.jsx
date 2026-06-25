@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, ExternalLink, Download, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, ExternalLink, Download, Eye, LayoutGrid, List, FileText, Clock, Video, BarChart2, MonitorPlay, HelpCircle } from 'lucide-react';
 import DataTable from '../../../../components/shared/DataTable';
 import Modal from '../../../../components/shared/Modal';
+import QuizBuilderModal from './QuizBuilderModal';
 import { getAllModulesApi, createModuleApi, updateModuleApi, deleteModuleApi } from '../../../../api/lms';
 import { fetchHRMetadataApi } from '../../../../api/hr';
 import { useOutletContext } from 'react-router-dom';
@@ -17,6 +18,9 @@ const TrainingModules = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingModule, setEditingModule] = useState(null);
     const [viewingModule, setViewingModule] = useState(null);
+    const [quizModalOpen, setQuizModalOpen] = useState(false);
+    const [quizModule, setQuizModule] = useState(null);
+    const [viewMode, setViewMode] = useState('grid'); // 'list' or 'grid'
 
     const [formData, setFormData] = useState({
         title: '',
@@ -135,6 +139,11 @@ const TrainingModules = () => {
         }
     };
 
+    const handleOpenQuiz = (module) => {
+        setQuizModule(module);
+        setQuizModalOpen(true);
+    };
+
     const columns = [
         { key: 'title', label: 'Title', sortable: true },
         { key: 'category', label: 'Category', sortable: true },
@@ -178,6 +187,9 @@ const TrainingModules = () => {
                             <Download className="w-4 h-4" />
                         </a>
                     )}
+                    <button onClick={() => handleOpenQuiz(row)} className="p-1.5 text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors" title="Manage Quiz">
+                        <HelpCircle className="w-4 h-4" />
+                    </button>
                     <button onClick={() => setViewingModule(row)} className="p-1.5 text-[var(--text-dim)] hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] rounded-lg transition-colors" title="View Details">
                         <Eye className="w-4 h-4" />
                     </button>
@@ -192,27 +204,154 @@ const TrainingModules = () => {
         }
     ];
 
+    const getThumbnailUrl = (url, type) => {
+        if (type === 'YouTube Video' && url) {
+            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+            const match = url.match(regExp);
+            if (match && match[7].length === 11) {
+                return `https://img.youtube.com/vi/${match[7]}/hqdefault.jpg`;
+            }
+        }
+        return null;
+    };
+
     return (
         <div className="p-6 h-full flex flex-col">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-[var(--text-main)]">Training Modules</h2>
-                <button
-                    onClick={() => handleOpenModal()}
-                    className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-xl font-bold hover:bg-opacity-90 transition-all"
-                >
-                    <Plus className="w-4 h-4" />
-                    Create Module
-                </button>
+                <div className="flex items-center gap-4">
+                    <div className="flex bg-[var(--bg-workspace)] p-1 rounded-xl border border-[var(--border-color)]">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                            title="Grid View"
+                        >
+                            <LayoutGrid className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                            title="List View"
+                        >
+                            <List className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-xl font-bold hover:bg-opacity-90 transition-all"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create Module
+                    </button>
+                </div>
             </div>
 
-            <div className="flex-1 min-h-0">
-                <DataTable
-                    columns={columns}
-                    data={modules}
-                    loading={loading}
-                    searchable
-                    searchKeys={['title', 'category', 'training_type']}
-                />
+            <div className={`flex-1 min-h-0 ${viewMode === 'grid' ? 'overflow-y-auto custom-scrollbar pr-2' : ''}`}>
+                {viewMode === 'list' ? (
+                    <DataTable
+                        columns={columns}
+                        data={modules}
+                        loading={loading}
+                        searchable
+                        searchKeys={['title', 'category', 'training_type']}
+                    />
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pb-6">
+                        {modules.map((module, index) => {
+                            const thumb = getThumbnailUrl(module.training_url, module.training_type);
+                            return (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    key={module.module_id}
+                                    className="bg-[var(--bg-card)] rounded-[20px] shadow-sm overflow-hidden flex flex-col hover:shadow-xl hover:shadow-[var(--accent)]/10 transition-all duration-300 group border border-[var(--border-color)]/50 hover:border-[var(--accent)]/30"
+                                >
+                                    {/* Thumbnail Area */}
+                                    <div className="h-44 w-full relative bg-[var(--bg-workspace)] overflow-hidden flex items-center justify-center">
+                                        {thumb ? (
+                                            <>
+                                                <img src={thumb} alt={module.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent"></div>
+                                            </>
+                                        ) : (
+                                            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/20 to-[var(--bg-workspace)] flex items-center justify-center">
+                                                <FileText className="w-16 h-16 text-[var(--accent)]/40" />
+                                            </div>
+                                        )}
+                                        <div className="absolute top-4 right-4">
+                                            <span className={`px-3 py-1 text-[11px] uppercase tracking-widest font-black rounded-full shadow-lg backdrop-blur-md ${
+                                                module.status === 'Active' ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'
+                                            }`}>
+                                                {module.status}
+                                            </span>
+                                        </div>
+                                        {module.duration_hours && (
+                                            <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5">
+                                                <Clock className="w-3.5 h-3.5" />
+                                                {module.duration_hours} Hrs
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Content Area */}
+                                    <div className="p-6 flex-1 flex flex-col">
+                                        <div className="flex gap-2 mb-3 flex-wrap">
+                                            <span className="px-2.5 py-1 bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] uppercase tracking-wider font-bold rounded-full flex items-center gap-1">
+                                                <MonitorPlay className="w-3 h-3" />
+                                                {module.training_type}
+                                            </span>
+                                            <span className="px-2.5 py-1 bg-purple-500/10 text-purple-500 text-[10px] uppercase tracking-wider font-bold rounded-full flex items-center gap-1">
+                                                <BarChart2 className="w-3 h-3" />
+                                                {module.difficulty_level}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-xl font-black text-[var(--text-main)] mb-1.5 line-clamp-2 leading-tight tracking-tight">{module.title}</h3>
+                                        <p className="text-sm font-semibold text-[var(--text-muted)] mb-5 flex items-center gap-2">
+                                            <span className="text-[var(--text-dim)]">{module.department_name}</span> 
+                                            <span className="w-1 h-1 rounded-full bg-[var(--border-color)]"></span> 
+                                            <span className="text-[var(--text-dim)]">{module.category}</span>
+                                        </p>
+                                        
+                                        <div className="mt-auto flex items-center justify-between pt-5 border-t border-[var(--border-color)]/30">
+                                            <div className="flex gap-1.5">
+                                                <button onClick={() => setViewingModule(module)} className="p-2 bg-[var(--bg-workspace)] text-[var(--text-dim)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] rounded-xl transition-colors shadow-sm" title="View Details">
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => handleOpenQuiz(module)} className="p-2 bg-[var(--bg-workspace)] text-amber-500 hover:bg-amber-500/10 rounded-xl transition-colors shadow-sm" title="Manage Quiz">
+                                                    <HelpCircle className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => handleOpenModal(module)} className="p-2 bg-[var(--bg-workspace)] text-[var(--text-dim)] hover:bg-emerald-500/10 hover:text-emerald-500 rounded-xl transition-colors shadow-sm" title="Edit">
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => handleDelete(module.module_id)} className="p-2 bg-[var(--bg-workspace)] text-[var(--text-dim)] hover:bg-rose-500/10 hover:text-rose-500 rounded-xl transition-colors shadow-sm" title="Delete">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            <div className="flex gap-1.5">
+                                                {['YouTube Video', 'Udemy Course', 'Coursera Course', 'External Website'].includes(module.training_type) && module.training_url && (
+                                                    <a href={module.training_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-[var(--accent)] text-white hover:bg-[var(--accent)]/90 rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5" title="Open Link">
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </a>
+                                                )}
+                                                {module.training_type === 'PDF Document' && module.attachment_url && (
+                                                    <a href={module.attachment_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-[var(--accent)] text-white hover:bg-[var(--accent)]/90 rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5" title="Download Document">
+                                                        <Download className="w-4 h-4" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                        {modules.length === 0 && !loading && (
+                            <div className="col-span-full py-12 text-center text-[var(--text-muted)] font-semibold">
+                                No training modules found.
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <Modal
@@ -445,6 +584,12 @@ const TrainingModules = () => {
                     </div>
                 )}
             </Modal>
+
+            <QuizBuilderModal 
+                isOpen={quizModalOpen} 
+                onClose={() => setQuizModalOpen(false)} 
+                module={quizModule} 
+            />
         </div>
     );
 };
