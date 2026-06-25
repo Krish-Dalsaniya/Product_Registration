@@ -106,6 +106,7 @@ app.use('/api/audit', auditRoutes);
 
 // Modular Endpoints
 app.use('/api/hr', hrRoutes);
+app.use('/api/hr/lms', require('./src/modules/hr/lms/lmsRoutes'));
 app.use('/api/leaves', require('./src/modules/hr/leaves'));
 app.use('/api/pms/closures', require('./src/modules/business/pms/closureRoutes'));
 app.use('/api/pms/projects', require('./src/modules/business/pms/projectRoutes'));

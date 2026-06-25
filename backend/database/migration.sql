@@ -249,98 +249,13 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE TABLE IF NOT EXISTS hr_holidays (
-    holiday_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    );
     DELETE FROM permissions WHERE permission_key LIKE '%.export' OR permission_key LIKE '%.publish' OR permission_key LIKE '%.assign';
 
     -- B) Remove .comm_view completely
     DELETE FROM role_permissions WHERE permission_id IN (SELECT permission_id FROM permissions WHERE permission_key LIKE '%.comm_view');
     DELETE FROM permissions WHERE permission_key LIKE '%.comm_view';
 
-    -- C) Rename .tech_view to .view globally
-    UPDATE permissions 
-    SET permission_key = REPLACE(permission_key, '.tech_view', '.view'),
-        description = 'Allow view on ' || SPLIT_PART(REPLACE(permission_key, '.tech_view', '.view'), '.', 1)
-    WHERE permission_key LIKE '%.tech_view';
 
-    -- D) Create a temporary table to store existing products and inventory role assignments
-    CREATE TEMP TABLE temp_old_role_perms ON COMMIT DROP AS
-    SELECT rp.role_id, p.permission_key
-    FROM role_permissions rp
-    JOIN permissions p ON rp.permission_id = p.permission_id
-    WHERE p.permission_key LIKE 'products.%' OR p.permission_key LIKE 'inventory.%';
-
-    -- E) Delete old top-level products and inventory permissions
-    DELETE FROM role_permissions WHERE permission_id IN (SELECT permission_id FROM permissions WHERE permission_key LIKE 'products.%' OR permission_key LIKE 'inventory.%');
-    DELETE FROM permissions WHERE permission_key LIKE 'products.%' OR permission_key LIKE 'inventory.%';
-
-    -- F) Insert new granular sub-section permissions
-    INSERT INTO permissions (permission_key, description) VALUES 
-        ('products.general.view', 'Allow view on products (general)'),
-        ('products.general.create', 'Allow create on products (general)'),
-        ('products.general.edit', 'Allow edit on products (general)'),
-        ('products.general.delete', 'Allow delete on products (general)'),
-        ('products.tech_spec.view', 'Allow view on products (tech_spec)'),
-        ('products.tech_spec.create', 'Allow create on products (tech_spec)'),
-        ('products.tech_spec.edit', 'Allow edit on products (tech_spec)'),
-        ('products.tech_spec.delete', 'Allow delete on products (tech_spec)'),
-        ('products.bom.view', 'Allow view on products (bom)'),
-        ('products.bom.create', 'Allow create on products (bom)'),
-        ('products.bom.edit', 'Allow edit on products (bom)'),
-        ('products.bom.delete', 'Allow delete on products (bom)'),
-        ('products.files.view', 'Allow view on products (files)'),
-        ('products.files.create', 'Allow create on products (files)'),
-        ('products.files.edit', 'Allow edit on products (files)'),
-        ('products.files.delete', 'Allow delete on products (files)'),
-        ('inventory.general.view', 'Allow view on inventory (general)'),
-        ('inventory.general.create', 'Allow create on inventory (general)'),
-        ('inventory.general.edit', 'Allow edit on inventory (general)'),
-        ('inventory.general.delete', 'Allow delete on inventory (general)'),
-        ('inventory.tech_spec.view', 'Allow view on inventory (tech_spec)'),
-        ('inventory.tech_spec.create', 'Allow create on inventory (tech_spec)'),
-        ('inventory.tech_spec.edit', 'Allow edit on inventory (tech_spec)'),
-        ('inventory.tech_spec.delete', 'Allow delete on inventory (tech_spec)'),
-        ('inventory.files.view', 'Allow view on inventory (files)'),
-        ('inventory.files.create', 'Allow create on inventory (files)'),
-        ('inventory.files.edit', 'Allow edit on inventory (files)'),
-        ('inventory.files.delete', 'Allow delete on inventory (files)')
-    ON CONFLICT (permission_key) DO NOTHING;
-
-    -- G) Restore role permissions based on their old top-level access
-    FOR r IN SELECT * FROM temp_old_role_perms LOOP
-        mod_name := SPLIT_PART(r.permission_key, '.', 1);
-        act_name := SPLIT_PART(r.permission_key, '.', 2);
-        
-        -- Map legacy views
-        IF act_name = 'tech_view' OR act_name = 'comm_view' THEN
-            act_name := 'view';
-        END IF;
-
-        -- Define subsections based on module
-        IF mod_name = 'products' THEN
-            subsections := ARRAY['general', 'tech_spec', 'bom', 'files'];
-        ELSE
-            subsections := ARRAY['general', 'tech_spec', 'files'];
-        END IF;
-
-        -- Loop through subsections and assign the new permissions to the role
-        FOREACH sub_name IN ARRAY subsections LOOP
-            new_key := mod_name || '.' || sub_name || '.' || act_name;
-            
-            -- Get the permission_id for the newly inserted key
-            SELECT permission_id INTO new_perm_id FROM permissions WHERE permission_key = new_key;
-            
-            IF new_perm_id IS NOT NULL THEN
-                -- Insert safely ignoring conflicts if already assigned
-                INSERT INTO role_permissions (role_id, permission_id) 
-                VALUES (r.role_id, new_perm_id)
-                ON CONFLICT (role_id, permission_id) DO NOTHING;
-            END IF;
-        END LOOP;
-    END LOOP;
-END $$;
 
 -- 5. User Security & Extensions
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -545,4 +460,39 @@ CREATE TABLE IF NOT EXISTS pms_projects (
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE SET NULL,
     FOREIGN KEY (team_lead_id) REFERENCES users(user_id) ON DELETE SET NULL,
     FOREIGN KEY (client_handler_id) REFERENCES users(user_id) ON DELETE SET NULL
+);
+
+-- ==============================================================================
+-- MODULE: HR LMS
+-- TABLES: hr_lms_modules, hr_lms_assignments
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS hr_lms_modules (
+    module_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(100),
+    department_id UUID REFERENCES hr_departments(department_id) ON DELETE SET NULL,
+    training_type VARCHAR(50),
+    difficulty_level VARCHAR(50),
+    duration_hours INTEGER,
+    training_url TEXT,
+    attachment_url TEXT,
+    status VARCHAR(50) DEFAULT 'Active',
+    created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS hr_lms_assignments (
+    assignment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    module_id UUID REFERENCES hr_lms_modules(module_id) ON DELETE CASCADE,
+    employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
+    assigned_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    assigned_date DATE NOT NULL,
+    due_date DATE,
+    status VARCHAR(50) DEFAULT 'Assigned',
+    completed_at TIMESTAMP WITH TIME ZONE NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
