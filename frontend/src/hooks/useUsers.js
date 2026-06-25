@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUsers, createUser, updateUser, deleteUser, getAdminStats, removeUserImage, resetUser2FA, resetUserPassword } from '../api/admin';
 
-export const useUsers = (params) => {
+export const useUsers = (params, options = {}) => {
   return useQuery({
     queryKey: ['users', params],
     queryFn: async () => {
@@ -9,6 +9,7 @@ export const useUsers = (params) => {
       return response.data;
     },
     keepPreviousData: true,
+    ...options,
   });
 };
 

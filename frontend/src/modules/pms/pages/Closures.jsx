@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Clock, Users, Calendar as CalendarIcon, CheckCircle, FileText, Loader2, X, Trash2, Edit2, Search } from 'lucide-react';
-import { getClosures, createClosure, updateClosure, deleteClosure, getClosureMetrics } from '../../../api/pms';
+import { getClosures, createClosure, updateClosure, deleteClosure, getClosureMetrics, getProjects } from '../../../api/pms';
 import DataTable from '../../../components/shared/DataTable';
 import Modal from '../../../components/shared/Modal';
 import toast from 'react-hot-toast';
@@ -275,7 +275,7 @@ const Closures = () => {
                 <div key={idx} className="bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl p-4 flex justify-between items-start">
                   <div>
                     <h5 className="text-[13px] font-bold text-[var(--text-main)]">{item.task_description}</h5>
-                    {item.project_id && <p className="text-[11px] text-[var(--text-muted)] mt-1">Project ID: {item.project_id}</p>}
+                    {item.project_name ? <p className="text-[11px] text-[var(--text-muted)] mt-1">Project: {item.project_name}</p> : item.project_id ? <p className="text-[11px] text-[var(--text-muted)] mt-1">Project ID: {item.project_id}</p> : null}
                   </div>
                   <span className="px-3 py-1 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg text-[12px] font-bold">
                     {item.hours_spent} hrs
@@ -315,6 +315,21 @@ const AddClosureModal = ({ isOpen, onClose, onSuccess, user }) => {
     { project_id: '', task_description: '', hours_spent: '' }
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [projects, setProjects] = useState([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchProjects = async () => {
+        try {
+          const res = await getProjects({ limit: 100 });
+          if (res.data?.success) setProjects(res.data.data || []);
+        } catch (error) {
+          console.error('Failed to fetch projects', error);
+        }
+      };
+      fetchProjects();
+    }
+  }, [isOpen]);
 
   const handleAddItem = () => {
     setItems([...items, { project_id: '', task_description: '', hours_spent: '' }]);
@@ -398,13 +413,16 @@ const AddClosureModal = ({ isOpen, onClose, onSuccess, user }) => {
           {items.map((item, idx) => (
             <div key={idx} className="flex gap-3 items-start bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
               <div className="flex-1 space-y-3">
-                <input 
-                  type="text" 
-                  placeholder="Project ID (Optional)"
+                <select
                   value={item.project_id}
                   onChange={e => handleItemChange(idx, 'project_id', e.target.value)}
                   className="w-full px-3 py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
-                />
+                >
+                  <option value="">Select Project (Optional)</option>
+                  {projects.map(p => (
+                    <option key={p.project_id} value={p.project_id}>{p.project_code} - {p.project_name}</option>
+                  ))}
+                </select>
                 <textarea 
                   required
                   placeholder="Task Description"

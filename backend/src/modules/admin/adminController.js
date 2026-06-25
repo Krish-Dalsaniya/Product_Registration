@@ -147,7 +147,7 @@ const getDesigners = async (req, res, next) => {
 };
 
 const getTeams = async (req, res, next) => {
-  const { role } = req.query;
+  const { role, module } = req.query;
   try {
     let queryText = `
       SELECT 
@@ -164,15 +164,27 @@ const getTeams = async (req, res, next) => {
             WHERE tm.team_id = v.team_id
           ),
           '[]'::json
-        ) as member_ids
+        ) as member_ids,
+        COALESCE(tmod.module, 'Admin') as module
       FROM v_team_project_summary v
       JOIN teams t ON t.team_id = v.team_id
+      LEFT JOIN team_modules tmod ON tmod.team_id = t.team_id
     `;
     const params = [];
+    const conditions = [];
     
-    if (role) {
-      queryText += ` WHERE v.role_name::text = $1`;
+    if (role && role !== 'All') {
       params.push(role);
+      conditions.push(`v.role_name::text = $${params.length}`);
+    }
+    
+    if (module) {
+      params.push(module);
+      conditions.push(`COALESCE(tmod.module, 'Admin') = $${params.length}`);
+    }
+    
+    if (conditions.length > 0) {
+      queryText += ' WHERE ' + conditions.join(' AND ');
     }
     
     queryText += ` ORDER BY v.team_name`;
@@ -370,6 +382,23 @@ const createUser = async (req, res, next) => {
         if (mobile_number) {
           await client.query('INSERT INTO user_mobile (user_id, mobile_number) VALUES ($1, $2)', [userId, mobile_number]);
         }
+
+        // Auto-create HR employee record
+        const countRes = await client.query('SELECT COUNT(*) FROM hr_employees');
+        const nextNum = parseInt(countRes.rows[0].count) + 1;
+        const empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+        const employeeResult = await client.query(
+          `INSERT INTO hr_employees (user_id, emp_code, date_of_joining, employment_status)
+           VALUES ($1, $2, CURRENT_DATE, 'Full-Time') RETURNING employee_id`,
+          [userId, empCode]
+        );
+        const employee_id = employeeResult.rows[0].employee_id;
+
+        // Also add them to the onboarding kanban
+        await client.query(
+          `INSERT INTO hr_onboarding (employee_id, status) VALUES ($1, 'Pending')`,
+          [employee_id]
+        );
 
         // Email Verification Token
         const verificationToken = crypto.randomBytes(32).toString('hex');

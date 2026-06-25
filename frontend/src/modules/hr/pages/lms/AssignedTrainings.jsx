@@ -4,7 +4,7 @@ import { Plus, CheckCircle, ExternalLink, Download, FileText, TrendingUp, Play, 
 import DataTable from '../../../../components/shared/DataTable';
 import Modal from '../../../../components/shared/Modal';
 import { getAllAssignmentsApi, assignTrainingApi, updateAssignmentStatusApi, updateAssignmentProgressApi, getAllModulesApi, deleteAssignmentApi } from '../../../../api/lms';
-import { fetchHREmployeesApi } from '../../../../api/hr';
+import { fetchHREmployeesApi, fetchTraineesApi, assignTrainingToTraineeApi } from '../../../../api/hr';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -15,12 +15,13 @@ const AssignedTrainings = () => {
     const [assignments, setAssignments] = useState([]);
     const [modules, setModules] = useState([]);
     const [employees, setEmployees] = useState([]);
+    const [trainees, setTrainees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState('grid'); // 'list' or 'grid'
 
     const [formData, setFormData] = useState({
-        employee_id: '',
+        assignee: '',
         module_id: '',
         due_date: ''
     });
@@ -35,6 +36,7 @@ const AssignedTrainings = () => {
         fetchAssignments();
         fetchModules();
         fetchEmployees();
+        fetchTrainees();
 
         // Live Tracking Polling: Silently refresh the table every 10 seconds
         const intervalId = setInterval(() => {
@@ -80,10 +82,33 @@ const AssignedTrainings = () => {
         }
     };
 
+    const fetchTrainees = async () => {
+        try {
+            const { data } = await fetchTraineesApi();
+            if (data.success) {
+                setTrainees(data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching trainees:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await assignTrainingApi(formData);
+            const [type, id] = formData.assignee.split('_');
+            if (type === 'trn') {
+                await assignTrainingToTraineeApi(id, {
+                    module_id: formData.module_id,
+                    due_date: formData.due_date
+                });
+            } else {
+                await assignTrainingApi({
+                    employee_id: id,
+                    module_id: formData.module_id,
+                    due_date: formData.due_date
+                });
+            }
             toast.success('Training assigned successfully');
             setIsModalOpen(false);
             fetchAssignments();
@@ -153,8 +178,8 @@ const AssignedTrainings = () => {
     };
 
     const columns = [
-        { key: 'employee_name', label: 'Employee', sortable: true },
-        { key: 'emp_code', label: 'Emp Code', sortable: true },
+        { key: 'employee_name', label: 'Assignee', sortable: true },
+        { key: 'emp_code', label: 'ID Code', sortable: true },
         { key: 'module_title', label: 'Training Module', sortable: true },
         { 
             key: 'assigned_date', 
@@ -306,7 +331,7 @@ const AssignedTrainings = () => {
                     </div>
                     <button
                         onClick={() => {
-                            setFormData({ employee_id: '', module_id: '', due_date: '' });
+                            setFormData({ assignee: '', module_id: '', due_date: '' });
                             setIsModalOpen(true);
                         }}
                         className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-xl font-bold hover:bg-opacity-90 transition-all"
@@ -457,19 +482,28 @@ const AssignedTrainings = () => {
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">Employee *</label>
+                        <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">Assign To *</label>
                         <select
                             required
-                            value={formData.employee_id}
-                            onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
+                            value={formData.assignee}
+                            onChange={(e) => setFormData({...formData, assignee: e.target.value})}
                             className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-semibold text-[var(--text-main)] focus:outline-none focus:border-[var(--accent)]"
                         >
-                            <option value="">Select Employee</option>
-                            {employees.map(emp => (
-                                <option key={emp.employee_id} value={emp.employee_id}>
-                                    {emp.emp_code} - {emp.full_name}
-                                </option>
-                            ))}
+                            <option value="">Select Employee or Trainee</option>
+                            <optgroup label="Employees">
+                                {employees.map(emp => (
+                                    <option key={`emp_${emp.employee_id}`} value={`emp_${emp.employee_id}`}>
+                                        {emp.emp_code} - {emp.full_name}
+                                    </option>
+                                ))}
+                            </optgroup>
+                            <optgroup label="Trainees">
+                                {trainees.map(trn => (
+                                    <option key={`trn_${trn.trainee_id}`} value={`trn_${trn.trainee_id}`}>
+                                        {trn.trainee_code} - {trn.first_name} {trn.last_name}
+                                    </option>
+                                ))}
+                            </optgroup>
                         </select>
                     </div>
 

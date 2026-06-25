@@ -304,6 +304,18 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
     </div>
   );
 
+  const getModuleName = () => {
+    if (location.pathname.startsWith('/admin') || 
+        location.pathname.startsWith('/designer') || 
+        location.pathname.startsWith('/sales') || 
+        location.pathname.startsWith('/maintenance')) {
+      return 'PRODUCT REGISTRATION';
+    }
+    if (location.pathname.startsWith('/hr')) return 'HR';
+    if (location.pathname.startsWith('/accountant')) return 'ACCOUNTS';
+    return 'SYSTEM';
+  };
+
   return (
     <>
       {/* Backdrop for mobile */}
@@ -331,13 +343,13 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
 
         {/* LOGO */}
         <div 
-          className="h-[52px] flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-[var(--nav-hover)] transition-colors" 
+          className="h-[52px] flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-[var(--nav-hover)] transition-colors px-2" 
           onClick={() => navigate('/dashboard')}
           style={{ borderBottom: '1px solid var(--border-color)' }}
         >
-          <div className="flex items-center gap-2">
-            <span className="text-[22px] font-bold uppercase tracking-widest text-[var(--text-main)]">
-              CRUD<span className="text-[var(--accent)]">EX</span>
+          <div className="flex items-center gap-2 text-center">
+            <span className={`font-bold uppercase tracking-widest text-[var(--accent)] ${getModuleName().length > 10 ? 'text-[14px] leading-tight' : 'text-[22px]'}`}>
+              {getModuleName()}
             </span>
           </div>
         </div>

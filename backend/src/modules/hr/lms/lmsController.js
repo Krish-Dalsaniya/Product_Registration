@@ -122,11 +122,13 @@ const getAllAssignments = async (req, res) => {
         const query = `
             SELECT a.*, 
                    m.title as module_title, m.training_type, m.training_url, m.attachment_url,
-                   e.emp_code, u.full_name as employee_name
+                   COALESCE(e.emp_code, tr.trainee_code) as emp_code, 
+                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name) as employee_name
             FROM hr_lms_assignments a
             JOIN hr_lms_modules m ON a.module_id = m.module_id
-            JOIN hr_employees e ON a.employee_id = e.employee_id
-            JOIN users u ON e.user_id = u.user_id
+            LEFT JOIN hr_employees e ON a.employee_id = e.employee_id
+            LEFT JOIN users u ON e.user_id = u.user_id
+            LEFT JOIN hr_trainees tr ON a.trainee_id = tr.trainee_id
             ORDER BY a.created_at DESC
         `;
         const result = await pool.query(query);
@@ -239,8 +241,8 @@ const logAssessment = async (req, res) => {
         const { assignment_id, score, remarks } = req.body;
         const assessed_by = req.user.user_id;
         
-        // Auto pass/fail based on 70% threshold
-        const status = score >= 70 ? 'Passed' : 'Failed';
+        // Auto pass/fail based on 75% threshold
+        const status = score >= 75 ? 'Passed' : 'Failed';
         
         const query = `
             INSERT INTO hr_lms_assessments (assignment_id, score, status, remarks, assessed_by)
@@ -262,13 +264,15 @@ const getAllAssessments = async (req, res) => {
             SELECT a.*, 
                    assign.assigned_date, assign.completed_at,
                    m.title as module_title, m.training_type, m.difficulty_level,
-                   e.emp_code, u.full_name as employee_name,
+                   COALESCE(e.emp_code, tr.trainee_code) as emp_code, 
+                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name) as employee_name,
                    assessor.full_name as assessor_name
             FROM hr_lms_assessments a
             JOIN hr_lms_assignments assign ON a.assignment_id = assign.assignment_id
             JOIN hr_lms_modules m ON assign.module_id = m.module_id
-            JOIN hr_employees e ON assign.employee_id = e.employee_id
-            JOIN users u ON e.user_id = u.user_id
+            LEFT JOIN hr_employees e ON assign.employee_id = e.employee_id
+            LEFT JOIN users u ON e.user_id = u.user_id
+            LEFT JOIN hr_trainees tr ON assign.trainee_id = tr.trainee_id
             LEFT JOIN users assessor ON a.assessed_by = assessor.user_id
             ORDER BY a.created_at DESC
         `;
@@ -321,6 +325,12 @@ const submitQuiz = async (req, res) => {
     try {
         const { assignment_id, answers } = req.body;
         const assessed_by = req.user.user_id;
+        
+        // Check if assessment already exists
+        const existingAssessment = await pool.query('SELECT * FROM hr_lms_assessments WHERE assignment_id = $1', [assignment_id]);
+        if (existingAssessment.rows.length > 0) {
+            return res.status(400).json({ success: false, error: { message: 'An assessment has already been submitted for this assignment.' } });
+        }
         
         // Fetch assignment to get module_id
         const assignmentRes = await pool.query('SELECT module_id FROM hr_lms_assignments WHERE assignment_id = $1', [assignment_id]);

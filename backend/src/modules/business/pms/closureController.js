@@ -61,9 +61,11 @@ const getClosureById = async (req, res) => {
     }
 
     const itemsQuery = `
-      SELECT * FROM pms_closure_items
-      WHERE closure_id = $1
-      ORDER BY created_at ASC
+      SELECT i.*, p.project_name
+      FROM pms_closure_items i
+      LEFT JOIN pms_projects p ON i.project_id = p.project_id
+      WHERE i.closure_id = $1
+      ORDER BY i.created_at ASC
     `;
     const itemsResult = await pool.query(itemsQuery, [id]);
 

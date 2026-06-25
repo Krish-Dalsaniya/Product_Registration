@@ -73,7 +73,8 @@ const createTeam = async (req, res) => {
     product_name,
     product_description,
     team_lead_id,
-    client_handler_id
+    client_handler_id,
+    module = 'Admin'
   } = req.body;
   try {
     const teamData = await db.withTransaction(async (client) => {
@@ -101,6 +102,12 @@ const createTeam = async (req, res) => {
           ]
         );
         const team_id = teamResult.rows[0].team_id;
+
+        // Insert into team_modules sidecar table
+        await client.query(
+          'INSERT INTO team_modules (team_id, module) VALUES ($1, $2)',
+          [team_id, module]
+        );
 
         // Assign members
         if (member_ids.length > 0) {

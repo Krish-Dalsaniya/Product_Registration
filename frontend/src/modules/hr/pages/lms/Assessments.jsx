@@ -107,7 +107,7 @@ const Assessments = () => {
             </div>
         )},
         { key: 'score', label: 'Score', align: 'center', render: (row) => (
-            <span className={`font-black text-lg ${row.score >= 70 ? 'text-emerald-500' : 'text-rose-500'}`}>
+            <span className={`font-black text-lg ${row.status === 'Passed' ? 'text-emerald-500' : 'text-rose-500'}`}>
                 {row.score}%
             </span>
         )},

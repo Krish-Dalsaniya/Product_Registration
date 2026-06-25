@@ -41,6 +41,10 @@ export const createOnboardingRecordApi = (data) => api.post('/hr/onboarding', da
 export const updateOnboardingStatusApi = (id, status) => api.patch(`/hr/onboarding/${id}/status`, { status });
 export const updateOnboardingChecklistApi = (id, data) => api.patch(`/hr/onboarding/${id}/checklist`, data);
 
+// Trainees
+export const fetchTraineesApi = () => api.get('/hr/trainees');
+export const assignTrainingToTraineeApi = (id, data) => api.post(`/hr/trainees/${id}/assign-training`, data);
+
 // Offboarding
 export const fetchOffboardingRecordsApi = () => api.get('/hr/offboarding');
 export const createOffboardingRecordApi = (data) => api.post('/hr/offboarding', data);

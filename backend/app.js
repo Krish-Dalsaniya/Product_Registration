@@ -39,28 +39,6 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Middlewares
-app.use(compression());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use('/uploads', express.static(uploadDir, {
-  setHeaders: (res, path) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    
-    // Ensure files are viewed inline rather than downloaded automatically
-    const lowerPath = path.toLowerCase();
-    if (lowerPath.endsWith('.pdf') || lowerPath.endsWith('_pdf')) {
-      res.set('Content-Type', 'application/pdf');
-      res.set('Content-Disposition', 'inline');
-    } else if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg') || lowerPath.endsWith('.png')) {
-      res.set('Content-Disposition', 'inline');
-    }
-  }
-}));
-
 // CORS: Reverted to yesterday's style + hardcoded fallback for Netlify
 const origins = [
   env.FRONTEND_URL ? env.FRONTEND_URL.replace(/\/$/, "") : 'https://productsregistration.netlify.app',
@@ -80,6 +58,30 @@ app.use(cors({
   }, 
   credentials: true 
 }));
+
+// Middlewares
+app.use(compression());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(cookieParser());
+app.use('/uploads', express.static(uploadDir, {
+  setHeaders: (res, path) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Ensure files are viewed inline rather than downloaded automatically
+    const lowerPath = path.toLowerCase();
+    if (lowerPath.endsWith('.pdf') || lowerPath.endsWith('_pdf')) {
+      res.set('Content-Type', 'application/pdf');
+      res.set('Content-Disposition', 'inline');
+    } else if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg') || lowerPath.endsWith('.png')) {
+      res.set('Content-Disposition', 'inline');
+    }
+  }
+}));
+
+
 
 
 app.use(requestLogger);

@@ -45,4 +45,7 @@ router.use('/onboarding', onboardingRoutes);
 const offboardingRoutes = require('./offboardingRoutes');
 router.use('/offboarding', offboardingRoutes);
 
+const traineeRoutes = require('./traineeRoutes');
+router.use('/trainees', traineeRoutes);
+
 module.exports = router;

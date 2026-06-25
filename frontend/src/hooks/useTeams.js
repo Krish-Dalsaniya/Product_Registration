@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTeams, createTeam, updateTeam, deleteTeam } from '../api/adminTeams';
 
-export const useTeams = () => {
+export const useTeams = (params) => {
   return useQuery({
-    queryKey: ['teams'],
+    queryKey: ['teams', params],
     queryFn: async () => {
-      const response = await getTeams();
+      const response = await getTeams(params);
       return response.data;
     },
   });

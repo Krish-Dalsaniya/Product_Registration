@@ -149,6 +149,8 @@ const HRLayout = lazy(() => import('../modules/hr/layout/HRLayout'));
 const HRDashboard = lazy(() => import('../modules/hr/pages/HRDashboard'));
 const EmployeesList = lazy(() => import('../modules/hr/pages/EmployeesList'));
 const TraineeList = lazy(() => import('../modules/hr/pages/TraineeList'));
+const TraineeProfile = lazy(() => import('../modules/hr/pages/TraineeProfile'));
+const AddTraineeWizard = lazy(() => import('../modules/hr/pages/AddTraineeWizard'));
 const AddEmployeeWizard = lazy(() => import('../modules/hr/pages/AddEmployeeWizard'));
 const EmployeeProfile = lazy(() => import('../modules/hr/pages/EmployeeProfile'));
 const OrganizationChartPage = lazy(() => import('../modules/hr/pages/OrganizationChartPage'));
@@ -420,6 +422,8 @@ const Router = () => {
           <Route path="/hr/dashboard" element={<HRDashboard />} />
           <Route path="/hr/employees" element={<EmployeesList />} />
           <Route path="/hr/trainee" element={<TraineeList />} />
+          <Route path="/hr/trainee/new" element={<AddTraineeWizard />} />
+          <Route path="/hr/trainee/:id" element={<TraineeProfile />} />
           <Route path="/hr/employees/new" element={<AddEmployeeWizard />} />
           <Route path="/hr/employees/:id" element={<EmployeeProfile />} />
           <Route path="/hr/organization-chart" element={<OrganizationChartPage />} />
@@ -429,6 +433,7 @@ const Router = () => {
           <Route path="/hr/payrolls" element={<PayrollManagement />} />
           <Route path="/hr/pms/closure" element={<Closures />} />
           <Route path="/hr/pms/projects" element={<Projects />} />
+          <Route path="/hr/pms/teams" element={<TeamsPage />} />
           <Route path="/hr/lms" element={<LMSLayout />}>
             <Route index element={<Navigate to="modules" replace />} />
             <Route path="modules" element={<TrainingModules />} />

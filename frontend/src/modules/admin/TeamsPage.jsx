@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useTeams, useCreateTeam, useUpdateTeam, useDeleteTeam } from '../../hooks/useTeams';
 import { useUsers } from '../../hooks/useUsers';
 import { useQuery } from '@tanstack/react-query';
@@ -21,8 +21,27 @@ const TeamsPage = () => {
   const [filterRole, setFilterRole] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: teamsRes, isLoading: teamsLoading } = useTeams();
-  const { data: usersRes, isLoading: usersLoading } = useUsers({ limit: 500 });
+  const location = useLocation();
+  const isHRModule = location.pathname.includes('/hr/pms');
+  const activeModule = isHRModule ? 'HR' : 'Admin';
+
+  const { data: teamsRes, isLoading: teamsLoading } = useTeams({ module: activeModule });
+  
+  const { data: usersRes, isLoading: adminUsersLoading } = useUsers({ limit: 500 }, { enabled: !isHRModule });
+  
+  const { data: employeesRes, isLoading: hrEmployeesLoading } = useQuery({
+    queryKey: ['hrEmployees'],
+    queryFn: async () => {
+      const res = await axiosInstance.get('/hr/employees');
+      return { 
+        data: res.data.data.map(emp => ({
+          ...emp,
+          role_name: emp.designation_name || 'Employee'
+        }))
+      };
+    },
+    enabled: isHRModule
+  });
   const { data: productsRes, isLoading: productsLoading } = useQuery({
     queryKey: ['adminProducts'],
     queryFn: async () => {
@@ -36,7 +55,9 @@ const TeamsPage = () => {
   const deleteTeamMutation = useDeleteTeam();
 
   const data = teamsRes?.data || [];
-  const rawUsers = usersRes?.data || [];
+  const rawUsers = isHRModule ? (employeesRes?.data || []) : (usersRes?.data || []);
+  const usersLoading = isHRModule ? hrEmployeesLoading : adminUsersLoading;
+  
   const dedup = (arr) => {
     const seen = new Set();
     return arr.filter(u => {
@@ -123,7 +144,7 @@ const TeamsPage = () => {
     setIsSubmitting(true);
     try {
       if (modalMode === 'create') {
-        await createTeamMutation.mutateAsync({ ...formData, member_ids: selectedMembers, project_ids: [], product_ids: selectedRole !== 'Designer' ? selectedItems : [] });
+        await createTeamMutation.mutateAsync({ ...formData, member_ids: selectedMembers, project_ids: [], product_ids: selectedRole !== 'Designer' ? selectedItems : [], module: activeModule });
         toast.success(`Team created successfully!`);
       } else {
         await updateTeamMutation.mutateAsync({ id: selectedTeam.team_id, data: { ...formData, member_ids: selectedMembers } });
