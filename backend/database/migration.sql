@@ -249,6 +249,26 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+    DELETE FROM permissions WHERE permission_key LIKE '%.export' OR permission_key LIKE '%.publish' OR permission_key LIKE '%.assign';
+
+    -- B) Remove .comm_view completely
+    DELETE FROM role_permissions WHERE permission_id IN (SELECT permission_id FROM permissions WHERE permission_key LIKE '%.comm_view');
+    DELETE FROM permissions WHERE permission_key LIKE '%.comm_view';
+
+
+
+-- 5. User Security & Extensions
+CREATE TABLE IF NOT EXISTS audit_logs (
+    log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(100),
+    entity_id VARCHAR(255),
+    old_value JSONB,
+    new_value JSONB,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE IF NOT EXISTS user_password_reset (
     user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
@@ -465,4 +485,61 @@ CREATE TABLE IF NOT EXISTS pms_projects (
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE SET NULL,
     FOREIGN KEY (team_lead_id) REFERENCES users(user_id) ON DELETE SET NULL,
     FOREIGN KEY (client_handler_id) REFERENCES users(user_id) ON DELETE SET NULL
+);
+
+-- ==============================================================================
+-- MODULE: HR LMS
+-- TABLES: hr_lms_modules, hr_lms_assignments
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS hr_lms_modules (
+    module_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(100),
+    department_id UUID REFERENCES hr_departments(department_id) ON DELETE SET NULL,
+    training_type VARCHAR(50),
+    difficulty_level VARCHAR(50),
+    duration_hours INTEGER,
+    training_url TEXT,
+    attachment_url TEXT,
+    status VARCHAR(50) DEFAULT 'Active',
+    created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS hr_lms_assignments (
+    assignment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    module_id UUID REFERENCES hr_lms_modules(module_id) ON DELETE CASCADE,
+    employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
+    assigned_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    assigned_date DATE NOT NULL,
+    due_date DATE,
+    status VARCHAR(50) DEFAULT 'Assigned',
+    progress_percentage INTEGER DEFAULT 0,
+    completed_at TIMESTAMP WITH TIME ZONE NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS hr_lms_assessments (
+    assessment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    assignment_id UUID REFERENCES hr_lms_assignments(assignment_id) ON DELETE CASCADE,
+    score INTEGER NOT NULL,
+    status VARCHAR(50) NOT NULL, -- 'Passed' or 'Failed'
+    remarks TEXT,
+    assessed_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    assessed_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS hr_lms_questions (
+    question_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    module_id UUID REFERENCES hr_lms_modules(module_id) ON DELETE CASCADE,
+    question_text TEXT NOT NULL,
+    options JSONB NOT NULL,
+    correct_answer TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

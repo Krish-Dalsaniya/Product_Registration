@@ -91,13 +91,15 @@ const DataTable = ({
                 </th>
               )}
               {columns.map((col) => (
-                <th key={col.key} className={`px-3 md:px-4 ${pyClass} ${headerTextClass} font-bold uppercase tracking-[0.07em]`} style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+                <th key={col.key} className={`px-3 md:px-4 ${pyClass} ${headerTextClass} font-bold uppercase tracking-[0.07em] ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`} style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
                   {col.label}
                 </th>
               ))}
-              <th className={`px-4 ${pyClass} ${headerTextClass} font-bold uppercase tracking-[0.07em] text-right`} style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
-                Actions
-              </th>
+              {(onView || onEdit || onDelete || onRestock) && (
+                <th className={`px-4 ${pyClass} ${headerTextClass} font-bold uppercase tracking-[0.07em] text-right`} style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -122,24 +124,27 @@ const DataTable = ({
                     </td>
                   )}
                   {columns.map((col) => (
-                    <td key={col.key} className={`px-3 md:px-4 ${pyClass} ${textClass} font-medium`} style={{ color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)' }}>
+                    <td key={col.key} className={`px-3 md:px-4 ${pyClass} ${textClass} font-medium ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`} style={{ color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)' }}>
                       {col.render ? col.render(row) : row[col.key]}
                     </td>
                   ))}
 
-                  <td className={`px-3 md:px-4 ${pyClass} text-right`} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onView(row)}
-                        className={`${btnPad} rounded-lg transition-all duration-200`}
-                        style={{ color: 'var(--text-dim)' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'var(--nav-hover)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = ''; }}
-                        title="View Details"
-                      >
-                        <Eye size={iconSize} strokeWidth={2} />
-                      </button>
+                  {(onView || onEdit || onDelete || onRestock) && (
+                    <td className={`px-3 md:px-4 ${pyClass} text-right`} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <div className="flex items-center justify-end gap-2">
+                        {onView && (
+                          <button
+                            type="button"
+                            onClick={() => onView(row)}
+                            className={`${btnPad} rounded-lg transition-all duration-200`}
+                            style={{ color: 'var(--text-dim)' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'var(--nav-hover)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.background = ''; }}
+                            title="View Details"
+                          >
+                            <Eye size={iconSize} strokeWidth={2} />
+                          </button>
+                        )}
                       {onRestock && (
                         <button
                           type="button"
@@ -165,21 +170,22 @@ const DataTable = ({
                           Update
                         </button>
                       )}
-                      {onDelete && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); onDelete(row); }}
-                          className={`${btnPad} rounded-lg transition-all duration-200`}
-                          style={{ color: '#f87171', background: 'rgba(239,68,68,0.1)' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
-                          title="Delete Record"
-                        >
-                          <Trash2 size={iconSize-4} strokeWidth={2.5} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
+                        {onDelete && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onDelete(row); }}
+                            className={`${btnPad} rounded-lg transition-all duration-200`}
+                            style={{ color: '#f87171', background: 'rgba(239,68,68,0.1)' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+                            title="Delete Record"
+                          >
+                            <Trash2 size={iconSize-4} strokeWidth={2.5} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}

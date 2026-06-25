@@ -163,6 +163,13 @@ const OffboardingPage = lazy(() => import('../modules/hr/pages/OffboardingPage')
 const Closures = lazy(() => import('../modules/pms/pages/Closures'));
 const Projects = lazy(() => import('../modules/pms/pages/Projects'));
 
+// LMS Module
+const LMSLayout = lazy(() => import('../modules/hr/pages/lms/LMSLayout'));
+const TrainingModules = lazy(() => import('../modules/hr/pages/lms/TrainingModules'));
+const AssignedTrainings = lazy(() => import('../modules/hr/pages/lms/AssignedTrainings'));
+const Assessments = lazy(() => import('../modules/hr/pages/lms/Assessments'));
+const TrainingPlayer = lazy(() => import('../modules/hr/pages/lms/TrainingPlayer'));
+
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-[60vh]">
@@ -422,6 +429,13 @@ const Router = () => {
           <Route path="/hr/payrolls" element={<PayrollManagement />} />
           <Route path="/hr/pms/closure" element={<Closures />} />
           <Route path="/hr/pms/projects" element={<Projects />} />
+          <Route path="/hr/lms" element={<LMSLayout />}>
+            <Route index element={<Navigate to="modules" replace />} />
+            <Route path="modules" element={<TrainingModules />} />
+            <Route path="assignments" element={<AssignedTrainings />} />
+            <Route path="assignments/:id/play" element={<TrainingPlayer />} />
+            <Route path="assessments" element={<Assessments />} />
+          </Route>
           <Route path="/hr/onboarding" element={<OnboardingPage />} />
           <Route path="/hr/offboarding" element={<OffboardingPage />} />
         </Route>

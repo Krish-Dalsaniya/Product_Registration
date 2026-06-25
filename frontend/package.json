@@ -35,6 +35,7 @@
     "react-quill-new": "^3.8.3",
     "react-router-dom": "^7.14.2",
     "react-water-wave": "^2.0.1",
+    "react-youtube": "^10.1.0",
     "recharts": "^3.8.1",
     "sweetalert2": "^11.26.24",
     "tailwindcss": "^4.2.4",
