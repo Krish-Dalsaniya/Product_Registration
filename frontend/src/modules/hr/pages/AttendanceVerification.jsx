@@ -1,9 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import '@mediapipe/camera_utils';
-import '@mediapipe/face_mesh';
-
-// MediaPipe libraries typically expose themselves globally in browser environments
+// MediaPipe libraries are loaded globally via CDN in index.html
 const Camera = window.Camera;
 const FaceMesh = window.FaceMesh;
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
@@ -18,7 +15,7 @@ const AttendanceVerification = () => {
   const [session, setSession] = useState(null);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('initializing'); // 'initializing', 'ready', 'processing', 'success', 'failed'
-  const [challenge, setChallenge] = useState(null);
+  const [challenge, setChallenge] = useState(null);        
   const [challengeStatus, setChallengeStatus] = useState(''); // text to display
   
   const faceMeshRef = useRef(null);
