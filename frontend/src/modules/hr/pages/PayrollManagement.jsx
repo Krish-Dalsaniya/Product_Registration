@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../../../api/axiosInstance';
 import toast from 'react-hot-toast';
-import { Banknote, Calculator, Save, User, FileText, CheckCircle, Trash2, Download, Mail, Search, AlertTriangle } from 'lucide-react';
+import { IndianRupee, Calculator, Save, User, FileText, CheckCircle, Trash2, Download, Mail, Search, AlertTriangle } from 'lucide-react';
 import DataTable from '../../../components/shared/DataTable';
 import Swal from 'sweetalert2';
 import html2pdf from 'html2pdf.js';
@@ -214,8 +214,8 @@ const PayrollManagement = () => {
   const structureCols = [
     { key: 'employee', label: 'Employee', render: row => <div className="font-bold">{row.employee_name} <br/><span className="text-[10px] text-[var(--text-muted)] font-normal">{row.emp_code}</span></div> },
     { key: 'basic_salary', label: 'Basic Salary', render: row => `₹${parseFloat(row.basic_salary || 0).toFixed(2)}` },
-    { key: 'gross', label: 'Gross Pay', render: row => <span className="text-emerald-500 font-bold">`₹${calcGross(row).toFixed(2)}`</span> },
-    { key: 'deductions', label: 'Deductions', render: row => <span className="text-rose-500 font-bold">`₹${calcDeductions(row).toFixed(2)}`</span> },
+    { key: 'gross', label: 'Gross Pay', render: row => <span className="text-emerald-500 font-bold">₹{calcGross(row).toFixed(2)}</span> },
+    { key: 'deductions', label: 'Deductions', render: row => <span className="text-rose-500 font-bold">₹{calcDeductions(row).toFixed(2)}</span> },
     { key: 'net_total', label: 'Net Total', render: row => {
         const net = calcNet(row);
         return (
@@ -291,7 +291,7 @@ const PayrollManagement = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-5">
           <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
-            <Banknote size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+            <IndianRupee size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">

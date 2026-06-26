@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
+
+import { generateFaceEmbedding } from '../../../utils/faceRecognition';
 import { Loader2, ArrowLeft, Save, User, Briefcase, IndianRupee, FileText, ChevronRight, Check, CreditCard, ClipboardCheck, UploadCloud, Camera, MapPin, PhoneCall, Trash2 } from 'lucide-react';
 import { fetchHRMetadataApi, createHREmployeeApi, fetchHREmployeesApi, createOnboardingRecordApi } from '../../../api/hr';
 import { getRoles } from '../../../api/roles';
@@ -245,7 +247,19 @@ const AddEmployeeWizard = () => {
 
     try {
       setIsSubmitting(true);
-      const res = await createHREmployeeApi(formData);
+      
+      let face_embedding = null;
+      if (formData.image_url && formData.image_url.startsWith('data:image')) {
+        const embedding = await generateFaceEmbedding(formData.image_url);
+        if (embedding) {
+          face_embedding = embedding;
+        } else {
+          toast.warning("Could not detect a clear face in the profile picture. Attendance verification might fail for this employee.");
+        }
+      }
+      
+      const payload = { ...formData, face_embedding };
+      const res = await createHREmployeeApi(payload);
       if (res.data?.success) {
         if (isOnboarding) {
             // Automatically create onboarding record

@@ -89,7 +89,7 @@ const createEmployee = async (req, res, next) => {
       department_id, designation_id, designation_name,
       manager_id,
       date_of_joining, employment_status, base_salary, work_location,
-      personal_info, job_info, pay_info, statutory_info, identities_info
+      personal_info, job_info, pay_info, statutory_info, identities_info, face_embedding, image_url
     } = req.body;
 
     // Start transaction
@@ -128,6 +128,31 @@ const createEmployee = async (req, res, next) => {
       `, [full_name, email, hashedPassword, assignedRoleId]);
       
       finalUserId = userRes.rows[0].user_id;
+
+      let finalImageUrl = null;
+      if (image_url && image_url.startsWith('data:image')) {
+        try {
+          const matches = image_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          if (matches && matches.length === 3) {
+            const buffer = Buffer.from(matches[2], 'base64');
+            const filename = `avatar_${finalUserId}_${Date.now()}.jpg`;
+            const uploadDir = path.join(__dirname, '../../../../../uploads');
+            
+            if (!fs.existsSync(uploadDir)) {
+              fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            
+            fs.writeFileSync(path.join(uploadDir, filename), buffer);
+            finalImageUrl = `/uploads/${filename}`;
+          }
+        } catch (err) {
+          console.error('Error saving profile image in createEmployee:', err);
+        }
+      }
+
+      if (finalImageUrl) {
+        await client.query('UPDATE users SET image_url = $1 WHERE user_id = $2', [finalImageUrl, finalUserId]);
+      }
 
       // Email Verification Token
       const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -183,9 +208,9 @@ const createEmployee = async (req, res, next) => {
         user_id, emp_code, department_id, designation_id, manager_id,
         date_of_joining, employment_status, base_salary, work_location,
         personal_info, address_info, education_info, emergency_contacts, 
-        job_info, pay_info, statutory_info, identities_info
+        job_info, pay_info, statutory_info, identities_info, face_embedding
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING employee_id
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING employee_id
     `, [
       finalUserId, empCode, department_id, finalDesignationId, manager_id || null,
       date_of_joining, employment_status, base_salary ? parseFloat(base_salary) : null, work_location,
@@ -196,7 +221,8 @@ const createEmployee = async (req, res, next) => {
       job_info ? JSON.stringify(job_info) : '{}',
       pay_info ? JSON.stringify(pay_info) : '{}',
       statutory_info ? JSON.stringify(statutory_info) : '{}',
-      identities_info ? JSON.stringify(identities_info) : '{}'
+      identities_info ? JSON.stringify(identities_info) : '{}',
+      face_embedding ? JSON.stringify(face_embedding) : null
     ]);
 
     await client.query('COMMIT');
@@ -248,7 +274,7 @@ const updateEmployee = async (req, res, next) => {
       department_id, designation_id, designation_name, manager_id,
       date_of_joining, employment_status, base_salary, work_location,
       personal_info, address_info, education_info, emergency_contacts,
-      job_info, pay_info, statutory_info, identities_info, image_url
+      job_info, pay_info, statutory_info, identities_info, image_url, face_embedding
     } = req.body;
 
     const query = `
@@ -269,8 +295,9 @@ const updateEmployee = async (req, res, next) => {
         statutory_info = COALESCE($13, statutory_info),
         identities_info = COALESCE($14, identities_info),
         manager_id = $15,
+        face_embedding = COALESCE($16, face_embedding),
         updated_at = CURRENT_TIMESTAMP
-      WHERE employee_id = $16
+      WHERE employee_id = $17
       RETURNING *
     `;
     
@@ -295,6 +322,7 @@ const updateEmployee = async (req, res, next) => {
       statutory_info ? JSON.stringify(statutory_info) : null,
       identities_info ? JSON.stringify(identities_info) : null,
       manager_id || null,
+      face_embedding ? JSON.stringify(face_embedding) : null,
       id
     ];
 

@@ -422,7 +422,7 @@ const getVerificationSession = async (req, res, next) => {
     const { token } = req.params;
 
     const query = `
-      SELECT t.*, u.full_name, e.emp_code
+      SELECT t.*, u.full_name, e.emp_code, e.face_embedding
       FROM attendance_verification_tokens t
       JOIN hr_employees e ON t.employee_id = e.employee_id
       JOIN users u ON e.user_id = u.user_id
@@ -450,7 +450,8 @@ const getVerificationSession = async (req, res, next) => {
       full_name: session.full_name,
       emp_code: session.emp_code,
       action_type: session.action_type,
-      liveness_challenge: session.liveness_challenge
+      liveness_challenge: session.liveness_challenge,
+      face_embedding: session.face_embedding
     }, 'Verification session retrieved');
 
   } catch (error) {
@@ -460,9 +461,14 @@ const getVerificationSession = async (req, res, next) => {
 
 const verifyAttendance = async (req, res, next) => {
   try {
-    const { token, image_base64, latitude, longitude, device_info, liveness_status } = req.body;
+    const { token, image_base64, latitude, longitude, device_info, liveness_status, face_match_score, face_verification_status } = req.body;
 
-    const tokenQuery = `SELECT * FROM attendance_verification_tokens WHERE token = $1`;
+    const tokenQuery = `
+      SELECT t.*, e.emp_code 
+      FROM attendance_verification_tokens t
+      JOIN hr_employees e ON t.employee_id = e.employee_id
+      WHERE t.token = $1
+    `;
     const tokenResult = await db.query(tokenQuery, [token]);
 
     if (tokenResult.rows.length === 0) {
@@ -480,7 +486,11 @@ const verifyAttendance = async (req, res, next) => {
     }
 
     if (liveness_status !== 'Passed') {
-      return sendError(res, 'LIVENESS_FAILED', 'Liveness verification failed', 400);
+      return sendError(res, 'LIVENESS_FAILED', 'Liveness verification failed.', 400);
+    }
+
+    if (face_verification_status !== 'Passed') {
+      return sendError(res, 'IDENTITY_FAILED', 'Face does not match employee profile.', 400);
     }
 
     const date = new Date().toISOString().split('T')[0];
@@ -489,15 +499,24 @@ const verifyAttendance = async (req, res, next) => {
     // Save Image
     let imageUrl = null;
     if (image_base64) {
-      const uploadDir = path.join(process.cwd(), 'uploads', 'attendance');
+      const year = timestamp.getFullYear().toString();
+      const month = String(timestamp.getMonth() + 1).padStart(2, '0');
+      const empFolder = session.emp_code || session.employee_id;
+      const uploadDir = path.join(process.cwd(), 'uploads', 'attendance', year, month, empFolder);
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
-      const filename = `selfie_${session.employee_id}_${Date.now()}.jpg`;
+      
+      const actionPrefix = session.action_type === 'Punch In' ? 'punchin' : 'punchout';
+      // Format YYYYMMDD_HHMMSS
+      const d = timestamp;
+      const timeStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`;
+      const filename = `${actionPrefix}_${timeStr}.jpg`;
       const filepath = path.join(uploadDir, filename);
-      const base64Data = image_base64.replace(/^data:image\/\\w+;base64,/, "");
+      
+      const base64Data = image_base64.split(',')[1];
       fs.writeFileSync(filepath, base64Data, 'base64');
-      imageUrl = `/uploads/attendance/${filename}`;
+      imageUrl = `/uploads/attendance/${year}/${month}/${empFolder}/${filename}`;
     }
 
     const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -519,14 +538,16 @@ const verifyAttendance = async (req, res, next) => {
         INSERT INTO hr_attendance (
           employee_id, date, clock_in, status, 
           punch_in_selfie_url, punch_in_latitude, punch_in_longitude, 
-          punch_in_device_info, punch_in_ip, punch_in_liveness_challenge, punch_in_liveness_status
+          punch_in_device_info, punch_in_ip, punch_in_liveness_challenge, punch_in_liveness_status,
+          punch_in_face_match_score, punch_in_face_status
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING *
       `;
       await db.query(insertQuery, [
         session.employee_id, date, timestamp, status,
-        imageUrl, latitude, longitude, device_info, clientIp, session.liveness_challenge, liveness_status
+        imageUrl, latitude, longitude, device_info, clientIp, session.liveness_challenge, liveness_status,
+        face_match_score, face_verification_status
       ]);
 
     } else if (session.action_type === 'Punch Out') {
@@ -547,12 +568,14 @@ const verifyAttendance = async (req, res, next) => {
         UPDATE hr_attendance
         SET clock_out = $1, work_hours = $2, updated_at = CURRENT_TIMESTAMP,
             punch_out_selfie_url = $3, punch_out_latitude = $4, punch_out_longitude = $5,
-            punch_out_device_info = $6, punch_out_ip = $7, punch_out_liveness_challenge = $8, punch_out_liveness_status = $9
-        WHERE attendance_id = $10
+            punch_out_device_info = $6, punch_out_ip = $7, punch_out_liveness_challenge = $8, punch_out_liveness_status = $9,
+            punch_out_face_match_score = $10, punch_out_face_status = $11
+        WHERE attendance_id = $12
       `;
       await db.query(updateQuery, [
         timestamp, workHours, imageUrl, latitude, longitude, 
-        device_info, clientIp, session.liveness_challenge, liveness_status, record.attendance_id
+        device_info, clientIp, session.liveness_challenge, liveness_status,
+        face_match_score, face_verification_status, record.attendance_id
       ]);
     }
 

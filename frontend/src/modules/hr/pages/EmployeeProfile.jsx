@@ -9,6 +9,8 @@ import toast from 'react-hot-toast';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 
+import { generateFaceEmbedding } from '../../../utils/faceRecognition';
+
 
 const FormField = ({ label, value, isEditing, type = 'text', options = [], onChange, disabled = false, readOnlyText = null, isCustomView = false, customView = null }) => {
   return (
@@ -248,6 +250,17 @@ const EmployeeProfile = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
+      
+      let face_embedding = employee.face_embedding || null;
+      if (employee.image_url && employee.image_url.startsWith('data:image')) {
+        const embedding = await generateFaceEmbedding(employee.image_url);
+        if (embedding) {
+          face_embedding = embedding;
+        } else {
+          toast.warning("Could not detect a clear face in the profile picture. Attendance verification might fail for this employee.");
+        }
+      }
+
       const payload = {
         personal_info: personalInfo,
         job_info: jobInfo,
@@ -255,6 +268,7 @@ const EmployeeProfile = () => {
         statutory_info: statutoryInfo,
         identities_info: identitiesInfo,
         image_url: employee.image_url,
+        face_embedding,
         department_id: employee.department_id || null,
         designation_id: employee.designation_id || null,
         designation_name: employee.designation_name || null,

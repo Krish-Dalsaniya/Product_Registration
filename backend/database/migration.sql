@@ -661,3 +661,11 @@ ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_liveness_status VAR
 ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_face_match_score DECIMAL(5,2);
 
 ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS face_descriptor JSONB;
+
+
+-- Adding Face Recognition Attendance fields
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS face_embedding JSONB;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_face_match_score DECIMAL(5,2);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_face_status VARCHAR(50);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_face_match_score DECIMAL(5,2);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_face_status VARCHAR(50);
