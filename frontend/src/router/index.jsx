@@ -9,9 +9,11 @@ import AssistantPanel from '../components/shared/AssistantPanel';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import ComingSoon from '../components/shared/ComingSoon';
 import PayslipDownload from '../modules/hr/pages/PayslipDownload';
 const AuditLogsPage = lazy(() => import('../modules/admin/AuditLogsPage'));
 const SettingsPage = lazy(() => import('../modules/settings/SettingsPage'));
+const AttendanceVerification = lazy(() => import('../modules/hr/pages/AttendanceVerification'));
 import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare, Shield, LockKeyhole, Settings } from 'lucide-react';
 
 const IconMap = {
@@ -160,6 +162,8 @@ const AttendanceManagement = lazy(() => import('../modules/hr/pages/AttendanceMa
 const PayrollManagement = lazy(() => import('../modules/hr/pages/PayrollManagement'));
 const OnboardingPage = lazy(() => import('../modules/hr/pages/OnboardingPage'));
 const OffboardingPage = lazy(() => import('../modules/hr/pages/OffboardingPage'));
+const HRUserAccessPage = lazy(() => import('../modules/hr/pages/HRUserAccessPage'));
+const HRUserAccessDetail = lazy(() => import('../modules/hr/pages/HRUserAccessDetail'));
 
 // PMS Module
 const Closures = lazy(() => import('../modules/pms/pages/Closures'));
@@ -346,6 +350,7 @@ const Router = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/attendance/verify/:token" element={<AttendanceVerification />} />
         <Route path="/payslip/:payrollId" element={<PayslipDownload />} />
         <Route path="/unauthorized" element={<div className="p-10 text-center text-rose-500 font-bold bg-[var(--bg-workspace)] h-screen uppercase tracking-widest text-sm">Unauthorized Access Restricted</div>} />
         
@@ -429,11 +434,15 @@ const Router = () => {
           <Route path="/hr/organization-chart" element={<OrganizationChartPage />} />
           <Route path="/hr/leaves" element={<LeaveManagement />} />
           <Route path="/hr/roaster/holiday" element={<HolidayPage />} />
+          <Route path="/hr/roaster" element={<Navigate to="/hr/roaster/holiday" replace />} />
           <Route path="/hr/attendance" element={<AttendanceManagement />} />
           <Route path="/hr/payrolls" element={<PayrollManagement />} />
           <Route path="/hr/pms/closure" element={<Closures />} />
           <Route path="/hr/pms/projects" element={<Projects />} />
           <Route path="/hr/pms/teams" element={<TeamsPage />} />
+          <Route path="/hr/pms/task-management" element={<ComingSoon feature="Task Management" />} />
+          <Route path="/hr/pms/scrums-and-sprints" element={<ComingSoon feature="Scrums & Sprints" />} />
+          <Route path="/hr/pms" element={<Navigate to="/hr/pms/closure" replace />} />
           <Route path="/hr/lms" element={<LMSLayout />}>
             <Route index element={<Navigate to="modules" replace />} />
             <Route path="modules" element={<TrainingModules />} />
@@ -443,6 +452,8 @@ const Router = () => {
           </Route>
           <Route path="/hr/onboarding" element={<OnboardingPage />} />
           <Route path="/hr/offboarding" element={<OffboardingPage />} />
+          <Route path="/hr/user-access" element={<HRUserAccessPage />} />
+          <Route path="/hr/user-access/:id" element={<HRUserAccessDetail />} />
         </Route>
 
         {/* Temporary Routing for other ERP Modules until fully developed */}

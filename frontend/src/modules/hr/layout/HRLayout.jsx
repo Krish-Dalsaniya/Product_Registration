@@ -33,11 +33,12 @@ import {
   FolderGit2,
   CheckCircle,
   Zap,
-  BookOpen
+  BookOpen,
+  LockKeyhole
 } from 'lucide-react';
 
 const HRSidebar = ({ isOpen, onClose }) => {
-  const { user, logout, updateUserImage } = useAuth();
+  const { user, logout, updateUserImage, hasPermission } = useAuth();
   const { theme, setTheme, font, setFont, AVAILABLE_THEMES, AVAILABLE_FONTS } = useTheme();
   
   const navigate = useNavigate();
@@ -494,14 +495,13 @@ const HRSidebar = ({ isOpen, onClose }) => {
 
         {/* Navigation Links */}
         <div className="flex-1 overflow-y-auto py-4 custom-scrollbar space-y-1">
-          <p className="px-8 mt-6 mb-2 uppercase font-bold text-[10px] tracking-[0.1em] text-[var(--text-muted)]">
-            Human Resources
-          </p>
-          <NavItem to="/hr/dashboard" label="Dashboard" icon={LayoutDashboard} />
-          <NavItem to="/hr/organization-chart" label="Organogram" icon={Network} />
-          <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} />
+
+          {hasPermission('hr', 'view', 'dashboard') && <NavItem to="/hr/dashboard" label="Dashboard" icon={LayoutDashboard} />}
+          {hasPermission('hr', 'view', 'organogram') && <NavItem to="/hr/organization-chart" label="Organogram" icon={Network} />}
+          {hasPermission('hr', 'view', 'recruitment') && <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} />}
           
           {/* Onboarding/Offboarding Menu */}
+          {(hasPermission('hr', 'view', 'onboarding') || hasPermission('hr', 'view', 'offboarding')) && (
           <div>
             <div 
               className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
@@ -544,16 +544,18 @@ const HRSidebar = ({ isOpen, onClose }) => {
             
             <SubMenu isOpen={openMenus.onboarding}>
               <div className="flex flex-col py-1">
-                <NavItem to="/hr/onboarding" label="Onboarding" icon={UserPlus} isSubItem />
-                <NavItem to="/hr/offboarding" label="Offboarding" icon={LogOut} isSubItem isLastSubItem />
+                {hasPermission('hr', 'view', 'onboarding') && <NavItem to="/hr/onboarding" label="Onboarding" icon={UserPlus} isSubItem isLastSubItem={!hasPermission('hr', 'view', 'offboarding')} />}
+                {hasPermission('hr', 'view', 'offboarding') && <NavItem to="/hr/offboarding" label="Offboarding" icon={LogOut} isSubItem isLastSubItem />}
               </div>
             </SubMenu>
           </div>
+          )}
 
-          <NavItem to="/hr/trainee" label="Trainee" icon={GraduationCap} />
-          <NavItem to="/hr/employees" label="Employee" icon={Users} />
+          {hasPermission('hr', 'view', 'trainee') && <NavItem to="/hr/trainee" label="Trainee" icon={GraduationCap} />}
+          {hasPermission('hr', 'view', 'employees') && <NavItem to="/hr/employees" label="Employee" icon={Users} />}
           
           {/* Payrolls Menu */}
+          {(hasPermission('hr', 'view', 'payrolls_leaves') || hasPermission('hr', 'view', 'payrolls_holiday') || hasPermission('hr', 'view', 'payrolls_attendance')) && (
           <div>
             <div 
               className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
@@ -596,9 +598,10 @@ const HRSidebar = ({ isOpen, onClose }) => {
             
             <SubMenu isOpen={openMenus.payrolls}>
               <div className="flex flex-col py-1">
-                <NavItem to="/hr/leaves" label="Leaves" icon={Calendar} isSubItem />
+                {hasPermission('hr', 'view', 'payrolls_leaves') && <NavItem to="/hr/leaves" label="Leaves" icon={Calendar} isSubItem isLastSubItem={!(hasPermission('hr', 'view', 'payrolls_holiday') || hasPermission('hr', 'view', 'payrolls_attendance'))} />}
                 
                 {/* Roaster Submenu */}
+                {hasPermission('hr', 'view', 'payrolls_holiday') && (
                 <div>
                   <div 
                     className="w-full flex items-center justify-between pl-[72px] pr-4 py-1.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
@@ -662,13 +665,16 @@ const HRSidebar = ({ isOpen, onClose }) => {
                     </div>
                   </SubMenu>
                 </div>
+                )}
                 
-                <NavItem to="/hr/attendance" label="Attendance" icon={Clock} isSubItem isLastSubItem />
+                {hasPermission('hr', 'view', 'payrolls_attendance') && <NavItem to="/hr/attendance" label="Attendance" icon={Clock} isSubItem isLastSubItem />}
               </div>
             </SubMenu>
           </div>
+          )}
 
           {/* PMS Menu */}
+          {(hasPermission('hr', 'view', 'pms_closure') || hasPermission('hr', 'view', 'pms_projects') || hasPermission('hr', 'view', 'pms_teams') || hasPermission('hr', 'view', 'pms_tasks') || hasPermission('hr', 'view', 'pms_scrums')) && (
           <div>
             <div 
               className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
@@ -712,16 +718,26 @@ const HRSidebar = ({ isOpen, onClose }) => {
             <SubMenu isOpen={openMenus.pms}>
               <div className="flex flex-col py-1">
 
-                <NavItem to="/hr/pms/closure" label="Closure" icon={CheckSquare} isSubItem />
-                <NavItem to="/hr/pms/projects" label="Projects" icon={FolderGit2} isSubItem />
-                <NavItem to="/hr/pms/teams" label="Teams" icon={Users} isSubItem />
-                <NavItem to="/hr/pms/task-management" label="Task Management" icon={CheckCircle} isSubItem />
-                <NavItem to="/hr/pms/scrums-and-sprints" label="Scrums & Sprints" icon={Zap} isSubItem isLastSubItem />
+                {hasPermission('hr', 'view', 'pms_closure') && <NavItem to="/hr/pms/closure" label="Closure" icon={CheckSquare} isSubItem isLastSubItem={!(hasPermission('hr', 'view', 'pms_projects') || hasPermission('hr', 'view', 'pms_teams') || hasPermission('hr', 'view', 'pms_tasks') || hasPermission('hr', 'view', 'pms_scrums'))} />}
+                {hasPermission('hr', 'view', 'pms_projects') && <NavItem to="/hr/pms/projects" label="Projects" icon={FolderGit2} isSubItem isLastSubItem={!(hasPermission('hr', 'view', 'pms_teams') || hasPermission('hr', 'view', 'pms_tasks') || hasPermission('hr', 'view', 'pms_scrums'))} />}
+                {hasPermission('hr', 'view', 'pms_teams') && <NavItem to="/hr/pms/teams" label="Teams" icon={Users} isSubItem isLastSubItem={!(hasPermission('hr', 'view', 'pms_tasks') || hasPermission('hr', 'view', 'pms_scrums'))} />}
+                {hasPermission('hr', 'view', 'pms_tasks') && <NavItem to="/hr/pms/task-management" label="Task Management" icon={CheckCircle} isSubItem isLastSubItem={!hasPermission('hr', 'view', 'pms_scrums')} />}
+                {hasPermission('hr', 'view', 'pms_scrums') && <NavItem to="/hr/pms/scrums-and-sprints" label="Scrums & Sprints" icon={Zap} isSubItem isLastSubItem />}
               </div>
             </SubMenu>
           </div>
+          )}
 
-          <NavItem to="/hr/lms" label="LMS" icon={BookOpen} />
+          {hasPermission('hr', 'view', 'lms') && <NavItem to="/hr/lms" label="LMS" icon={BookOpen} />}
+
+          {user?.role_name?.toLowerCase() === 'admin' && (
+            <>
+              <p className="px-8 mt-6 mb-2 uppercase font-bold text-[10px] tracking-[0.1em] text-[var(--text-muted)]">
+                Administration
+              </p>
+              <NavItem to="/hr/user-access" label="User Access" icon={LockKeyhole} />
+            </>
+          )}
 
         </div>
       </aside>

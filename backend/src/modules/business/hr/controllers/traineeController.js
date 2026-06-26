@@ -1,27 +1,68 @@
-const pool = require('../../../../config/db');
+const db = require('../../../../config/db');
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const env = require('../../../../config/env');
+const { sendEmail } = require('../../../../utils/email');
 
 // --- Trainee Management ---
 
 const createTrainee = async (req, res) => {
+    const client = await db.pool.connect();
     try {
         const userId = req.user.user_id;
         const { 
             first_name, last_name, email, mobile, gender, date_of_birth, 
             joining_date, expected_completion_date, department_id, mentor_employee_id, 
-            training_batch, education, institute, specialization, status, remarks, image_url 
+            training_batch, education, institute, specialization, status, remarks, image_url,
+            password
         } = req.body;
 
+        await client.query('BEGIN');
+
+        // 1. Check if user exists
+        const userCheck = await client.query('SELECT user_id FROM users WHERE email = $1', [email]);
+        if (userCheck.rows.length > 0) {
+            throw new Error('A user with this email already exists.');
+        }
+
+        // 2. Create the User record
+        const salt = await bcrypt.genSalt(10);
+        const plainPassword = password || 'Welcome@123';
+        const hashedPassword = await bcrypt.hash(plainPassword, salt);
+        
+        // Find Trainee role, fallback to User
+        let assignedRoleId;
+        const traineeRoleRes = await client.query('SELECT role_id FROM roles WHERE role_name = $1 LIMIT 1', ['Trainee']);
+        if (traineeRoleRes.rows.length > 0) {
+            assignedRoleId = traineeRoleRes.rows[0].role_id;
+        } else {
+            const userRoleRes = await client.query('SELECT role_id FROM roles WHERE role_name = $1 LIMIT 1', ['User']);
+            if (userRoleRes.rows.length > 0) {
+                assignedRoleId = userRoleRes.rows[0].role_id;
+            } else {
+                const anyRole = await client.query('SELECT role_id FROM roles ORDER BY role_id DESC LIMIT 1');
+                assignedRoleId = anyRole.rows[0]?.role_id || null;
+            }
+        }
+
+        const userRes = await client.query(`
+            INSERT INTO users (full_name, email, password_hash, role_id) 
+            VALUES ($1, $2, $3, $4) RETURNING user_id
+        `, [`${first_name} ${last_name}`, email, hashedPassword, assignedRoleId]);
+        
+        const newUserId = userRes.rows[0].user_id;
+
         // Generate unique trainee code (e.g., TRN-0001)
-        const codeResult = await pool.query("SELECT COALESCE(MAX(CAST(NULLIF(regexp_replace(trainee_code, '\\D', '', 'g'), '') AS INTEGER)), 0) + 1 AS next_code FROM hr_trainees");
+        const codeResult = await client.query("SELECT COALESCE(MAX(CAST(NULLIF(regexp_replace(trainee_code, '\\D', '', 'g'), '') AS INTEGER)), 0) + 1 AS next_code FROM hr_trainees");
         const nextCode = codeResult.rows[0].next_code;
         const trainee_code = `TRN-${String(nextCode).padStart(4, '0')}`;
 
         const insertQuery = `
             INSERT INTO hr_trainees 
-            (trainee_code, first_name, last_name, email, mobile, gender, date_of_birth, joining_date, expected_completion_date, department_id, mentor_employee_id, training_batch, education, institute, specialization, status, remarks, created_by)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+            (trainee_code, first_name, last_name, email, mobile, gender, date_of_birth, joining_date, expected_completion_date, department_id, mentor_employee_id, training_batch, education, institute, specialization, status, remarks, created_by, user_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
             RETURNING *
         `;
         
@@ -29,17 +70,17 @@ const createTrainee = async (req, res) => {
             trainee_code, first_name, last_name, email, mobile || null, gender || null, date_of_birth || null, 
             joining_date || null, expected_completion_date || null, department_id || null, mentor_employee_id || null, 
             training_batch || null, education || null, institute || null, specialization || null, 
-            status || 'Applied', remarks || null, userId
+            status || 'Applied', remarks || null, userId, newUserId
         ];
 
-        const result = await pool.query(insertQuery, values);
+        const result = await client.query(insertQuery, values);
         let newTrainee = result.rows[0];
 
         // Handle Image Upload
         let finalImageUrl = image_url;
         if (image_url && image_url.startsWith('data:image')) {
             try {
-                const matches = image_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+                const matches = image_url.match(/^data:([A-Za-z-+\\/]+);base64,(.+)$/);
                 if (matches && matches.length === 3) {
                     const buffer = Buffer.from(matches[2], 'base64');
                     const filename = `trainee_${newTrainee.trainee_id}_${Date.now()}.jpg`;
@@ -53,7 +94,7 @@ const createTrainee = async (req, res) => {
                     finalImageUrl = `/uploads/${filename}`;
                     
                     // Update db with new image
-                    const updateRes = await pool.query('UPDATE hr_trainees SET image_url = $1 WHERE trainee_id = $2 RETURNING *', [finalImageUrl, newTrainee.trainee_id]);
+                    const updateRes = await client.query('UPDATE hr_trainees SET image_url = $1 WHERE trainee_id = $2 RETURNING *', [finalImageUrl, newTrainee.trainee_id]);
                     newTrainee = updateRes.rows[0];
                 }
             } catch (err) {
@@ -61,10 +102,52 @@ const createTrainee = async (req, res) => {
             }
         }
 
+        // Email Verification Token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        
+        await client.query(
+            'INSERT INTO email_verification_tokens (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
+            [tokenHash, newUserId, expiresAt]
+        );
+        
+        await client.query(
+            'INSERT INTO user_email_verified (user_id, is_verified) VALUES ($1, false) ON CONFLICT (user_id) DO NOTHING',
+            [newUserId]
+        );
+
+        // Send Welcome Email
+        const frontendUrl = env.FRONTEND_URL;
+        const loginLink = `${frontendUrl}/login`;
+        
+        const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2>Welcome to Leon's Group Product Registration!</h2>
+                <p>Hello ${first_name} ${last_name},</p>
+                <p>An administrator has created a Trainee account for you.</p>
+                <p><strong>Your email:</strong> ${email}</p>
+                <p><strong>Your temporary password is:</strong> ${plainPassword}</p>
+                <p>Please log in using these credentials. You will be asked to set a permanent password upon your first login.</p>
+                <a href="${loginLink}" style="display: inline-block; padding: 10px 20px; background-color: #f06532; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">Log In to Your Account</a>
+            </div>
+        `;
+        
+        sendEmail({
+            to: email,
+            subject: "Welcome to Leon's Group - Your Trainee Account Details",
+            html: emailHtml
+        }).catch(err => console.error('Failed to send trainee welcome email:', err));
+
+        await client.query('COMMIT');
+        
         res.status(201).json({ success: true, data: newTrainee });
     } catch (error) {
+        await client.query('ROLLBACK');
         console.error('Error creating trainee:', error);
-        res.status(500).json({ success: false, error: { message: 'Failed to create trainee' } });
+        res.status(500).json({ success: false, error: { message: error.message || 'Failed to create trainee', stack: error.stack } });
+    } finally {
+        client.release();
     }
 };
 
@@ -80,11 +163,11 @@ const getTrainees = async (req, res) => {
             LEFT JOIN users m ON m_emp.user_id = m.user_id
             ORDER BY t.created_at DESC
         `;
-        const result = await pool.query(query);
+        const result = await db.query(query);
         res.json({ success: true, data: result.rows });
     } catch (error) {
         console.error('Error fetching trainees:', error);
-        res.status(500).json({ success: false, error: { message: 'Failed to fetch trainees' } });
+        res.status(500).json({ success: false, error: { message: error.message, stack: error.stack } });
     }
 };
 
@@ -103,7 +186,7 @@ const getTraineeById = async (req, res) => {
             LEFT JOIN users m ON m_emp.user_id = m.user_id
             WHERE t.trainee_id = $1
         `;
-        const result = await pool.query(query, [id]);
+        const result = await db.query(query, [id]);
         
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: { message: 'Trainee not found' } });
@@ -121,7 +204,7 @@ const getTraineeById = async (req, res) => {
             WHERE a.trainee_id = $1
             ORDER BY a.created_at DESC
         `;
-        const lmsResult = await pool.query(lmsQuery, [id]);
+        const lmsResult = await db.query(lmsQuery, [id]);
         trainee.lms_assignments = lmsResult.rows;
 
         res.json({ success: true, data: trainee });
@@ -179,7 +262,7 @@ const updateTrainee = async (req, res) => {
             status || 'Applied', remarks || null, finalImageUrl !== image_url ? finalImageUrl : null, id
         ];
 
-        const result = await pool.query(updateQuery, values);
+        const result = await db.query(updateQuery, values);
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: { message: 'Trainee not found' } });
         }
@@ -194,7 +277,7 @@ const deleteTrainee = async (req, res) => {
     try {
         const { id } = req.params;
         const deleteQuery = `DELETE FROM hr_trainees WHERE trainee_id = $1 RETURNING *`;
-        const result = await pool.query(deleteQuery, [id]);
+        const result = await db.query(deleteQuery, [id]);
         
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: { message: 'Trainee not found' } });
@@ -211,7 +294,7 @@ const convertToEmployee = async (req, res) => {
         const { id } = req.params;
         
         // 1. Fetch Trainee
-        const traineeRes = await pool.query('SELECT * FROM hr_trainees WHERE trainee_id = $1', [id]);
+        const traineeRes = await db.query('SELECT * FROM hr_trainees WHERE trainee_id = $1', [id]);
         if (traineeRes.rows.length === 0) return res.status(404).json({ success: false, error: { message: 'Trainee not found' } });
         const trainee = traineeRes.rows[0];
 
@@ -229,7 +312,7 @@ const convertToEmployee = async (req, res) => {
             ON CONFLICT (email) DO UPDATE SET is_active = true
             RETURNING user_id
         `;
-        const userRes = await pool.query(userQuery, [`${trainee.first_name} ${trainee.last_name}`, trainee.email, hashedPassword]);
+        const userRes = await db.query(userQuery, [`${trainee.first_name} ${trainee.last_name}`, trainee.email, hashedPassword]);
         const new_user_id = userRes.rows[0].user_id;
 
         // 2. Create hr_employees record
@@ -238,7 +321,7 @@ const convertToEmployee = async (req, res) => {
             VALUES ($1, $2, $3, $4, CURRENT_DATE, 'Full-Time', 0)
             RETURNING *
         `;
-        const empRes = await pool.query(empQuery, [
+        const empRes = await db.query(empQuery, [
             new_user_id, 
             `EMP-${Math.floor(1000 + Math.random() * 9000)}`, 
             trainee.department_id, 
@@ -248,10 +331,10 @@ const convertToEmployee = async (req, res) => {
         const new_employee_id = empRes.rows[0].employee_id;
 
         // 3. Update Trainee Status
-        await pool.query("UPDATE hr_trainees SET status = 'Converted to Employee', updated_at = CURRENT_TIMESTAMP WHERE trainee_id = $1", [id]);
+        await db.query("UPDATE hr_trainees SET status = 'Converted to Employee', updated_at = CURRENT_TIMESTAMP WHERE trainee_id = $1", [id]);
 
         // 4. (Optional) Transfer LMS assignments from trainee_id to employee_id
-        await pool.query("UPDATE hr_lms_assignments SET employee_id = $1 WHERE trainee_id = $2", [new_employee_id, id]);
+        await db.query("UPDATE hr_lms_assignments SET employee_id = $1 WHERE trainee_id = $2", [new_employee_id, id]);
 
         res.json({ success: true, message: 'Trainee converted to employee successfully', data: empRes.rows[0] });
     } catch (error) {
@@ -270,7 +353,7 @@ const getDashboardStats = async (req, res) => {
                 COUNT(*) FILTER (WHERE status = 'Converted to Employee') as converted_to_employees
             FROM hr_trainees
         `;
-        const result = await pool.query(statsQuery);
+        const result = await db.query(statsQuery);
         res.json({ success: true, data: result.rows[0] });
     } catch (error) {
         console.error('Error fetching trainee stats:', error);
@@ -293,7 +376,7 @@ const assignTrainingToTrainee = async (req, res) => {
         `;
         
         const values = [id, module_id, due_date || null, userId];
-        const result = await pool.query(insertQuery, values);
+        const result = await db.query(insertQuery, values);
         res.json({ success: true, data: result.rows[0] });
     } catch (error) {
         console.error('Error assigning training to trainee:', error);

@@ -3,6 +3,9 @@ const { sendSuccess, sendError } = require('../../../../utils/response');
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const env = require('../../../../config/env');
+const { sendEmail } = require('../../../../utils/email');
 
 const getEmployees = async (req, res, next) => {
   try {
@@ -18,6 +21,9 @@ const getEmployees = async (req, res, next) => {
         u.full_name,
         u.email,
         u.image_url,
+        u.is_active,
+        r.role_name,
+        COALESCE(uca.has_custom_permissions, false) as has_custom_permissions,
         e.department_id,
         e.designation_id,
         d.name as department_name,
@@ -32,6 +38,8 @@ const getEmployees = async (req, res, next) => {
         e.identities_info
       FROM hr_employees e
       JOIN users u ON e.user_id = u.user_id
+      LEFT JOIN roles r ON u.role_id = r.role_id
+      LEFT JOIN user_custom_access uca ON u.user_id = uca.user_id
       LEFT JOIN hr_departments d ON e.department_id = d.department_id
       LEFT JOIN hr_designations ds ON e.designation_id = ds.designation_id
       ORDER BY e.created_at DESC
@@ -77,7 +85,7 @@ const createEmployee = async (req, res, next) => {
   try {
     const { 
       user_id, role_id, // New optional field to link existing user and assign role
-      full_name, email,
+      full_name, email, password,
       department_id, designation_id, designation_name,
       manager_id,
       date_of_joining, employment_status, base_salary, work_location,
@@ -97,9 +105,10 @@ const createEmployee = async (req, res, next) => {
         throw new Error('A user with this email already exists.');
       }
 
-      // 2. Create the User record (with default password)
+      // 2. Create the User record
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('Welcome@123', salt);
+      const plainPassword = password || 'Welcome@123';
+      const hashedPassword = await bcrypt.hash(plainPassword, salt);
       
       let assignedRoleId = role_id;
       if (!assignedRoleId) {
@@ -119,6 +128,43 @@ const createEmployee = async (req, res, next) => {
       `, [full_name, email, hashedPassword, assignedRoleId]);
       
       finalUserId = userRes.rows[0].user_id;
+
+      // Email Verification Token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      await client.query(
+        'INSERT INTO email_verification_tokens (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
+        [tokenHash, finalUserId, expiresAt]
+      );
+      
+      await client.query(
+        'INSERT INTO user_email_verified (user_id, is_verified) VALUES ($1, false) ON CONFLICT (user_id) DO NOTHING',
+        [finalUserId]
+      );
+
+      // Send Welcome Email
+      const frontendUrl = env.FRONTEND_URL;
+      const loginLink = `${frontendUrl}/login`;
+      
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2>Welcome to Leon's Group Product Registration!</h2>
+          <p>Hello ${full_name},</p>
+          <p>An administrator has created an employee account for you.</p>
+          <p><strong>Your email:</strong> ${email}</p>
+          <p><strong>Your temporary password is:</strong> ${plainPassword}</p>
+          <p>Please log in using these credentials. You will be asked to set a permanent password upon your first login.</p>
+          <a href="${loginLink}" style="display: inline-block; padding: 10px 20px; background-color: #f06532; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">Log In to Your Account</a>
+        </div>
+      `;
+      
+      sendEmail({
+        to: email,
+        subject: "Welcome to Leon's Group - Your Employee Account Details",
+        html: emailHtml
+      }).catch(err => console.error('Failed to send employee welcome email:', err));
     }
 
     // 3. Generate EMP Code (e.g., EMP-001)

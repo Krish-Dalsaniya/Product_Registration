@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, Plus, Search, MoreVertical, FileText, CheckCircle, UserMinus, ArrowRight, ArrowLeft, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchOffboardingRecordsApi, updateOffboardingStatusApi, fetchHREmployeesApi, createOffboardingRecordApi } from '../../../api/hr';
+import { useAuth } from '../../../context/AuthContext';
 
 const OffboardingPage = () => {
+    const { hasPermission } = useAuth();
     const [records, setRecords] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -142,9 +144,14 @@ const OffboardingPage = () => {
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 mt-10 relative z-30">
-                <div>
-                    <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Offboarding</h1>
-                    <p className="text-[14px] text-[var(--text-muted)] font-semibold mt-1">Manage employee exit pipelines</p>
+                <div className="flex items-center gap-5">
+                    <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+                        <UserMinus size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Offboarding</h1>
+                        <p className="text-[14px] text-[var(--text-muted)] font-semibold mt-1">Manage employee exit pipelines</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="relative">
@@ -157,12 +164,14 @@ const OffboardingPage = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    {hasPermission('hr', 'create', 'offboarding') && (
                     <button 
                         onClick={() => setIsModalOpen(true)}
                         className="flex items-center gap-2 bg-[var(--accent)] text-white px-4 py-2 rounded-xl text-[14px] font-bold hover:bg-opacity-90 transition-all shadow-sm shadow-[var(--accent)]/20 active:scale-95">
                         <Plus size={18} />
                         New Offboarding
                     </button>
+                    )}
                 </div>
             </div>
 
@@ -192,9 +201,9 @@ const OffboardingPage = () => {
                                 {columnRecords.map(record => (
                                     <div 
                                         key={record.id} 
-                                        draggable="true"
-                                        onDragStart={(e) => handleDragStart(e, record)}
-                                        className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing hover:border-[var(--accent)]/50"
+                                        draggable={hasPermission('hr', 'edit', 'offboarding')}
+                                        onDragStart={(e) => hasPermission('hr', 'edit', 'offboarding') ? handleDragStart(e, record) : e.preventDefault()}
+                                        className={`bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 shadow-sm hover:shadow-md transition-all hover:border-[var(--accent)]/50 ${hasPermission('hr', 'edit', 'offboarding') ? 'cursor-grab active:cursor-grabbing' : ''}`}
                                     >
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex items-center gap-3">

@@ -1,5 +1,8 @@
 const db = require('../../../../config/db');
 const { sendSuccess, sendError } = require('../../../../utils/response');
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const getAttendance = async (req, res, next) => {
   try {
@@ -386,6 +389,183 @@ const getAttendanceMuster = async (req, res, next) => {
   }
 };
 
+const generateVerificationToken = async (req, res, next) => {
+  try {
+    const { employee_id, action_type } = req.body;
+    
+    if (!employee_id || !action_type) {
+      return sendError(res, 'BAD_REQUEST', 'Employee ID and Action Type are required', 400);
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires_at = new Date(Date.now() + 60 * 1000); // 60 seconds
+    
+    const challenges = ['blink', 'turn_left', 'turn_right', 'smile', 'raise_eyebrows', 'look_up', 'look_down'];
+    const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
+
+    const query = `
+      INSERT INTO attendance_verification_tokens (employee_id, token, action_type, liveness_challenge, expires_at)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING token, expires_at, liveness_challenge
+    `;
+
+    const result = await db.query(query, [employee_id, token, action_type, randomChallenge, expires_at]);
+    
+    sendSuccess(res, result.rows[0], 'Verification token generated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getVerificationSession = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+
+    const query = `
+      SELECT t.*, u.full_name, e.emp_code
+      FROM attendance_verification_tokens t
+      JOIN hr_employees e ON t.employee_id = e.employee_id
+      JOIN users u ON e.user_id = u.user_id
+      WHERE t.token = $1
+    `;
+
+    const result = await db.query(query, [token]);
+
+    if (result.rows.length === 0) {
+      return sendError(res, 'INVALID_TOKEN', 'Invalid or expired token', 400);
+    }
+
+    const session = result.rows[0];
+
+    if (session.used) {
+      return sendError(res, 'TOKEN_USED', 'This token has already been used', 400);
+    }
+
+    if (new Date() > new Date(session.expires_at)) {
+      return sendError(res, 'TOKEN_EXPIRED', 'This token has expired', 400);
+    }
+
+    sendSuccess(res, {
+      employee_id: session.employee_id,
+      full_name: session.full_name,
+      emp_code: session.emp_code,
+      action_type: session.action_type,
+      liveness_challenge: session.liveness_challenge
+    }, 'Verification session retrieved');
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyAttendance = async (req, res, next) => {
+  try {
+    const { token, image_base64, latitude, longitude, device_info, liveness_status } = req.body;
+
+    const tokenQuery = `SELECT * FROM attendance_verification_tokens WHERE token = $1`;
+    const tokenResult = await db.query(tokenQuery, [token]);
+
+    if (tokenResult.rows.length === 0) {
+      return sendError(res, 'INVALID_TOKEN', 'Invalid verification token', 400);
+    }
+
+    const session = tokenResult.rows[0];
+
+    if (session.used) {
+      return sendError(res, 'TOKEN_USED', 'Token already used', 400);
+    }
+
+    if (new Date() > new Date(session.expires_at)) {
+      return sendError(res, 'TOKEN_EXPIRED', 'Token has expired', 400);
+    }
+
+    if (liveness_status !== 'Passed') {
+      return sendError(res, 'LIVENESS_FAILED', 'Liveness verification failed', 400);
+    }
+
+    const date = new Date().toISOString().split('T')[0];
+    const timestamp = new Date();
+    
+    // Save Image
+    let imageUrl = null;
+    if (image_base64) {
+      const uploadDir = path.join(process.cwd(), 'uploads', 'attendance');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const filename = `selfie_${session.employee_id}_${Date.now()}.jpg`;
+      const filepath = path.join(uploadDir, filename);
+      const base64Data = image_base64.replace(/^data:image\/\\w+;base64,/, "");
+      fs.writeFileSync(filepath, base64Data, 'base64');
+      imageUrl = `/uploads/attendance/${filename}`;
+    }
+
+    const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+
+    // Check if record exists for today
+    const checkQuery = `SELECT * FROM hr_attendance WHERE employee_id = $1 AND date = $2`;
+    const checkResult = await db.query(checkQuery, [session.employee_id, date]);
+
+    if (session.action_type === 'Punch In') {
+      if (checkResult.rows.length > 0) {
+        return sendError(res, 'ALREADY_CLOCKED_IN', 'Employee already clocked in today', 400);
+      }
+      
+      const lateThreshold = new Date();
+      lateThreshold.setHours(9, 15, 0, 0);
+      const status = timestamp > lateThreshold ? 'Late' : 'Present';
+
+      const insertQuery = `
+        INSERT INTO hr_attendance (
+          employee_id, date, clock_in, status, 
+          punch_in_selfie_url, punch_in_latitude, punch_in_longitude, 
+          punch_in_device_info, punch_in_ip, punch_in_liveness_challenge, punch_in_liveness_status
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING *
+      `;
+      await db.query(insertQuery, [
+        session.employee_id, date, timestamp, status,
+        imageUrl, latitude, longitude, device_info, clientIp, session.liveness_challenge, liveness_status
+      ]);
+
+    } else if (session.action_type === 'Punch Out') {
+      if (checkResult.rows.length === 0) {
+        return sendError(res, 'NOT_CLOCKED_IN', 'Employee has not clocked in today', 400);
+      }
+      
+      const record = checkResult.rows[0];
+      if (record.clock_out) {
+        return sendError(res, 'ALREADY_CLOCKED_OUT', 'Employee already clocked out today', 400);
+      }
+
+      const clockInTime = new Date(record.clock_in);
+      const diffMs = timestamp - clockInTime;
+      const workHours = (diffMs / (1000 * 60 * 60)).toFixed(2);
+
+      const updateQuery = `
+        UPDATE hr_attendance
+        SET clock_out = $1, work_hours = $2, updated_at = CURRENT_TIMESTAMP,
+            punch_out_selfie_url = $3, punch_out_latitude = $4, punch_out_longitude = $5,
+            punch_out_device_info = $6, punch_out_ip = $7, punch_out_liveness_challenge = $8, punch_out_liveness_status = $9
+        WHERE attendance_id = $10
+      `;
+      await db.query(updateQuery, [
+        timestamp, workHours, imageUrl, latitude, longitude, 
+        device_info, clientIp, session.liveness_challenge, liveness_status, record.attendance_id
+      ]);
+    }
+
+    // Mark token as used
+    await db.query(`UPDATE attendance_verification_tokens SET used = true WHERE token = $1`, [token]);
+
+    sendSuccess(res, null, `Successfully ${session.action_type}ed`);
+
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAttendance,
   getAttendanceMetrics,
@@ -393,5 +573,8 @@ module.exports = {
   clockOut,
   updateAttendance,
   createManualAttendance,
-  getAttendanceMuster
+  getAttendanceMuster,
+  generateVerificationToken,
+  getVerificationSession,
+  verifyAttendance
 };

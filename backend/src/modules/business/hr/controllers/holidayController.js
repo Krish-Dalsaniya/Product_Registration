@@ -23,15 +23,17 @@ exports.getHolidays = async (req, res) => {
 
 exports.createHoliday = async (req, res) => {
     try {
-        const { name, date } = req.body;
+        const { name, date, type } = req.body;
         
         if (!name || !date) {
             return res.status(400).json({ success: false, message: 'Name and date are required' });
         }
 
+        const holidayType = type || 'NATIONAL';
+
         const result = await pool.query(
-            'INSERT INTO hr_holidays (name, date) VALUES ($1, $2) RETURNING *',
-            [name, date]
+            'INSERT INTO hr_holidays (name, date, type) VALUES ($1, $2, $3) RETURNING *',
+            [name, date, holidayType]
         );
 
         res.status(201).json({ success: true, data: result.rows[0], message: 'Holiday created successfully' });

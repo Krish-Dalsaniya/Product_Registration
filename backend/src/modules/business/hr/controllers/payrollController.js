@@ -11,9 +11,21 @@ const getSalaryStructures = async (req, res, next) => {
              COALESCE(ss.special_allowance, 0) as special_allowance,
              COALESCE(ss.travel_allowance, 0) as travel_allowance,
              COALESCE(ss.medical_allowance, 0) as medical_allowance,
+             COALESCE(ss.dearness_allowance, 0) as dearness_allowance,
+             COALESCE(ss.performance_incentive, 0) as performance_incentive,
+             COALESCE(ss.non_compete_incentive, 0) as non_compete_incentive,
+             COALESCE(ss.on_project_incentive, 0) as on_project_incentive,
+             COALESCE(ss.recreational_incentive, 0) as recreational_incentive,
+             COALESCE(ss.claims_amount, 0) as claims_amount,
              COALESCE(ss.pf_deduction, 0) as pf_deduction,
              COALESCE(ss.professional_tax, 0) as professional_tax,
-             COALESCE(ss.tds, 0) as tds
+             COALESCE(ss.tds, 0) as tds,
+             COALESCE(ss.esi_deduction, 0) as esi_deduction,
+             COALESCE(ss.internal_emi, 0) as internal_emi,
+             COALESCE(ss.personal_advance_deduction, 0) as personal_advance_deduction,
+             COALESCE(ss.official_advance_deduction, 0) as official_advance_deduction,
+             COALESCE(ss.performance_incentive_deduction, 0) as performance_incentive_deduction,
+             COALESCE(ss.on_project_incentive_deduction, 0) as on_project_incentive_deduction
       FROM hr_employees e
       JOIN users u ON e.user_id = u.user_id
       LEFT JOIN hr_salary_structures ss ON e.employee_id = ss.employee_id
@@ -29,22 +41,49 @@ const getSalaryStructures = async (req, res, next) => {
 const updateSalaryStructure = async (req, res, next) => {
   try {
     const { employee_id } = req.params;
-    const { basic_salary, hra, special_allowance, travel_allowance, medical_allowance, pf_deduction, professional_tax, tds } = req.body;
+    const body = req.body;
     
     await query(`
-      INSERT INTO hr_salary_structures (employee_id, basic_salary, hra, special_allowance, travel_allowance, medical_allowance, pf_deduction, professional_tax, tds)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO hr_salary_structures (
+        employee_id, basic_salary, hra, special_allowance, travel_allowance, medical_allowance, dearness_allowance,
+        performance_incentive, non_compete_incentive, on_project_incentive, recreational_incentive,
+        claims_amount,
+        pf_deduction, professional_tax, tds, esi_deduction, internal_emi,
+        personal_advance_deduction, official_advance_deduction,
+        performance_incentive_deduction, on_project_incentive_deduction
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       ON CONFLICT (employee_id) DO UPDATE
       SET basic_salary = EXCLUDED.basic_salary,
           hra = EXCLUDED.hra,
           special_allowance = EXCLUDED.special_allowance,
           travel_allowance = EXCLUDED.travel_allowance,
           medical_allowance = EXCLUDED.medical_allowance,
+          dearness_allowance = EXCLUDED.dearness_allowance,
+          performance_incentive = EXCLUDED.performance_incentive,
+          non_compete_incentive = EXCLUDED.non_compete_incentive,
+          on_project_incentive = EXCLUDED.on_project_incentive,
+          recreational_incentive = EXCLUDED.recreational_incentive,
+          claims_amount = EXCLUDED.claims_amount,
           pf_deduction = EXCLUDED.pf_deduction,
           professional_tax = EXCLUDED.professional_tax,
           tds = EXCLUDED.tds,
+          esi_deduction = EXCLUDED.esi_deduction,
+          internal_emi = EXCLUDED.internal_emi,
+          personal_advance_deduction = EXCLUDED.personal_advance_deduction,
+          official_advance_deduction = EXCLUDED.official_advance_deduction,
+          performance_incentive_deduction = EXCLUDED.performance_incentive_deduction,
+          on_project_incentive_deduction = EXCLUDED.on_project_incentive_deduction,
           updated_at = CURRENT_TIMESTAMP
-    `, [employee_id, basic_salary, hra, special_allowance, travel_allowance, medical_allowance, pf_deduction, professional_tax, tds]);
+    `, [
+      employee_id, 
+      body.basic_salary || 0, body.hra || 0, body.special_allowance || 0, body.travel_allowance || 0, body.medical_allowance || 0, body.dearness_allowance || 0,
+      body.performance_incentive || 0, body.non_compete_incentive || 0, body.on_project_incentive || 0, body.recreational_incentive || 0,
+      body.claims_amount || 0,
+      body.pf_deduction || 0, body.professional_tax || 0, body.tds || 0, body.esi_deduction || 0, body.internal_emi || 0,
+      body.personal_advance_deduction || 0, body.official_advance_deduction || 0,
+      body.performance_incentive_deduction || 0, body.on_project_incentive_deduction || 0
+    ]);
     
     sendSuccess(res, null, 'Salary structure updated successfully');
   } catch (error) {
@@ -96,37 +135,80 @@ const generatePayroll = async (req, res, next) => {
                COALESCE(ss.special_allowance, 0) as special_allowance,
                COALESCE(ss.travel_allowance, 0) as travel_allowance,
                COALESCE(ss.medical_allowance, 0) as medical_allowance,
+               COALESCE(ss.dearness_allowance, 0) as dearness_allowance,
+               COALESCE(ss.performance_incentive, 0) as performance_incentive,
+               COALESCE(ss.non_compete_incentive, 0) as non_compete_incentive,
+               COALESCE(ss.on_project_incentive, 0) as on_project_incentive,
+               COALESCE(ss.recreational_incentive, 0) as recreational_incentive,
+               COALESCE(ss.claims_amount, 0) as claims_amount,
                COALESCE(ss.pf_deduction, 0) as pf_deduction,
                COALESCE(ss.professional_tax, 0) as professional_tax,
-               COALESCE(ss.tds, 0) as tds
+               COALESCE(ss.tds, 0) as tds,
+               COALESCE(ss.esi_deduction, 0) as esi_deduction,
+               COALESCE(ss.internal_emi, 0) as internal_emi,
+               COALESCE(ss.personal_advance_deduction, 0) as personal_advance_deduction,
+               COALESCE(ss.official_advance_deduction, 0) as official_advance_deduction,
+               COALESCE(ss.performance_incentive_deduction, 0) as performance_incentive_deduction,
+               COALESCE(ss.on_project_incentive_deduction, 0) as on_project_incentive_deduction
         FROM hr_employees e
         LEFT JOIN hr_salary_structures ss ON e.employee_id = ss.employee_id
         WHERE e.employment_status != 'Terminated'
       `);
       
       for (let emp of empResult.rows) {
-        const gross = parseFloat(emp.basic_salary) + parseFloat(emp.hra) + parseFloat(emp.special_allowance) + parseFloat(emp.travel_allowance) + parseFloat(emp.medical_allowance);
-        const deductions = parseFloat(emp.pf_deduction) + parseFloat(emp.professional_tax) + parseFloat(emp.tds);
-        const net_salary = gross - deductions;
+        const fixed_pay = parseFloat(emp.basic_salary) + parseFloat(emp.hra) + parseFloat(emp.special_allowance) + parseFloat(emp.travel_allowance) + parseFloat(emp.medical_allowance) + parseFloat(emp.dearness_allowance);
+        
+        const variable_pay = parseFloat(emp.performance_incentive) + parseFloat(emp.non_compete_incentive) + parseFloat(emp.on_project_incentive) + parseFloat(emp.recreational_incentive);
+        
+        const claims = parseFloat(emp.claims_amount);
+
+        const deductions = parseFloat(emp.pf_deduction) + parseFloat(emp.professional_tax) + parseFloat(emp.tds) + parseFloat(emp.esi_deduction) + parseFloat(emp.internal_emi) + parseFloat(emp.personal_advance_deduction) + parseFloat(emp.official_advance_deduction) + parseFloat(emp.performance_incentive_deduction) + parseFloat(emp.on_project_incentive_deduction);
+
+        const net_salary = fixed_pay + variable_pay - deductions + claims;
         
         await client.query(`
-          INSERT INTO hr_payrolls (employee_id, month, year, basic_salary, hra, special_allowance, travel_allowance, medical_allowance, pf_deduction, professional_tax, tds, net_salary, status)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'Draft')
+          INSERT INTO hr_payrolls (
+            employee_id, month, year, status,
+            basic_salary, hra, special_allowance, travel_allowance, medical_allowance, dearness_allowance,
+            performance_incentive, non_compete_incentive, on_project_incentive, recreational_incentive,
+            claims_amount,
+            pf_deduction, professional_tax, tds, esi_deduction, internal_emi,
+            personal_advance_deduction, official_advance_deduction,
+            performance_incentive_deduction, on_project_incentive_deduction,
+            net_salary
+          )
+          VALUES ($1, $2, $3, 'Draft', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
           ON CONFLICT (employee_id, month, year) DO UPDATE
           SET basic_salary = EXCLUDED.basic_salary,
               hra = EXCLUDED.hra,
               special_allowance = EXCLUDED.special_allowance,
               travel_allowance = EXCLUDED.travel_allowance,
               medical_allowance = EXCLUDED.medical_allowance,
+              dearness_allowance = EXCLUDED.dearness_allowance,
+              performance_incentive = EXCLUDED.performance_incentive,
+              non_compete_incentive = EXCLUDED.non_compete_incentive,
+              on_project_incentive = EXCLUDED.on_project_incentive,
+              recreational_incentive = EXCLUDED.recreational_incentive,
+              claims_amount = EXCLUDED.claims_amount,
               pf_deduction = EXCLUDED.pf_deduction,
               professional_tax = EXCLUDED.professional_tax,
               tds = EXCLUDED.tds,
+              esi_deduction = EXCLUDED.esi_deduction,
+              internal_emi = EXCLUDED.internal_emi,
+              personal_advance_deduction = EXCLUDED.personal_advance_deduction,
+              official_advance_deduction = EXCLUDED.official_advance_deduction,
+              performance_incentive_deduction = EXCLUDED.performance_incentive_deduction,
+              on_project_incentive_deduction = EXCLUDED.on_project_incentive_deduction,
               net_salary = EXCLUDED.net_salary,
               updated_at = CURRENT_TIMESTAMP
         `, [
           emp.employee_id, month, year, 
-          emp.basic_salary, emp.hra, emp.special_allowance, emp.travel_allowance, emp.medical_allowance,
-          emp.pf_deduction, emp.professional_tax, emp.tds, net_salary
+          emp.basic_salary, emp.hra, emp.special_allowance, emp.travel_allowance, emp.medical_allowance, emp.dearness_allowance,
+          emp.performance_incentive, emp.non_compete_incentive, emp.on_project_incentive, emp.recreational_incentive,
+          emp.claims_amount,
+          emp.pf_deduction, emp.professional_tax, emp.tds, emp.esi_deduction, emp.internal_emi,
+          emp.personal_advance_deduction, emp.official_advance_deduction, emp.performance_incentive_deduction, emp.on_project_incentive_deduction,
+          net_salary
         ]);
       }
       

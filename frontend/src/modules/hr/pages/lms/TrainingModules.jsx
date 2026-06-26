@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, ExternalLink, Download, Eye, LayoutGrid, List, FileText, Clock, Video, BarChart2, MonitorPlay, HelpCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, ExternalLink, Download, Eye, LayoutGrid, List, FileText, Clock, Video, BarChart2, MonitorPlay, HelpCircle, BookOpen } from 'lucide-react';
 import DataTable from '../../../../components/shared/DataTable';
 import Modal from '../../../../components/shared/Modal';
+import ViewToggle from '../../../../components/shared/ViewToggle';
 import QuizBuilderModal from './QuizBuilderModal';
 import { getAllModulesApi, createModuleApi, updateModuleApi, deleteModuleApi } from '../../../../api/lms';
 import { fetchHRMetadataApi } from '../../../../api/hr';
 import { useOutletContext } from 'react-router-dom';
+import { useAuth } from '../../../../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 const TrainingModules = () => {
     const { refreshStats } = useOutletContext();
+    const { hasPermission } = useAuth();
     const [modules, setModules] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -187,18 +190,24 @@ const TrainingModules = () => {
                             <Download className="w-4 h-4" />
                         </a>
                     )}
+                    {hasPermission('hr', 'edit', 'lms') && (
                     <button onClick={() => handleOpenQuiz(row)} className="p-1.5 text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors" title="Manage Quiz">
                         <HelpCircle className="w-4 h-4" />
                     </button>
+                    )}
                     <button onClick={() => setViewingModule(row)} className="p-1.5 text-[var(--text-dim)] hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] rounded-lg transition-colors" title="View Details">
                         <Eye className="w-4 h-4" />
                     </button>
+                    {hasPermission('hr', 'edit', 'lms') && (
                     <button onClick={() => handleOpenModal(row)} className="p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors" title="Edit Module">
                         <Edit2 className="w-4 h-4" />
                     </button>
+                    )}
+                    {hasPermission('hr', 'delete', 'lms') && (
                     <button onClick={() => handleDelete(row.module_id)} className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors">
                         <Trash2 className="w-4 h-4" />
                     </button>
+                    )}
                 </div>
             )
         }
@@ -217,25 +226,19 @@ const TrainingModules = () => {
 
     return (
         <div className="p-6 h-full flex flex-col">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-[var(--text-main)]">Training Modules</h2>
-                <div className="flex items-center gap-4">
-                    <div className="flex bg-[var(--bg-workspace)] p-1 rounded-xl border border-[var(--border-color)]">
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
-                            title="Grid View"
-                        >
-                            <LayoutGrid className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
-                            title="List View"
-                        >
-                            <List className="w-4 h-4" />
-                        </button>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-4">
+                <div className="flex items-center gap-5">
+                    <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+                        <BookOpen size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
                     </div>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Training Modules</h1>
+                        <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">Manage all training resources and materials</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-4">
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} listMode="list" />
+                    {hasPermission('hr', 'create', 'lms') && (
                     <button
                         onClick={() => handleOpenModal()}
                         className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-xl font-bold hover:bg-opacity-90 transition-all"
@@ -243,6 +246,7 @@ const TrainingModules = () => {
                         <Plus className="w-4 h-4" />
                         Create Module
                     </button>
+                    )}
                 </div>
             </div>
 
@@ -318,15 +322,21 @@ const TrainingModules = () => {
                                                 <button onClick={() => setViewingModule(module)} className="p-2 bg-[var(--bg-workspace)] text-[var(--text-dim)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] rounded-xl transition-colors shadow-sm" title="View Details">
                                                     <Eye className="w-4 h-4" />
                                                 </button>
+                                                {hasPermission('hr', 'edit', 'lms') && (
                                                 <button onClick={() => handleOpenQuiz(module)} className="p-2 bg-[var(--bg-workspace)] text-amber-500 hover:bg-amber-500/10 rounded-xl transition-colors shadow-sm" title="Manage Quiz">
                                                     <HelpCircle className="w-4 h-4" />
                                                 </button>
+                                                )}
+                                                {hasPermission('hr', 'edit', 'lms') && (
                                                 <button onClick={() => handleOpenModal(module)} className="p-2 bg-[var(--bg-workspace)] text-[var(--text-dim)] hover:bg-emerald-500/10 hover:text-emerald-500 rounded-xl transition-colors shadow-sm" title="Edit">
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
+                                                )}
+                                                {hasPermission('hr', 'delete', 'lms') && (
                                                 <button onClick={() => handleDelete(module.module_id)} className="p-2 bg-[var(--bg-workspace)] text-[var(--text-dim)] hover:bg-rose-500/10 hover:text-rose-500 rounded-xl transition-colors shadow-sm" title="Delete">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
+                                                )}
                                             </div>
                                             <div className="flex gap-1.5">
                                                 {['YouTube Video', 'Udemy Course', 'Coursera Course', 'External Website'].includes(module.training_type) && module.training_url && (

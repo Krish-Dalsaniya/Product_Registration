@@ -4,11 +4,13 @@ import { Search, Plus, Loader2, MoreVertical, Briefcase, Mail, Phone, Calendar, 
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import ViewToggle from '../../../components/shared/ViewToggle';
 import DataTable from '../../../components/shared/DataTable';
 
 const EmployeesList = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -208,6 +210,7 @@ const EmployeesList = () => {
               <span className="text-[12px] md:text-[14px] font-bold text-[var(--text-main)]">Export CSV</span>
             </button>
           
+          {hasPermission('hr', 'create', 'employees') && (
           <button 
             onClick={() => navigate('/hr/employees/new')}
             className="btn-primary shadow-lg px-8 py-3 group flex items-center gap-2"
@@ -216,6 +219,7 @@ const EmployeesList = () => {
             <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
             <span className="text-[12px] md:text-[14px] font-bold">Add Employee</span>
           </button>
+          )}
         </div>
       </div>
 
@@ -320,8 +324,8 @@ const EmployeesList = () => {
           data={filteredEmployees}
           loading={isLoading}
           onView={(emp) => navigate(`/hr/employees/${emp.employee_id}`)}
-          onEdit={(emp) => navigate(`/hr/employees/${emp.employee_id}?edit=true`)}
-          onDelete={(emp) => handleDelete(emp.employee_id)}
+          onEdit={hasPermission('hr', 'edit', 'employees') ? (emp) => navigate(`/hr/employees/${emp.employee_id}?edit=true`) : undefined}
+          onDelete={hasPermission('hr', 'delete', 'employees') ? (emp) => handleDelete(emp.employee_id) : undefined}
           totalCount={employees.length}
           filteredCount={filteredEmployees.length}
           currentPage={1}
@@ -395,6 +399,7 @@ const EmployeesList = () => {
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
+                    {hasPermission('hr', 'edit', 'employees') && (
                     <button 
                       onClick={(e) => { e.stopPropagation(); navigate(`/hr/employees/${emp.employee_id}?edit=true`); }} 
                       className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" 
@@ -402,6 +407,8 @@ const EmployeesList = () => {
                     >
                       <Edit size={14} />
                     </button>
+                    )}
+                    {hasPermission('hr', 'delete', 'employees') && (
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleDelete(emp.employee_id); }} 
                       className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all" 
@@ -409,6 +416,7 @@ const EmployeesList = () => {
                     >
                       <Trash2 size={14} />
                     </button>
+                    )}
                   </div>
                 </div>
               </div>

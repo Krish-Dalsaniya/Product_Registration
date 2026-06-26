@@ -27,3 +27,7 @@ export const clockOutApi = (data) => {
 export const fetchAttendanceMusterApi = (params) => {
   return api.get('/hr/attendance/muster', { params });
 };
+
+export const generateVerificationTokenApi = (data) => {
+  return api.post('/hr/attendance/verification-token', data);
+};

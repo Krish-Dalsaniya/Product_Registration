@@ -67,16 +67,20 @@ const LMSLayout = () => {
             <motion.div 
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between"
+                className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4"
             >
-                <div>
-                    <h1 className="text-2xl font-black text-[var(--text-main)] flex items-center gap-2">
-                        <GraduationCap className="w-6 h-6 text-[var(--accent)]" />
-                        Learning Management
-                    </h1>
-                    <p className="text-sm text-[var(--text-muted)] mt-0.5">
-                        Manage training modules, assign courses, and track employee progress.
-                    </p>
+                <div className="flex items-center gap-5">
+                    <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+                        <GraduationCap size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+                            Learning Management
+                        </h1>
+                        <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">
+                            Manage training modules, assign courses, and track employee progress.
+                        </p>
+                    </div>
                 </div>
             </motion.div>
 

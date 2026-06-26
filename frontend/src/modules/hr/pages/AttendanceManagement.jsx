@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { fetchAttendanceRecordsApi, fetchAttendanceMetricsApi, updateAttendanceApi, createManualAttendanceApi } from '../../../api/attendance';
+import React, { useState, useEffect, useRef } from 'react';
+import { fetchAttendanceRecordsApi, fetchAttendanceMetricsApi, updateAttendanceApi, createManualAttendanceApi, generateVerificationTokenApi } from '../../../api/attendance';
 import { fetchHREmployeesApi, fetchHRMetadataApi } from '../../../api/hr';
-import { Clock, Search, Filter, Calendar as CalendarIcon, UserCheck, UserX, AlertCircle, Edit, Plus, X, Loader2 } from 'lucide-react';
+import { Clock, Search, Filter, Calendar as CalendarIcon, UserCheck, UserX, AlertCircle, Edit, Plus, X, Loader2, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../../context/AuthContext';
 import DataTable from '../../../components/shared/DataTable';
 import AttendanceMuster from '../components/AttendanceMuster';
 
 const AttendanceManagement = () => {
+  const { hasPermission, user } = useAuth();
+  const isAdmin = user?.role_name?.toLowerCase() === 'admin' || user?.permissions?.includes('admin');
   const [activeTab, setActiveTab] = useState('daily'); // 'daily' or 'muster'
   const [records, setRecords] = useState([]);
   const [metrics, setMetrics] = useState(null);
@@ -31,6 +35,13 @@ const AttendanceManagement = () => {
     notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // QR Modal State
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [qrToken, setQrToken] = useState('');
+  const [qrAction, setQrAction] = useState('');
+  const [qrCountdown, setQrCountdown] = useState(60);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     loadMetadata();
@@ -111,7 +122,7 @@ const AttendanceManagement = () => {
     } else {
       setEditingRecord(null);
       setFormData({
-        employee_id: '',
+        employee_id: isAdmin ? '' : user?.employee_id || '',
         date: dateFilter || new Date().toISOString().split('T')[0],
         clock_in: '',
         clock_out: '',
@@ -160,6 +171,51 @@ const AttendanceManagement = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const openQrModal = async (action_type) => {
+    const targetEmployeeId = user?.employee_id;
+
+    if (!targetEmployeeId) {
+      toast.error('You are not associated with an employee profile.');
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      const res = await generateVerificationTokenApi({
+        employee_id: targetEmployeeId,
+        action_type
+      });
+      
+      if (res.data?.success) {
+        setQrToken(res.data.data.token);
+        setQrAction(action_type);
+        setQrCountdown(60);
+        setIsQrModalOpen(true);
+        
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = setInterval(() => {
+          setQrCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timerRef.current);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to generate QR token');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const closeQrModal = () => {
+    setIsQrModalOpen(false);
+    setQrToken('');
+    if (timerRef.current) clearInterval(timerRef.current);
   };
 
   const getStatusBadge = (status) => {
@@ -244,14 +300,36 @@ const AttendanceManagement = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          
+          {user?.employee_id && (
+            <>
+              <button 
+                onClick={() => openQrModal('Punch In')}
+                disabled={isSubmitting}
+                className="btn-primary shadow-lg px-5 py-2.5 group flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <QrCode size={18} />
+                <span className="text-[12px] md:text-[14px] font-bold">Punch In</span>
+              </button>
+              <button 
+                onClick={() => openQrModal('Punch Out')}
+                disabled={isSubmitting}
+                className="btn-primary shadow-lg px-5 py-2.5 group flex items-center gap-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50"
+              >
+                <QrCode size={18} />
+                <span className="text-[12px] md:text-[14px] font-bold">Punch Out</span>
+              </button>
+            </>
+          )}
+
+          {hasPermission('hr', 'create', 'payrolls_attendance') && (
           <button 
             onClick={() => openModal()}
-            className="btn-primary shadow-lg px-6 py-3 group flex items-center gap-2"
+            className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--bg-workspace)] shadow-sm px-5 py-2.5 group flex items-center gap-2 rounded-xl transition-all"
           >
             <Plus size={18} />
-            <span className="text-[12px] md:text-[14px] font-bold">Log Attendance</span>
+            <span className="text-[12px] md:text-[14px] font-bold">Log Manually</span>
           </button>
+          )}
         </div>
       </div>
 
@@ -355,7 +433,7 @@ const AttendanceManagement = () => {
         columns={columns}
         data={filteredRecords}
         loading={isLoading}
-        onEdit={(row) => openModal(row)}
+        onEdit={hasPermission('hr', 'edit', 'payrolls_attendance') ? (row) => openModal(row) : undefined}
         totalCount={records.length}
         filteredCount={filteredRecords.length}
         currentPage={1}
@@ -383,16 +461,25 @@ const AttendanceManagement = () => {
               {!editingRecord && (
                 <div>
                   <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1.5">Employee</label>
-                  <select
-                    value={formData.employee_id}
-                    onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
-                    className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--accent)] text-[14px] text-[var(--text-main)] font-medium"
-                  >
-                    <option value="">Select Employee...</option>
-                    {employees.map(emp => (
-                      <option key={emp.employee_id} value={emp.employee_id}>{emp.full_name} ({emp.emp_code})</option>
-                    ))}
-                  </select>
+                  {isAdmin ? (
+                    <select
+                      value={formData.employee_id}
+                      onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
+                      className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--accent)] text-[14px] text-[var(--text-main)] font-medium"
+                    >
+                      <option value="">Select Employee...</option>
+                      {employees.map(emp => (
+                        <option key={emp.employee_id} value={emp.employee_id}>{emp.full_name} ({emp.emp_code})</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      disabled
+                      value={user?.full_name || 'Current User'}
+                      className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--accent)] text-[14px] text-[var(--text-main)] font-medium disabled:opacity-50"
+                    />
+                  )}
                 </div>
               )}
 
@@ -469,6 +556,54 @@ const AttendanceManagement = () => {
               >
                 {isSubmitting && <Loader2 size={16} className="animate-spin" />}
                 <span className="font-bold text-[13px]">{editingRecord ? 'Save Changes' : 'Log Attendance'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Modal */}
+      {isQrModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeQrModal} />
+          <div className="relative bg-white border border-[var(--border-color)] rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center p-8">
+              <h2 className="text-2xl font-black text-gray-900 mb-1">{qrAction} Verification</h2>
+              <p className="text-[13px] font-medium text-gray-500 mb-8 text-center leading-relaxed">
+                Scan this QR code with your mobile device to complete the liveness check and record your attendance.
+              </p>
+              
+              <div className="bg-white p-4 rounded-2xl shadow-inner border border-gray-100 relative">
+                {qrCountdown === 0 && (
+                  <div className="absolute inset-0 bg-white/90 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center z-10">
+                    <AlertCircle className="text-rose-500 mb-2" size={32} />
+                    <p className="font-bold text-gray-800">QR Expired</p>
+                    <button onClick={() => openQrModal(qrAction)} className="mt-3 text-xs font-bold text-[var(--accent)] hover:underline">
+                      Generate New
+                    </button>
+                  </div>
+                )}
+                <QRCodeSVG 
+                  value={`${window.location.origin}/attendance/verify/${qrToken}`} 
+                  size={200}
+                  level="H"
+                  fgColor="#111827"
+                />
+              </div>
+
+              <div className="mt-8 flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
+                <Clock size={14} className={qrCountdown < 10 ? 'text-rose-500' : 'text-gray-400'} />
+                <span className={`text-[12px] font-bold ${qrCountdown < 10 ? 'text-rose-500' : 'text-gray-600'}`}>
+                  Expires in {qrCountdown}s
+                </span>
+              </div>
+            </div>
+            <div className="p-4 bg-gray-50 border-t border-gray-100">
+              <button 
+                onClick={closeQrModal}
+                className="w-full py-3 rounded-xl font-bold text-[13px] text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </div>

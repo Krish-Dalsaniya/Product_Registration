@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchHREmployeeByIdApi, updateHREmployeeApi, fetchHRMetadataApi, updateHREmployeeRoleApi, fetchHREmployeesApi } from '../../../api/hr';
 import { fetchEmployeeLeavesApi } from '../../../api/leaves';
 import { getRoles } from '../../../api/roles';
+import { useAuth } from '../../../context/AuthContext';
 import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X, Lock, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
@@ -36,7 +37,8 @@ const EmployeeProfile = () => {
   const [employee, setEmployee] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(queryParams.get('edit') === 'true');
+  const { hasPermission } = useAuth();
+  const [isEditing, setIsEditing] = useState(queryParams.get('edit') === 'true' && hasPermission('hr', 'edit', 'employees'));
   const [activeTab, setActiveTab] = useState('Personal');
   const [metadata, setMetadata] = useState({ departments: [], designations: [] });
   const [employees, setEmployees] = useState([]);
@@ -313,6 +315,7 @@ const EmployeeProfile = () => {
             <p className="text-[13px] text-[var(--text-muted)] mt-1 font-medium">{employee.full_name} • {employee.emp_code}</p>
           </div>
         </div>
+        {hasPermission('hr', 'edit', 'employees') && (
         <button 
           onClick={() => setIsEditing(!isEditing)}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-[13px] transition-colors border ${
@@ -324,6 +327,7 @@ const EmployeeProfile = () => {
           {isEditing ? <X size={16} /> : <Edit size={16} />}
           <span>{isEditing ? 'Cancel Editing' : 'Edit Profile'}</span>
         </button>
+        )}
       </div>
 
       {/* Profile Summary Card */}

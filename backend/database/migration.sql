@@ -615,3 +615,49 @@ ALTER TABLE hr_lms_assignments ALTER COLUMN employee_id DROP NOT NULL;
 
 ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS image_url TEXT;
 
+-- ==============================================================================
+-- MODULE: HR Attendance (QR + Selfie Liveness Verification)
+-- TABLES: company_settings, attendance_verification_tokens
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS company_settings (
+    setting_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_name VARCHAR(255) UNIQUE NOT NULL,
+    office_latitude DECIMAL(10, 8),
+    office_longitude DECIMAL(11, 8),
+    office_radius_meters INTEGER DEFAULT 200,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS attendance_verification_tokens (
+    token_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    liveness_challenge VARCHAR(50),
+    liveness_status VARCHAR(50),
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_selfie_url TEXT;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_latitude DECIMAL(10, 8);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_longitude DECIMAL(11, 8);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_device_info TEXT;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_ip VARCHAR(45);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_liveness_challenge VARCHAR(50);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_liveness_status VARCHAR(50);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_face_match_score DECIMAL(5,2);
+
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_selfie_url TEXT;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_latitude DECIMAL(10, 8);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_longitude DECIMAL(11, 8);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_device_info TEXT;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_ip VARCHAR(45);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_liveness_challenge VARCHAR(50);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_liveness_status VARCHAR(50);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_face_match_score DECIMAL(5,2);
+
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS face_descriptor JSONB;

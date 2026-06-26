@@ -8,6 +8,16 @@ const payrollController = require('../controllers/payrollController');
 // Public route for email downloads (secured by unguessable UUID)
 router.get('/payrolls/download/:payroll_id', payrollController.downloadPayslip);
 
+const { 
+  getAttendance, getAttendanceMetrics, clockIn, clockOut, 
+  updateAttendance, createManualAttendance, getAttendanceMuster,
+  generateVerificationToken, getVerificationSession, verifyAttendance 
+} = require('../controllers/attendanceController');
+
+// Public attendance verification routes (QR scan)
+router.get('/attendance/verify/:token', getVerificationSession);
+router.post('/attendance/verify', verifyAttendance);
+
 router.use(verifyToken);
 // router.use(requireModuleAccess('hr'));
 
@@ -21,7 +31,7 @@ router.delete('/employees/:id', deleteEmployee);
 router.put('/employees/:id/role', updateEmployeeRole);
 router.get('/metadata', getDepartmentsAndDesignations);
 
-const { getAttendance, getAttendanceMetrics, clockIn, clockOut, updateAttendance, createManualAttendance, getAttendanceMuster } = require('../controllers/attendanceController');
+router.post('/attendance/verification-token', generateVerificationToken);
 
 router.get('/attendance', getAttendance);
 router.post('/attendance', createManualAttendance);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, UserPlus, Calendar, Clock, Loader2, TrendingUp, UserCheck, Briefcase, ChevronRight } from 'lucide-react';
+import { Users, UserPlus, Calendar, Clock, Loader2, TrendingUp, UserCheck, Briefcase, ChevronRight, Banknote } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { fetchHRDashboardMetricsApi } from '../../../api/hr';
 import toast from 'react-hot-toast';
@@ -61,21 +61,21 @@ const HRDashboard = () => {
           colorClass="bg-blue-100 text-blue-600" 
         />
         <StatCard 
-          title="On Leave Today" 
-          value={metrics?.onLeaveToday || 0} 
-          icon={Calendar} 
+          title="Total Trainees" 
+          value={metrics?.totalTrainees || 0} 
+          icon={UserPlus} 
           colorClass="bg-emerald-100 text-emerald-600" 
         />
         <StatCard 
-          title="Open Positions" 
-          value={metrics?.openPositions || 0} 
-          icon={UserPlus} 
+          title="Upcoming Holidays" 
+          value={metrics?.upcomingHolidays || 0} 
+          icon={Calendar} 
           colorClass="bg-purple-100 text-purple-600" 
         />
         <StatCard 
-          title="Avg Attendance" 
-          value={`${metrics?.avgAttendance || 0}%`} 
-          icon={Clock} 
+          title="Processed Payrolls" 
+          value={metrics?.processedPayrolls || 0} 
+          icon={Banknote} 
           colorClass="bg-amber-100 text-amber-600" 
         />
       </div>
@@ -189,9 +189,12 @@ const HRDashboard = () => {
                 if (activity.type === 'onboarding') {
                   ActivityIcon = UserPlus;
                   color = 'text-blue-500 bg-blue-50';
-                } else if (activity.type === 'leave') {
-                  ActivityIcon = Calendar;
+                } else if (activity.type === 'trainee') {
+                  ActivityIcon = UserCheck;
                   color = 'text-emerald-500 bg-emerald-50';
+                } else if (activity.type === 'payroll') {
+                  ActivityIcon = Banknote;
+                  color = 'text-amber-500 bg-amber-50';
                 }
 
                 return (
