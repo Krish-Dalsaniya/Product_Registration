@@ -7,6 +7,7 @@ const path = require('path');
 const getAttendance = async (req, res, next) => {
   try {
     const { start_date, end_date, department_id, search } = req.query;
+    const isAdmin = req.user?.role_name === 'Admin' || (req.user?.permissions || []).includes('admin');
 
     let query = `
       SELECT 
@@ -56,6 +57,11 @@ const getAttendance = async (req, res, next) => {
       values.push(`%${search}%`);
       paramIndex++;
     }
+    
+    if (!isAdmin) {
+      query += ` AND u.user_id = $${paramIndex++}`;
+      values.push(req.user.user_id);
+    }
 
     query += ` ORDER BY a.date DESC, u.full_name ASC`;
 
@@ -68,6 +74,19 @@ const getAttendance = async (req, res, next) => {
 
 const getAttendanceMetrics = async (req, res, next) => {
   try {
+    const isAdmin = req.user?.role_name === 'Admin' || (req.user?.permissions || []).includes('admin');
+    
+    if (!isAdmin) {
+      return sendSuccess(res, {
+        total_records: 0,
+        present_count: 0,
+        absent_count: 0,
+        late_count: 0,
+        half_day_count: 0,
+        on_leave_count: 0
+      }, 'Metrics not available for regular users');
+    }
+
     const today = new Date().toISOString().split('T')[0];
 
     const query = `

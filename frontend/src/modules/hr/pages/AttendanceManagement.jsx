@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import DataTable from '../../../components/shared/DataTable';
 import AttendanceMuster from '../components/AttendanceMuster';
+import EmployeeAttendanceDashboard from '../components/EmployeeAttendanceDashboard';
 
 const AttendanceManagement = () => {
   const { hasPermission, user } = useAuth();
@@ -267,6 +268,10 @@ const AttendanceManagement = () => {
       </span>
     ) }
   ];
+
+  if (!isAdmin) {
+    return <EmployeeAttendanceDashboard records={filteredRecords} user={user} />;
+  }
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
