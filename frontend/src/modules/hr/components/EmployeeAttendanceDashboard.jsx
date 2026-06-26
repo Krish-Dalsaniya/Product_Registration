@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Calendar, CheckCircle2, XCircle, AlertCircle, CalendarRange, LogIn, LogOut, Loader2 } from 'lucide-react';
+import { Clock, Calendar, CheckCircle2, XCircle, AlertCircle, LogIn, LogOut, Loader2, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import DataTable from '../../../components/shared/DataTable';
 import { generateVerificationTokenApi } from '../../../api/attendance';
 import toast from 'react-hot-toast';
@@ -8,6 +9,17 @@ import toast from 'react-hot-toast';
 const EmployeeAttendanceDashboard = ({ records, user }) => {
   const navigate = useNavigate();
   const [isPunching, setIsPunching] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [qrToken, setQrToken] = useState('');
+  const [qrAction, setQrAction] = useState('');
+  const [qrCountdown, setQrCountdown] = useState(60);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   // Metrics calculation
   const totalPresent = records.filter(r => r.status === 'Present').length;
@@ -23,7 +35,21 @@ const EmployeeAttendanceDashboard = ({ records, user }) => {
         action_type: actionType
       });
       if (res.data?.success) {
-        navigate(`/attendance/verify/${res.data.data.token}`);
+        setQrToken(res.data.data.token);
+        setQrAction(actionType);
+        setQrCountdown(60);
+        setIsQrModalOpen(true);
+        
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = setInterval(() => {
+          setQrCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timerRef.current);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
       } else {
         toast.error('Failed to initialize attendance verification');
       }
@@ -33,6 +59,11 @@ const EmployeeAttendanceDashboard = ({ records, user }) => {
     } finally {
       setIsPunching(false);
     }
+  };
+
+  const closeQrModal = () => {
+    setIsQrModalOpen(false);
+    if (timerRef.current) clearInterval(timerRef.current);
   };
 
   const getStatusBadge = (status) => {
@@ -137,6 +168,55 @@ const EmployeeAttendanceDashboard = ({ records, user }) => {
         </div>
         <DataTable columns={columns} data={records} />
       </div>
+
+      {/* QR Modal */}
+      {isQrModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeQrModal} />
+          <div className="relative bg-white border border-[var(--border-color)] rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center p-8">
+              <h2 className="text-2xl font-black text-gray-900 mb-1">{qrAction} Verification</h2>
+              <p className="text-[13px] font-medium text-gray-500 mb-8 text-center leading-relaxed">
+                Scan this QR code with your mobile device to complete the liveness check and record your attendance.
+              </p>
+              
+              <div className="bg-white p-4 rounded-2xl shadow-inner border border-gray-100 relative">
+                {qrCountdown === 0 && (
+                  <div className="absolute inset-0 bg-white/90 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center z-10">
+                    <AlertCircle className="text-rose-500 mb-2" size={32} />
+                    <p className="font-bold text-gray-800">QR Expired</p>
+                    <button onClick={() => handlePunch(qrAction)} className="mt-3 text-xs font-bold text-[var(--accent)] hover:underline">
+                      Generate New
+                    </button>
+                  </div>
+                )}
+                <QRCodeSVG 
+                  value={`${window.location.origin}/attendance/verify/${qrToken}`} 
+                  size={200}
+                  level="H"
+                  fgColor="#111827"
+                />
+              </div>
+
+              <div className="mt-8 flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
+                <Clock size={14} className={qrCountdown < 10 ? 'text-rose-500' : 'text-gray-400'} />
+                <span className={`text-[12px] font-bold ${qrCountdown < 10 ? 'text-rose-500' : 'text-gray-600'}`}>
+                  Expires in {qrCountdown}s
+                </span>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 border-t border-gray-100 p-4 flex justify-center">
+              <button
+                onClick={closeQrModal}
+                className="text-[13px] font-bold text-gray-500 hover:text-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
