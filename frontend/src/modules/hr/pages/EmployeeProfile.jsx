@@ -3,10 +3,14 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { fetchHREmployeeByIdApi, updateHREmployeeApi, fetchHRMetadataApi, updateHREmployeeRoleApi, fetchHREmployeesApi } from '../../../api/hr';
 import { fetchEmployeeLeavesApi } from '../../../api/leaves';
 import { getRoles } from '../../../api/roles';
+import { useAuth } from '../../../context/AuthContext';
 import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X, Lock, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
+import { getImageUrl } from '../../../utils/imageUtils';
+
+import { generateFaceEmbedding } from '../../../utils/faceRecognition';
 
 
 const FormField = ({ label, value, isEditing, type = 'text', options = [], onChange, disabled = false, readOnlyText = null, isCustomView = false, customView = null }) => {
@@ -36,7 +40,8 @@ const EmployeeProfile = () => {
   const [employee, setEmployee] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(queryParams.get('edit') === 'true');
+  const { hasPermission } = useAuth();
+  const [isEditing, setIsEditing] = useState(queryParams.get('edit') === 'true' && hasPermission('hr', 'edit', 'employees'));
   const [activeTab, setActiveTab] = useState('Personal');
   const [metadata, setMetadata] = useState({ departments: [], designations: [] });
   const [employees, setEmployees] = useState([]);
@@ -246,6 +251,17 @@ const EmployeeProfile = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
+      
+      let face_embedding = employee.face_embedding || null;
+      if (employee.image_url && employee.image_url.startsWith('data:image')) {
+        const embedding = await generateFaceEmbedding(employee.image_url);
+        if (embedding) {
+          face_embedding = embedding;
+        } else {
+          toast.warning("Could not detect a clear face in the profile picture. Attendance verification might fail for this employee.");
+        }
+      }
+
       const payload = {
         personal_info: personalInfo,
         job_info: jobInfo,
@@ -253,6 +269,7 @@ const EmployeeProfile = () => {
         statutory_info: statutoryInfo,
         identities_info: identitiesInfo,
         image_url: employee.image_url,
+        face_embedding,
         department_id: employee.department_id || null,
         designation_id: employee.designation_id || null,
         designation_name: employee.designation_name || null,
@@ -313,6 +330,7 @@ const EmployeeProfile = () => {
             <p className="text-[13px] text-[var(--text-muted)] mt-1 font-medium">{employee.full_name} • {employee.emp_code}</p>
           </div>
         </div>
+        {hasPermission('hr', 'edit', 'employees') && (
         <button 
           onClick={() => setIsEditing(!isEditing)}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-[13px] transition-colors border ${
@@ -324,13 +342,14 @@ const EmployeeProfile = () => {
           {isEditing ? <X size={16} /> : <Edit size={16} />}
           <span>{isEditing ? 'Cancel Editing' : 'Edit Profile'}</span>
         </button>
+        )}
       </div>
 
       {/* Profile Summary Card */}
       <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 mb-6 shadow-sm flex items-center gap-6">
         <div className="relative w-20 h-20 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] flex items-center justify-center overflow-hidden flex-shrink-0 group">
           {employee.image_url ? (
-            <img src={employee.image_url} alt="Profile" className="w-full h-full object-cover" />
+            <img src={getImageUrl(employee.image_url)} alt="Profile" className="w-full h-full object-cover" />
           ) : (
             <span className="text-3xl font-black text-[var(--accent)]">
               {employee.full_name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}

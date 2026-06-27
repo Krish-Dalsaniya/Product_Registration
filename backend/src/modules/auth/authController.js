@@ -26,13 +26,15 @@ const login = async (req, res, next) => {
       `SELECT u.*, r.role_name, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions,
               COALESCE(u2f.is_two_factor_enabled, false) as is_two_factor_enabled,
               COALESCE(upr.requires_password_change, false) as requires_password_change,
-              COALESCE(uev.is_verified, true) as is_email_verified
+              COALESCE(uev.is_verified, true) as is_email_verified,
+              e.employee_id
        FROM users u 
        JOIN roles r ON r.role_id = u.role_id 
        LEFT JOIN user_custom_access uca ON u.user_id = uca.user_id
        LEFT JOIN user_two_factor u2f ON u.user_id = u2f.user_id
        LEFT JOIN user_password_reset upr ON u.user_id = upr.user_id
        LEFT JOIN user_email_verified uev ON u.user_id = uev.user_id
+       LEFT JOIN hr_employees e ON u.user_id = e.user_id
        WHERE LOWER(u.email) = LOWER($1) AND u.is_active = true`,
       [email]
     );
@@ -156,6 +158,7 @@ const login = async (req, res, next) => {
     sendSuccess(res, {
       user: {
         user_id: user.user_id,
+        employee_id: user.employee_id,
         full_name: user.full_name,
         email: user.email,
         role_name: user.role_name,
@@ -348,10 +351,12 @@ const removeProfileImage = async (req, res, next) => {
 const getMe = async (req, res, next) => {
   try {
     const result = await db.query(
-      `SELECT u.*, r.role_name, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions
+      `SELECT u.*, r.role_name, COALESCE(uca.has_custom_permissions, false) as has_custom_permissions,
+              e.employee_id
        FROM users u 
        JOIN roles r ON r.role_id = u.role_id 
        LEFT JOIN user_custom_access uca ON u.user_id = uca.user_id
+       LEFT JOIN hr_employees e ON u.user_id = e.user_id
        WHERE u.user_id = $1 AND u.is_active = true`,
       [req.user.user_id]
     );
@@ -380,16 +385,17 @@ const getMe = async (req, res, next) => {
       permissions = permsResult.rows.map(r => r.permission_key);
     }
 
-    sendSuccess(res, {
-      user: {
-        user_id: user.user_id,
-        full_name: user.full_name,
-        email: user.email,
-        role_name: user.role_name,
-        image_url: user.image_url,
-        permissions: permissions
-      }
-    });
+      sendSuccess(res, {
+        user: {
+          user_id: user.user_id,
+          employee_id: user.employee_id,
+          full_name: user.full_name,
+          email: user.email,
+          role_name: user.role_name,
+          image_url: user.image_url,
+          permissions: permissions
+        }
+      });
   } catch (error) {
     next(error);
   }
@@ -601,10 +607,11 @@ const login2FA = async (req, res, next) => {
   try {
     const decoded = jwt.verify(tempToken, env.JWT_SECRET);
     const result = await db.query(
-      `SELECT u.*, r.role_name, COALESCE(u2f.two_factor_secret, '') as two_factor_secret, COALESCE(u2f.is_two_factor_enabled, false) as is_two_factor_enabled
+      `SELECT u.*, r.role_name, COALESCE(u2f.two_factor_secret, '') as two_factor_secret, COALESCE(u2f.is_two_factor_enabled, false) as is_two_factor_enabled, e.employee_id
        FROM users u 
        JOIN roles r ON r.role_id = u.role_id 
        JOIN user_two_factor u2f ON u.user_id = u2f.user_id
+       LEFT JOIN hr_employees e ON u.user_id = e.user_id
        WHERE u.user_id = $1 AND u.is_active = true`,
       [decoded.user_id]
     );
@@ -685,6 +692,7 @@ const login2FA = async (req, res, next) => {
     sendSuccess(res, {
       user: {
         user_id: user.user_id,
+        employee_id: user.employee_id,
         full_name: user.full_name,
         email: user.email,
         role_name: user.role_name,

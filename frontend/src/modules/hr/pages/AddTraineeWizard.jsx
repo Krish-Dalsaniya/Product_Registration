@@ -17,7 +17,7 @@ const INITIAL_FORM_DATA = {
   first_name: '', last_name: '', email: '', mobile: '', gender: 'Male', date_of_birth: '',
   joining_date: '', expected_completion_date: '', department_id: '', mentor_employee_id: '',
   training_batch: '', education: '', institute: '', specialization: '', status: 'Applied', remarks: '',
-  image_url: ''
+  image_url: '', password: '', confirmPassword: ''
 };
 
 const AddTraineeWizard = () => {
@@ -121,6 +121,14 @@ const AddTraineeWizard = () => {
         toast.error('Please fill out all mandatory fields in the Personal step (First Name, Last Name, Email).');
         return;
       }
+      if (!formData.password || formData.password.length < 6) {
+        toast.error('Please provide a temporary password with at least 6 characters.');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        toast.error('Passwords do not match.');
+        return;
+      }
     } else if (currentStep === 2) {
       if (!formData.department_id) {
         toast.error('Please fill out mandatory fields in the Training Info step (Department).');
@@ -140,6 +148,10 @@ const AddTraineeWizard = () => {
     e.preventDefault();
     if (!formData.first_name || !formData.last_name || !formData.email || !formData.department_id) {
       toast.error('Please ensure all mandatory Personal and Training fields are filled before submitting.');
+      return;
+    }
+    if (!formData.password || formData.password.length < 6 || formData.password !== formData.confirmPassword) {
+      toast.error('Please provide a valid temporary password in Step 1.');
       return;
     }
 
@@ -278,6 +290,14 @@ const AddTraineeWizard = () => {
                   <div>
                     <label className={labelClass}>Date of Birth</label>
                     <input type="date" value={formData.date_of_birth} onChange={e => setFormData(prev => ({...prev, date_of_birth: e.target.value}))} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Password *</label>
+                    <input type="password" value={formData.password} onChange={e => setFormData(prev => ({...prev, password: e.target.value}))} className={inputClass} placeholder="Enter a temporary password" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Confirm Password *</label>
+                    <input type="password" value={formData.confirmPassword} onChange={e => setFormData(prev => ({...prev, confirmPassword: e.target.value}))} className={inputClass} placeholder="Re-enter password" />
                   </div>
                 </div>
               </div>

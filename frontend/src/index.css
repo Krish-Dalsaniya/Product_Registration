@@ -1059,17 +1059,6 @@
 .workspace-card:hover {
   border-color: var(--border-hover);
   box-shadow: var(--card-shadow-hover);
-  transform: translateY(-2px);
-}
-.workspace-card:active {
-  transform: translateY(0) scale(0.98);
-}
-
-/* Prevent layout jumping and scale-down effects on form container cards */
-.workspace-card:focus-within,
-.workspace-card:has(input, select, textarea):hover,
-.workspace-card:has(input, select, textarea):active {
-  transform: none !important;
 }
 
 /* ═══════════════════════════════════════

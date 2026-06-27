@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Clock, Users, Calendar as CalendarIcon, CheckCircle, FileText, Loader2, X, Trash2, Edit2, Search } from 'lucide-react';
+import { Plus, Clock, Users, Calendar as CalendarIcon, CheckCircle, FileText, Loader2, X, Trash2, Edit2, Search, CheckSquare } from 'lucide-react';
 import { getClosures, createClosure, updateClosure, deleteClosure, getClosureMetrics, getProjects } from '../../../api/pms';
 import DataTable from '../../../components/shared/DataTable';
 import Modal from '../../../components/shared/Modal';
@@ -19,7 +19,7 @@ const MiniStatCard = ({ title, count, icon: Icon, iconBg, iconColor }) => (
 );
 
 const Closures = () => {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [closures, setClosures] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -117,21 +117,27 @@ const Closures = () => {
   ];
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1400px] mx-auto pb-12">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 pt-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
-            Closure Management
-          </h1>
-          <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">
-            Daily work reporting and closure tracking system for employees
-          </p>
+        <div className="flex items-center gap-5">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <CheckSquare size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+              Closure Management
+            </h1>
+            <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">
+              Daily work reporting and closure tracking system for employees
+            </p>
+          </div>
         </div>
         <div className="flex gap-4">
           <button className="px-6 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-[12px] font-bold shadow-sm hover:bg-[var(--nav-hover)] transition-colors">
             Export CSV
           </button>
+          {hasPermission('hr', 'create', 'pms_closure') && (
           <button
             onClick={() => setIsAddModalOpen(true)}
             className="btn-primary shadow-lg px-6 py-2.5 group flex items-center gap-2 rounded-xl"
@@ -139,6 +145,7 @@ const Closures = () => {
             <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
             <span className="text-[12px] font-black uppercase tracking-widest">Add Closure</span>
           </button>
+          )}
         </div>
       </div>
 
@@ -223,7 +230,7 @@ const Closures = () => {
         data={closures}
         loading={isLoading}
         onView={handleView}
-        onDelete={handleDelete}
+        onDelete={hasPermission('hr', 'delete', 'pms_closure') ? handleDelete : undefined}
         rowKey="closure_id"
         totalCount={closures.length}
       />
@@ -285,7 +292,7 @@ const Closures = () => {
             </div>
 
             {/* Quick Actions for Admin/Manager */}
-            {(user?.role_name === 'Admin' || user?.role_name === 'HR Manager') && selectedClosure.status !== 'Approved' && (
+            {hasPermission('hr', 'edit', 'pms_closure') && selectedClosure.status !== 'Approved' && (
               <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]">
                 <button
                   onClick={() => {

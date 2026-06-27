@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { Search, Bell, User, ChevronDown } from 'lucide-react';
+import { Search, Bell, User, LogOut } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import ThreeBackground from '../components/ThreeBackground';
 
@@ -235,10 +235,7 @@ const AppLauncher = () => {
               <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#faf8f3]"></span>
             </button>
 
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 cursor-pointer group hover:bg-white/50 p-1.5 pr-2 rounded-full transition-colors"
-            >
+            <div className="flex items-center gap-3 cursor-default p-1.5 pr-2 rounded-full">
               <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold overflow-hidden border-2 border-white shadow-sm">
                 {user?.image_url ? (
                   <img
@@ -258,7 +255,14 @@ const AppLauncher = () => {
                   {user?.role_name || 'Role'}
                 </div>
               </div>
-              <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors ml-1" />
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-full hover:bg-red-50 text-slate-600 hover:text-red-500 transition-colors"
+              title="Logout"
+            >
+              <LogOut size={20} />
             </button>
           </div>
         </div>

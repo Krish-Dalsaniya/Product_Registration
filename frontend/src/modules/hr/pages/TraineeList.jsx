@@ -9,6 +9,7 @@ import { Search, Plus, Loader2, Users, CheckCircle, GraduationCap, Building, Edi
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import DataTable from '../../../components/shared/DataTable';
 import Modal from '../../../components/shared/Modal';
 import ViewToggle from '../../../components/shared/ViewToggle';
@@ -16,6 +17,7 @@ import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 
 const TraineeList = () => {
     const navigate = useNavigate();
+    const { hasPermission } = useAuth();
     const [trainees, setTrainees] = useState([]);
     const [stats, setStats] = useState({ total_trainees: 0, active_trainees: 0, completed_training: 0, converted_to_employees: 0 });
     const [isLoading, setIsLoading] = useState(true);
@@ -232,20 +234,26 @@ const TraineeList = () => {
                 <button onClick={() => navigate(`/hr/trainee/${row.trainee_id}`)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg" title="View Profile">
                     <Eye size={16} />
                 </button>
+                {hasPermission('hr', 'edit', 'trainee') && (
                 <button onClick={() => handleOpenModal(row)} className="p-1.5 text-emerald-500 hover:bg-emerald-50 rounded-lg" title="Edit">
                     <Edit size={16} />
                 </button>
+                )}
+                {hasPermission('hr', 'edit', 'trainee') && (
                 <button onClick={() => { setAssigningTrainee(row); setAssignData({ module_id: '', due_date: '' }); setIsAssignModalOpen(true); }} className="p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-lg" title="Assign LMS Training">
                     <BookOpen size={16} />
                 </button>
-                {row.status !== 'Converted to Employee' && (
+                )}
+                {hasPermission('hr', 'edit', 'trainee') && row.status !== 'Converted to Employee' && (
                     <button onClick={() => { setConvertingTrainee(row); setConvertData({ emp_code: '', base_salary: 0, designation_id: '' }); setIsConvertModalOpen(true); }} className="p-1.5 text-purple-500 hover:bg-purple-50 rounded-lg" title="Convert to Employee">
                         <UserPlus size={16} />
                     </button>
                 )}
+                {hasPermission('hr', 'delete', 'trainee') && (
                 <button onClick={() => handleDelete(row.trainee_id)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg" title="Delete">
                     <Trash2 size={16} />
                 </button>
+                )}
             </div>
         )}
     ];
@@ -259,9 +267,11 @@ const TraineeList = () => {
                     </div>
                     <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)]">Trainee Management</h1>
                 </div>
+                {hasPermission('hr', 'create', 'trainee') && (
                 <button onClick={() => navigate('/hr/trainee/new')} className="btn-primary flex items-center gap-2 px-6">
                     <Plus size={18} /> Add Trainee
                 </button>
+                )}
             </div>
 
             {/* Dashboard Cards */}

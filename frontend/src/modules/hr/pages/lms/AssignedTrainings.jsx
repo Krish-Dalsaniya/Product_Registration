@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, CheckCircle, ExternalLink, Download, FileText, TrendingUp, Play, LayoutGrid, List, Trash2 } from 'lucide-react';
+import { Plus, CheckCircle, ExternalLink, Download, FileText, TrendingUp, Play, LayoutGrid, List, Trash2, Briefcase } from 'lucide-react';
 import DataTable from '../../../../components/shared/DataTable';
 import Modal from '../../../../components/shared/Modal';
+import ViewToggle from '../../../../components/shared/ViewToggle';
 import { getAllAssignmentsApi, assignTrainingApi, updateAssignmentStatusApi, updateAssignmentProgressApi, getAllModulesApi, deleteAssignmentApi } from '../../../../api/lms';
 import { fetchHREmployeesApi, fetchTraineesApi, assignTrainingToTraineeApi } from '../../../../api/hr';
 import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 const AssignedTrainings = () => {
     const { refreshStats } = useOutletContext();
+    const { hasPermission } = useAuth();
     const navigate = useNavigate();
     const [assignments, setAssignments] = useState([]);
     const [modules, setModules] = useState([]);
@@ -266,7 +269,7 @@ const AssignedTrainings = () => {
                                 )}
                             </>
                         )}
-                        {row.status !== 'Completed' && (
+                        {row.status !== 'Completed' && hasPermission('hr', 'edit', 'lms') && (
                         <>
                             <button 
                                 onClick={() => setProgressModal({ isOpen: true, assignment: row, progress: row.progress_percentage || 0 })} 
@@ -284,6 +287,7 @@ const AssignedTrainings = () => {
                             </button>
                         </>
                     )}
+                    {hasPermission('hr', 'delete', 'lms') && (
                     <button 
                         onClick={() => handleDelete(row.assignment_id)} 
                         className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors" 
@@ -291,6 +295,7 @@ const AssignedTrainings = () => {
                     >
                         <Trash2 className="w-4 h-4" />
                     </button>
+                    )}
                 </div>
                 );
             }
@@ -310,25 +315,19 @@ const AssignedTrainings = () => {
 
     return (
         <div className="p-6 h-full flex flex-col">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-[var(--text-main)]">Assigned Trainings</h2>
-                <div className="flex items-center gap-4">
-                    <div className="flex bg-[var(--bg-workspace)] p-1 rounded-xl border border-[var(--border-color)]">
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
-                            title="Grid View"
-                        >
-                            <LayoutGrid className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
-                            title="List View"
-                        >
-                            <List className="w-4 h-4" />
-                        </button>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-4">
+                <div className="flex items-center gap-5">
+                    <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+                        <Briefcase size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
                     </div>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Assigned Trainings</h1>
+                        <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">Track training assignments and completion status</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-4">
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} listMode="list" />
+                    {hasPermission('hr', 'create', 'lms') && (
                     <button
                         onClick={() => {
                             setFormData({ assignee: '', module_id: '', due_date: '' });
@@ -339,6 +338,7 @@ const AssignedTrainings = () => {
                         <Plus className="w-4 h-4" />
                         Assign Training
                     </button>
+                    )}
                 </div>
             </div>
 
@@ -433,7 +433,7 @@ const AssignedTrainings = () => {
                                                 )}
                                             </div>
 
-                                            {assignment.status !== 'Completed' && (
+                                            {assignment.status !== 'Completed' && hasPermission('hr', 'edit', 'lms') && (
                                                 <div className="flex gap-1.5">
                                                     <button 
                                                         onClick={() => setProgressModal({ isOpen: true, assignment, progress: assignment.progress_percentage || 0 })} 
@@ -451,6 +451,7 @@ const AssignedTrainings = () => {
                                                     </button>
                                                 </div>
                                             )}
+                                            {hasPermission('hr', 'delete', 'lms') && (
                                             <div className="flex gap-1.5 ml-auto">
                                                 <button 
                                                     onClick={() => handleDelete(assignment.assignment_id)} 
@@ -460,6 +461,7 @@ const AssignedTrainings = () => {
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
+                                            )}
                                         </div>
                                     </div>
                                 </motion.div>

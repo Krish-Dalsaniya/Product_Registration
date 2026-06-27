@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
+
+import { generateFaceEmbedding } from '../../../utils/faceRecognition';
 import { Loader2, ArrowLeft, Save, User, Briefcase, IndianRupee, FileText, ChevronRight, Check, CreditCard, ClipboardCheck, UploadCloud, Camera, MapPin, PhoneCall, Trash2 } from 'lucide-react';
 import { fetchHRMetadataApi, createHREmployeeApi, fetchHREmployeesApi, createOnboardingRecordApi } from '../../../api/hr';
 import { getRoles } from '../../../api/roles';
@@ -16,7 +18,7 @@ const STEPS = [
 ];
 
 const INITIAL_FORM_DATA = {
-  user_id: '', role_id: '', full_name: '', email: '', phone_number: '', image_url: '',
+  user_id: '', role_id: '', full_name: '', email: '', phone_number: '', image_url: '', password: '', confirmPassword: '',
   department_id: '', designation_id: '', designation_name: '', manager_id: '',
   date_of_joining: '', employment_status: 'Full-Time', 
   base_salary: '', work_location: '',
@@ -206,6 +208,16 @@ const AddEmployeeWizard = () => {
         toast.error('Please fill out all mandatory fields in the Personal step (Name, Email).');
         return;
       }
+      if (!formData.user_id) {
+        if (!formData.password || formData.password.length < 6) {
+          toast.error('Please provide a temporary password with at least 6 characters.');
+          return;
+        }
+        if (formData.password !== formData.confirmPassword) {
+          toast.error('Passwords do not match.');
+          return;
+        }
+      }
     } else if (currentStep === 2) {
       if (!formData.department_id || !(formData.designation_name || formData.designation_id) || !formData.date_of_joining) {
         toast.error('Please fill out all mandatory fields in the Job step (Department, Designation, DOJ).');
@@ -227,10 +239,27 @@ const AddEmployeeWizard = () => {
       toast.error('Please ensure all mandatory Personal and Job fields are filled before submitting.');
       return;
     }
+    
+    if (!formData.user_id && (!formData.password || formData.password.length < 6 || formData.password !== formData.confirmPassword)) {
+      toast.error('Please provide a valid temporary password in Step 1.');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
-      const res = await createHREmployeeApi(formData);
+      
+      let face_embedding = null;
+      if (formData.image_url && formData.image_url.startsWith('data:image')) {
+        const embedding = await generateFaceEmbedding(formData.image_url);
+        if (embedding) {
+          face_embedding = embedding;
+        } else {
+          toast.warning("Could not detect a clear face in the profile picture. Attendance verification might fail for this employee.");
+        }
+      }
+      
+      const payload = { ...formData, face_embedding };
+      const res = await createHREmployeeApi(payload);
       if (res.data?.success) {
         if (isOnboarding) {
             // Automatically create onboarding record
@@ -408,6 +437,19 @@ const AddEmployeeWizard = () => {
                       <label className={labelClass}>Phone Number</label>
                       <input type="text" value={formData.phone_number} onChange={e => setFormData(prev => ({...prev, phone_number: e.target.value}))} className={inputClass} />
                     </div>
+                    
+                    {!formData.user_id && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                          <label className={labelClass}>Password *</label>
+                          <input type="password" value={formData.password} onChange={e => setFormData(prev => ({...prev, password: e.target.value}))} className={inputClass} placeholder="Enter a temporary password" />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Confirm Password *</label>
+                          <input type="password" value={formData.confirmPassword} onChange={e => setFormData(prev => ({...prev, confirmPassword: e.target.value}))} className={inputClass} placeholder="Re-enter password" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -3,10 +3,13 @@ import { motion } from 'framer-motion';
 import { Play, Award, LayoutGrid, List, CheckCircle, XCircle, Search, Calendar, User, FileText } from 'lucide-react';
 import DataTable from '../../../../components/shared/DataTable';
 import Modal from '../../../../components/shared/Modal';
+import ViewToggle from '../../../../components/shared/ViewToggle';
 import { getAllAssessmentsApi, getAllAssignmentsApi, getQuizQuestionsApi, submitQuizApi } from '../../../../api/lms';
+import { useAuth } from '../../../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const Assessments = () => {
+    const { hasPermission } = useAuth();
     const [assessments, setAssessments] = useState([]);
     const [completedAssignments, setCompletedAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -125,33 +128,27 @@ const Assessments = () => {
 
     return (
         <div className="p-6 h-full flex flex-col">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-black text-[var(--text-main)] flex items-center gap-2">
-                    <Award className="w-6 h-6 text-[var(--accent)]" /> 
-                    Training Results
-                </h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-4">
+                <div className="flex items-center gap-5">
+                    <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+                        <Award size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Training Results</h1>
+                        <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">View employee assessment scores and performance</p>
+                    </div>
+                </div>
                 
                 <div className="flex gap-3">
-                    <div className="flex bg-[var(--bg-workspace)] rounded-xl p-1 border border-[var(--border-color)]">
-                        <button 
-                            onClick={() => setViewMode('grid')}
-                            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-[var(--bg-card)] text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
-                        >
-                            <LayoutGrid className="w-4 h-4" />
-                        </button>
-                        <button 
-                            onClick={() => setViewMode('list')}
-                            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-[var(--bg-card)] text-[var(--text-main)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
-                        >
-                            <List className="w-4 h-4" />
-                        </button>
-                    </div>
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} listMode="list" />
+                    {hasPermission('hr', 'create', 'lms') && (
                     <button 
                         onClick={() => { setIsModalOpen(true); setQuizStep(0); setSelectedAssignmentId(''); }}
                         className="btn-primary flex items-center gap-2 px-4"
                     >
                         <Play className="w-4 h-4" /> Start Quiz
                     </button>
+                    )}
                 </div>
             </div>
 

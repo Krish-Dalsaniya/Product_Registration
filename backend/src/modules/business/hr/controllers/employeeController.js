@@ -3,6 +3,10 @@ const { sendSuccess, sendError } = require('../../../../utils/response');
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const env = require('../../../../config/env');
+const { sendEmail } = require('../../../../utils/email');
+const cloudinary = require('../../../../config/cloudinary');
 
 const getEmployees = async (req, res, next) => {
   try {
@@ -18,6 +22,9 @@ const getEmployees = async (req, res, next) => {
         u.full_name,
         u.email,
         u.image_url,
+        u.is_active,
+        r.role_name,
+        COALESCE(uca.has_custom_permissions, false) as has_custom_permissions,
         e.department_id,
         e.designation_id,
         d.name as department_name,
@@ -32,6 +39,8 @@ const getEmployees = async (req, res, next) => {
         e.identities_info
       FROM hr_employees e
       JOIN users u ON e.user_id = u.user_id
+      LEFT JOIN roles r ON u.role_id = r.role_id
+      LEFT JOIN user_custom_access uca ON u.user_id = uca.user_id
       LEFT JOIN hr_departments d ON e.department_id = d.department_id
       LEFT JOIN hr_designations ds ON e.designation_id = ds.designation_id
       ORDER BY e.created_at DESC
@@ -77,11 +86,11 @@ const createEmployee = async (req, res, next) => {
   try {
     const { 
       user_id, role_id, // New optional field to link existing user and assign role
-      full_name, email,
+      full_name, email, password,
       department_id, designation_id, designation_name,
       manager_id,
       date_of_joining, employment_status, base_salary, work_location,
-      personal_info, job_info, pay_info, statutory_info, identities_info
+      personal_info, job_info, pay_info, statutory_info, identities_info, face_embedding, image_url
     } = req.body;
 
     // Start transaction
@@ -97,9 +106,10 @@ const createEmployee = async (req, res, next) => {
         throw new Error('A user with this email already exists.');
       }
 
-      // 2. Create the User record (with default password)
+      // 2. Create the User record
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('Welcome@123', salt);
+      const plainPassword = password || 'Welcome@123';
+      const hashedPassword = await bcrypt.hash(plainPassword, salt);
       
       let assignedRoleId = role_id;
       if (!assignedRoleId) {
@@ -119,6 +129,60 @@ const createEmployee = async (req, res, next) => {
       `, [full_name, email, hashedPassword, assignedRoleId]);
       
       finalUserId = userRes.rows[0].user_id;
+
+      let finalImageUrl = null;
+      if (image_url && image_url.startsWith('data:image')) {
+        try {
+          const uploadRes = await cloudinary.uploader.upload(image_url, {
+            folder: 'users/avatars',
+            public_id: `avatar_${finalUserId}_${Date.now()}`
+          });
+          finalImageUrl = uploadRes.secure_url;
+        } catch (err) {
+          console.error('Error saving profile image to Cloudinary in createEmployee:', err);
+        }
+      }
+
+      if (finalImageUrl) {
+        await client.query('UPDATE users SET image_url = $1 WHERE user_id = $2', [finalImageUrl, finalUserId]);
+      }
+
+      // Email Verification Token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      await client.query(
+        'INSERT INTO email_verification_tokens (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
+        [tokenHash, finalUserId, expiresAt]
+      );
+      
+      await client.query(
+        'INSERT INTO user_email_verified (user_id, is_verified) VALUES ($1, false) ON CONFLICT (user_id) DO NOTHING',
+        [finalUserId]
+      );
+
+      // Send Welcome Email
+      const frontendUrl = env.FRONTEND_URL;
+      const loginLink = `${frontendUrl}/login`;
+      
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2>Welcome to Leon's Group Product Registration!</h2>
+          <p>Hello ${full_name},</p>
+          <p>An administrator has created an employee account for you.</p>
+          <p><strong>Your email:</strong> ${email}</p>
+          <p><strong>Your temporary password is:</strong> ${plainPassword}</p>
+          <p>Please log in using these credentials. You will be asked to set a permanent password upon your first login.</p>
+          <a href="${loginLink}" style="display: inline-block; padding: 10px 20px; background-color: #f06532; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">Log In to Your Account</a>
+        </div>
+      `;
+      
+      sendEmail({
+        to: email,
+        subject: "Welcome to Leon's Group - Your Employee Account Details",
+        html: emailHtml
+      }).catch(err => console.error('Failed to send employee welcome email:', err));
     }
 
     // 3. Generate EMP Code (e.g., EMP-001)
@@ -137,9 +201,9 @@ const createEmployee = async (req, res, next) => {
         user_id, emp_code, department_id, designation_id, manager_id,
         date_of_joining, employment_status, base_salary, work_location,
         personal_info, address_info, education_info, emergency_contacts, 
-        job_info, pay_info, statutory_info, identities_info
+        job_info, pay_info, statutory_info, identities_info, face_embedding
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING employee_id
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING employee_id
     `, [
       finalUserId, empCode, department_id, finalDesignationId, manager_id || null,
       date_of_joining, employment_status, base_salary ? parseFloat(base_salary) : null, work_location,
@@ -150,7 +214,8 @@ const createEmployee = async (req, res, next) => {
       job_info ? JSON.stringify(job_info) : '{}',
       pay_info ? JSON.stringify(pay_info) : '{}',
       statutory_info ? JSON.stringify(statutory_info) : '{}',
-      identities_info ? JSON.stringify(identities_info) : '{}'
+      identities_info ? JSON.stringify(identities_info) : '{}',
+      face_embedding ? JSON.stringify(face_embedding) : null
     ]);
 
     await client.query('COMMIT');
@@ -202,7 +267,7 @@ const updateEmployee = async (req, res, next) => {
       department_id, designation_id, designation_name, manager_id,
       date_of_joining, employment_status, base_salary, work_location,
       personal_info, address_info, education_info, emergency_contacts,
-      job_info, pay_info, statutory_info, identities_info, image_url
+      job_info, pay_info, statutory_info, identities_info, image_url, face_embedding
     } = req.body;
 
     const query = `
@@ -223,8 +288,9 @@ const updateEmployee = async (req, res, next) => {
         statutory_info = COALESCE($13, statutory_info),
         identities_info = COALESCE($14, identities_info),
         manager_id = $15,
+        face_embedding = COALESCE($16, face_embedding),
         updated_at = CURRENT_TIMESTAMP
-      WHERE employee_id = $16
+      WHERE employee_id = $17
       RETURNING *
     `;
     
@@ -249,6 +315,7 @@ const updateEmployee = async (req, res, next) => {
       statutory_info ? JSON.stringify(statutory_info) : null,
       identities_info ? JSON.stringify(identities_info) : null,
       manager_id || null,
+      face_embedding ? JSON.stringify(face_embedding) : null,
       id
     ];
 
@@ -261,22 +328,13 @@ const updateEmployee = async (req, res, next) => {
     let finalImageUrl = image_url;
     if (image_url && image_url.startsWith('data:image')) {
       try {
-        const matches = image_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (matches && matches.length === 3) {
-          const buffer = Buffer.from(matches[2], 'base64');
-          const filename = `avatar_${id}_${Date.now()}.jpg`;
-          // Go up 5 levels: hr/business/modules/src/backend -> /uploads
-          const uploadDir = path.join(__dirname, '../../../../../uploads');
-          
-          if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-          }
-          
-          fs.writeFileSync(path.join(uploadDir, filename), buffer);
-          finalImageUrl = `/uploads/${filename}`;
-        }
+        const uploadRes = await cloudinary.uploader.upload(image_url, {
+          folder: 'users/avatars',
+          public_id: `avatar_${id}_${Date.now()}`
+        });
+        finalImageUrl = uploadRes.secure_url;
       } catch (err) {
-        console.error('Error saving profile image:', err);
+        console.error('Error saving profile image to Cloudinary in updateEmployee:', err);
       }
     }
 

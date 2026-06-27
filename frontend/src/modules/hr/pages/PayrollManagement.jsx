@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../../../api/axiosInstance';
 import toast from 'react-hot-toast';
-import { Banknote, Calculator, Save, User, FileText, CheckCircle, Trash2, Download, Mail, Search, AlertTriangle } from 'lucide-react';
+import { IndianRupee, Calculator, Save, User, FileText, CheckCircle, Trash2, Download, Mail, Search, AlertTriangle } from 'lucide-react';
 import DataTable from '../../../components/shared/DataTable';
 import Swal from 'sweetalert2';
 import html2pdf from 'html2pdf.js';
+import { useAuth } from '../../../context/AuthContext';
 
 const PayrollManagement = () => {
+  const { hasPermission } = useAuth();
   const [activeTab, setActiveTab] = useState('structures'); // 'structures', 'run', 'history'
   
   // Structures state
@@ -67,7 +69,11 @@ const PayrollManagement = () => {
     setEditStructure(prev => ({
       ...prev,
       basic_salary: val,
+      dearness_allowance: (basic * 0.20).toFixed(2),
       hra: (basic * 0.40).toFixed(2),
+      medical_allowance: (basic * 0.16).toFixed(2),
+      travel_allowance: (basic * 0.14).toFixed(2),
+      special_allowance: (basic * 0.10).toFixed(2),
       pf_deduction: (basic * 0.12).toFixed(2),
       professional_tax: 200
     }));
@@ -201,15 +207,15 @@ const PayrollManagement = () => {
   };
 
   // Calculations
-  const calcGross = (row) => parseFloat(row.basic_salary || 0) + parseFloat(row.hra || 0) + parseFloat(row.special_allowance || 0) + parseFloat(row.travel_allowance || 0) + parseFloat(row.medical_allowance || 0);
-  const calcDeductions = (row) => parseFloat(row.pf_deduction || 0) + parseFloat(row.professional_tax || 0) + parseFloat(row.tds || 0);
+  const calcGross = (row) => parseFloat(row.basic_salary || 0) + parseFloat(row.hra || 0) + parseFloat(row.special_allowance || 0) + parseFloat(row.travel_allowance || 0) + parseFloat(row.medical_allowance || 0) + parseFloat(row.dearness_allowance || 0) + parseFloat(row.performance_incentive || 0) + parseFloat(row.non_compete_incentive || 0) + parseFloat(row.on_project_incentive || 0) + parseFloat(row.recreational_incentive || 0) + parseFloat(row.claims_amount || 0);
+  const calcDeductions = (row) => parseFloat(row.pf_deduction || 0) + parseFloat(row.professional_tax || 0) + parseFloat(row.tds || 0) + parseFloat(row.esi_deduction || 0) + parseFloat(row.internal_emi || 0) + parseFloat(row.personal_advance_deduction || 0) + parseFloat(row.official_advance_deduction || 0) + parseFloat(row.performance_incentive_deduction || 0) + parseFloat(row.on_project_incentive_deduction || 0);
   const calcNet = (row) => calcGross(row) - calcDeductions(row);
 
   const structureCols = [
     { key: 'employee', label: 'Employee', render: row => <div className="font-bold">{row.employee_name} <br/><span className="text-[10px] text-[var(--text-muted)] font-normal">{row.emp_code}</span></div> },
     { key: 'basic_salary', label: 'Basic Salary', render: row => `₹${parseFloat(row.basic_salary || 0).toFixed(2)}` },
-    { key: 'gross', label: 'Gross Pay', render: row => <span className="text-emerald-500 font-bold">`₹${calcGross(row).toFixed(2)}`</span> },
-    { key: 'deductions', label: 'Deductions', render: row => <span className="text-rose-500 font-bold">`₹${calcDeductions(row).toFixed(2)}`</span> },
+    { key: 'gross', label: 'Gross Pay', render: row => <span className="text-emerald-500 font-bold">₹{calcGross(row).toFixed(2)}</span> },
+    { key: 'deductions', label: 'Deductions', render: row => <span className="text-rose-500 font-bold">₹{calcDeductions(row).toFixed(2)}</span> },
     { key: 'net_total', label: 'Net Total', render: row => {
         const net = calcNet(row);
         return (
@@ -283,14 +289,18 @@ const PayrollManagement = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-[var(--text-main)] uppercase tracking-tight flex items-center gap-2">
-            <Banknote className="text-[var(--accent)]" size={28} strokeWidth={2.5} />
-            Payroll Management
-          </h1>
-          <p className="text-[var(--text-muted)] text-[12px] uppercase tracking-widest font-bold mt-1">
-            Manage employee salaries and generate payslips
-          </p>
+        <div className="flex items-center gap-5">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <IndianRupee size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+              Payroll Management
+            </h1>
+            <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">
+              Manage employee salaries and generate payslips
+            </p>
+          </div>
         </div>
       </div>
 
@@ -324,7 +334,7 @@ const PayrollManagement = () => {
             {loadingStructures ? (
               <div className="py-10 text-center text-[var(--text-muted)] text-sm font-bold animate-pulse">Loading structures...</div>
             ) : (
-              <DataTable columns={structureCols} data={structures} rowKey="employee_id" onEdit={setEditStructure} />
+              <DataTable columns={structureCols} data={structures} rowKey="employee_id" onEdit={hasPermission('hr', 'edit', 'payrolls_leaves') ? setEditStructure : undefined} />
             )}
           </div>
         )}
@@ -347,18 +357,24 @@ const PayrollManagement = () => {
                 </div>
               </div>
               <div className="flex gap-3">
+                {hasPermission('hr', 'delete', 'payrolls_leaves') && (
                 <button onClick={handleDeleteDraft} className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[var(--bg-card)] border border-rose-500/30 hover:border-rose-500 text-[12px] font-bold text-rose-500 uppercase tracking-widest transition-all">
                   <Trash2 size={16} />
                   Delete Draft
                 </button>
+                )}
+                {hasPermission('hr', 'create', 'payrolls_leaves') && (
                 <button onClick={handleGeneratePayroll} className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--accent)] text-[12px] font-bold text-[var(--text-main)] uppercase tracking-widest transition-all">
                   <Calculator size={16} className="text-[var(--accent)]" />
                   Generate Draft
                 </button>
+                )}
+                {hasPermission('hr', 'create', 'payrolls_leaves') && (
                 <button onClick={handleProcessPayroll} className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[var(--accent)] text-white hover:opacity-90 text-[12px] font-bold uppercase tracking-widest transition-all shadow-lg shadow-[var(--accent)]/20">
                   <CheckCircle size={16} />
                   Process Payroll
                 </button>
+                )}
               </div>
             </div>
 
@@ -441,48 +457,106 @@ const PayrollManagement = () => {
             
             <form onSubmit={handleUpdateStructure} className="space-y-6">
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Earnings Column */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest border-b border-[var(--border-color)] pb-2">Earnings</h3>
-                  
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-h-[60vh] overflow-y-auto pr-2 pb-4">
+                {/* Fixed Pay */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest border-b border-[var(--border-color)] pb-2">Fixed Pay</h3>
                   <div>
                     <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Basic Salary</label>
-                    <input type="number" step="0.01" value={editStructure.basic_salary} onChange={e => handleBasicChange(e.target.value)} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" required />
+                    <input type="number" step="0.01" value={editStructure.basic_salary} onChange={e => handleBasicChange(e.target.value)} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" required />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">HRA (Auto 40% of Basic)</label>
-                    <input type="number" step="0.01" value={editStructure.hra} onChange={e => setEditStructure({...editStructure, hra: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Dearness Allowance</label>
+                    <input type="number" step="0.01" value={editStructure.dearness_allowance} onChange={e => setEditStructure({...editStructure, dearness_allowance: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Special Allowance</label>
-                    <input type="number" step="0.01" value={editStructure.special_allowance} onChange={e => setEditStructure({...editStructure, special_allowance: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Travel Allowance</label>
-                    <input type="number" step="0.01" value={editStructure.travel_allowance} onChange={e => setEditStructure({...editStructure, travel_allowance: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">HRA</label>
+                    <input type="number" step="0.01" value={editStructure.hra} onChange={e => setEditStructure({...editStructure, hra: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Medical Allowance</label>
-                    <input type="number" step="0.01" value={editStructure.medical_allowance} onChange={e => setEditStructure({...editStructure, medical_allowance: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                    <input type="number" step="0.01" value={editStructure.medical_allowance} onChange={e => setEditStructure({...editStructure, medical_allowance: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Travel Allowance</label>
+                    <input type="number" step="0.01" value={editStructure.travel_allowance} onChange={e => setEditStructure({...editStructure, travel_allowance: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Special Allowance</label>
+                    <input type="number" step="0.01" value={editStructure.special_allowance} onChange={e => setEditStructure({...editStructure, special_allowance: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
                   </div>
                 </div>
 
-                {/* Deductions Column */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-rose-500 uppercase tracking-widest border-b border-[var(--border-color)] pb-2">Deductions</h3>
-                  
+                {/* Variable Pay & Claims */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-emerald-500 uppercase tracking-widest border-b border-[var(--border-color)] pb-2">Variable Pay</h3>
                   <div>
-                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">PF Deduction (Auto 12% of Basic)</label>
-                    <input type="number" step="0.01" value={editStructure.pf_deduction} onChange={e => setEditStructure({...editStructure, pf_deduction: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Performance Incentive</label>
+                    <input type="number" step="0.01" value={editStructure.performance_incentive} onChange={e => setEditStructure({...editStructure, performance_incentive: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Professional Tax (Fixed)</label>
-                    <input type="number" step="0.01" value={editStructure.professional_tax} onChange={e => setEditStructure({...editStructure, professional_tax: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Non Compete</label>
+                    <input type="number" step="0.01" value={editStructure.non_compete_incentive} onChange={e => setEditStructure({...editStructure, non_compete_incentive: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">On Project</label>
+                    <input type="number" step="0.01" value={editStructure.on_project_incentive} onChange={e => setEditStructure({...editStructure, on_project_incentive: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Recreational</label>
+                    <input type="number" step="0.01" value={editStructure.recreational_incentive} onChange={e => setEditStructure({...editStructure, recreational_incentive: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+
+                  <h3 className="text-sm font-bold text-blue-500 uppercase tracking-widest border-b border-[var(--border-color)] pb-2 pt-4">Claims</h3>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Total Claims Amount</label>
+                    <input type="number" step="0.01" value={editStructure.claims_amount} onChange={e => setEditStructure({...editStructure, claims_amount: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                </div>
+
+                {/* Statutory Deductions */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-rose-500 uppercase tracking-widest border-b border-[var(--border-color)] pb-2">Statutory Deduct</h3>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">PF Deduction</label>
+                    <input type="number" step="0.01" value={editStructure.pf_deduction} onChange={e => setEditStructure({...editStructure, pf_deduction: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">ESI Deduction</label>
+                    <input type="number" step="0.01" value={editStructure.esi_deduction} onChange={e => setEditStructure({...editStructure, esi_deduction: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Professional Tax</label>
+                    <input type="number" step="0.01" value={editStructure.professional_tax} onChange={e => setEditStructure({...editStructure, professional_tax: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">TDS</label>
-                    <input type="number" step="0.01" value={editStructure.tds} onChange={e => setEditStructure({...editStructure, tds: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-4 py-2.5 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                    <input type="number" step="0.01" value={editStructure.tds} onChange={e => setEditStructure({...editStructure, tds: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                </div>
+
+                {/* Other Deductions */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-rose-500 uppercase tracking-widest border-b border-[var(--border-color)] pb-2">Other Deductions</h3>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Internal EMI</label>
+                    <input type="number" step="0.01" value={editStructure.internal_emi} onChange={e => setEditStructure({...editStructure, internal_emi: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Personal Advance</label>
+                    <input type="number" step="0.01" value={editStructure.personal_advance_deduction} onChange={e => setEditStructure({...editStructure, personal_advance_deduction: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Official Advance</label>
+                    <input type="number" step="0.01" value={editStructure.official_advance_deduction} onChange={e => setEditStructure({...editStructure, official_advance_deduction: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Perf. Inc. Ded.</label>
+                    <input type="number" step="0.01" value={editStructure.performance_incentive_deduction} onChange={e => setEditStructure({...editStructure, performance_incentive_deduction: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Proj. Inc. Ded.</label>
+                    <input type="number" step="0.01" value={editStructure.on_project_incentive_deduction} onChange={e => setEditStructure({...editStructure, on_project_incentive_deduction: e.target.value})} className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-[12px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)]" />
                   </div>
                 </div>
               </div>

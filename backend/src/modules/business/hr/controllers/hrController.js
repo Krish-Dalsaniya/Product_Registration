@@ -17,25 +17,27 @@ const getDashboardMetrics = async (req, res, next) => {
     const totalEmpResult = await pool.query(`SELECT COUNT(*)::int as count FROM hr_employees WHERE employment_status != 'Terminated'`);
     metrics.totalEmployees = totalEmpResult.rows[0].count;
 
-    // 2. On Leave Today
-    const leaveResult = await pool.query(`
-      SELECT COUNT(*)::int as count 
-      FROM leave_requests 
-      WHERE status = 'Approved' 
-      AND CURRENT_DATE BETWEEN start_date AND end_date
-    `);
-    metrics.onLeaveToday = leaveResult.rows[0].count;
+    // 2. Total Trainees
+    const traineeResult = await pool.query(`SELECT COUNT(*)::int as count FROM hr_trainees WHERE status != 'Completed'`);
+    metrics.totalTrainees = traineeResult.rows[0].count;
 
-    // 3. Avg Attendance
-    if (metrics.totalEmployees > 0) {
-      const attendanceResult = await pool.query(`
-        SELECT COUNT(*)::int as count 
-        FROM hr_attendance 
-        WHERE date = CURRENT_DATE 
-        AND status IN ('Present', 'Late', 'Half Day')
-      `);
-      metrics.avgAttendance = Math.round((attendanceResult.rows[0].count / metrics.totalEmployees) * 100);
-    }
+    // 3. Upcoming Holidays
+    const holidayResult = await pool.query(`
+      SELECT COUNT(*)::int as count 
+      FROM hr_holidays 
+      WHERE date >= CURRENT_DATE
+    `);
+    metrics.upcomingHolidays = holidayResult.rows[0].count;
+
+    // 4. Processed Payrolls (This Month)
+    const payrollResult = await pool.query(`
+      SELECT COUNT(*)::int as count 
+      FROM hr_payrolls 
+      WHERE month = EXTRACT(MONTH FROM CURRENT_DATE) 
+      AND year = EXTRACT(YEAR FROM CURRENT_DATE)
+      AND status = 'Processed'
+    `);
+    metrics.processedPayrolls = payrollResult.rows[0].count;
 
     // 4. Department Distribution
     const deptResult = await pool.query(`
@@ -75,20 +77,32 @@ const getDashboardMetrics = async (req, res, next) => {
         FROM hr_employees e
         LEFT JOIN hr_departments d ON e.department_id = d.department_id
         ORDER BY e.created_at DESC
-        LIMIT 3
+        LIMIT 2
       )
       UNION ALL
       (
         SELECT 
-          'leave' as type, 
-          'Leave ' || lr.status as title, 
-          lr.leave_type || ' for ' || u.full_name as desc,
-          lr.updated_at as created_at
-        FROM leave_requests lr
-        JOIN users u ON lr.user_id = u.user_id
-        WHERE lr.status IN ('Approved', 'Rejected')
-        ORDER BY lr.updated_at DESC
-        LIMIT 3
+          'trainee' as type, 
+          'New Trainee Onboarded' as title, 
+          t.first_name || ' ' || t.last_name || ' joined as trainee' as desc, 
+          t.created_at as created_at
+        FROM hr_trainees t
+        ORDER BY t.created_at DESC
+        LIMIT 2
+      )
+      UNION ALL
+      (
+        SELECT 
+          'payroll' as type, 
+          'Payroll Processed' as title, 
+          'Payroll finalized for ' || u.full_name as desc,
+          p.updated_at as created_at
+        FROM hr_payrolls p
+        JOIN hr_employees e ON p.employee_id = e.employee_id
+        JOIN users u ON e.user_id = u.user_id
+        WHERE p.status = 'Processed'
+        ORDER BY p.updated_at DESC
+        LIMIT 2
       )
       ORDER BY created_at DESC
       LIMIT 5

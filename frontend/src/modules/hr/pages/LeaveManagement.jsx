@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Clock, Users, Calendar as CalendarIcon, FileText, Loader2, ChevronLeft, ChevronRight, User, Check, X, CheckCircle } from 'lucide-react';
+import { Plus, Clock, Users, Calendar as CalendarIcon, FileText, Loader2, ChevronLeft, ChevronRight, User, Check, X, CheckCircle, Palmtree } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
 import { fetchLeaveSummaryApi, fetchUpcomingLeavesApi, fetchCalendarDataApi, fetchAllPendingRequestsApi, updateLeaveStatusApi, fetchUserLeaveBalancesApi } from '../../../api/leaves';
 import ApplyLeaveModal from '../components/ApplyLeaveModal';
 import Modal from '../../../components/shared/Modal';
@@ -20,6 +21,7 @@ const MiniStatCard = ({ title, count, icon: Icon, iconBg, iconColor }) => (
 );
 
 const LeaveManagement = () => {
+  const { hasPermission } = useAuth();
   const [summary, setSummary] = useState(null);
   const [upcoming, setUpcoming] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
@@ -175,15 +177,21 @@ const LeaveManagement = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 pt-4">
         <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
-              Leave Management
-            </h1>
-            <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">
-              Manage your time off and team availability
-            </p>
+          <div className="flex items-center gap-5">
+            <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+              <Palmtree size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+                Leave Management
+              </h1>
+              <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">
+                Manage your time off and team availability
+              </p>
+            </div>
           </div>
         </div>
+        {hasPermission('hr', 'create', 'payrolls_leaves') && (
         <button
           onClick={() => setIsModalOpen(true)}
           className="btn-primary shadow-lg px-6 py-2.5 group flex items-center gap-2 rounded-xl h-fit"
@@ -191,6 +199,7 @@ const LeaveManagement = () => {
           <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
           <span className="text-[12px] font-black uppercase tracking-widest">Apply for Leave</span>
         </button>
+        )}
       </div>
           {/* Admin Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -319,18 +328,22 @@ const LeaveManagement = () => {
                     </div>
 
                     <div className="flex items-center gap-2 mt-auto">
-                      <button 
-                        onClick={() => handleStatusUpdate(req.id, 'Approved')}
-                        className="flex-1 flex justify-center items-center gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 py-1.5 rounded-lg text-[11px] font-bold transition-colors"
-                      >
-                        <Check size={14} /> Approve
-                      </button>
-                      <button 
-                        onClick={() => handleStatusUpdate(req.id, 'Rejected')}
-                        className="flex-1 flex justify-center items-center gap-1 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 py-1.5 rounded-lg text-[11px] font-bold transition-colors"
-                      >
-                        <X size={14} /> Reject
-                      </button>
+                      {hasPermission('hr', 'edit', 'payrolls_leaves') && (
+                      <>
+                        <button 
+                          onClick={() => handleStatusUpdate(req.id, 'Approved')}
+                          className="flex-1 flex justify-center items-center gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 py-1.5 rounded-lg text-[11px] font-bold transition-colors"
+                        >
+                          <Check size={14} /> Approve
+                        </button>
+                        <button 
+                          onClick={() => handleStatusUpdate(req.id, 'Rejected')}
+                          className="flex-1 flex justify-center items-center gap-1 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 py-1.5 rounded-lg text-[11px] font-bold transition-colors"
+                        >
+                          <X size={14} /> Reject
+                        </button>
+                      </>
+                      )}
                     </div>
                   </div>
                 ))}
