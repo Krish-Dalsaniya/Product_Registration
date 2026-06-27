@@ -82,3 +82,8 @@
     at next (D:\Product_Registration\backend\node_modules\router\index.js:291:5)
     at router.handle (D:\Product_Registration\backend\node_modules\router\index.js:186:3)
 
+2026-06-27T03:22:45.460Z - Error: connect EHOSTUNREACH 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async login (D:\Product_Registration\backend\src\modules\auth\authController.js:25:20)
+

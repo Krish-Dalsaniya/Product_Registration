@@ -8,6 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import DataTable from '../../../components/shared/DataTable';
 import AttendanceMuster from '../components/AttendanceMuster';
 import EmployeeAttendanceDashboard from '../components/EmployeeAttendanceDashboard';
+import { getImageUrl } from '../../../utils/imageUtils';
 
 const AttendanceManagement = () => {
   const { hasPermission, user } = useAuth();
@@ -246,7 +247,7 @@ const AttendanceManagement = () => {
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full overflow-hidden bg-[var(--bg-workspace)] border border-[var(--border-color)]">
           {row.image_url ? (
-            <img src={row.image_url} alt="" className="w-full h-full object-cover" />
+            <img src={getImageUrl(row.image_url)} alt="" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-[var(--text-muted)]">
               {row.full_name?.substring(0, 2).toUpperCase()}

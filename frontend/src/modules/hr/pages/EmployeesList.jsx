@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import ViewToggle from '../../../components/shared/ViewToggle';
 import DataTable from '../../../components/shared/DataTable';
+import { getImageUrl } from '../../../utils/imageUtils';
 
 const EmployeesList = () => {
   const navigate = useNavigate();
@@ -335,7 +336,7 @@ const EmployeesList = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
           {filteredEmployees.length > 0 ? filteredEmployees.map((emp, index) => {
             const defaultAvatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(emp.full_name || 'User')}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
-            const avatarUrl = emp.image_url || defaultAvatarUrl;
+            const avatarUrl = emp.image_url ? getImageUrl(emp.image_url) : defaultAvatarUrl;
             
             return (
             <div 

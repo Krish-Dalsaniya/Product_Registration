@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const env = require('../../../../config/env');
 const { sendEmail } = require('../../../../utils/email');
+const cloudinary = require('../../../../config/cloudinary');
 
 const getEmployees = async (req, res, next) => {
   try {
@@ -132,21 +133,13 @@ const createEmployee = async (req, res, next) => {
       let finalImageUrl = null;
       if (image_url && image_url.startsWith('data:image')) {
         try {
-          const matches = image_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-          if (matches && matches.length === 3) {
-            const buffer = Buffer.from(matches[2], 'base64');
-            const filename = `avatar_${finalUserId}_${Date.now()}.jpg`;
-            const uploadDir = path.join(__dirname, '../../../../../uploads');
-            
-            if (!fs.existsSync(uploadDir)) {
-              fs.mkdirSync(uploadDir, { recursive: true });
-            }
-            
-            fs.writeFileSync(path.join(uploadDir, filename), buffer);
-            finalImageUrl = `/uploads/${filename}`;
-          }
+          const uploadRes = await cloudinary.uploader.upload(image_url, {
+            folder: 'users/avatars',
+            public_id: `avatar_${finalUserId}_${Date.now()}`
+          });
+          finalImageUrl = uploadRes.secure_url;
         } catch (err) {
-          console.error('Error saving profile image in createEmployee:', err);
+          console.error('Error saving profile image to Cloudinary in createEmployee:', err);
         }
       }
 
@@ -335,22 +328,13 @@ const updateEmployee = async (req, res, next) => {
     let finalImageUrl = image_url;
     if (image_url && image_url.startsWith('data:image')) {
       try {
-        const matches = image_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (matches && matches.length === 3) {
-          const buffer = Buffer.from(matches[2], 'base64');
-          const filename = `avatar_${id}_${Date.now()}.jpg`;
-          // Go up 5 levels: hr/business/modules/src/backend -> /uploads
-          const uploadDir = path.join(__dirname, '../../../../../uploads');
-          
-          if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-          }
-          
-          fs.writeFileSync(path.join(uploadDir, filename), buffer);
-          finalImageUrl = `/uploads/${filename}`;
-        }
+        const uploadRes = await cloudinary.uploader.upload(image_url, {
+          folder: 'users/avatars',
+          public_id: `avatar_${id}_${Date.now()}`
+        });
+        finalImageUrl = uploadRes.secure_url;
       } catch (err) {
-        console.error('Error saving profile image:', err);
+        console.error('Error saving profile image to Cloudinary in updateEmployee:', err);
       }
     }
 

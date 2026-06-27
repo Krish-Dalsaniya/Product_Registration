@@ -8,6 +8,7 @@ import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fi
 import toast from 'react-hot-toast';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
+import { getImageUrl } from '../../../utils/imageUtils';
 
 import { generateFaceEmbedding } from '../../../utils/faceRecognition';
 
@@ -348,7 +349,7 @@ const EmployeeProfile = () => {
       <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 mb-6 shadow-sm flex items-center gap-6">
         <div className="relative w-20 h-20 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] flex items-center justify-center overflow-hidden flex-shrink-0 group">
           {employee.image_url ? (
-            <img src={employee.image_url} alt="Profile" className="w-full h-full object-cover" />
+            <img src={getImageUrl(employee.image_url)} alt="Profile" className="w-full h-full object-cover" />
           ) : (
             <span className="text-3xl font-black text-[var(--accent)]">
               {employee.full_name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}

@@ -5,6 +5,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { updateProfileImageApi, deleteProfileImageApi } from '../../api/auth';
+import { getImageUrl } from '../../utils/imageUtils';
 import RoleBadge from './RoleBadge';
 import { 
   Users, 
@@ -382,7 +383,7 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
                 
                 {user?.image_url ? (
                   <img
-                    src={user.image_url.startsWith('http') ? user.image_url : `${import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:3000'}/${user.image_url.startsWith('/') ? user.image_url.substring(1) : user.image_url}`}
+                    src={getImageUrl(user.image_url)}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />

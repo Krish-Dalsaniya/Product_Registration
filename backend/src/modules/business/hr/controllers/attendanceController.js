@@ -3,6 +3,7 @@ const { sendSuccess, sendError } = require('../../../../utils/response');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const cloudinary = require('../../../../config/cloudinary');
 
 const getAttendance = async (req, res, next) => {
   try {
@@ -518,24 +519,24 @@ const verifyAttendance = async (req, res, next) => {
     // Save Image
     let imageUrl = null;
     if (image_base64) {
-      const year = timestamp.getFullYear().toString();
-      const month = String(timestamp.getMonth() + 1).padStart(2, '0');
-      const empFolder = session.emp_code || session.employee_id;
-      const uploadDir = path.join(process.cwd(), 'uploads', 'attendance', year, month, empFolder);
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+      try {
+        const year = timestamp.getFullYear().toString();
+        const month = String(timestamp.getMonth() + 1).padStart(2, '0');
+        const empFolder = session.emp_code || session.employee_id;
+        const actionPrefix = session.action_type === 'Punch In' ? 'punchin' : 'punchout';
+        
+        const d = timestamp;
+        const timeStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`;
+        
+        const uploadRes = await cloudinary.uploader.upload(image_base64, {
+          folder: `attendance/${year}/${month}/${empFolder}`,
+          public_id: `${actionPrefix}_${timeStr}`
+        });
+        
+        imageUrl = uploadRes.secure_url;
+      } catch (err) {
+        console.error('Error saving attendance selfie to Cloudinary:', err);
       }
-      
-      const actionPrefix = session.action_type === 'Punch In' ? 'punchin' : 'punchout';
-      // Format YYYYMMDD_HHMMSS
-      const d = timestamp;
-      const timeStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`;
-      const filename = `${actionPrefix}_${timeStr}.jpg`;
-      const filepath = path.join(uploadDir, filename);
-      
-      const base64Data = image_base64.split(',')[1];
-      fs.writeFileSync(filepath, base64Data, 'base64');
-      imageUrl = `/uploads/attendance/${year}/${month}/${empFolder}/${filename}`;
     }
 
     const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
