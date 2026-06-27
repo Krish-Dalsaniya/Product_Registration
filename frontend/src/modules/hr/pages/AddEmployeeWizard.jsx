@@ -624,7 +624,7 @@ const AddEmployeeWizard = () => {
                 </div>
                 <div>
                   <label className={labelClass}>Designation *</label>
-                  <input type="text" value={formData.designation_name || ''} onChange={e => setFormData(prev => ({...prev, designation_name: e.target.value, designation_id: null}))} placeholder="e.g. Software Engineer" className={inputClass} disabled={!formData.department_id} />
+                  <input type="text" value={formData.designation_name || ''} onChange={e => setFormData(prev => ({...prev, designation_name: e.target.value, designation_id: null}))} placeholder="e.g. Software Engineer" className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Date of Joining *</label>

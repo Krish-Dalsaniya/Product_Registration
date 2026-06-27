@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useTeams, useCreateTeam, useUpdateTeam, useDeleteTeam } from '../../hooks/useTeams';
+import { useProjects } from '../../hooks/useProjects';
 import { useUsers } from '../../hooks/useUsers';
 import { useQuery } from '@tanstack/react-query';
 import axiosInstance from '../../api/axiosInstance';
@@ -18,7 +19,6 @@ import { useAuth } from '../../context/AuthContext';
 
 const TeamsPage = () => {
   const { hasPermission } = useAuth();
-  const [filterRole, setFilterRole] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
 
   const location = useLocation();
@@ -36,7 +36,7 @@ const TeamsPage = () => {
       return { 
         data: res.data.data.map(emp => ({
           ...emp,
-          role_name: emp.designation_name || 'Employee'
+          role_name: emp.department_name || 'Unassigned Department'
         }))
       };
     },
@@ -49,6 +49,9 @@ const TeamsPage = () => {
       return res.data;
     }
   });
+
+  const { data: projectsRes, isLoading: projectsLoading } = useProjects();
+  const allProjects = projectsRes?.data || [];
 
   const createTeamMutation = useCreateTeam();
   const updateTeamMutation = useUpdateTeam();
@@ -70,7 +73,7 @@ const TeamsPage = () => {
   const uniqueRoles = Array.from(new Set(allUsers.map(u => u.role_name).filter(Boolean)));
   
   const availableItems = productsRes?.data || [];
-  const loading = teamsLoading || usersLoading || productsLoading;
+  const loading = teamsLoading || usersLoading || productsLoading || projectsLoading;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -79,12 +82,13 @@ const TeamsPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [selectedMembers, setSelectedMembers] = useState([]);
+  const [selectedProjects, setSelectedProjects] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userSearch, setUserSearch] = useState('');
 
   const { register, handleSubmit, reset, control, watch, setValue, formState: { errors } } = useForm();
-  const defaultRole = uniqueRoles.length > 0 ? uniqueRoles[0] : 'Designer';
+  const defaultRole = '';
   const selectedRole = watch('role_name') || defaultRole;
 
   const dropdownRef = useRef(null);
@@ -133,7 +137,7 @@ const TeamsPage = () => {
   useEffect(() => {
     setSelectedMembers([]);
     setSelectedItems([]);
-  }, [filterRole]);
+  }, []);
 
   const onSubmit = async (formData) => {
     if (modalMode === 'view') return;
@@ -144,10 +148,10 @@ const TeamsPage = () => {
     setIsSubmitting(true);
     try {
       if (modalMode === 'create') {
-        await createTeamMutation.mutateAsync({ ...formData, member_ids: selectedMembers, project_ids: [], product_ids: selectedRole !== 'Designer' ? selectedItems : [], module: activeModule });
+        await createTeamMutation.mutateAsync({ ...formData, member_ids: selectedMembers, project_ids: selectedProjects, product_ids: selectedRole !== 'Designer' ? selectedItems : [], module: activeModule });
         toast.success(`Team created successfully!`);
       } else {
-        await updateTeamMutation.mutateAsync({ id: selectedTeam.team_id, data: { ...formData, member_ids: selectedMembers } });
+        await updateTeamMutation.mutateAsync({ id: selectedTeam.team_id, data: { ...formData, member_ids: selectedMembers, project_ids: selectedProjects } });
         toast.success(`Team updated successfully!`);
       }
       setIsModalOpen(false);
@@ -156,6 +160,7 @@ const TeamsPage = () => {
         dispatch(clearDraft({ formId }));
       }
       setSelectedMembers([]);
+      setSelectedProjects([]);
       setSelectedItems([]);
       setIsDropdownOpen(false);
       setUserSearch('');
@@ -170,6 +175,7 @@ const TeamsPage = () => {
     setModalMode('create');
     setSelectedTeam(null);
     setSelectedMembers([]);
+    setSelectedProjects([]);
     setSelectedItems([]);
     setIsDropdownOpen(false);
     setUserSearch('');
@@ -181,7 +187,7 @@ const TeamsPage = () => {
     } else {
       reset({ 
         team_name: '', 
-        role_name: 'Designer',
+        role_name: '',
         description: '', 
         product_name: '', 
         product_description: '', 
@@ -198,7 +204,7 @@ const TeamsPage = () => {
     setSelectedTeam(team);
     reset({ 
       team_name: team.team_name, 
-      role_name: team.role_name || 'Designer',
+      role_name: team.role_name || '',
       description: team.description || '',
       product_name: team.product_name || '',
       product_description: team.product_description || '',
@@ -206,6 +212,7 @@ const TeamsPage = () => {
       client_handler_id: team.client_handler_id || ''
     });
     setSelectedMembers(team.member_ids || []); 
+    setSelectedProjects(team.project_ids || []);
     setSelectedItems([]);
     setIsDropdownOpen(false);
     setUserSearch('');
@@ -217,7 +224,7 @@ const TeamsPage = () => {
     setSelectedTeam(team);
     const resetData = { 
       team_name: team.team_name, 
-      role_name: team.role_name || 'Designer',
+      role_name: team.role_name || '',
       description: team.description || '',
       product_name: team.product_name || '',
       product_description: team.product_description || '',
@@ -233,6 +240,7 @@ const TeamsPage = () => {
     }
     
     setSelectedMembers(team.member_ids || []); 
+    setSelectedProjects(team.project_ids || []);
     setSelectedItems([]);
     setIsDropdownOpen(false);
     setUserSearch('');
@@ -264,8 +272,7 @@ const TeamsPage = () => {
   };
 
   const columns = [
-    { key: 'team_name', label: 'Team Designation' },
-    { key: 'role_name', label: 'Team Type', render: (row) => <span className="font-bold text-[var(--accent)]">{row.role_name}</span> },
+    { key: 'team_name', label: 'Project Name' },
     { 
       key: 'member_names', 
       label: 'Personnel Crew',
@@ -299,9 +306,7 @@ const TeamsPage = () => {
   };
 
   const filteredData = data.filter(team => {
-    const matchesSearch = team.team_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = filterRole === 'All' || team.role_name === filterRole;
-    return matchesSearch && matchesRole;
+    return team.team_name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   return (
@@ -345,22 +350,6 @@ const TeamsPage = () => {
             {filteredData.length} Teams Found
           </div>
         </div>
-
-        <div className="flex bg-[var(--bg-workspace)] border border-[var(--border-color)] p-1 rounded-xl shadow-inner whitespace-nowrap">
-          {['All', 'Designer', 'Sales', 'Maintenance'].map((r) => (
-            <button
-              key={r}
-              onClick={() => setFilterRole(r)}
-              className={`px-5 py-2 rounded-lg text-[11px] font-black transition-all duration-300 tracking-wider ${
-                filterRole === r
-                  ? 'bg-[var(--accent)] text-white shadow-lg'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)]'
-              }`}
-            >
-              {r.toUpperCase()}
-            </button>
-          ))}
-        </div>
       </div>
 
       <DataTable columns={columns} data={filteredData} loading={loading} onView={handleView} onEdit={hasPermission('teams', 'edit') ? handleEdit : undefined} onDelete={hasPermission('teams', 'delete') ? handleDelete : undefined} />
@@ -389,7 +378,7 @@ const TeamsPage = () => {
                   {/* Clean text-based layout without boxes */}
                   <div className="space-y-5">
                     <div className="border-b border-[var(--border-color)] pb-4">
-                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Team Designation</label>
+                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Project Name</label>
                       <div className="text-[var(--text-main)] font-black text-xl uppercase tracking-tight">
                         {selectedTeam?.team_name}
                       </div>
@@ -453,7 +442,7 @@ const TeamsPage = () => {
             <form id="team-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                 <div>
-                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Designation</label>
+                  <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Project Name</label>
                   <input {...register('team_name', { required: 'Team name is required' })} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] text-[var(--text-main)]" placeholder="e.g. Unit Alpha" />
                 </div>
                 
@@ -520,9 +509,11 @@ const TeamsPage = () => {
                            <div className="relative">
                              <select 
                                {...register('role_name', { required: true })} 
+                               defaultValue=""
                                className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-xl px-3 py-2 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black uppercase tracking-widest text-[var(--text-main)] appearance-none cursor-pointer" 
                                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1em', backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat' }}
                              >
+                               <option value="" disabled>{isHRModule ? 'Select Department' : 'Select Role'}</option>
                                {uniqueRoles.map((role) => (
                                  <option key={role} value={role}>{role}</option>
                                ))}
@@ -616,6 +607,7 @@ const TeamsPage = () => {
                   </div>
                 </div>
               </div>
+
 
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

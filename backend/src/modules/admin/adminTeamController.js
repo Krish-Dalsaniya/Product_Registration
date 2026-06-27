@@ -19,7 +19,15 @@ const getDesignerTeams = async (req, res) => {
             WHERE tm.team_id = v.team_id
           ),
           '[]'::json
-        ) as member_ids
+        ) as member_ids,
+        COALESCE(
+          (
+            SELECT JSON_AGG(p.project_id)
+            FROM projects p
+            WHERE p.team_id = v.team_id
+          ),
+          '[]'::json
+        ) as project_ids
       FROM v_team_project_summary v
     `);
     res.json({ data: result.rows });
@@ -146,6 +154,7 @@ const updateTeam = async (req, res) => {
     team_name, 
     description, 
     member_ids = [], 
+    project_ids = [],
     product_name,
     product_description,
     team_lead_id,
@@ -180,6 +189,16 @@ const updateTeam = async (req, res) => {
           await client.query(
             `INSERT INTO team_members (team_id, user_id) VALUES ${values}`,
             [id, ...member_ids]
+          );
+        }
+
+        // Sync projects
+        await client.query('UPDATE projects SET team_id = NULL WHERE team_id = $1', [id]);
+        if (project_ids.length > 0) {
+          const values = project_ids.map((_, i) => `$${i + 2}`).join(', ');
+          await client.query(
+            `UPDATE projects SET team_id = $1 WHERE project_id IN (${values})`,
+            [id, ...project_ids]
           );
         }
     });

@@ -1,5 +1,31 @@
 const pool = require('../../config/db');
 
+const checkManagerAccess = async (userId, roleName) => {
+  if (roleName === 'Admin') return true;
+  
+  const customPermsResult = await pool.query('SELECT has_custom_permissions FROM user_custom_access WHERE user_id = $1', [userId]);
+  const hasCustom = customPermsResult.rows.length > 0 ? customPermsResult.rows[0].has_custom_permissions : false;
+  
+  let permsResult;
+  if (hasCustom) {
+    permsResult = await pool.query(`
+      SELECT p.permission_key 
+      FROM permissions p
+      JOIN user_permissions up ON p.permission_id = up.permission_id
+      WHERE up.user_id = $1 AND p.permission_key IN ('hr.payrolls_leaves.edit', 'admin')
+    `, [userId]);
+  } else {
+    permsResult = await pool.query(`
+      SELECT p.permission_key 
+      FROM permissions p
+      JOIN users u ON u.user_id = $1
+      JOIN role_permissions rp ON p.permission_id = rp.permission_id AND rp.role_id = u.role_id
+      WHERE p.permission_key IN ('hr.payrolls_leaves.edit', 'admin')
+    `, [userId]);
+  }
+  return permsResult.rows.length > 0;
+};
+
 const calculateWorkingDays = (startDate, endDate, isHalfDay = false) => {
   if (isHalfDay) return 0.5;
 
@@ -19,6 +45,11 @@ const calculateWorkingDays = (startDate, endDate, isHalfDay = false) => {
 // Get leave summary for admin (company-wide)
 const getLeaveSummary = async (req, res) => {
   try {
+    const isManager = await checkManagerAccess(req.user.user_id, req.user.role_name);
+    if (!isManager) {
+      return res.status(403).json({ success: false, error: { message: 'Forbidden: Admin or HR access required' } });
+    }
+
     // 1. Get total pending requests across company
     const pendingQuery = `
       SELECT COUNT(*) as count
@@ -71,6 +102,11 @@ const getLeaveSummary = async (req, res) => {
 // Get upcoming leaves (company-wide Approved leaves starting in the future)
 const getUpcomingLeaves = async (req, res) => {
   try {
+    const isManager = await checkManagerAccess(req.user.user_id, req.user.role_name);
+    if (!isManager) {
+      return res.status(403).json({ success: false, error: { message: 'Forbidden: Admin or HR access required' } });
+    }
+
     const today = new Date().toISOString().split('T')[0];
 
     const query = `
@@ -165,6 +201,11 @@ const getCalendarData = async (req, res) => {
 // Fetch all Pending Requests for Admin
 const getAllPendingRequests = async (req, res) => {
   try {
+    const isManager = await checkManagerAccess(req.user.user_id, req.user.role_name);
+    if (!isManager) {
+      return res.status(403).json({ success: false, error: { message: 'Forbidden: Admin or HR access required' } });
+    }
+
     const query = `
       SELECT lr.id, lr.user_id, lr.leave_type, lr.start_date, lr.end_date, lr.status, lr.reason, lr.created_at, u.full_name as employee_name, u.email
       FROM leave_requests lr
@@ -184,6 +225,11 @@ const getAllPendingRequests = async (req, res) => {
 const updateLeaveStatus = async (req, res) => {
   const client = await pool.pool.connect();
   try {
+    const isManager = await checkManagerAccess(req.user.user_id, req.user.role_name);
+    if (!isManager) {
+      return res.status(403).json({ success: false, error: { message: 'Forbidden: Admin or HR access required' } });
+    }
+
     const { id } = req.params;
     const { status } = req.body; // 'Approved' or 'Rejected'
 
@@ -247,6 +293,11 @@ const getUserLeaveBalances = async (req, res) => {
 
 const getEmployeeLeaveData = async (req, res) => {
   try {
+    const isManager = await checkManagerAccess(req.user.user_id, req.user.role_name);
+    if (!isManager) {
+      return res.status(403).json({ success: false, error: { message: 'Forbidden: Admin or HR access required' } });
+    }
+
     const { id } = req.params;
     let userIdUuid = id;
 
@@ -279,6 +330,23 @@ const getEmployeeLeaveData = async (req, res) => {
   }
 };
 
+const getMyLeaveHistory = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const query = `
+      SELECT id, leave_type, start_date, end_date, status, reason, is_half_day, half_day_type, attachment_url, created_at
+      FROM leave_requests
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+    `;
+    const result = await pool.query(query, [userId]);
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error fetching my leave history:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to fetch leave history' } });
+  }
+};
+
 module.exports = {
   getLeaveSummary,
   getUpcomingLeaves,
@@ -287,5 +355,6 @@ module.exports = {
   getAllPendingRequests,
   updateLeaveStatus,
   getUserLeaveBalances,
-  getEmployeeLeaveData
+  getEmployeeLeaveData,
+  getMyLeaveHistory
 };

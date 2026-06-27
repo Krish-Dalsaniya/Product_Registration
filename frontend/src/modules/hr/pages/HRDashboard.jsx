@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, UserPlus, Calendar, Clock, Loader2, TrendingUp, UserCheck, Briefcase, ChevronRight, Banknote } from 'lucide-react';
+import { Users, UserPlus, Calendar, Clock, Loader2, TrendingUp, UserCheck, Briefcase, ChevronRight, Banknote, LayoutDashboard } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { fetchHRDashboardMetricsApi } from '../../../api/hr';
 import toast from 'react-hot-toast';
@@ -47,13 +47,20 @@ const HRDashboard = () => {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-8">
-        <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">HR Dashboard</h1>
-        <p className="text-[14px] text-[var(--text-muted)] font-semibold mt-1">Overview of Human Resources metrics and activity</p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-4 relative z-30">
+        <div className="flex items-center gap-5">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <LayoutDashboard size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none mr-2">HR Dashboard</h1>
+            <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">Overview of Human Resources metrics and activity</p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <StatCard 
           title="Total Employees" 
           value={metrics?.totalEmployees || 0} 
@@ -80,9 +87,9 @@ const HRDashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
         {/* Headcount Trend Chart */}
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm flex flex-col h-[400px]">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex flex-col h-[380px]">
           <h3 className="text-[16px] font-black text-[var(--text-main)] mb-6">Headcount Trend</h3>
           <div className="flex-1 w-full min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -128,7 +135,7 @@ const HRDashboard = () => {
         </div>
 
         {/* Department Distribution Donut Chart */}
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm flex flex-col h-[400px]">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex flex-col h-[380px]">
           <h3 className="text-[16px] font-black text-[var(--text-main)] mb-2">Department Distribution</h3>
           <div className="flex-1 w-full min-h-0 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
@@ -162,20 +169,16 @@ const HRDashboard = () => {
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6">
-
         {/* Recent Activity Feed */}
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm min-h-[400px] flex flex-col">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm h-[380px] flex flex-col">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-[16px] font-black text-[var(--text-main)]">Recent Activity</h3>
             <button className="text-[13px] font-bold text-[var(--accent)] hover:underline flex items-center">
               View All <ChevronRight size={14} />
             </button>
           </div>
           
-          <div className="space-y-6 flex-1">
+          <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {(!metrics?.recentActivity || metrics.recentActivity.length === 0) ? (
               <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-muted)]">
                 <Briefcase size={32} className="mb-2 opacity-50" />

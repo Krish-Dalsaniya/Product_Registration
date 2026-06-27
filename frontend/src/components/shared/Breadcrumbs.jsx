@@ -7,7 +7,11 @@ const Breadcrumbs = ({ items = [] }) => {
   const location = useLocation();
   const { user } = useAuth();
 
-  const homePath = user?.role_name ? `/${user.role_name.toLowerCase()}/dashboard` : '/';
+  let homePath = user?.role_name ? `/${user.role_name.toLowerCase()}/dashboard` : '/';
+
+  if (location.pathname.startsWith('/hr')) {
+    homePath = '/hr';
+  }
 
   const pathLabels = {
     'admin': 'Dashboard',
@@ -95,7 +99,11 @@ const Breadcrumbs = ({ items = [] }) => {
 
         {breadcrumbItems.map((item, index) => {
           // Skip if it's the 'admin' or 'dashboard' root as we have 'Home' now
-          if (item.label?.toLowerCase() === 'dashboard' || item.label?.toLowerCase() === 'admin') return null;
+          if (
+            item.label?.toLowerCase() === 'dashboard' || 
+            item.label?.toLowerCase() === 'admin' ||
+            (location.pathname.startsWith('/hr') && item.label?.toLowerCase() === 'hr')
+          ) return null;
           
           return (
             <li key={index} className="flex items-center">

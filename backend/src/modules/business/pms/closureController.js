@@ -14,6 +14,16 @@ const getAllClosures = async (req, res) => {
     `;
     const params = [];
 
+    const isAdmin = req.user?.role_name?.toLowerCase() === 'admin';
+    if (!isAdmin) {
+      const empResult = await pool.query('SELECT employee_id FROM hr_employees WHERE user_id = $1', [req.user.user_id]);
+      if (empResult.rows.length === 0) {
+        return res.json({ success: true, data: [] }); // User is not an employee, returns no closures
+      }
+      params.push(empResult.rows[0].employee_id);
+      query += ` AND c.employee_id = $${params.length}`;
+    }
+
     if (employee) {
       params.push(`%${employee}%`);
       query += ` AND u.full_name ILIKE $${params.length}`;
@@ -212,21 +222,37 @@ const deleteClosure = async (req, res) => {
 // Get metrics
 const getMetrics = async (req, res) => {
   try {
+    let filterQuery = '';
+    const params = [];
+    
+    const isAdmin = req.user?.role_name?.toLowerCase() === 'admin';
+    if (!isAdmin) {
+      const empResult = await pool.query('SELECT employee_id FROM hr_employees WHERE user_id = $1', [req.user.user_id]);
+      if (empResult.rows.length === 0) {
+        return res.json({
+          success: true,
+          data: { todaysClosures: 0, totalClosures: 0, pendingReview: 0, approved: 0 }
+        });
+      }
+      params.push(empResult.rows[0].employee_id);
+      filterQuery = ` AND employee_id = $1`;
+    }
+
     // Today's Closures
-    const todayQuery = `SELECT COUNT(*) as count FROM pms_closures WHERE closure_date = CURRENT_DATE`;
-    const todayRes = await pool.query(todayQuery);
+    const todayQuery = `SELECT COUNT(*) as count FROM pms_closures WHERE closure_date = CURRENT_DATE${filterQuery}`;
+    const todayRes = await pool.query(todayQuery, params);
     
     // Total Closures
-    const totalQuery = `SELECT COUNT(*) as count FROM pms_closures`;
-    const totalRes = await pool.query(totalQuery);
+    const totalQuery = `SELECT COUNT(*) as count FROM pms_closures WHERE 1=1${filterQuery}`;
+    const totalRes = await pool.query(totalQuery, params);
     
     // Pending Review
-    const pendingQuery = `SELECT COUNT(*) as count FROM pms_closures WHERE status = 'Submitted' OR status = 'Pending'`;
-    const pendingRes = await pool.query(pendingQuery);
+    const pendingQuery = `SELECT COUNT(*) as count FROM pms_closures WHERE (status = 'Submitted' OR status = 'Pending')${filterQuery}`;
+    const pendingRes = await pool.query(pendingQuery, params);
     
     // Approved Closures
-    const approvedQuery = `SELECT COUNT(*) as count FROM pms_closures WHERE status = 'Approved'`;
-    const approvedRes = await pool.query(approvedQuery);
+    const approvedQuery = `SELECT COUNT(*) as count FROM pms_closures WHERE status = 'Approved'${filterQuery}`;
+    const approvedRes = await pool.query(approvedQuery, params);
 
     res.json({
       success: true,

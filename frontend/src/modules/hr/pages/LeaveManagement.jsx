@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Clock, Users, Calendar as CalendarIcon, FileText, Loader2, ChevronLeft, ChevronRight, User, Check, X, CheckCircle, Palmtree } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Clock, Users, Calendar as CalendarIcon, FileText, Loader2, ChevronLeft, ChevronRight, User, Check, X, CheckCircle, Palmtree, LayoutDashboard, ListChecks } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../../context/AuthContext';
-import { fetchLeaveSummaryApi, fetchUpcomingLeavesApi, fetchCalendarDataApi, fetchAllPendingRequestsApi, updateLeaveStatusApi, fetchUserLeaveBalancesApi } from '../../../api/leaves';
+import { fetchLeaveSummaryApi, fetchUpcomingLeavesApi, fetchCalendarDataApi, fetchAllPendingRequestsApi, updateLeaveStatusApi, fetchUserLeaveBalancesApi, fetchMyLeaveHistoryApi } from '../../../api/leaves';
 import ApplyLeaveModal from '../components/ApplyLeaveModal';
 import Modal from '../../../components/shared/Modal';
 import toast from 'react-hot-toast';
-
-
 
 const MiniStatCard = ({ title, count, icon: Icon, iconBg, iconColor }) => (
   <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm flex items-center gap-5 hover:-translate-y-1 transition-transform duration-300">
@@ -21,10 +20,13 @@ const MiniStatCard = ({ title, count, icon: Icon, iconBg, iconColor }) => (
 );
 
 const LeaveManagement = () => {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
+  const isManagerView = user?.role_name?.toLowerCase() === 'admin' || hasPermission('hr', 'edit', 'payrolls_leaves');
+
   const [summary, setSummary] = useState(null);
   const [upcoming, setUpcoming] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [myHistory, setMyHistory] = useState([]);
   const [calendarData, setCalendarData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,25 +34,52 @@ const LeaveManagement = () => {
 
   const [userBalances, setUserBalances] = useState(null);
 
-  // Calendar State
+  // Calendar & UI State
   const [currentDate, setCurrentDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [activeTab, setActiveTab] = useState('overview');
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
+  const pieData = useMemo(() => {
+    if (!calendarData || calendarData.length === 0) return [];
+    const typeCounts = {};
+    calendarData.forEach(leave => {
+      typeCounts[leave.leave_type] = (typeCounts[leave.leave_type] || 0) + 1;
+    });
+    return Object.keys(typeCounts).map(key => ({
+      name: key,
+      value: typeCounts[key]
+    }));
+  }, [calendarData]);
+
   
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [sumRes, upRes, calRes, pendRes, balRes] = await Promise.all([
-        fetchLeaveSummaryApi(),
-        fetchUpcomingLeavesApi(),
-        fetchCalendarDataApi(currentDate.getMonth() + 1, currentDate.getFullYear()),
-        fetchAllPendingRequestsApi(),
-        fetchUserLeaveBalancesApi()
-      ]);
+      if (isManagerView) {
+        const [sumRes, upRes, calRes, pendRes, balRes] = await Promise.all([
+          fetchLeaveSummaryApi(),
+          fetchUpcomingLeavesApi(),
+          fetchCalendarDataApi(currentDate.getMonth() + 1, currentDate.getFullYear()),
+          fetchAllPendingRequestsApi(),
+          fetchUserLeaveBalancesApi()
+        ]);
 
-      if (sumRes.data?.success) setSummary(sumRes.data.data);
-      if (upRes.data?.success) setUpcoming(upRes.data.data);
-      if (calRes.data?.success) setCalendarData(calRes.data.data);
-      if (pendRes.data?.success) setPendingRequests(pendRes.data.data);
-      if (balRes.data?.success) setUserBalances(balRes.data.data);
+        if (sumRes.data?.success) setSummary(sumRes.data.data);
+        if (upRes.data?.success) setUpcoming(upRes.data.data);
+        if (calRes.data?.success) setCalendarData(calRes.data.data);
+        if (pendRes.data?.success) setPendingRequests(pendRes.data.data);
+        if (balRes.data?.success) setUserBalances(balRes.data.data);
+      } else {
+        const [calRes, balRes, histRes] = await Promise.all([
+          fetchCalendarDataApi(currentDate.getMonth() + 1, currentDate.getFullYear()),
+          fetchUserLeaveBalancesApi(),
+          fetchMyLeaveHistoryApi()
+        ]);
+        if (calRes.data?.success) setCalendarData(calRes.data.data);
+        if (balRes.data?.success) setUserBalances(balRes.data.data);
+        if (histRes.data?.success) setMyHistory(histRes.data.data);
+      }
 
     } catch (error) {
       console.error(error);
@@ -146,7 +175,7 @@ const LeaveManagement = () => {
     }
   };
 
-  if (isLoading && !summary) {
+  if (isLoading && (!summary && !userBalances)) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <Loader2 className="animate-spin text-[var(--accent)] w-10 h-10" />
@@ -173,7 +202,7 @@ const LeaveManagement = () => {
   const balances = formatBalances();
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1400px] mx-auto pb-12">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-12">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 pt-4">
         <div className="flex flex-col lg:flex-row lg:items-center gap-6">
@@ -191,7 +220,6 @@ const LeaveManagement = () => {
             </div>
           </div>
         </div>
-        {hasPermission('hr', 'create', 'payrolls_leaves') && (
         <button
           onClick={() => setIsModalOpen(true)}
           className="btn-primary shadow-lg px-6 py-2.5 group flex items-center gap-2 rounded-xl h-fit"
@@ -199,37 +227,150 @@ const LeaveManagement = () => {
           <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
           <span className="text-[12px] font-black uppercase tracking-widest">Apply for Leave</span>
         </button>
-        )}
       </div>
-          {/* Admin Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <MiniStatCard 
-          title="Company Pending Requests" 
-          count={summary?.pendingRequests || 0} 
-          icon={Clock} 
-          iconBg="bg-orange-50" 
-          iconColor="text-orange-500" 
-        />
-        <MiniStatCard 
-          title="Team Out Today" 
-          count={summary?.teamOutToday || 0} 
-          icon={Users} 
-          iconBg="bg-blue-50" 
-          iconColor="text-blue-500" 
-        />
-        <MiniStatCard 
-          title="Approved This Month" 
-          count={summary?.approvedThisMonth || 0} 
-          icon={CheckCircle} 
-          iconBg="bg-emerald-50" 
-          iconColor="text-emerald-500" 
-        />
-      </div>
+      {/* Top Stats Cards & Tabs */}
+      {isManagerView ? (
+        <>
+          <div className="flex flex-wrap items-center gap-2 mb-6 border-b border-[var(--border-color)]">
+            <button onClick={() => setActiveTab('overview')} className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'overview' ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
+              <div className="flex items-center gap-2"><LayoutDashboard size={16} /> Overview</div>
+            </button>
+            <button onClick={() => setActiveTab('approvals')} className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'approvals' ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
+              <div className="flex items-center gap-2"><ListChecks size={16} /> Pending Approvals 
+              {pendingRequests.length > 0 && <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full text-[10px] ml-1">{pendingRequests.length}</span>}</div>
+            </button>
+            <button onClick={() => setActiveTab('calendar')} className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'calendar' ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
+              <div className="flex items-center gap-2"><CalendarIcon size={16} /> Team Calendar</div>
+            </button>
+          </div>
 
-      {/* Calendar & Upcoming */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Calendar Card */}
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+          {activeTab === 'overview' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <MiniStatCard title="Company Pending Requests" count={summary?.pendingRequests || 0} icon={Clock} iconBg="bg-orange-50" iconColor="text-orange-500" />
+                <MiniStatCard title="Team Out Today" count={summary?.teamOutToday || 0} icon={Users} iconBg="bg-blue-50" iconColor="text-blue-500" />
+                <MiniStatCard title="Approved This Month" count={summary?.approvedThisMonth || 0} icon={CheckCircle} iconBg="bg-emerald-50" iconColor="text-emerald-500" />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm col-span-1 flex flex-col">
+                  <h3 className="text-[14px] font-black text-[var(--text-main)] mb-6">Leave Distribution</h3>
+                  <div className="flex-1 w-full min-h-[250px]">
+                    {pieData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid var(--border-color)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                          <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-[var(--text-muted)] text-[12px] font-medium">No leave data this month</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm col-span-1 lg:col-span-2">
+                  <h3 className="text-[14px] font-black text-[var(--text-main)] mb-6">Upcoming Absences (Company-Wide)</h3>
+                  {upcoming.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {upcoming.map(leave => (
+                        <div key={leave.id} className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)] flex justify-between items-center">
+                          <div>
+                            <h4 className="text-[12px] font-black text-[var(--text-main)] mb-1">{leave.employee_name}</h4>
+                            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                              {leave.leave_type} • {new Date(leave.start_date).toLocaleDateString()} to {new Date(leave.end_date).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <span className="px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-200">
+                            Approved
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-[13px] font-medium text-[var(--text-muted)]">No upcoming absences scheduled.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'approvals' && (
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-0 shadow-sm overflow-x-auto mb-6">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr className="bg-[var(--bg-workspace)] border-b border-[var(--border-color)]">
+                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Employee</th>
+                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Leave Type</th>
+                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Duration</th>
+                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Reason</th>
+                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingRequests.length > 0 ? (
+                    pendingRequests.map(req => (
+                      <tr key={req.id} className="border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-workspace)] transition-colors">
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shadow-inner">{req.employee_name.charAt(0)}</div>
+                            <div>
+                              <p className="text-[13px] font-bold text-[var(--text-main)]">{req.employee_name}</p>
+                              <p className="text-[11px] font-medium text-[var(--text-muted)] mt-0.5">{req.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-orange-50 text-orange-600 border border-orange-200">
+                            {req.leave_type}
+                          </span>
+                        </td>
+                        <td className="p-4 text-[12px] text-[var(--text-main)]">
+                          <span className="font-semibold">{new Date(req.start_date).toLocaleDateString()}</span>
+                          <span className="text-[var(--text-muted)] mx-1">to</span>
+                          <span className="font-semibold">{new Date(req.end_date).toLocaleDateString()}</span>
+                        </td>
+                        <td className="p-4 text-[12px] text-[var(--text-muted)] max-w-[200px] truncate">
+                          {req.reason || '-'}
+                        </td>
+                        <td className="p-4 flex items-center justify-end gap-2 h-full">
+                          {hasPermission('hr', 'edit', 'payrolls_leaves') && (
+                            <>
+                              <button onClick={() => handleStatusUpdate(req.id, 'Approved')} className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-md border border-emerald-200 transition-colors" title="Approve">
+                                <Check size={16} strokeWidth={3} />
+                              </button>
+                              <button onClick={() => handleStatusUpdate(req.id, 'Rejected')} className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-md border border-rose-200 transition-colors" title="Reject">
+                                <X size={16} strokeWidth={3} />
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="p-12 text-center">
+                        <CheckCircle size={32} className="text-emerald-500 mb-4 opacity-80 mx-auto" />
+                        <p className="text-[14px] font-black text-[var(--text-main)] mb-1">All caught up!</p>
+                        <p className="text-[12px] font-medium text-[var(--text-muted)]">No pending leave requests to review.</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === 'calendar' && (
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm mb-6">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <CalendarIcon size={16} className="text-[var(--text-muted)]" />
@@ -299,97 +440,132 @@ const LeaveManagement = () => {
             </div>
           </div>
         </div>
-
-        {/* Pending Approvals */}
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm flex flex-col">
-          <div className="flex items-center gap-2 mb-6">
-            <Clock size={16} className="text-[var(--text-muted)]" />
-            <h3 className="text-[14px] font-black text-[var(--text-main)]">Pending Approvals</h3>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center justify-start py-4 overflow-y-auto max-h-[400px]">
-            {pendingRequests.length > 0 ? (
-              <div className="w-full space-y-4">
-                {pendingRequests.map(req => (
-                  <div key={req.id} className="flex flex-col p-4 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h4 className="text-[13px] font-bold text-[var(--text-main)]">{req.employee_name}</h4>
-                        <p className="text-[11px] text-[var(--text-muted)] mt-0.5 font-medium">{req.email}</p>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-orange-50 text-orange-600 border border-orange-200">
-                        {req.leave_type}
-                      </span>
-                    </div>
-                    
-                    <div className="text-[12px] text-[var(--text-main)] mb-3">
-                      <span className="font-semibold">{new Date(req.start_date).toLocaleDateString()}</span> to <span className="font-semibold">{new Date(req.end_date).toLocaleDateString()}</span>
-                      {req.reason && <p className="mt-1 text-[11px] text-[var(--text-muted)] italic">"{req.reason}"</p>}
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-auto">
-                      {hasPermission('hr', 'edit', 'payrolls_leaves') && (
-                      <>
-                        <button 
-                          onClick={() => handleStatusUpdate(req.id, 'Approved')}
-                          className="flex-1 flex justify-center items-center gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 py-1.5 rounded-lg text-[11px] font-bold transition-colors"
-                        >
-                          <Check size={14} /> Approve
-                        </button>
-                        <button 
-                          onClick={() => handleStatusUpdate(req.id, 'Rejected')}
-                          className="flex-1 flex justify-center items-center gap-1 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 py-1.5 rounded-lg text-[11px] font-bold transition-colors"
-                        >
-                          <X size={14} /> Reject
-                        </button>
-                      </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                <CheckCircle size={32} className="text-emerald-500 mb-4 opacity-80" />
-                <p className="text-[13px] font-medium text-[var(--text-muted)] mb-2">All caught up!</p>
-                <p className="text-[11px] text-[var(--text-dim)]">No pending leave requests to review.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Upcoming Company Absences */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm mb-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Clock size={16} className="text-[var(--text-muted)]" />
-            <h3 className="text-[14px] font-black text-[var(--text-main)]">Upcoming Absences (Company-Wide)</h3>
-          </div>
-        </div>
-
-        {upcoming.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {upcoming.map(leave => (
-              <div key={leave.id} className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)] flex justify-between items-center">
-                <div>
-                  <h4 className="text-[12px] font-black text-[var(--text-main)] mb-1">{leave.employee_name}</h4>
-                  <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                    {leave.leave_type} • {new Date(leave.start_date).toLocaleDateString()} to {new Date(leave.end_date).toLocaleDateString()}
-                  </p>
-                </div>
-                <span className="px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-200">
-                  Approved
-                </span>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            {Object.entries(balances).map(([type, bal], idx) => (
+              <div key={idx} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 shadow-sm flex flex-col justify-center items-center">
+                <h3 className="text-xl font-black text-[var(--text-main)]">{bal.total - bal.used}</h3>
+                <p className="text-[10px] font-bold text-[var(--text-muted)] mt-1 uppercase text-center">{type}</p>
               </div>
             ))}
           </div>
-        ) : (
-          <div className="text-center py-6">
-            <p className="text-[13px] font-medium text-[var(--text-muted)]">No upcoming absences scheduled.</p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <CalendarIcon size={16} className="text-[var(--text-muted)]" />
+              <h3 className="text-[14px] font-black text-[var(--text-main)]">
+                {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+              </h3>
+            </div>
+            <div className="flex gap-1">
+              <button 
+                onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}
+                className="p-1 rounded hover:bg-[var(--bg-workspace)]"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button 
+                onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}
+                className="p-1 rounded hover:bg-[var(--bg-workspace)]"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+
+          <div className="grid grid-cols-7 gap-y-4 mb-4">
+            {weekDays.map(day => (
+              <div key={day} className="text-center text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                {day}
+              </div>
+            ))}
+            
+            {days.map((day, i) => {
+              const status = getDayStatus(day);
+              return (
+                <div 
+                  key={i} 
+                  className={`flex flex-col items-center justify-start h-10 ${day ? 'cursor-pointer hover:bg-[var(--bg-workspace)] rounded-lg transition-colors pt-1' : ''}`}
+                  onClick={() => handleDayClick(day)}
+                >
+                  {day ? (
+                    <>
+                      <span className="text-[13px] font-medium text-[var(--text-main)] mb-1">{day.getDate()}</span>
+                      {status && (
+                        <div className={`w-1.5 h-1.5 rounded-full ${
+                          status === 'available' ? 'bg-emerald-500' :
+                          status === 'some' ? 'bg-orange-400' : 'bg-rose-500'
+                        }`} />
+                      )}
+                    </>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-4 mt-6 pt-4 border-t border-[var(--border-color)]">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-[11px] font-bold text-[var(--text-muted)]">Available</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-orange-400" />
+              <span className="text-[11px] font-bold text-[var(--text-muted)]">Some out</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-rose-500" />
+              <span className="text-[11px] font-bold text-[var(--text-muted)]">Many out</span>
+            </div>
+          </div>
+        </div>
+            </div>
+
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm flex flex-col">
+              <div className="flex items-center gap-2 mb-6">
+                <FileText size={16} className="text-[var(--text-muted)]" />
+                <h3 className="text-[14px] font-black text-[var(--text-main)]">My Leave History</h3>
+              </div>
+
+              <div className="flex-1 flex flex-col items-center justify-start py-4 overflow-y-auto max-h-[400px]">
+                {myHistory.length > 0 ? (
+                  <div className="w-full space-y-4">
+                    {myHistory.map(req => (
+                      <div key={req.id} className="flex flex-col p-4 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] transition-colors">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="text-[13px] font-bold text-[var(--text-main)]">{req.leave_type}</h4>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest ${req.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : req.status === 'Rejected' ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-orange-50 text-orange-600 border-orange-200'} border`}>
+                            {req.status}
+                          </span>
+                        </div>
+                        
+                        <div className="text-[12px] text-[var(--text-main)] mb-1">
+                          <span className="font-semibold">{new Date(req.start_date).toLocaleDateString()}</span> to <span className="font-semibold">{new Date(req.end_date).toLocaleDateString()}</span>
+                        </div>
+                        {req.reason && <p className="text-[11px] text-[var(--text-muted)] italic">"{req.reason}"</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                    <FileText size={32} className="text-[var(--text-muted)] mb-4 opacity-50" />
+                    <p className="text-[13px] font-medium text-[var(--text-muted)] mb-2">No leave history</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <ApplyLeaveModal 
         isOpen={isModalOpen} 

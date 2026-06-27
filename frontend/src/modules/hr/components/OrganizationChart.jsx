@@ -24,12 +24,12 @@ const buildTree = (employees) => {
 
 const OrgNode = ({ node, isRoot = false }) => {
   const hasChildren = node.children && node.children.length > 0;
-  // If it's the root, we default to open. For deeper nodes, we default to open as well.
-  const [isOpen, setIsOpen] = useState(true);
+  // By default, nodes are collapsed so only the root is visible initially.
+  const [isOpen, setIsOpen] = useState(false);
   const childCount = hasChildren ? node.children.length : 0;
 
   return (
-    <li className={`relative text-center list-none transition-all duration-500 org-tree-li ${isRoot ? 'pt-0' : 'pt-5 px-1'}`}>
+    <li className={`relative text-center list-none transition-all duration-500 org-tree-li ${isRoot ? 'pt-0' : 'pt-5 px-1'} pb-4`}>
       <div className="inline-block relative z-10 group">
         <div className="bg-[var(--bg-card)] border-t-4 border-t-[var(--accent)] border border-[var(--border-color)] rounded-xl shadow-md p-3 min-w-[220px] max-w-[260px] text-left hover:-translate-y-1 transition-transform cursor-default relative">
           <div className="flex items-center gap-3">

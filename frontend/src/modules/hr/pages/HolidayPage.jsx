@@ -3,7 +3,7 @@ import HolidaysList from '../components/HolidaysList';
 
 const HolidayPage = () => {
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1400px] mx-auto pb-12 pt-4">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-12 pt-4">
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
           Company Holidays

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Clock, Users, Calendar as CalendarIcon, CheckCircle, FileText, Loader2, X, Trash2, Edit2, Search, CheckSquare } from 'lucide-react';
+import { Plus, Clock, Users, Calendar as CalendarIcon, CheckCircle, FileText, Loader2, X, Trash2, Edit2, Search, CheckSquare, Download } from 'lucide-react';
 import { getClosures, createClosure, updateClosure, deleteClosure, getClosureMetrics, getProjects } from '../../../api/pms';
 import DataTable from '../../../components/shared/DataTable';
 import Modal from '../../../components/shared/Modal';
@@ -20,6 +20,7 @@ const MiniStatCard = ({ title, count, icon: Icon, iconBg, iconColor }) => (
 
 const Closures = () => {
   const { user, hasPermission } = useAuth();
+  const isAdmin = user?.role_name?.toLowerCase() === 'admin';
   const [closures, setClosures] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,9 +97,38 @@ const Closures = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    if (!closures || closures.length === 0) {
+      toast.error('No closures to export');
+      return;
+    }
+    const headers = ['Closure Date', 'Employee Name', 'Total Hours', 'Status', 'Submitted On'];
+    const rows = closures.map(c => [
+      new Date(c.closure_date).toLocaleDateString(),
+      c.employee_name || 'N/A',
+      c.total_hours || 0,
+      c.status || '',
+      new Date(c.created_at).toLocaleDateString()
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `closures_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const columns = [
     { label: 'Closure Date', key: 'closure_date', render: (row) => new Date(row.closure_date).toLocaleDateString() },
-    { label: 'Employee Name', key: 'employee_name' },
+    ...(isAdmin ? [{ label: 'Employee Name', key: 'employee_name' }] : []),
     { label: 'Total Hours', key: 'total_hours' },
     { 
       label: 'Status', 
@@ -133,9 +163,13 @@ const Closures = () => {
             </p>
           </div>
         </div>
-        <div className="flex gap-4">
-          <button className="px-6 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-[12px] font-bold shadow-sm hover:bg-[var(--nav-hover)] transition-colors">
-            Export CSV
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleExportCSV}
+            className="px-6 py-2.5 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] transition-colors flex items-center gap-2 group shadow-sm bg-[var(--bg-card)]"
+          >
+            <Download size={16} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
+            <span className="text-[12px] font-bold text-[var(--text-main)] uppercase tracking-widest">Export CSV</span>
           </button>
           {hasPermission('hr', 'create', 'pms_closure') && (
           <button
@@ -152,28 +186,28 @@ const Closures = () => {
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <MiniStatCard 
-          title="Today's Closures" 
+          title={isAdmin ? "Today's Closures" : "My Today's Closures"} 
           count={metrics?.todaysClosures || 0} 
           icon={CalendarIcon} 
           iconBg="bg-blue-50" 
           iconColor="text-blue-500" 
         />
         <MiniStatCard 
-          title="Total Closures" 
+          title={isAdmin ? "Total Closures" : "My Total Closures"} 
           count={metrics?.totalClosures || 0} 
           icon={FileText} 
           iconBg="bg-purple-50" 
           iconColor="text-purple-500" 
         />
         <MiniStatCard 
-          title="Pending Review" 
+          title={isAdmin ? "Pending Review" : "My Pending Review"} 
           count={metrics?.pendingReview || 0} 
           icon={Clock} 
           iconBg="bg-orange-50" 
           iconColor="text-orange-500" 
         />
         <MiniStatCard 
-          title="Approved" 
+          title={isAdmin ? "Approved" : "My Approved"} 
           count={metrics?.approved || 0} 
           icon={CheckCircle} 
           iconBg="bg-emerald-50" 
@@ -183,18 +217,20 @@ const Closures = () => {
 
       {/* Filters */}
       <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-sm mb-6 flex flex-wrap gap-4 items-center">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]" />
-          <input 
-            type="text" 
-            name="employee"
-            value={filters.employee}
-            onChange={handleFilterChange}
-            placeholder="Search Employee..." 
-            className="w-full pl-9 pr-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] focus:border-[var(--accent)] outline-none"
-          />
-        </div>
-        <div className="flex gap-4 flex-wrap">
+        {isAdmin && (
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]" />
+            <input 
+              type="text" 
+              name="employee"
+              value={filters.employee}
+              onChange={handleFilterChange}
+              placeholder="Search Employee..." 
+              className="w-full pl-9 pr-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] focus:border-[var(--accent)] outline-none"
+            />
+          </div>
+        )}
+        <div className={`flex gap-4 flex-wrap ${!isAdmin ? 'flex-1' : ''}`}>
           <input 
             type="date" 
             name="startDate"
@@ -247,60 +283,109 @@ const Closures = () => {
           isOpen={isViewModalOpen}
           onClose={() => setIsViewModalOpen(false)}
           title="Closure Details"
-          maxWidth="max-w-3xl"
+          maxWidth="max-w-xl"
         >
-          <div className="p-6">
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Employee</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedClosure.employee_name}</p>
+          <div className="p-2">
+            {/* Top Status & Summary Banner */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-2xl p-5 mb-8 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-14 h-14 rounded-full bg-[var(--nav-hover)] flex items-center justify-center border border-[var(--border-color)] shadow-inner">
+                  <FileText size={24} className="text-[var(--accent)]" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-[var(--text-main)] tracking-tight">Closure Summary</h2>
+                  <p className="text-[12px] font-bold text-[var(--text-muted)] tracking-widest uppercase mt-1">{new Date(selectedClosure.closure_date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Closure Date</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{new Date(selectedClosure.closure_date).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Status</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedClosure.status}</p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Total Hours</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedClosure.total_hours}</p>
+              
+              <div className="flex gap-6 mt-4 md:mt-0 relative z-10">
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Total Time</p>
+                  <p className="text-2xl font-black text-[var(--text-main)]">{selectedClosure.total_hours} <span className="text-[12px] text-[var(--text-muted)]">hrs</span></p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Status</p>
+                  <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest shadow-sm border ${
+                    selectedClosure.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                    selectedClosure.status === 'Pending' || selectedClosure.status === 'Submitted' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                    'bg-gray-50 text-gray-600 border-gray-200'
+                  }`}>
+                    {selectedClosure.status === 'Approved' && <CheckCircle size={12} className="mr-1.5" />}
+                    {selectedClosure.status === 'Pending' || selectedClosure.status === 'Submitted' ? <Clock size={12} className="mr-1.5" /> : null}
+                    {selectedClosure.status}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {selectedClosure.remarks && (
-              <div className="mb-6">
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Remarks</p>
-                <p className="text-[13px] text-[var(--text-main)] bg-[var(--bg-workspace)] p-3 rounded-xl border border-[var(--border-color)] mt-1">{selectedClosure.remarks}</p>
+            {/* Employee info (only show if admin) */}
+            {isAdmin && (
+              <div className="mb-8">
+                <h4 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-3 flex items-center gap-2"><Users size={12} /> Personnel Information</h4>
+                <div className="bg-[var(--bg-card)] border border-[var(--border-color)] p-4 rounded-xl shadow-sm flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-[var(--nav-hover)] flex items-center justify-center text-[12px] font-black text-[var(--accent)] border border-[var(--border-color)]">
+                    {selectedClosure.employee_name?.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-black text-[var(--text-main)]">{selectedClosure.employee_name}</p>
+                    <p className="text-[11px] text-[var(--text-muted)] font-medium">Employee</p>
+                  </div>
+                </div>
               </div>
             )}
 
-            <h4 className="text-[14px] font-black text-[var(--text-main)] mb-3 border-b border-[var(--border-color)] pb-2">Closure Items</h4>
-            <div className="space-y-3">
-              {selectedClosure.items?.map((item, idx) => (
-                <div key={idx} className="bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl p-4 flex justify-between items-start">
-                  <div>
-                    <h5 className="text-[13px] font-bold text-[var(--text-main)]">{item.task_description}</h5>
-                    {item.project_name ? <p className="text-[11px] text-[var(--text-muted)] mt-1">Project: {item.project_name}</p> : item.project_id ? <p className="text-[11px] text-[var(--text-muted)] mt-1">Project ID: {item.project_id}</p> : null}
-                  </div>
-                  <span className="px-3 py-1 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg text-[12px] font-bold">
-                    {item.hours_spent} hrs
-                  </span>
+            {selectedClosure.remarks && (
+              <div className="mb-8">
+                <h4 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-3 flex items-center gap-2"><FileText size={12} /> Additional Remarks</h4>
+                <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)] shadow-inner">
+                  <p className="text-[13px] text-[var(--text-main)] leading-relaxed">{selectedClosure.remarks}</p>
                 </div>
-              ))}
+              </div>
+            )}
+
+            <div className="mb-4">
+              <h4 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><CheckSquare size={12} /> Task Breakdown</h4>
+              <div className="space-y-3">
+                {selectedClosure.items?.map((item, idx) => (
+                  <div key={idx} className="bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--accent)] transition-colors duration-300 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center shadow-sm group">
+                    <div className="flex-1 pr-4">
+                      <h5 className="text-[14px] font-bold text-[var(--text-main)] leading-tight mb-2">{item.task_description}</h5>
+                      {(item.project_name || item.project_id) && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-muted)]">
+                          Project: {item.project_name || item.project_id}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-4 md:mt-0 flex items-center gap-3 bg-[var(--nav-hover)] px-4 py-2 rounded-lg border border-[var(--border-color)]">
+                      <Clock size={14} className="text-[var(--accent)]" />
+                      <span className="text-[14px] font-black text-[var(--accent)]">
+                        {item.hours_spent} <span className="text-[10px] opacity-70">hrs</span>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Quick Actions for Admin/Manager */}
             {hasPermission('hr', 'edit', 'pms_closure') && selectedClosure.status !== 'Approved' && (
-              <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]">
+              <div className="mt-10 flex justify-end gap-4 pt-6 border-t border-[var(--border-color)]">
+                <button
+                  onClick={() => setIsViewModalOpen(false)}
+                  className="px-6 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-[12px] font-black uppercase tracking-widest shadow-sm hover:bg-[var(--nav-hover)] transition-colors"
+                >
+                  Cancel
+                </button>
                 <button
                   onClick={() => {
                     handleEditStatus(selectedClosure.closure_id, 'Approved');
                     setIsViewModalOpen(false);
                   }}
-                  className="px-6 py-2 bg-emerald-500 text-white rounded-xl text-[12px] font-bold hover:bg-emerald-600 transition-colors"
+                  className="btn-primary shadow-lg px-8 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center gap-2"
+                  style={{ boxShadow: '0 8px 16px -4px var(--border-glow)' }}
                 >
+                  <CheckCircle size={16} />
                   Approve Closure
                 </button>
               </div>
@@ -386,78 +471,88 @@ const AddClosureModal = ({ isOpen, onClose, onSuccess, user }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Daily Closure" maxWidth="max-w-2xl">
-      <form onSubmit={handleSubmit} className="p-6">
-        <div className="grid grid-cols-2 gap-4 mb-6">
-
-          <div>
-            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Closure Date</label>
-            <input 
-              type="date" 
-              value={formData.closure_date}
-              onChange={e => setFormData({ ...formData, closure_date: e.target.value })}
-              required
-              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
-            />
-          </div>
-          <div className="col-span-2">
-            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Remarks</label>
-            <textarea 
-              value={formData.remarks}
-              onChange={e => setFormData({ ...formData, remarks: e.target.value })}
-              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
-              rows="2"
-            />
+    <Modal isOpen={isOpen} onClose={onClose} title="Daily Closure" maxWidth="max-w-xl">
+      <form onSubmit={handleSubmit} className="p-4 md:p-6">
+        {/* Header Section */}
+        <div className="bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-2xl p-5 mb-6 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2 flex items-center gap-2"><CalendarIcon size={12}/> Date</label>
+              <input 
+                type="date" 
+                value={formData.closure_date}
+                onChange={e => setFormData({ ...formData, closure_date: e.target.value })}
+                required
+                className="w-full px-3 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[13px] font-bold text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors shadow-inner"
+              />
+            </div>
+            <div className="col-span-1 md:col-span-3">
+              <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2 flex items-center gap-2"><FileText size={12}/> Overall Remarks</label>
+              <input 
+                type="text"
+                value={formData.remarks}
+                onChange={e => setFormData({ ...formData, remarks: e.target.value })}
+                placeholder="Any general notes for today?"
+                className="w-full px-3 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors shadow-inner"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="mb-4 flex items-center justify-between border-b border-[var(--border-color)] pb-2">
-          <h4 className="text-[14px] font-black text-[var(--text-main)]">Closure Items</h4>
-          <span className="text-[12px] font-bold text-[var(--accent)]">Total: {calculateTotalHours()} hrs</span>
+        <div className="mb-4 flex items-center justify-between">
+          <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-[0.2em] flex items-center gap-2"><CheckSquare size={14} /> Task Breakdown</h4>
+          <span className="text-[11px] font-black uppercase tracking-widest text-[var(--accent)] bg-[var(--accent)]/10 px-3 py-1.5 rounded-lg border border-[var(--accent)]/20 shadow-sm">
+            Total: {calculateTotalHours()} hrs
+          </span>
         </div>
 
-        <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
+        <div className="space-y-4 mb-6 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
           {items.map((item, idx) => (
-            <div key={idx} className="flex gap-3 items-start bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
-              <div className="flex-1 space-y-3">
-                <select
-                  value={item.project_id}
-                  onChange={e => handleItemChange(idx, 'project_id', e.target.value)}
-                  className="w-full px-3 py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
-                >
-                  <option value="">Select Project (Optional)</option>
-                  {projects.map(p => (
-                    <option key={p.project_id} value={p.project_id}>{p.project_code} - {p.project_name}</option>
-                  ))}
-                </select>
-                <textarea 
-                  required
-                  placeholder="Task Description"
-                  value={item.task_description}
-                  onChange={e => handleItemChange(idx, 'task_description', e.target.value)}
-                  className="w-full px-3 py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] min-h-[60px]"
-                />
-              </div>
-              <div className="w-[100px]">
-                <input 
-                  type="number" 
-                  step="0.5"
-                  required
-                  placeholder="Hours"
-                  value={item.hours_spent}
-                  onChange={e => handleItemChange(idx, 'hours_spent', e.target.value)}
-                  className="w-full px-3 py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
-                />
-              </div>
+            <div key={idx} className="bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border-color)] shadow-sm hover:border-[var(--accent)]/50 transition-colors group relative">
               {items.length > 1 && (
                 <button 
                   type="button"
                   onClick={() => handleRemoveItem(idx)}
-                  className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors mt-1"
+                  className="absolute -top-2 -right-2 bg-rose-100 text-rose-500 hover:bg-rose-500 hover:text-white rounded-full p-1.5 transition-all shadow-sm z-10"
                 >
-                  <Trash2 size={16} />
+                  <X size={12} strokeWidth={4} />
                 </button>
               )}
+              
+              <div className="flex gap-3 mb-3">
+                <div className="flex-1">
+                  <select
+                    value={item.project_id}
+                    onChange={e => handleItemChange(idx, 'project_id', e.target.value)}
+                    className="w-full px-3 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-[13px] font-medium text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors"
+                  >
+                    <option value="">Select Project (Optional)</option>
+                    {projects.map(p => (
+                      <option key={p.project_id} value={p.project_id}>{p.project_code} - {p.project_name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-[100px] relative">
+                  <input 
+                    type="number" 
+                    step="0.5"
+                    required
+                    placeholder="0.0"
+                    value={item.hours_spent}
+                    onChange={e => handleItemChange(idx, 'hours_spent', e.target.value)}
+                    className="w-full pl-3 pr-8 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-[14px] font-black text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors text-right"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--text-muted)] pointer-events-none">hrs</span>
+                </div>
+              </div>
+              
+              <textarea 
+                required
+                placeholder="What did you work on?"
+                value={item.task_description}
+                onChange={e => handleItemChange(idx, 'task_description', e.target.value)}
+                className="w-full px-3 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] min-h-[60px] transition-colors"
+              />
             </div>
           ))}
         </div>
@@ -465,25 +560,26 @@ const AddClosureModal = ({ isOpen, onClose, onSuccess, user }) => {
         <button 
           type="button"
           onClick={handleAddItem}
-          className="w-full py-2.5 border-2 border-dashed border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--text-muted)] rounded-xl text-[12px] font-bold flex justify-center items-center gap-2 transition-colors mb-8"
+          className="w-full py-3 bg-[var(--bg-workspace)] border-2 border-dashed border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 rounded-xl text-[12px] font-black uppercase tracking-widest flex justify-center items-center gap-2 transition-all duration-300 mb-8"
         >
-          <Plus size={16} /> Add Row
+          <Plus size={16} /> Add Task Entry
         </button>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]">
+        <div className="flex justify-end gap-4 pt-6 border-t border-[var(--border-color)] mt-2">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 text-[12px] font-bold text-[var(--text-main)] hover:bg-[var(--bg-workspace)] rounded-xl transition-colors"
+            className="px-6 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-[12px] font-black uppercase tracking-widest shadow-sm hover:bg-[var(--nav-hover)] transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="btn-primary px-8 py-2.5 rounded-xl text-[12px] font-bold flex items-center gap-2"
+            className="btn-primary shadow-lg px-8 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center gap-2"
+            style={{ boxShadow: '0 8px 16px -4px var(--border-glow)' }}
           >
-            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : 'Submit Closure'}
+            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <><CheckCircle size={16} /> Submit Closure</>}
           </button>
         </div>
       </form>

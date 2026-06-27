@@ -551,7 +551,7 @@ const EmployeeProfile = () => {
                 <FormField 
                   label="Core Designation" 
                   type="text" 
-                  disabled={!isEditing || !employee.department_id} 
+                  disabled={!isEditing} 
                   value={employee.designation_name || ''} 
                   onChange={e => setEmployee({...employee, designation_name: e.target.value, designation_id: null})} 
                   isEditing={isEditing} 
