@@ -219,8 +219,8 @@ const AddEmployeeWizard = () => {
         }
       }
     } else if (currentStep === 2) {
-      if (!formData.department_id || !(formData.designation_name || formData.designation_id) || !formData.date_of_joining) {
-        toast.error('Please fill out all mandatory fields in the Job step (Department, Designation, DOJ).');
+      if (!(formData.designation_name || formData.designation_id) || !formData.date_of_joining) {
+        toast.error('Please fill out all mandatory fields in the Job step (Designation, DOJ).');
         return;
       }
     }
@@ -235,7 +235,7 @@ const AddEmployeeWizard = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.full_name || !formData.email || !formData.department_id || !(formData.designation_name || formData.designation_id) || !formData.date_of_joining) {
+    if (!formData.full_name || !formData.email || !(formData.designation_name || formData.designation_id) || !formData.date_of_joining) {
       toast.error('Please ensure all mandatory Personal and Job fields are filled before submitting.');
       return;
     }
@@ -277,7 +277,7 @@ const AddEmployeeWizard = () => {
         }
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create employee');
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to create employee');
     } finally {
       setIsSubmitting(false);
     }
@@ -614,7 +614,7 @@ const AddEmployeeWizard = () => {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className={labelClass}>Department *</label>
+                  <label className={labelClass}>Department</label>
                   <select value={formData.department_id} onChange={e => setFormData(prev => ({...prev, department_id: e.target.value, designation_id: null, designation_name: ''}))} className={inputClass}>
                     <option value="">Select Department</option>
                     {metadata.departments.map(d => (

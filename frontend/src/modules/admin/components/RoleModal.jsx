@@ -106,6 +106,60 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
     });
   };
 
+  const handleSelectAllApp = (selectAll) => {
+    if (!selectAll) {
+      setSelectedPerms({});
+      return;
+    }
+
+    const newPerms = {};
+    MODULES.forEach(module => {
+      const modKey = module.id || module.name.replace(/\s+/g, '').toLowerCase();
+      newPerms[modKey] = {};
+      
+      if (module.subsections) {
+        module.subsections.forEach(sub => {
+          newPerms[modKey][sub.id] = {};
+          ACTIONS.forEach(action => {
+            newPerms[modKey][sub.id][action.id] = true;
+          });
+        });
+      } else {
+        ACTIONS.forEach(action => {
+          newPerms[modKey][action.id] = true;
+        });
+      }
+    });
+    setSelectedPerms(newPerms);
+  };
+
+  const handleSelectAllModule = (module, selectAll) => {
+    setSelectedPerms(prev => {
+      const newPerms = { ...prev };
+      const modKey = module.id || module.name.replace(/\s+/g, '').toLowerCase();
+      
+      if (!selectAll) {
+        newPerms[modKey] = {};
+        return newPerms;
+      }
+      
+      newPerms[modKey] = {};
+      if (module.subsections) {
+        module.subsections.forEach(sub => {
+          newPerms[modKey][sub.id] = {};
+          ACTIONS.forEach(action => {
+            newPerms[modKey][sub.id][action.id] = true;
+          });
+        });
+      } else {
+        ACTIONS.forEach(action => {
+          newPerms[modKey][action.id] = true;
+        });
+      }
+      return newPerms;
+    });
+  };
+
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   const onSubmit = async (data) => {
@@ -133,7 +187,8 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
         });
       }
 
-      const payload = { ...data, permissions };
+      const uniquePermissions = [...new Set(permissions)];
+      const payload = { ...data, permissions: uniquePermissions };
 
       if (editingItem) {
         await updateMutation.mutateAsync({ id: editingItem.role_id, data: payload });
@@ -183,7 +238,15 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
         </div>
 
         <div className="space-y-4">
-          <h4 className="text-[12px] font-black uppercase tracking-widest text-[var(--text-main)]">Permissions Matrix</h4>
+          <div className="flex justify-between items-center">
+            <h4 className="text-[12px] font-black uppercase tracking-widest text-[var(--text-main)]">Permissions Matrix</h4>
+            {!isReadOnly && (
+              <div className="flex gap-2">
+                <button type="button" onClick={() => handleSelectAllApp(true)} className="px-3 py-1 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg text-[10px] font-bold hover:bg-[var(--accent)] hover:text-white transition-colors">Select All App</button>
+                <button type="button" onClick={() => handleSelectAllApp(false)} className="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-bold hover:bg-gray-200 transition-colors">Clear All</button>
+              </div>
+            )}
+          </div>
           
           <div className="overflow-x-auto border border-[var(--border-color)] rounded-2xl bg-[var(--bg-card)] max-h-[400px] overflow-y-auto">
             <table className="w-full text-left border-collapse">
@@ -204,7 +267,12 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
                       <React.Fragment key={module.name}>
                         <tr className="bg-[var(--bg-workspace)]/40 border-b border-[var(--border-color)]">
                           <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]" colSpan={5}>
-                            {module.name}
+                            <div className="flex justify-between items-center">
+                              <span>{module.name}</span>
+                              {!isReadOnly && (
+                                <button type="button" onClick={() => handleSelectAllModule(module, true)} className="px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded text-[10px] font-bold hover:bg-[var(--accent)] hover:text-white transition-colors">Select Section</button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                         {module.subsections.map((sub, idx) => (
@@ -242,7 +310,14 @@ const RoleModal = ({ isOpen, onClose, editingItem, permissionsList, modalMode })
 
                   return (
                     <tr key={module.name} className="border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--accent)]/5 transition-colors">
-                      <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]">{module.name === 'Sales' ? 'Book a Sale' : module.name}</td>
+                      <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]">
+                        <div className="flex justify-between items-center">
+                          <span>{module.name === 'Sales' ? 'Book a Sale' : module.name}</span>
+                          {!isReadOnly && (
+                            <button type="button" onClick={() => handleSelectAllModule(module, true)} className="px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded text-[10px] font-bold hover:bg-[var(--accent)] hover:text-white transition-colors">Select Section</button>
+                          )}
+                        </div>
+                      </td>
                       {ACTIONS.map(action => {
                         const actKey = action.id;
                         const isChecked = selectedPerms[modKey]?.[actKey] || false;

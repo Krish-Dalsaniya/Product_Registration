@@ -385,8 +385,19 @@ const createUser = async (req, res, next) => {
 
         // Auto-create HR employee record
         const countRes = await client.query('SELECT COUNT(*) FROM hr_employees');
-        const nextNum = parseInt(countRes.rows[0].count) + 1;
-        const empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+        let nextNum = parseInt(countRes.rows[0].count) + 1;
+        let empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+        let isUnique = false;
+        
+        while (!isUnique) {
+          const checkRes = await client.query('SELECT 1 FROM hr_employees WHERE emp_code = $1', [empCode]);
+          if (checkRes.rows.length === 0) {
+            isUnique = true;
+          } else {
+            nextNum++;
+            empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+          }
+        }
         const employeeResult = await client.query(
           `INSERT INTO hr_employees (user_id, emp_code, date_of_joining, employment_status)
            VALUES ($1, $2, CURRENT_DATE, 'Full-Time') RETURNING employee_id`,
@@ -465,7 +476,10 @@ const createUser = async (req, res, next) => {
         return res.status(400).json({ success: false, error: { message: 'Invalid role' } });
     }
     if (error.code === '23505') {
-      return res.status(400).json({ success: false, error: { message: 'Email already exists' } });
+      if (error.constraint === 'users_email_key') {
+        return res.status(400).json({ success: false, error: { message: 'Email already exists' } });
+      }
+      return res.status(400).json({ success: false, error: { message: 'A unique constraint was violated' } });
     }
     next(error);
   }

@@ -130,6 +130,60 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
     });
   };
 
+  const handleSelectAllApp = (selectAll) => {
+    if (!selectAll) {
+      setSelectedPerms({});
+      return;
+    }
+
+    const newPerms = {};
+    MODULES.forEach(module => {
+      const modKey = module.name.replace(/\s+/g, '').toLowerCase();
+      newPerms[modKey] = {};
+      
+      if (module.subsections) {
+        module.subsections.forEach(sub => {
+          newPerms[modKey][sub.id] = {};
+          ACTIONS.forEach(action => {
+            newPerms[modKey][sub.id][action.id] = true;
+          });
+        });
+      } else {
+        ACTIONS.forEach(action => {
+          newPerms[modKey][action.id] = true;
+        });
+      }
+    });
+    setSelectedPerms(newPerms);
+  };
+
+  const handleSelectAllModule = (module, selectAll) => {
+    setSelectedPerms(prev => {
+      const newPerms = { ...prev };
+      const modKey = module.name.replace(/\s+/g, '').toLowerCase();
+      
+      if (!selectAll) {
+        newPerms[modKey] = {};
+        return newPerms;
+      }
+      
+      newPerms[modKey] = {};
+      if (module.subsections) {
+        module.subsections.forEach(sub => {
+          newPerms[modKey][sub.id] = {};
+          ACTIONS.forEach(action => {
+            newPerms[modKey][sub.id][action.id] = true;
+          });
+        });
+      } else {
+        ACTIONS.forEach(action => {
+          newPerms[modKey][action.id] = true;
+        });
+      }
+      return newPerms;
+    });
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -156,7 +210,8 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
         });
       }
 
-      await updateMutation.mutateAsync({ has_custom_permissions: hasCustomPerms, permissions });
+      const uniquePermissions = [...new Set(permissions)];
+      await updateMutation.mutateAsync({ has_custom_permissions: hasCustomPerms, permissions: uniquePermissions });
       toast.success('User permissions updated successfully');
       onClose();
     } catch (error) {
@@ -208,7 +263,15 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
         </div>
 
         <div className={`space-y-4 transition-opacity duration-300 ${!hasCustomPerms ? 'opacity-50 pointer-events-none' : ''}`}>
-          <h4 className="text-[12px] font-black uppercase tracking-widest text-[var(--text-main)]">Custom Permissions Matrix</h4>
+          <div className="flex justify-between items-center">
+            <h4 className="text-[12px] font-black uppercase tracking-widest text-[var(--text-main)]">Custom Permissions Matrix</h4>
+            {!isReadOnly && (
+              <div className="flex gap-2">
+                <button type="button" onClick={() => handleSelectAllApp(true)} className="px-3 py-1 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg text-[10px] font-bold hover:bg-[var(--accent)] hover:text-white transition-colors">Select All App</button>
+                <button type="button" onClick={() => handleSelectAllApp(false)} className="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-bold hover:bg-gray-200 transition-colors">Clear All</button>
+              </div>
+            )}
+          </div>
           
           <div className="overflow-x-auto border border-[var(--border-color)] rounded-2xl bg-[var(--bg-card)] h-[400px] overflow-y-auto relative">
             {isLoading || !showContent ? (
@@ -232,7 +295,12 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
                       <React.Fragment key={module.name}>
                         <tr className="bg-[var(--bg-workspace)]/40 border-b border-[var(--border-color)]">
                           <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]" colSpan={5}>
-                            {module.name}
+                            <div className="flex justify-between items-center">
+                              <span>{module.name}</span>
+                              {!isReadOnly && (
+                                <button type="button" onClick={() => handleSelectAllModule(module, true)} className="px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded text-[10px] font-bold hover:bg-[var(--accent)] hover:text-white transition-colors">Select Section</button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                         {module.subsections.map((sub, idx) => (
@@ -269,7 +337,14 @@ const UserAccessModal = ({ isOpen, onClose, selectedUser, permissionsList }) => 
 
                   return (
                     <tr key={module.name} className="border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--accent)]/5 transition-colors">
-                      <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]">{module.name === 'Sales' ? 'Book a Sale' : module.name}</td>
+                      <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]">
+                        <div className="flex justify-between items-center">
+                          <span>{module.name === 'Sales' ? 'Book a Sale' : module.name}</span>
+                          {!isReadOnly && (
+                            <button type="button" onClick={() => handleSelectAllModule(module, true)} className="px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded text-[10px] font-bold hover:bg-[var(--accent)] hover:text-white transition-colors">Select Section</button>
+                          )}
+                        </div>
+                      </td>
                       {ACTIONS.map(action => {
                         const actKey = action.id;
                         const isChecked = selectedPerms[modKey]?.[actKey] || false;

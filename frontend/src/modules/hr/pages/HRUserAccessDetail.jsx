@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import api from "../../../api/axiosInstance";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePermissions } from '../../../hooks/useRoles';
+import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 
 const HR_MODULES = [
   { name: 'Dashboard', prefix: 'hr.dashboard', actions: ['view'] },
@@ -104,6 +105,70 @@ const HRUserAccessDetail = () => {
     }));
   };
 
+  const handleSelectAllApp = (selectAll) => {
+    if (!selectAll) {
+      setSelectedPerms({});
+      return;
+    }
+
+    const newPerms = {};
+    HR_MODULES.forEach(module => {
+      if (module.subsections) {
+        module.subsections.forEach(sub => {
+          DEFAULT_ACTIONS.forEach(action => {
+            const isAllowedAction = !module.actions || module.actions.includes(action.id);
+            if (isAllowedAction) {
+              newPerms[`${sub.prefix}.${action.id}`] = true;
+            }
+          });
+        });
+      } else {
+        DEFAULT_ACTIONS.forEach(action => {
+          const isAllowedAction = !module.actions || module.actions.includes(action.id);
+          if (isAllowedAction) {
+            newPerms[`${module.prefix}.${action.id}`] = true;
+          }
+        });
+      }
+    });
+    setSelectedPerms(newPerms);
+  };
+
+  const handleSelectAllModule = (module, selectAll) => {
+    setSelectedPerms(prev => {
+      const newPerms = { ...prev };
+      
+      if (module.subsections) {
+        module.subsections.forEach(sub => {
+          DEFAULT_ACTIONS.forEach(action => {
+            const isAllowedAction = !module.actions || module.actions.includes(action.id);
+            if (isAllowedAction) {
+              const permKey = `${sub.prefix}.${action.id}`;
+              if (selectAll) {
+                newPerms[permKey] = true;
+              } else {
+                delete newPerms[permKey];
+              }
+            }
+          });
+        });
+      } else {
+        DEFAULT_ACTIONS.forEach(action => {
+          const isAllowedAction = !module.actions || module.actions.includes(action.id);
+          if (isAllowedAction) {
+            const permKey = `${module.prefix}.${action.id}`;
+            if (selectAll) {
+              newPerms[permKey] = true;
+            } else {
+              delete newPerms[permKey];
+            }
+          }
+        });
+      }
+      return newPerms;
+    });
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -129,7 +194,8 @@ const HRUserAccessDetail = () => {
         });
       }
 
-      await updateMutation.mutateAsync({ has_custom_permissions: true, permissions });
+      const uniquePermissions = [...new Set(permissions)];
+      await updateMutation.mutateAsync({ has_custom_permissions: true, permissions: uniquePermissions });
       toast.success('User access updated successfully');
       navigate('/hr/user-access');
     } catch (error) {
@@ -148,8 +214,17 @@ const HRUserAccessDetail = () => {
     );
   }
 
+  const breadcrumbItems = [
+    { label: 'User Access', path: '/hr/user-access' },
+    { label: userData?.full_name || 'Manage', path: '' }
+  ];
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1400px] mx-auto pb-12 pt-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1400px] mx-auto pb-12 pt-6 relative">
+      <div className="absolute top-0 right-0 z-20">
+        <Breadcrumbs items={breadcrumbItems} />
+      </div>
+
       <div className="flex items-center gap-4 animate-entrance-down mb-6">
         <button 
           onClick={() => navigate('/hr/user-access')}
@@ -176,6 +251,16 @@ const HRUserAccessDetail = () => {
           </div>
         </div>
 
+        <div className="flex justify-between items-center px-2">
+          <h4 className="text-[14px] font-black uppercase tracking-widest text-[var(--text-main)]">HR Permissions Matrix</h4>
+          {!isReadOnly && (
+            <div className="flex gap-2">
+              <button type="button" onClick={() => handleSelectAllApp(true)} className="px-4 py-2 bg-[var(--accent)]/10 text-[var(--accent)] rounded-xl text-[11px] font-bold hover:bg-[var(--accent)] hover:text-white transition-colors uppercase tracking-widest">Select All App</button>
+              <button type="button" onClick={() => handleSelectAllApp(false)} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-[11px] font-bold hover:bg-gray-200 transition-colors uppercase tracking-widest">Clear All</button>
+            </div>
+          )}
+        </div>
+
         <div className="workspace-card p-6 border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl md:rounded-[32px] overflow-hidden relative shadow-sm">
           <div className="overflow-x-auto border border-[var(--border-color)] rounded-2xl bg-[var(--bg-card)] overflow-y-auto relative custom-scrollbar">
             <table className="w-full text-left border-collapse">
@@ -194,7 +279,12 @@ const HRUserAccessDetail = () => {
                       <React.Fragment key={module.name}>
                         <tr className="bg-[var(--bg-workspace)]/40 border-b border-[var(--border-color)]">
                           <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]" colSpan={5}>
-                            {module.name}
+                            <div className="flex justify-between items-center">
+                              <span>{module.name}</span>
+                              {!isReadOnly && (
+                                <button type="button" onClick={() => handleSelectAllModule(module, true)} className="px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded text-[10px] font-bold hover:bg-[var(--accent)] hover:text-white transition-colors">Select Section</button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                         {module.subsections.map((sub) => (
@@ -232,7 +322,14 @@ const HRUserAccessDetail = () => {
 
                   return (
                     <tr key={module.name} className="border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--accent)]/5 transition-colors">
-                      <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]">{module.name}</td>
+                      <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]">
+                        <div className="flex justify-between items-center">
+                          <span>{module.name}</span>
+                          {!isReadOnly && (
+                            <button type="button" onClick={() => handleSelectAllModule(module, true)} className="px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded text-[10px] font-bold hover:bg-[var(--accent)] hover:text-white transition-colors">Select Section</button>
+                          )}
+                        </div>
+                      </td>
                       {DEFAULT_ACTIONS.map(action => {
                         const isAllowedAction = !module.actions || module.actions.includes(action.id);
                         const permKey = `${module.prefix}.${action.id}`;

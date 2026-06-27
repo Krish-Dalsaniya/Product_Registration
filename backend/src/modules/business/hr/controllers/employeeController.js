@@ -74,10 +74,18 @@ const getDepartmentsAndDesignations = async (req, res, next) => {
 };
 
 const getOrInsertDesignation = async (clientOrDb, name, deptId) => {
-  if (!name || !deptId) return null;
-  const check = await clientOrDb.query('SELECT designation_id FROM hr_designations WHERE name ILIKE $1 AND department_id = $2', [name, deptId]);
+  if (!name) return null;
+  
+  let check;
+  if (deptId) {
+    check = await clientOrDb.query('SELECT designation_id FROM hr_designations WHERE name ILIKE $1 AND department_id = $2', [name, deptId]);
+  } else {
+    check = await clientOrDb.query('SELECT designation_id FROM hr_designations WHERE name ILIKE $1 AND department_id IS NULL', [name]);
+  }
+  
   if (check.rows.length > 0) return check.rows[0].designation_id;
-  const res = await clientOrDb.query('INSERT INTO hr_designations (name, department_id) VALUES ($1, $2) RETURNING designation_id', [name, deptId]);
+  
+  const res = await clientOrDb.query('INSERT INTO hr_designations (name, department_id) VALUES ($1, $2) RETURNING designation_id', [name, deptId || null]);
   return res.rows[0].designation_id;
 };
 
@@ -187,12 +195,23 @@ const createEmployee = async (req, res, next) => {
 
     // 3. Generate EMP Code (e.g., EMP-001)
     const countRes = await client.query('SELECT COUNT(*) FROM hr_employees');
-    const nextNum = parseInt(countRes.rows[0].count) + 1;
-    const empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+    let nextNum = parseInt(countRes.rows[0].count) + 1;
+    let empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+    let isUnique = false;
+    
+    while (!isUnique) {
+      const checkRes = await client.query('SELECT 1 FROM hr_employees WHERE emp_code = $1', [empCode]);
+      if (checkRes.rows.length === 0) {
+        isUnique = true;
+      } else {
+        nextNum++;
+        empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+      }
+    }
 
     let finalDesignationId = designation_id;
-    if (designation_name && department_id && !designation_id) {
-      finalDesignationId = await getOrInsertDesignation(client, designation_name, department_id);
+    if (designation_name && !designation_id) {
+      finalDesignationId = await getOrInsertDesignation(client, designation_name, department_id || null);
     }
 
     // 4. Create the HR Employee record
@@ -205,7 +224,7 @@ const createEmployee = async (req, res, next) => {
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING employee_id
     `, [
-      finalUserId, empCode, department_id, finalDesignationId, manager_id || null,
+      finalUserId, empCode, department_id || null, finalDesignationId, manager_id || null,
       date_of_joining, employment_status, base_salary ? parseFloat(base_salary) : null, work_location,
       personal_info ? JSON.stringify(personal_info) : '{}',
       req.body.address_info ? JSON.stringify(req.body.address_info) : '{}',
@@ -295,8 +314,8 @@ const updateEmployee = async (req, res, next) => {
     `;
     
     let finalDesignationId = designation_id;
-    if (designation_name && department_id && !designation_id) {
-      finalDesignationId = await getOrInsertDesignation(db, designation_name, department_id);
+    if (designation_name && !designation_id) {
+      finalDesignationId = await getOrInsertDesignation(db, designation_name, department_id || null);
     }
 
     const values = [
