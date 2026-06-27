@@ -404,6 +404,7 @@ const TrainingModules = () => {
                                 className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-semibold text-[var(--text-main)] focus:outline-none focus:border-[var(--accent)]"
                             >
                                 <option value="YouTube Video">YouTube Video</option>
+                                <option value="NAS / Local Video (MP4)">NAS / Local Video (MP4)</option>
                                 <option value="Udemy Course">Udemy Course</option>
                                 <option value="Coursera Course">Coursera Course</option>
                                 <option value="External Website">External Website</option>
@@ -437,7 +438,7 @@ const TrainingModules = () => {
                             />
                         </div>
                         
-                        {['YouTube Video', 'Udemy Course', 'Coursera Course', 'External Website'].includes(formData.training_type) && (
+                        {['YouTube Video', 'NAS / Local Video (MP4)', 'Udemy Course', 'Coursera Course', 'External Website'].includes(formData.training_type) && (
                             <div className="md:col-span-2">
                                 <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">Training URL</label>
                                 <input
