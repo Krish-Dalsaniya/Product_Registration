@@ -18,6 +18,7 @@ const TrainingPlayer = () => {
     const [videoTitles, setVideoTitles] = useState({});
     
     const playerRef = useRef(null);
+    const nasPlayerRef = useRef(null);
     const intervalRef = useRef(null);
     const lastSavedProgressRef = useRef(assignment?.progress_percentage || 0);
 
@@ -70,6 +71,7 @@ const TrainingPlayer = () => {
     };
 
     const isYouTube = assignment?.training_type === 'YouTube Video';
+    const isNAS = assignment?.training_type === 'NAS / Local Video (MP4)';
     const playlistId = isYouTube ? getPlaylistID(assignment.training_url) : null;
     const videoId = isYouTube && !playlistId ? getYouTubeID(assignment.training_url) : null;
 
@@ -226,6 +228,21 @@ const TrainingPlayer = () => {
         toast.success("Training marked as complete!");
     };
 
+    // NAS Video Handlers
+    const handleNASTimeUpdate = () => {
+        if (!nasPlayerRef.current) return;
+        const currentTime = nasPlayerRef.current.currentTime;
+        const duration = nasPlayerRef.current.duration;
+        
+        if (duration > 0) {
+            const calculatedProgress = Math.min(100, Math.floor((currentTime / duration) * 100));
+            // Debounce saving progress to avoid spamming the API on every frame
+            if (calculatedProgress % 5 === 0 || calculatedProgress > 90) {
+                saveProgress(calculatedProgress);
+            }
+        }
+    };
+
     if (!assignment) return null;
 
     return (
@@ -263,10 +280,35 @@ const TrainingPlayer = () => {
             </div>
 
             {/* Player Container */}
-            <div className="flex-1 w-full h-full relative flex bg-black overflow-hidden pt-32 pb-1.5">
+            <div className="flex-1 w-full h-full relative flex bg-black overflow-hidden pt-32 pb-1.5 group">
                 
+                {/* LEON'S INTEGRATIONS WATERMARK */}
+                {(isYouTube || isNAS) && (
+                    <div className="absolute top-36 right-8 z-40 opacity-30 group-hover:opacity-60 transition-opacity pointer-events-none select-none mix-blend-screen">
+                        <div className="text-xl font-black text-white tracking-[0.2em] drop-shadow-lg">LEON'S</div>
+                        <div className="text-[10px] font-bold text-[var(--accent)] tracking-[0.3em] -mt-1 ml-0.5">INTEGRATIONS</div>
+                    </div>
+                )}
+
                 {/* Main Video Area */}
                 <div className="flex-1 h-full relative flex items-center justify-center">
+                
+                {/* NAS / Local HTML5 Video Player */}
+                {isNAS && (
+                    <div className="w-full h-full relative">
+                        <video 
+                            ref={nasPlayerRef}
+                            src={assignment.training_url}
+                            className="w-full h-full object-contain"
+                            controls
+                            controlsList="nodownload"
+                            onTimeUpdate={handleNASTimeUpdate}
+                            onPlay={() => setIsPlaying(true)}
+                            onPause={() => setIsPlaying(false)}
+                            onEnded={() => saveProgress(100)}
+                        />
+                    </div>
+                )}
                 
                 {/* YouTube Playlist Player */}
                 {playlistId && (

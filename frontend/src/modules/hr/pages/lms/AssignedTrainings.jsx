@@ -355,7 +355,7 @@ const AssignedTrainings = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pb-6">
                         {assignments.map((assignment, index) => {
                             const thumb = getThumbnailUrl(assignment.training_url, assignment.training_type);
-                            const canPlayInApp = assignment.training_type === 'YouTube Video' || assignment.training_type === 'PDF Document';
+                            const canPlayInApp = assignment.training_type === 'YouTube Video' || assignment.training_type === 'PDF Document' || assignment.training_type === 'NAS / Local Video (MP4)';
                             return (
                                 <motion.div 
                                     initial={{ opacity: 0, y: 20 }}
