@@ -63,4 +63,14 @@ router.use('/offboarding', offboardingRoutes);
 const traineeRoutes = require('./traineeRoutes');
 router.use('/trainees', traineeRoutes);
 
+const claimsAdvancesController = require('../controllers/claimsAdvancesController');
+const upload = require('../../../../middleware/upload');
+router.get('/claims', claimsAdvancesController.getClaims);
+router.post('/claims', upload.single('receipt_file'), claimsAdvancesController.createClaim);
+router.put('/claims/:id/status', claimsAdvancesController.updateClaimStatus);
+
+router.get('/advances', claimsAdvancesController.getAdvances);
+router.post('/advances', claimsAdvancesController.createAdvance);
+router.put('/advances/:id/status', claimsAdvancesController.updateAdvanceStatus);
+
 module.exports = router;

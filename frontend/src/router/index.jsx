@@ -161,6 +161,8 @@ const LeaveManagement = lazy(() => import('../modules/hr/pages/LeaveManagement')
 const HolidayPage = lazy(() => import('../modules/hr/pages/HolidayPage'));
 const AttendanceManagement = lazy(() => import('../modules/hr/pages/AttendanceManagement'));
 const PayrollManagement = lazy(() => import('../modules/hr/pages/PayrollManagement'));
+const Claims = lazy(() => import('../modules/hr/pages/Claims'));
+const Advances = lazy(() => import('../modules/hr/pages/Advances'));
 const OnboardingPage = lazy(() => import('../modules/hr/pages/OnboardingPage'));
 const OffboardingPage = lazy(() => import('../modules/hr/pages/OffboardingPage'));
 const HRUserAccessPage = lazy(() => import('../modules/hr/pages/HRUserAccessPage'));
@@ -439,6 +441,8 @@ const Router = () => {
           <Route path="/hr/roaster" element={<Navigate to="/hr/roaster/holiday" replace />} />
           <Route path="/hr/attendance" element={<AttendanceManagement />} />
           <Route path="/hr/payrolls" element={<PayrollManagement />} />
+          <Route path="/hr/payrolls/claims" element={<Claims />} />
+          <Route path="/hr/payrolls/advances" element={<Advances />} />
           <Route path="/hr/pms/closure" element={<Closures />} />
           <Route path="/hr/pms/projects" element={<Projects />} />
           <Route path="/hr/pms/teams" element={<TeamsPage />} />

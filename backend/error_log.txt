@@ -136,3 +136,47 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async getEmployeeById (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:387:20)
 
+2026-06-29T10:19:52.231Z - Error: connect EHOSTUNREACH 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:193:23)
+
+2026-06-29T10:19:52.240Z - Error: connect EHOSTUNREACH 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getPendingRegistrations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:281:20)
+
+2026-06-29T10:19:53.274Z - Error: connect EHOSTUNREACH 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:193:23)
+
+2026-06-29T10:19:53.277Z - Error: connect EHOSTUNREACH 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getPendingRegistrations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:281:20)
+
+2026-06-29T10:19:55.301Z - Error: connect EHOSTUNREACH 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:193:23)
+
+2026-06-29T10:19:55.313Z - Error: connect EHOSTUNREACH 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getPendingRegistrations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:281:20)
+
+2026-06-29T10:19:59.334Z - Error: connect EHOSTUNREACH 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:193:23)
+
+2026-06-29T10:19:59.338Z - Error: connect EHOSTUNREACH 165.232.191.122:5432
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getPendingRegistrations (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:281:20)
+

@@ -169,6 +169,13 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
     ) {
       setOpenMenus(prev => ({ ...prev, userManagement: true }));
     }
+    if (
+      location.pathname === '/admin/inventory' ||
+      location.pathname.startsWith('/admin/inventory/') ||
+      location.pathname === '/admin/finished-goods'
+    ) {
+      setOpenMenus(prev => ({ ...prev, inventory: true }));
+    }
     if (location.pathname.startsWith('/pms/')) {
       setOpenMenus(prev => ({ ...prev, pms: true }));
     }
@@ -576,7 +583,47 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             
 
             <div className="animate-entrance-right" style={{ animationDelay: '500ms' }}>
-              <NavItem to="/admin/inventory" label="Inventory" icon={Box} />
+              <div 
+                className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
+                onClick={() => {
+                  toggleMenu('inventory');
+                  handleNavigate('/admin/inventory');
+                }}
+                style={{
+                  color: location.pathname === '/admin/inventory' ? 'var(--accent)' : 'var(--text-muted)',
+                  background: location.pathname === '/admin/inventory' ? 'var(--nav-active)' : undefined,
+                }}
+              >
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
+                  style={{
+                    background: 'var(--accent)',
+                    transform: location.pathname === '/admin/inventory' ? 'scaleY(1)' : 'scaleY(0)',
+                    opacity: location.pathname === '/admin/inventory' ? 1 : 0,
+                    transformOrigin: 'center',
+                  }}
+                />
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className="w-6 flex justify-center">
+                    <Box size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: location.pathname === '/admin/inventory' ? 'var(--accent)' : 'var(--text-dim)' }} />
+                  </div>
+                  <span className="text-[12px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
+                    Inventory
+                  </span>
+                </div>
+                <div className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors">
+                  <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.inventory ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+              <SubMenu isOpen={openMenus.inventory}>
+                <div className="flex flex-col py-1">
+                  <NavItem to="/admin/inventory/pcb" label="PCB Units" icon={CircuitBoard} isSubItem />
+                  <NavItem to="/admin/inventory/electronics" label="Electronics" icon={Cpu} isSubItem />
+                  <NavItem to="/admin/inventory/electrical" label="Electrical" icon={Zap} isSubItem />
+                  <NavItem to="/admin/inventory/structural" label="Structural" icon={Wrench} isSubItem />
+                  <NavItem to="/admin/finished-goods" label="Finished Goods" icon={Package} isSubItem isLastSubItem />
+                </div>
+              </SubMenu>
             </div>
 
             <div className="animate-entrance-right" style={{ animationDelay: '700ms' }}>
@@ -614,7 +661,51 @@ const Sidebar = ({ role, isOpen, onClose, onToggleAssistant }) => {
             {hasPermission('teams', 'view') && <NavItem to="/admin/teams" label="Teams" icon={Layers} />}
             {hasPermission('products', 'view') && <NavItem to="/admin/products" label="Products" icon={Cpu} />}
             {hasPermission('customers', 'view') && <NavItem to="/admin/customers" label="Customers" icon={Users} />}
-            {hasPermission('inventory', 'view') && <NavItem to="/admin/inventory" label="Inventory" icon={Box} />}
+            {hasPermission('inventory', 'view') && (
+              <div>
+                <div 
+                  className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
+                  onClick={() => {
+                    toggleMenu('inventory');
+                    handleNavigate('/admin/inventory');
+                  }}
+                  style={{
+                    color: location.pathname === '/admin/inventory' ? 'var(--accent)' : 'var(--text-muted)',
+                    background: location.pathname === '/admin/inventory' ? 'var(--nav-active)' : undefined,
+                  }}
+                >
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
+                    style={{
+                      background: 'var(--accent)',
+                      transform: location.pathname === '/admin/inventory' ? 'scaleY(1)' : 'scaleY(0)',
+                      opacity: location.pathname === '/admin/inventory' ? 1 : 0,
+                      transformOrigin: 'center',
+                    }}
+                  />
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-6 flex justify-center">
+                      <Box size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: location.pathname === '/admin/inventory' ? 'var(--accent)' : 'var(--text-dim)' }} />
+                    </div>
+                    <span className="text-[12px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
+                      Inventory
+                    </span>
+                  </div>
+                  <div className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors">
+                    <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.inventory ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+                <SubMenu isOpen={openMenus.inventory}>
+                  <div className="flex flex-col py-1">
+                    <NavItem to="/admin/inventory/pcb" label="PCB Units" icon={CircuitBoard} isSubItem />
+                    <NavItem to="/admin/inventory/electronics" label="Electronics" icon={Cpu} isSubItem />
+                    <NavItem to="/admin/inventory/electrical" label="Electrical" icon={Zap} isSubItem />
+                    <NavItem to="/admin/inventory/structural" label="Structural" icon={Wrench} isSubItem />
+                    <NavItem to="/admin/finished-goods" label="Finished Goods" icon={Package} isSubItem isLastSubItem />
+                  </div>
+                </SubMenu>
+              </div>
+            )}
             {hasPermission('sales', 'view') && <NavItem to="/admin/book-a-sale" label="Book a Sale" icon={ShoppingBag} />}
             {hasPermission('supporttickets', 'view') && <NavItem to="/admin/support-tickets" label="Support Center" icon={LifeBuoy} />}
 

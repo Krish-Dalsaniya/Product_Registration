@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Network,
   Banknote,
+  FileText,
   UserCheck,
   GraduationCap,
   CalendarDays,
@@ -667,7 +668,11 @@ const HRSidebar = ({ isOpen, onClose }) => {
                 </div>
                 )}
                 
-                {hasPermission('hr', 'view', 'payrolls_attendance') && <NavItem to="/hr/attendance" label="Attendance" icon={Clock} isSubItem isLastSubItem />}
+                {hasPermission('hr', 'view', 'payrolls_attendance') && <NavItem to="/hr/attendance" label="Attendance" icon={Clock} isSubItem isLastSubItem={!hasPermission('hr', 'view', 'payrolls_leaves')} />}
+                
+                {hasPermission('hr', 'view', 'payrolls_leaves') && <NavItem to="/hr/payrolls/claims" label="Claims" icon={FileText} isSubItem />}
+                
+                {hasPermission('hr', 'view', 'payrolls_leaves') && <NavItem to="/hr/payrolls/advances" label="Advances" icon={Banknote} isSubItem isLastSubItem />}
               </div>
             </SubMenu>
           </div>
