@@ -12,6 +12,35 @@ import { useAuth } from '../../../../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
+const LMSThumbnail = ({ url, type, title }) => {
+    const [error, setError] = React.useState(false);
+    
+    if (type === 'YouTube Video' && url && !error) {
+        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+        const match = url.match(regExp);
+        if (match && match[7].length === 11) {
+            const thumbUrl = `https://img.youtube.com/vi/${match[7]}/hqdefault.jpg`;
+            return (
+                <>
+                    <img 
+                        src={thumbUrl} 
+                        alt={title} 
+                        onError={() => setError(true)}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent"></div>
+                </>
+            );
+        }
+    }
+
+    return (
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/20 to-[var(--bg-workspace)] flex items-center justify-center">
+            <FileText className="w-16 h-16 text-[var(--accent)]/40" />
+        </div>
+    );
+};
+
 const TrainingModules = () => {
     const { refreshStats } = useOutletContext();
     const { hasPermission } = useAuth();
@@ -162,7 +191,6 @@ const TrainingModules = () => {
             )
         },
         { key: 'difficulty_level', label: 'Difficulty', sortable: true },
-        { key: 'duration_hours', label: 'Duration (Hrs)', sortable: true },
         { 
             key: 'status', 
             label: 'Status', 
@@ -213,16 +241,7 @@ const TrainingModules = () => {
         }
     ];
 
-    const getThumbnailUrl = (url, type) => {
-        if (type === 'YouTube Video' && url) {
-            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-            const match = url.match(regExp);
-            if (match && match[7].length === 11) {
-                return `https://img.youtube.com/vi/${match[7]}/hqdefault.jpg`;
-            }
-        }
-        return null;
-    };
+
 
     return (
         <div className="p-6 h-full flex flex-col">
@@ -262,7 +281,6 @@ const TrainingModules = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pb-6">
                         {modules.map((module, index) => {
-                            const thumb = getThumbnailUrl(module.training_url, module.training_type);
                             return (
                                 <motion.div 
                                     initial={{ opacity: 0, y: 20 }}
@@ -273,16 +291,7 @@ const TrainingModules = () => {
                                 >
                                     {/* Thumbnail Area */}
                                     <div className="h-44 w-full relative bg-[var(--bg-workspace)] overflow-hidden flex items-center justify-center">
-                                        {thumb ? (
-                                            <>
-                                                <img src={thumb} alt={module.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent"></div>
-                                            </>
-                                        ) : (
-                                            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/20 to-[var(--bg-workspace)] flex items-center justify-center">
-                                                <FileText className="w-16 h-16 text-[var(--accent)]/40" />
-                                            </div>
-                                        )}
+                                        <LMSThumbnail url={module.training_url} type={module.training_type} title={module.title} />
                                         <div className="absolute top-4 right-4">
                                             <span className={`px-3 py-1 text-[11px] uppercase tracking-widest font-black rounded-full shadow-lg backdrop-blur-md ${
                                                 module.status === 'Active' ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'
@@ -415,6 +424,7 @@ const TrainingModules = () => {
                             >
                                 <option value="YouTube Video">YouTube Video</option>
                                 <option value="NAS / Local Video (MP4)">NAS / Local Video (MP4)</option>
+                                <option value="NAS Video Playlist (JSON)">NAS Video Playlist (JSON)</option>
                                 <option value="Udemy Course">Udemy Course</option>
                                 <option value="Coursera Course">Coursera Course</option>
                                 <option value="External Website">External Website</option>
@@ -435,20 +445,8 @@ const TrainingModules = () => {
                                 <option value="Advanced">Advanced</option>
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">Duration (Hours)</label>
-                            <input
-                                type="number"
-                                min="0"
-                                step="0.5"
-                                value={formData.duration_hours}
-                                onChange={(e) => setFormData({...formData, duration_hours: e.target.value})}
-                                className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-semibold text-[var(--text-main)] focus:outline-none focus:border-[var(--accent)]"
-                                placeholder="e.g. 2.5"
-                            />
-                        </div>
                         
-                        {['YouTube Video', 'NAS / Local Video (MP4)', 'Udemy Course', 'Coursera Course', 'External Website'].includes(formData.training_type) && (
+                        {['YouTube Video', 'NAS / Local Video (MP4)', 'NAS Video Playlist (JSON)', 'Udemy Course', 'Coursera Course', 'External Website'].includes(formData.training_type) && (
                             <div className="md:col-span-2">
                                 <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">Training URL</label>
                                 <input

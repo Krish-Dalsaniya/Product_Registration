@@ -6,8 +6,8 @@ const safeQuery = async (queryText, params = []) => {
   try {
     return await db.query(queryText, params);
   } catch (error) {
-    if (error.code === '42703' || error.code === '42P01') { // undefined column or undefined table error
-      console.warn('Missing column or table in database, returning empty fallback data for query');
+    if (error.code === '42703' || error.code === '42P01') { // undefined column or table error
+      console.warn(`Database warning (${error.code}): ${error.message}. Returning empty fallback rows.`);
       return { rows: [] };
     }
     throw error;
@@ -179,8 +179,8 @@ const getNotifications = async (req, res, next) => {
     const userPermissions = req.user.permissions || [];
     const isAdmin = req.user.role_name?.toLowerCase() === 'admin' || userPermissions.includes('admin');
     const hasInventory = isAdmin || userPermissions.some(p => p === 'inventory.view' || (p.startsWith('inventory.') && p.endsWith('.view')));
-    const hasTickets = isAdmin || userPermissions.some(p => 
-      p === 'supporttickets.view' || p === 'support_tickets.view' || 
+    const hasTickets = isAdmin || userPermissions.some(p =>
+      p === 'supporttickets.view' || p === 'support_tickets.view' ||
       (p.startsWith('supporttickets.') && p.endsWith('.view')) ||
       (p.startsWith('support_tickets.') && p.endsWith('.view'))
     );
@@ -194,7 +194,7 @@ const getNotifications = async (req, res, next) => {
       const electricalRes = await safeQuery(`SELECT part_id as id, part_name as name, part_number, stock_quantity, 'Electrical' as category FROM electrical_part_master WHERE stock_quantity < $1 AND is_active = TRUE`, [threshold]);
       const electronicsRes = await safeQuery(`SELECT part_id as id, part_name as name, part_number, stock_quantity, 'Electronics' as category FROM electronics_part_master WHERE stock_quantity < $1 AND is_active = TRUE`, [threshold]);
       const structuralRes = await safeQuery(`SELECT part_id as id, part_name as name, part_number, stock_quantity, 'Structural' as category FROM structural_part_master WHERE stock_quantity < $1 AND is_active = TRUE`, [threshold]);
-      
+
       inventoryAlerts = [
         ...(pcbsRes.rows || []),
         ...(electricalRes.rows || []),

@@ -11,6 +11,35 @@ import { useAuth } from '../../../../context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
+const LMSThumbnail = ({ url, type, title }) => {
+    const [error, setError] = React.useState(false);
+    
+    if (type === 'YouTube Video' && url && !error) {
+        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+        const match = url.match(regExp);
+        if (match && match[7].length === 11) {
+            const thumbUrl = `https://img.youtube.com/vi/${match[7]}/hqdefault.jpg`;
+            return (
+                <>
+                    <img 
+                        src={thumbUrl} 
+                        alt={title} 
+                        onError={() => setError(true)}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent"></div>
+                </>
+            );
+        }
+    }
+
+    return (
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/20 to-[var(--bg-workspace)] flex items-center justify-center">
+            <FileText className="w-16 h-16 text-[var(--accent)]/40" />
+        </div>
+    );
+};
+
 const AssignedTrainings = () => {
     const { refreshStats } = useOutletContext();
     const { hasPermission } = useAuth();
@@ -302,16 +331,7 @@ const AssignedTrainings = () => {
         }
     ];
 
-    const getThumbnailUrl = (url, type) => {
-        if (type === 'YouTube Video' && url) {
-            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-            const match = url.match(regExp);
-            if (match && match[7].length === 11) {
-                return `https://img.youtube.com/vi/${match[7]}/hqdefault.jpg`;
-            }
-        }
-        return null;
-    };
+
 
     return (
         <div className="p-6 h-full flex flex-col">
@@ -354,8 +374,7 @@ const AssignedTrainings = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pb-6">
                         {assignments.map((assignment, index) => {
-                            const thumb = getThumbnailUrl(assignment.training_url, assignment.training_type);
-                            const canPlayInApp = assignment.training_type === 'YouTube Video' || assignment.training_type === 'PDF Document' || assignment.training_type === 'NAS / Local Video (MP4)';
+                            const canPlayInApp = assignment.training_type === 'YouTube Video' || assignment.training_type === 'PDF Document' || assignment.training_type === 'NAS / Local Video (MP4)' || assignment.training_type === 'NAS Video Playlist (JSON)';
                             return (
                                 <motion.div 
                                     initial={{ opacity: 0, y: 20 }}
@@ -366,16 +385,7 @@ const AssignedTrainings = () => {
                                 >
                                     {/* Thumbnail Area */}
                                     <div className="h-44 w-full relative bg-[var(--bg-workspace)] overflow-hidden flex items-center justify-center">
-                                        {thumb ? (
-                                            <>
-                                                <img src={thumb} alt={assignment.module_title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent"></div>
-                                            </>
-                                        ) : (
-                                            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/20 to-[var(--bg-workspace)] flex items-center justify-center">
-                                                <FileText className="w-16 h-16 text-[var(--accent)]/40" />
-                                            </div>
-                                        )}
+                                        <LMSThumbnail url={assignment.training_url} type={assignment.training_type} title={assignment.module_title} />
                                         <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
                                             <span className={`px-3 py-1 text-[11px] uppercase tracking-widest font-black rounded-full shadow-lg backdrop-blur-md ${
                                                 assignment.status === 'Completed' ? 'bg-emerald-500/90 text-white' : 

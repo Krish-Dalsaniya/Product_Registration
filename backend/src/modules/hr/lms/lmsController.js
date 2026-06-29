@@ -1,4 +1,12 @@
 const pool = require('../../../config/db');
+const Groq = require('groq-sdk');
+const groq = new Groq();
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+const ffmpeg = require('ffmpeg-static');
+
+
 
 // --- Training Modules ---
 const createModule = async (req, res) => {
@@ -36,9 +44,10 @@ const createModule = async (req, res) => {
 const getAllModules = async (req, res) => {
     try {
         const query = `
-            SELECT m.*, d.name as department_name
+            SELECT m.*, d.name as department_name, u.full_name as created_by_name
             FROM hr_lms_modules m
             LEFT JOIN hr_departments d ON m.department_id = d.department_id
+            LEFT JOIN users u ON m.created_by = u.user_id
             ORDER BY m.created_at DESC
         `;
         const result = await pool.query(query);
@@ -442,6 +451,119 @@ const getYoutubeTitle = async (req, res) => {
     }
 };
 
+const generateQuestionsFromTranscript = async (req, res) => {
+    try {
+        const { transcript, count = 5 } = req.body;
+        
+        if (!transcript || transcript.trim() === '') {
+            return res.status(400).json({ success: false, error: { message: 'Transcript is required' } });
+        }
+
+        const systemPrompt = `You are a professional educational assessment designer.
+Your task is to generate exactly ${count} multiple-choice questions (MCQs) based ONLY on the provided training video transcript.
+
+Each question MUST satisfy these requirements:
+1. Be directly answerable from the transcript.
+2. Have exactly 4 options.
+3. Have one clear, correct answer that is exactly identical to one of the 4 options.
+4. Be written in clear, professional English.
+
+You MUST format the output as a valid JSON object containing a "questions" array. Do NOT include markdown backticks like \`\`\`json, do NOT include explanations, do NOT include any introductory or concluding text.
+
+Example format:
+{
+  "questions": [
+    {
+      "question_text": "What is the primary function of a water sensor?",
+      "options": ["To measure humidity", "To detect water presence", "To filter water", "To heat water"],
+      "correct_answer": "To detect water presence"
+    }
+  ]
+}`;
+
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `Here is the transcript:\n\n${transcript}` }
+            ],
+            model: 'llama-3.1-8b-instant',
+            temperature: 0.5,
+            max_tokens: 2000,
+            response_format: { type: "json_object" }
+        });
+
+        const rawText = chatCompletion.choices[0]?.message?.content || '';
+        
+        let cleanText = rawText.trim();
+        if (cleanText.startsWith('```')) {
+            cleanText = cleanText.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+        }
+
+        let parsedOutput;
+        try {
+            parsedOutput = JSON.parse(cleanText);
+        } catch (parseError) {
+            console.error('Failed to parse AI output:', rawText);
+            return res.status(500).json({ 
+                success: false, 
+                error: { message: 'Failed to parse AI generated questions. Please try again.' },
+                rawText 
+            });
+        }
+
+        let questions = [];
+        if (Array.isArray(parsedOutput)) {
+            questions = parsedOutput;
+        } else if (parsedOutput && Array.isArray(parsedOutput.questions)) {
+            questions = parsedOutput.questions;
+        } else {
+            return res.status(500).json({ success: false, error: { message: 'AI generated invalid data structure' } });
+        }
+
+        res.json({ success: true, data: questions });
+    } catch (error) {
+        console.error('Error generating questions:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: { 
+                message: 'Failed to generate questions',
+                details: error.message,
+                stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+            } 
+        });
+    }
+};
+
+const addQuizQuestionsBulk = async (req, res) => {
+    try {
+        const { id } = req.params; // module_id
+        const { questions } = req.body; // array of { question_text, options, correct_answer }
+        
+        if (!questions || !Array.isArray(questions) || questions.length === 0) {
+            return res.status(400).json({ success: false, error: { message: 'Questions array is required' } });
+        }
+
+        // Generate placeholders and values for parameterized query
+        let queryText = 'INSERT INTO hr_lms_questions (module_id, question_text, options, correct_answer) VALUES ';
+        const values = [];
+        const placeholders = [];
+        
+        questions.forEach((q, idx) => {
+            const base = idx * 3;
+            placeholders.push(`($1, $${base + 2}, $${base + 3}, $${base + 4})`);
+            values.push(q.question_text, JSON.stringify(q.options), q.correct_answer);
+        });
+        
+        queryText += placeholders.join(', ') + ' RETURNING *';
+        const result = await pool.query(queryText, [id, ...values]);
+        
+        res.status(201).json({ success: true, data: result.rows, message: `${result.rows.length} questions added successfully` });
+    } catch (error) {
+        console.error('Error adding questions bulk:', error);
+        res.status(500).json({ success: false, error: { message: 'Failed to add questions' } });
+    }
+};
+
 module.exports = {
     createModule,
     getAllModules,
@@ -459,5 +581,106 @@ module.exports = {
     getQuizQuestions,
     submitQuiz,
     deleteQuizQuestion,
-    getYoutubeTitle
+    getYoutubeTitle,
+    generateQuestionsFromTranscript,
+    addQuizQuestionsBulk,
+    transcribeAudio
 };
+
+async function transcribeAudio(req, res) {
+    let tempFiles = [];
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: { message: 'No audio or video file uploaded' } });
+        }
+
+        const uploadedPath = req.file.path;
+        tempFiles.push(uploadedPath);
+
+        const uploadDir = path.dirname(uploadedPath);
+        
+        // Output optimized mp3 file path
+        const compressedAudioPath = path.join(uploadDir, `transcribe_opt_${Date.now()}.mp3`);
+        
+        // 1. Extract audio & compress to optimized mono 16kHz 64kbps MP3
+        console.log(`[Transcribe] Extracting & compressing audio track for ${req.file.originalname}...`);
+        try {
+            execSync(`"${ffmpeg}" -y -i "${uploadedPath}" -vn -acodec libmp3lame -ar 16000 -ac 1 -ab 64k "${compressedAudioPath}"`);
+            tempFiles.push(compressedAudioPath);
+        } catch (ffmpegErr) {
+            console.error('[Transcribe] FFmpeg extraction failed:', ffmpegErr);
+            return res.status(500).json({ success: false, error: { message: 'Failed to process audio/video track.' } });
+        }
+
+        // Get file size of compressed audio
+        const stats = fs.statSync(compressedAudioPath);
+        const fileSizeInMb = stats.size / (1024 * 1024);
+        console.log(`[Transcribe] Compressed file size: ${fileSizeInMb.toFixed(2)} MB`);
+
+        let transcriptionText = '';
+
+        if (fileSizeInMb > 24.0) {
+            // 2. Chunking/segmentation is required
+            console.log('[Transcribe] File size exceeds 24MB. Segmenting audio...');
+            const segmentPattern = path.join(uploadDir, `chunk_${Date.now()}_%03d.mp3`);
+            
+            try {
+                // Split into 15 minute (900 seconds) segments
+                execSync(`"${ffmpeg}" -y -i "${compressedAudioPath}" -f segment -segment_time 900 -c copy "${segmentPattern}"`);
+            } catch (segmentErr) {
+                console.error('[Transcribe] Audio segmenting failed:', segmentErr);
+                return res.status(500).json({ success: false, error: { message: 'Failed to slice large audio track.' } });
+            }
+
+            // Find all matching chunks
+            const files = fs.readdirSync(uploadDir);
+            const chunks = files
+                .filter(file => file.startsWith('chunk_') && file.endsWith('.mp3'))
+                .map(file => path.join(uploadDir, file))
+                .sort(); // sort alphabetically to process in chronological order
+            
+            tempFiles.push(...chunks);
+            console.log(`[Transcribe] Processing ${chunks.length} chunks...`);
+
+            for (const chunkPath of chunks) {
+                const transcription = await groq.audio.transcriptions.create({
+                    file: fs.createReadStream(chunkPath),
+                    model: 'whisper-large-v3'
+                });
+                transcriptionText += (transcriptionText ? ' ' : '') + transcription.text;
+            }
+        } else {
+            // 3. Directly transcribe single compressed file
+            console.log('[Transcribe] Transcribing single compressed track...');
+            const transcription = await groq.audio.transcriptions.create({
+                file: fs.createReadStream(compressedAudioPath),
+                model: 'whisper-large-v3'
+            });
+            transcriptionText = transcription.text;
+        }
+
+        // Clean up all temporary files
+        cleanTempFiles(tempFiles);
+
+        res.json({ success: true, text: transcriptionText });
+    } catch (error) {
+        console.error('[Transcribe] General error during transcription:', error);
+        cleanTempFiles(tempFiles);
+        res.status(500).json({ success: false, error: { message: 'Failed to transcribe audio' } });
+    }
+}
+
+function cleanTempFiles(files) {
+    files.forEach(filePath => {
+        try {
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log(`[Transcribe] Deleted temp file: ${path.basename(filePath)}`);
+            }
+        } catch (err) {
+            console.error(`[Transcribe] Failed to delete temp file: ${filePath}`, err);
+        }
+    });
+}
+
+
