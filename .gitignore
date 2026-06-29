@@ -37,3 +37,28 @@ build/
 
 # Runtime uploaded files
 backend/uploads/
+
+# Local scratch directories
+**/scratch/
+
+# Design assets and temporary PDFs/Videos/HTML/SQL
+*.pdf
+*.mp4
+*.png
+*.html
+*.sql
+
+# Logs
+*.log
+error_log.txt
+backend/error_log.txt
+
+# Root and backend utility/test scripts
+check_naresh.js
+fix_db.js
+test-create.js
+test-yt.js
+backend/check_naresh.js
+backend/apply_lms_schema.js
+backend/migrate_onboarding_backfill.js
+backend/migrate_teams.js

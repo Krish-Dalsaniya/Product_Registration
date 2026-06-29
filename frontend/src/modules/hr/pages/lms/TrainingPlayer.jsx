@@ -16,6 +16,7 @@ const TrainingPlayer = () => {
     const [playlistVideos, setPlaylistVideos] = useState([]);
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
     const [videoTitles, setVideoTitles] = useState({});
+    const [nasPlaylistData, setNasPlaylistData] = useState([]);
     
     const playerRef = useRef(null);
     const nasPlayerRef = useRef(null);
@@ -72,22 +73,41 @@ const TrainingPlayer = () => {
 
     const isYouTube = assignment?.training_type === 'YouTube Video';
     const isNAS = assignment?.training_type === 'NAS / Local Video (MP4)';
+    const isNASPlaylist = assignment?.training_type === 'NAS Video Playlist (JSON)';
     const playlistId = isYouTube ? getPlaylistID(assignment.training_url) : null;
     const videoId = isYouTube && !playlistId ? getYouTubeID(assignment.training_url) : null;
 
     // Get starting index for playlist
     const getStartingIndex = () => {
-        if (!playlistId) return 0;
+        if (!playlistId && !isNASPlaylist) return 0;
         // Check localStorage first
         const savedIndex = localStorage.getItem(`playlist_current_index_${assignment?.assignment_id}`);
         if (savedIndex !== null) return parseInt(savedIndex, 10);
         
         // Otherwise check URL
-        const match = assignment.training_url.match(/[?&]index=(\d+)/);
+        const match = assignment?.training_url ? assignment.training_url.match(/[?&]index=(\d+)/) : null;
         return match ? Math.max(0, parseInt(match[1], 10) - 1) : 0; // URL index is 1-based, API is 0-based
     };
 
     const startingIndex = getStartingIndex();
+
+    // Fetch NAS Playlist JSON
+    useEffect(() => {
+        if (isNASPlaylist && assignment?.training_url) {
+            fetch(assignment.training_url)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setNasPlaylistData(data);
+                        setCurrentVideoIndex(startingIndex);
+                    }
+                })
+                .catch(err => {
+                    console.error("Failed to fetch NAS Playlist JSON", err);
+                    toast.error("Failed to load course playlist");
+                });
+        }
+    }, [isNASPlaylist, assignment]);
 
     // Save Progress logic
     const saveProgress = async (newProgress) => {
@@ -235,11 +255,36 @@ const TrainingPlayer = () => {
         const duration = nasPlayerRef.current.duration;
         
         if (duration > 0) {
-            const calculatedProgress = Math.min(100, Math.floor((currentTime / duration) * 100));
-            // Debounce saving progress to avoid spamming the API on every frame
-            if (calculatedProgress % 5 === 0 || calculatedProgress > 90) {
-                saveProgress(calculatedProgress);
+            if (isNASPlaylist && nasPlaylistData.length > 0) {
+                if ((currentTime / duration) > 0.90) {
+                    const storageKey = `playlist_watched_${assignment.assignment_id}`;
+                    const watchedIndices = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                    if (!watchedIndices.includes(currentVideoIndex)) {
+                        watchedIndices.push(currentVideoIndex);
+                        localStorage.setItem(storageKey, JSON.stringify(watchedIndices));
+                        const calculatedProgress = Math.floor((watchedIndices.length / nasPlaylistData.length) * 100);
+                        saveProgress(Math.min(100, calculatedProgress));
+                    }
+                }
+            } else {
+                const calculatedProgress = Math.min(100, Math.floor((currentTime / duration) * 100));
+                // Debounce saving progress to avoid spamming the API on every frame
+                if (calculatedProgress % 5 === 0 || calculatedProgress > 90) {
+                    saveProgress(calculatedProgress);
+                }
             }
+        }
+    };
+
+    const handleNASEnded = () => {
+        if (isNASPlaylist && nasPlaylistData.length > 0) {
+            if (currentVideoIndex < nasPlaylistData.length - 1) {
+                const nextIdx = currentVideoIndex + 1;
+                setCurrentVideoIndex(nextIdx);
+                localStorage.setItem(`playlist_current_index_${assignment.assignment_id}`, nextIdx);
+            }
+        } else {
+            saveProgress(100);
         }
     };
 
@@ -282,30 +327,31 @@ const TrainingPlayer = () => {
             {/* Player Container */}
             <div className="flex-1 w-full h-full relative flex bg-black overflow-hidden pt-32 pb-1.5 group">
                 
-                {/* LEON'S INTEGRATIONS WATERMARK */}
-                {(isYouTube || isNAS) && (
-                    <div className="absolute top-36 right-8 z-40 opacity-30 group-hover:opacity-60 transition-opacity pointer-events-none select-none mix-blend-screen">
-                        <div className="text-xl font-black text-white tracking-[0.2em] drop-shadow-lg">LEON'S</div>
-                        <div className="text-[10px] font-bold text-[var(--accent)] tracking-[0.3em] -mt-1 ml-0.5">INTEGRATIONS</div>
-                    </div>
-                )}
-
                 {/* Main Video Area */}
                 <div className="flex-1 h-full relative flex items-center justify-center">
+
+                {/* LEON'S INTEGRATIONS WATERMARK (Single Video Overlay) */}
+                {((isYouTube && !playlistId) || (isNAS && !isNASPlaylist)) && (
+                    <div className="absolute top-16 right-8 z-40 opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none select-none drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] flex flex-col items-start">
+                        <div className="text-2xl font-black text-white tracking-[0.1em] drop-shadow-lg">LEON'S</div>
+                        <div className="text-xs font-black text-[var(--accent)] tracking-[0.15em] -mt-1 ml-0.5 uppercase">INTEGRATIONS</div>
+                    </div>
+                )}
                 
                 {/* NAS / Local HTML5 Video Player */}
-                {isNAS && (
+                {(isNAS || (isNASPlaylist && nasPlaylistData.length > 0)) && (
                     <div className="w-full h-full relative">
                         <video 
                             ref={nasPlayerRef}
-                            src={assignment.training_url}
+                            src={isNASPlaylist ? nasPlaylistData[currentVideoIndex]?.url : assignment.training_url}
                             className="w-full h-full object-contain"
                             controls
+                            autoPlay={isNASPlaylist}
                             controlsList="nodownload"
                             onTimeUpdate={handleNASTimeUpdate}
                             onPlay={() => setIsPlaying(true)}
                             onPause={() => setIsPlaying(false)}
-                            onEnded={() => saveProgress(100)}
+                            onEnded={handleNASEnded}
                         />
                     </div>
                 )}
@@ -387,7 +433,7 @@ const TrainingPlayer = () => {
                 )}
 
                 {/* Fallback for unsupported types */}
-                {(!videoId && !playlistId) && assignment.training_type !== 'PDF Document' && (
+                {(!videoId && !playlistId) && assignment.training_type !== 'PDF Document' && !isNAS && !isNASPlaylist && (
                     <div className="text-center p-8 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] max-w-md relative z-20">
                         <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">External Link</h3>
                         <p className="text-sm text-[var(--text-muted)] mb-6">
@@ -409,9 +455,15 @@ const TrainingPlayer = () => {
                 {/* Custom Playlist Sidebar */}
                 {playlistVideos.length > 0 && (
                     <div className="w-[400px] h-full bg-[#0a0a0a]/90 backdrop-blur-2xl border-l border-white/10 overflow-y-auto custom-scrollbar flex flex-col z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.5)]">
-                        <div className="p-6 sticky top-0 bg-black/80 backdrop-blur-md z-10 border-b border-white/5">
-                            <h3 className="text-white font-black text-lg">Episodes</h3>
-                            <p className="text-white/50 text-xs font-bold mt-1 uppercase tracking-wider">{playlistVideos.length} Parts</p>
+                        <div className="p-6 sticky top-0 bg-black/80 backdrop-blur-md z-10 border-b border-white/5 flex justify-between items-start">
+                            <div>
+                                <h3 className="text-white font-black text-lg">Episodes</h3>
+                                <p className="text-white/50 text-xs font-bold mt-1 uppercase tracking-wider">{playlistVideos.length} Parts</p>
+                            </div>
+                            <div className="flex flex-col items-start opacity-75 select-none pointer-events-none mt-0.5">
+                                <div className="text-xl font-black text-white tracking-[0.1em]">LEON'S</div>
+                                <div className="text-[10px] font-black text-[var(--accent)] tracking-[0.15em] -mt-0.5 uppercase">INTEGRATIONS</div>
+                            </div>
                         </div>
                         <div className="flex flex-col p-4 gap-3">
                             {playlistVideos.map((vid, idx) => (
@@ -456,6 +508,65 @@ const TrainingPlayer = () => {
                                         </h4>
                                         <p className="text-xs text-white/50 font-semibold mt-1">
                                             {videoTitles[vid] ? `Part ${idx + 1}` : 'Loading...'}
+                                        </p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* NAS Playlist Sidebar */}
+                {isNASPlaylist && nasPlaylistData.length > 0 && (
+                    <div className="w-[400px] h-full bg-[#0a0a0a]/90 backdrop-blur-2xl border-l border-white/10 overflow-y-auto custom-scrollbar flex flex-col z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.5)]">
+                        <div className="p-6 sticky top-0 bg-black/80 backdrop-blur-md z-10 border-b border-white/5 flex justify-between items-start">
+                            <div>
+                                <h3 className="text-white font-black text-lg">Course Content</h3>
+                                <p className="text-white/50 text-xs font-bold mt-1 uppercase tracking-wider">{nasPlaylistData.length} Videos</p>
+                            </div>
+                            <div className="flex flex-col items-start opacity-75 select-none pointer-events-none mt-0.5">
+                                <div className="text-xl font-black text-white tracking-[0.1em]">LEON'S</div>
+                                <div className="text-[10px] font-black text-[var(--accent)] tracking-[0.15em] -mt-0.5 uppercase">INTEGRATIONS</div>
+                            </div>
+                        </div>
+                        <div className="flex flex-col p-4 gap-3">
+                            {nasPlaylistData.map((vid, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        setCurrentVideoIndex(idx);
+                                        localStorage.setItem(`playlist_current_index_${assignment.assignment_id}`, idx);
+                                    }}
+                                    className={`flex items-start gap-4 p-3 rounded-xl transition-all group text-left relative overflow-hidden ${
+                                        currentVideoIndex === idx 
+                                            ? 'bg-white/10 ring-1 ring-[var(--accent)] shadow-[0_0_15px_rgba(0,0,0,0.5)]' 
+                                            : 'hover:bg-white/5'
+                                    }`}
+                                >
+                                    {currentVideoIndex === idx && (
+                                        <div className="absolute inset-y-0 left-0 w-1 bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]" />
+                                    )}
+                                    <div className="relative w-28 aspect-video rounded-lg flex items-center justify-center flex-shrink-0 bg-white/5 shadow-md border border-white/10 group-hover:border-[var(--accent)]/50 transition-colors">
+                                        <div className="text-white/20 font-black text-2xl">{idx + 1}</div>
+                                        {currentVideoIndex === idx && (
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                <div className="w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center shadow-[0_0_15px_var(--accent)]">
+                                                    <div className="w-2 h-2 bg-white rounded-full animate-ping" />
+                                                </div>
+                                            </div>
+                                        )}
+                                        {vid.duration && (
+                                            <div className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded backdrop-blur-md">
+                                                {vid.duration}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 py-1">
+                                        <h4 className={`font-bold text-sm leading-tight line-clamp-2 ${currentVideoIndex === idx ? 'text-[var(--accent)]' : 'text-white group-hover:text-white'}`}>
+                                            {vid.title || `Video ${idx + 1}`}
+                                        </h4>
+                                        <p className="text-xs text-white/50 font-semibold mt-1">
+                                            Part {idx + 1}
                                         </p>
                                     </div>
                                 </button>

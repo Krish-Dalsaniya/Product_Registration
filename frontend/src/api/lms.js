@@ -70,3 +70,21 @@ export const submitQuizApi = async (data) => {
 export const getYoutubeTitleApi = async (videoId) => {
     return await axios.get(`/hr/lms/youtube-title/${videoId}`);
 };
+
+export const generateQuizQuestionsApi = async (moduleId, transcript, count = 5) => {
+    return await axios.post(`/hr/lms/module/${moduleId}/generate-questions`, { transcript, count });
+};
+
+export const addQuizQuestionsBulkApi = async (moduleId, questions) => {
+    return await axios.post(`/hr/lms/module/${moduleId}/questions/bulk`, { questions });
+};
+
+export const transcribeAudioApi = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return await axios.post('/hr/lms/transcribe', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+};

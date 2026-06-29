@@ -6,8 +6,8 @@ const safeQuery = async (queryText, params = []) => {
   try {
     return await db.query(queryText, params);
   } catch (error) {
-    if (error.code === '42703') { // undefined column error
-      console.warn('Missing column in database, returning empty fallback data for query');
+    if (error.code === '42703' || error.code === '42P01') { // undefined column or table error
+      console.warn(`Database warning (${error.code}): ${error.message}. Returning empty fallback rows.`);
       return { rows: [] };
     }
     throw error;
