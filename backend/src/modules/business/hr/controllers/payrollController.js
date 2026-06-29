@@ -156,13 +156,23 @@ const generatePayroll = async (req, res, next) => {
       `);
       
       for (let emp of empResult.rows) {
+        // Fetch active advances for this employee
+        const activeAdvancesRes = await client.query(`
+          SELECT COALESCE(SUM(monthly_deduction), 0) as total_deduction 
+          FROM hr_advances 
+          WHERE employee_id = $1 AND status = 'Approved' AND months_paid < repayment_term_months
+        `, [emp.employee_id]);
+        
+        const dynamic_advance_deduction = parseFloat(activeAdvancesRes.rows[0].total_deduction) || 0;
+        const total_personal_advance_deduction = parseFloat(emp.personal_advance_deduction) + dynamic_advance_deduction;
+
         const fixed_pay = parseFloat(emp.basic_salary) + parseFloat(emp.hra) + parseFloat(emp.special_allowance) + parseFloat(emp.travel_allowance) + parseFloat(emp.medical_allowance) + parseFloat(emp.dearness_allowance);
         
         const variable_pay = parseFloat(emp.performance_incentive) + parseFloat(emp.non_compete_incentive) + parseFloat(emp.on_project_incentive) + parseFloat(emp.recreational_incentive);
         
         const claims = parseFloat(emp.claims_amount);
 
-        const deductions = parseFloat(emp.pf_deduction) + parseFloat(emp.professional_tax) + parseFloat(emp.tds) + parseFloat(emp.esi_deduction) + parseFloat(emp.internal_emi) + parseFloat(emp.personal_advance_deduction) + parseFloat(emp.official_advance_deduction) + parseFloat(emp.performance_incentive_deduction) + parseFloat(emp.on_project_incentive_deduction);
+        const deductions = parseFloat(emp.pf_deduction) + parseFloat(emp.professional_tax) + parseFloat(emp.tds) + parseFloat(emp.esi_deduction) + parseFloat(emp.internal_emi) + total_personal_advance_deduction + parseFloat(emp.official_advance_deduction) + parseFloat(emp.performance_incentive_deduction) + parseFloat(emp.on_project_incentive_deduction);
 
         const net_salary = fixed_pay + variable_pay - deductions + claims;
         
@@ -207,7 +217,7 @@ const generatePayroll = async (req, res, next) => {
           emp.performance_incentive, emp.non_compete_incentive, emp.on_project_incentive, emp.recreational_incentive,
           emp.claims_amount,
           emp.pf_deduction, emp.professional_tax, emp.tds, emp.esi_deduction, emp.internal_emi,
-          emp.personal_advance_deduction, emp.official_advance_deduction, emp.performance_incentive_deduction, emp.on_project_incentive_deduction,
+          total_personal_advance_deduction, emp.official_advance_deduction, emp.performance_incentive_deduction, emp.on_project_incentive_deduction,
           net_salary
         ]);
       }
@@ -233,13 +243,53 @@ const processPayroll = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Payroll IDs required' });
     }
     
-    await query(`
-      UPDATE hr_payrolls 
-      SET status = 'Processed', updated_at = CURRENT_TIMESTAMP
-      WHERE payroll_id = ANY($1::uuid[])
-    `, [payroll_ids]);
-    
-    sendSuccess(res, null, 'Payrolls processed successfully');
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      await client.query(`
+        UPDATE hr_payrolls 
+        SET status = 'Processed', updated_at = CURRENT_TIMESTAMP
+        WHERE payroll_id = ANY($1::uuid[])
+      `, [payroll_ids]);
+
+      // Get employee IDs to update their advances
+      const empRes = await client.query(`
+        SELECT DISTINCT employee_id 
+        FROM hr_payrolls 
+        WHERE payroll_id = ANY($1::uuid[])
+      `, [payroll_ids]);
+
+      const empIds = empRes.rows.map(r => r.employee_id);
+
+      if (empIds.length > 0) {
+        // Increment months_paid for active advances
+        await client.query(`
+          UPDATE hr_advances
+          SET months_paid = months_paid + 1
+          WHERE employee_id = ANY($1::uuid[])
+            AND status = 'Approved'
+            AND months_paid < repayment_term_months
+        `, [empIds]);
+
+        // Automatically close fully repaid advances
+        await client.query(`
+          UPDATE hr_advances
+          SET status = 'Repaid'
+          WHERE employee_id = ANY($1::uuid[])
+            AND status = 'Approved'
+            AND months_paid >= repayment_term_months
+        `, [empIds]);
+      }
+
+      await client.query('COMMIT');
+      sendSuccess(res, null, 'Payrolls processed successfully');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     next(error);
   }

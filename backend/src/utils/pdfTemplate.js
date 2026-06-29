@@ -351,7 +351,7 @@ const getPdfHtml = (payslip, isFrontend = false) => {
     // Wait, the PDF says: C = TDS, Advance, Professional Tax. But there are also other deductions in Receiver Copy.
     const totalDeductions = parseFloat(payslip.pf_deduction || 0) + parseFloat(payslip.professional_tax || 0) + parseFloat(payslip.tds || 0) + parseFloat(payslip.esi_deduction || 0) + parseFloat(payslip.internal_emi || 0) + parseFloat(payslip.personal_advance_deduction || 0) + parseFloat(payslip.official_advance_deduction || 0) + parseFloat(payslip.performance_incentive_deduction || 0) + parseFloat(payslip.on_project_incentive_deduction || 0);
 
-    return \`
+    return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -391,11 +391,11 @@ const getPdfHtml = (payslip, isFrontend = false) => {
     </style>
 </head>
 <body>
-    \${generateReceiverCopy(payslip, monthName, lastDay, fixedPay, variablePay, totalDeductions)}
-    \${generateOfficeCopy(payslip, monthName, lastDay, fixedPay, variablePay, totalDeductions)}
+    ${generateReceiverCopy(payslip, monthName, lastDay, fixedPay, variablePay, totalDeductions)}
+    ${generateOfficeCopy(payslip, monthName, lastDay, fixedPay, variablePay, totalDeductions)}
 </body>
 </html>
-    \`;
+    `;
 };
 
 module.exports = { getPdfHtml };

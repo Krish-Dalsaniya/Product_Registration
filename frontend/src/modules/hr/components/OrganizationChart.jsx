@@ -162,7 +162,7 @@ const OrganizationChart = () => {
         }
       `}} />
 
-      <div className="flex justify-center min-w-max pb-32">
+      <div className="w-max min-w-full flex justify-center pb-32">
         {treeData.map((rootNode) => (
           <ul key={rootNode.employee_id} className="flex justify-center m-0 p-0">
             <OrgNode node={rootNode} isRoot={true} />

@@ -669,3 +669,36 @@ ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_face_match_score DEC
 ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_face_status VARCHAR(50);
 ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_face_match_score DECIMAL(5,2);
 ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_out_face_status VARCHAR(50);
+
+-- ==============================================================================
+-- HR Claims and Advances Schema
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS hr_claims (
+    claim_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
+    claim_type VARCHAR(50) NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    description TEXT,
+    receipt_url VARCHAR(512),
+    status VARCHAR(20) DEFAULT 'Pending',
+    submitted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    approved_date TIMESTAMP,
+    remarks TEXT
+);
+
+CREATE TABLE IF NOT EXISTS hr_advances (
+    advance_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
+    amount DECIMAL(12,2) NOT NULL,
+    reason TEXT,
+    repayment_term_months INT NOT NULL,
+    monthly_deduction DECIMAL(12,2) NOT NULL,
+    months_paid INT DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'Pending',
+    submitted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    approved_date TIMESTAMP,
+    remarks TEXT
+);

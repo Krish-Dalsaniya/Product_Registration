@@ -4,7 +4,7 @@ import { fetchHREmployeeByIdApi, updateHREmployeeApi, fetchHRMetadataApi, update
 import { fetchEmployeeLeavesApi } from '../../../api/leaves';
 import { getRoles } from '../../../api/roles';
 import { useAuth } from '../../../context/AuthContext';
-import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X, Lock, Calendar } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X, Lock, Calendar, FileText, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
@@ -12,6 +12,50 @@ import { getImageUrl } from '../../../utils/imageUtils';
 
 import { generateFaceEmbedding } from '../../../utils/faceRecognition';
 
+
+const DocumentPreview = ({ base64Data, onUpload, isEditing, label, onView }) => {
+  return (
+    <div className="flex flex-col gap-2 h-full">
+      {base64Data ? (
+        <div className="border border-[var(--border-color)] rounded-xl overflow-hidden bg-[var(--bg-card)] h-[140px] flex items-center justify-center p-2 relative group mt-auto">
+          {base64Data.startsWith('data:image') ? (
+            <img src={base64Data} alt={label} className="max-h-full max-w-full object-contain rounded" />
+          ) : base64Data.startsWith('data:application/pdf') ? (
+            <div className="flex flex-col items-center gap-2 text-emerald-600 font-bold">
+               <FileText size={32} />
+               <span className="text-[12px]">PDF Document</span>
+            </div>
+          ) : (
+            <div className="text-[12px] font-bold text-[var(--text-muted)]">Document Uploaded</div>
+          )}
+          
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={() => onView && onView(base64Data)}>
+            <div className="bg-white/90 p-2 rounded-full shadow-lg hover:scale-110 transition-transform">
+              <Eye className="text-[var(--text-main)]" size={24} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="h-[140px] border border-dashed border-[var(--border-color)] rounded-xl flex items-center justify-center bg-[var(--bg-card)] text-[12px] font-bold text-[var(--text-muted)] mt-auto">
+          Not Uploaded
+        </div>
+      )}
+      
+      {isEditing && (
+        <label className="cursor-pointer text-center mt-2 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:text-[var(--accent)] rounded-lg text-[12px] font-bold text-[var(--text-main)] transition-colors">
+           {base64Data ? 'Replace Document' : 'Upload Document'}
+           <input type="file" className="hidden" accept=".pdf,image/*" onChange={(e) => {
+             if(e.target.files?.length) {
+               const reader = new FileReader();
+               reader.onloadend = () => onUpload(reader.result);
+               reader.readAsDataURL(e.target.files[0]);
+             }
+           }} />
+        </label>
+      )}
+    </div>
+  );
+};
 
 const FormField = ({ label, value, isEditing, type = 'text', options = [], onChange, disabled = false, readOnlyText = null, isCustomView = false, customView = null }) => {
   return (
@@ -51,6 +95,7 @@ const EmployeeProfile = () => {
   // Avatar Upload States
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [imageUploadSrc, setImageUploadSrc] = useState(null);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   // Empty State Fallbacks for View Mode
   useEffect(() => {
@@ -769,12 +814,11 @@ const EmployeeProfile = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
-              <div className="border border-[var(--border-color)] rounded-xl p-5 bg-[var(--bg-workspace)]">
+              <div className="border border-[var(--border-color)] rounded-xl p-5 bg-[var(--bg-workspace)] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <h4 className="font-bold text-[var(--text-main)] border-l-4 border-emerald-500 pl-3">Permanent Account Number</h4>
-                  <button className="text-[var(--text-muted)] hover:text-[var(--text-main)]"><ArrowLeft className="rotate-180" size={16}/></button>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-4 mb-6">
                   <div>
                     <FormField label="Document No." type="text" disabled={!isEditing} value={identitiesInfo.pan_doc_no} onChange={e => setIdentitiesInfo({...identitiesInfo, pan_doc_no: e.target.value})} isEditing={isEditing} />
                   </div>
@@ -782,14 +826,14 @@ const EmployeeProfile = () => {
                     <FormField label="Name As Per Document" type="text" disabled={!isEditing} value={identitiesInfo.pan_name} onChange={e => setIdentitiesInfo({...identitiesInfo, pan_name: e.target.value})} isEditing={isEditing} />
                   </div>
                 </div>
+                <DocumentPreview label="PAN Document" base64Data={identitiesInfo.pan_document} isEditing={isEditing} onUpload={base64 => setIdentitiesInfo({...identitiesInfo, pan_document: base64})} onView={setPreviewDoc} />
               </div>
 
-              <div className="border border-[var(--border-color)] rounded-xl p-5 bg-[var(--bg-workspace)]">
+              <div className="border border-[var(--border-color)] rounded-xl p-5 bg-[var(--bg-workspace)] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <h4 className="font-bold text-[var(--text-main)] border-l-4 border-emerald-500 pl-3">Bank Details for Identification</h4>
-                  <button className="text-[var(--text-muted)] hover:text-[var(--text-main)]"><ArrowLeft className="rotate-180" size={16}/></button>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-4 mb-6">
                   <div>
                     <FormField label="Document No." type="text" disabled={!isEditing} value={identitiesInfo.bank_doc_no} onChange={e => setIdentitiesInfo({...identitiesInfo, bank_doc_no: e.target.value})} isEditing={isEditing} />
                   </div>
@@ -797,14 +841,14 @@ const EmployeeProfile = () => {
                     <FormField label="Name As Per Document" type="text" disabled={!isEditing} value={identitiesInfo.bank_name_on_doc} onChange={e => setIdentitiesInfo({...identitiesInfo, bank_name_on_doc: e.target.value})} isEditing={isEditing} />
                   </div>
                 </div>
+                <DocumentPreview label="Bank Document" base64Data={identitiesInfo.bank_document} isEditing={isEditing} onUpload={base64 => setIdentitiesInfo({...identitiesInfo, bank_document: base64})} onView={setPreviewDoc} />
               </div>
 
-              <div className="border border-[var(--border-color)] rounded-xl p-5 bg-[var(--bg-workspace)]">
+              <div className="border border-[var(--border-color)] rounded-xl p-5 bg-[var(--bg-workspace)] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <h4 className="font-bold text-[var(--text-main)] border-l-4 border-emerald-500 pl-3">AADHAAR</h4>
-                  <button className="text-[var(--text-muted)] hover:text-[var(--text-main)]"><ArrowLeft className="rotate-180" size={16}/></button>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-4 mb-6">
                   <div>
                     <FormField label="Document No." type="text" disabled={!isEditing} value={identitiesInfo.aadhaar_doc_no} onChange={e => setIdentitiesInfo({...identitiesInfo, aadhaar_doc_no: e.target.value})} isEditing={isEditing} />
                   </div>
@@ -812,9 +856,52 @@ const EmployeeProfile = () => {
                     <FormField label="Name As Per Document" type="text" disabled={!isEditing} value={identitiesInfo.aadhaar_name} onChange={e => setIdentitiesInfo({...identitiesInfo, aadhaar_name: e.target.value})} isEditing={isEditing} />
                   </div>
                 </div>
+                <DocumentPreview label="Aadhaar Document" base64Data={identitiesInfo.aadhaar_document} isEditing={isEditing} onUpload={base64 => setIdentitiesInfo({...identitiesInfo, aadhaar_document: base64})} onView={setPreviewDoc} />
               </div>
 
             </div>
+
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm mt-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
+                  <span className="p-2 bg-[var(--bg-workspace)] rounded-lg text-[var(--accent)]"><Briefcase size={20} /></span>
+                  Education Documents
+                </h3>
+              </div>
+              
+              <div className="border border-[var(--border-color)] rounded-xl p-5 bg-[var(--bg-workspace)] mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <FormField label="Higher Education Type" type="select" disabled={!isEditing} value={identitiesInfo.education_type || 'Degree'} onChange={e => setIdentitiesInfo({...identitiesInfo, education_type: e.target.value})} isEditing={isEditing} options={[{value: 'Degree', label: 'Degree (8 Semesters)'}, {value: 'Diploma', label: 'Diploma (6 Semesters)'}]} />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="border border-[var(--border-color)] rounded-xl p-5 bg-[var(--bg-workspace)] flex flex-col">
+                  <h4 className="font-bold text-[var(--text-main)] border-l-4 border-emerald-500 pl-3 mb-4">10th Marksheet</h4>
+                  <div className="mt-auto">
+                    <DocumentPreview label="10th Marksheet" base64Data={identitiesInfo.marksheet_10th} isEditing={isEditing} onUpload={base64 => setIdentitiesInfo({...identitiesInfo, marksheet_10th: base64})} onView={setPreviewDoc} />
+                  </div>
+                </div>
+                <div className="border border-[var(--border-color)] rounded-xl p-5 bg-[var(--bg-workspace)] flex flex-col">
+                  <h4 className="font-bold text-[var(--text-main)] border-l-4 border-emerald-500 pl-3 mb-4">12th Marksheet</h4>
+                  <div className="mt-auto">
+                    <DocumentPreview label="12th Marksheet" base64Data={identitiesInfo.marksheet_12th} isEditing={isEditing} onUpload={base64 => setIdentitiesInfo({...identitiesInfo, marksheet_12th: base64})} onView={setPreviewDoc} />
+                  </div>
+                </div>
+                
+                {[...Array((identitiesInfo.education_type || 'Degree') === 'Diploma' ? 6 : 8)].map((_, i) => (
+                  <div key={`sem_${i+1}`} className="border border-[var(--border-color)] rounded-xl p-5 bg-[var(--bg-workspace)] flex flex-col">
+                    <h4 className="font-bold text-[var(--text-main)] border-l-4 border-emerald-500 pl-3 mb-4">Sem {i+1} Marksheet</h4>
+                    <div className="mt-auto">
+                      <DocumentPreview label={`Sem ${i+1} Marksheet`} base64Data={identitiesInfo[`sem_${i+1}`]} isEditing={isEditing} onUpload={base64 => setIdentitiesInfo({...identitiesInfo, [`sem_${i+1}`]: base64})} onView={setPreviewDoc} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -963,6 +1050,29 @@ const EmployeeProfile = () => {
           imageSrc={imageUploadSrc}
           onCropComplete={handleCropComplete}
         />
+      )}
+
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
+            <div className="flex justify-between items-center p-4 border-b border-[var(--border-color)] bg-[var(--bg-workspace)]">
+              <h3 className="font-bold text-[var(--text-main)]">Document Preview</h3>
+              <button onClick={() => setPreviewDoc(null)} className="p-2 hover:bg-black/5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-neutral-100">
+              {previewDoc.startsWith('data:image') ? (
+                <img src={previewDoc} alt="Preview" className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-md" />
+              ) : previewDoc.startsWith('data:application/pdf') ? (
+                <embed src={previewDoc} type="application/pdf" className="w-full h-[75vh] rounded-lg shadow-md" />
+              ) : (
+                <div className="text-center p-10 text-[var(--text-muted)]">Unsupported document format for preview.</div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

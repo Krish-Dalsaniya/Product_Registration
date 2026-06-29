@@ -121,6 +121,7 @@ const getTabMetadata = (pathname, search) => {
 
 // Lazy load components
 const LoginPage = lazy(() => import('../modules/auth/LoginPage'));
+const RegisterPage = lazy(() => import('../modules/auth/RegisterPage'));
 const AdminDashboard = lazy(() => import('../modules/admin/AdminDashboard'));
 const SalesDashboard = lazy(() => import('../modules/admin/dashboards/SalesDashboard'));
 const MaintenanceDashboard = lazy(() => import('../modules/admin/dashboards/MaintenanceDashboard'));
@@ -160,6 +161,8 @@ const LeaveManagement = lazy(() => import('../modules/hr/pages/LeaveManagement')
 const HolidayPage = lazy(() => import('../modules/hr/pages/HolidayPage'));
 const AttendanceManagement = lazy(() => import('../modules/hr/pages/AttendanceManagement'));
 const PayrollManagement = lazy(() => import('../modules/hr/pages/PayrollManagement'));
+const Claims = lazy(() => import('../modules/hr/pages/Claims'));
+const Advances = lazy(() => import('../modules/hr/pages/Advances'));
 const OnboardingPage = lazy(() => import('../modules/hr/pages/OnboardingPage'));
 const OffboardingPage = lazy(() => import('../modules/hr/pages/OffboardingPage'));
 const HRUserAccessPage = lazy(() => import('../modules/hr/pages/HRUserAccessPage'));
@@ -350,6 +353,7 @@ const Router = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/attendance/verify/:token" element={<AttendanceVerification />} />
         <Route path="/payslip/:payrollId" element={<PayslipDownload />} />
         <Route path="/unauthorized" element={<div className="p-10 text-center text-rose-500 font-bold bg-[var(--bg-workspace)] h-screen uppercase tracking-widest text-sm">Unauthorized Access Restricted</div>} />
@@ -437,6 +441,8 @@ const Router = () => {
           <Route path="/hr/roaster" element={<Navigate to="/hr/roaster/holiday" replace />} />
           <Route path="/hr/attendance" element={<AttendanceManagement />} />
           <Route path="/hr/payrolls" element={<PayrollManagement />} />
+          <Route path="/hr/payrolls/claims" element={<Claims />} />
+          <Route path="/hr/payrolls/advances" element={<Advances />} />
           <Route path="/hr/pms/closure" element={<Closures />} />
           <Route path="/hr/pms/projects" element={<Projects />} />
           <Route path="/hr/pms/teams" element={<TeamsPage />} />

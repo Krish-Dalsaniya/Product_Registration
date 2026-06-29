@@ -40,6 +40,11 @@ export const fetchOnboardingRecordsApi = () => api.get('/hr/onboarding');
 export const createOnboardingRecordApi = (data) => api.post('/hr/onboarding', data);
 export const updateOnboardingStatusApi = (id, status) => api.patch(`/hr/onboarding/${id}/status`, { status });
 export const updateOnboardingChecklistApi = (id, data) => api.patch(`/hr/onboarding/${id}/checklist`, data);
+export const extractOnboardingZipApi = (formData) => api.post('/hr/onboarding/extract-zip', formData, {
+  headers: {
+    'Content-Type': 'multipart/form-data',
+  }
+});
 
 // Trainees
 export const fetchTraineesApi = () => api.get('/hr/trainees');
@@ -50,3 +55,19 @@ export const fetchOffboardingRecordsApi = () => api.get('/hr/offboarding');
 export const createOffboardingRecordApi = (data) => api.post('/hr/offboarding', data);
 export const updateOffboardingStatusApi = (id, status) => api.patch(`/hr/offboarding/${id}/status`, { status });
 export const updateOffboardingChecklistApi = (id, data) => api.patch(`/hr/offboarding/${id}/checklist`, data);
+
+// Registrations
+export const registerEmployeeApi = (data) => api.post('/hr/employees/register', data);
+export const fetchPendingRegistrationsApi = () => api.get('/hr/employees/pending-registrations');
+export const approveRegistrationApi = (id) => api.post(`/hr/employees/pending-registrations/${id}/approve`);
+export const rejectRegistrationApi = (id) => api.post(`/hr/employees/pending-registrations/${id}/reject`);
+
+// Claims
+export const fetchClaimsApi = () => api.get('/hr/claims');
+export const createClaimApi = (data) => api.post('/hr/claims', data);
+export const updateClaimStatusApi = (id, data) => api.put(`/hr/claims/${id}/status`, data);
+
+// Advances
+export const fetchAdvancesApi = () => api.get('/hr/advances');
+export const createAdvanceApi = (data) => api.post('/hr/advances', data);
+export const updateAdvanceStatusApi = (id, data) => api.put(`/hr/advances/${id}/status`, data);
