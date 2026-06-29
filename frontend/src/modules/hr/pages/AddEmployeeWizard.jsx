@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 import { generateFaceEmbedding } from '../../../utils/faceRecognition';
 import { Loader2, ArrowLeft, Save, User, Briefcase, IndianRupee, FileText, ChevronRight, Check, CreditCard, ClipboardCheck, UploadCloud, Camera, MapPin, PhoneCall, Trash2 } from 'lucide-react';
-import { fetchHRMetadataApi, createHREmployeeApi, fetchHREmployeesApi, createOnboardingRecordApi } from '../../../api/hr';
+import { fetchHRMetadataApi, createHREmployeeApi, fetchHREmployeesApi, createOnboardingRecordApi, extractOnboardingZipApi, registerEmployeeApi } from '../../../api/hr';
 import { getRoles } from '../../../api/roles';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 
@@ -57,16 +57,17 @@ const INITIAL_FORM_DATA = {
   identities_info: {
     pan_doc_no: '', pan_name: '',
     bank_doc_no: '', bank_name_on_doc: '',
-    aadhaar_doc_no: '', aadhaar_name: ''
+    aadhaar_doc_no: '', aadhaar_name: '',
+    education_type: 'Degree'
   }
 };
 
-const DocumentDropzone = ({ label, id, isUploaded, setUploadMock }) => (
+const DocumentDropzone = ({ label, id, isUploaded, setUploadMock, onUpload }) => (
   <div className="border-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] transition-colors rounded-xl p-6 flex flex-col items-center justify-center bg-[var(--bg-card)] cursor-pointer relative group h-[140px]">
      {isUploaded ? (
        <>
         <Check size={32} className="text-green-500 mb-3" />
-        <p className="text-[13px] font-bold text-[var(--text-main)]">{label} Uploaded Successfully</p>
+        <p className="text-[13px] font-bold text-[var(--text-main)]">{label} Uploaded</p>
        </>
      ) : (
        <>
@@ -81,15 +82,23 @@ const DocumentDropzone = ({ label, id, isUploaded, setUploadMock }) => (
        accept=".pdf,image/*" 
        onChange={(e) => {
          if(e.target.files?.length) {
+           const file = e.target.files[0];
            setUploadMock(prev => ({...prev, [id]: true}));
            toast.success(`${label} attached`);
+           if (onUpload) {
+             const reader = new FileReader();
+             reader.onloadend = () => {
+               onUpload(reader.result);
+             };
+             reader.readAsDataURL(file);
+           }
          }
        }}
      />
   </div>
 );
 
-const AddEmployeeWizard = () => {
+const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
   useEffect(() => {
     console.log("AddEmployeeWizard MOUNTED", new Date().toISOString());
     return () => console.log("AddEmployeeWizard UNMOUNTED", new Date().toISOString());
@@ -117,10 +126,16 @@ const AddEmployeeWizard = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [metadata, setMetadata] = useState({ departments: [], designations: [], available_users: [] });
   const [employees, setEmployees] = useState([]);
   const [systemRoles, setSystemRoles] = useState([]);
-  const [uploadMock, setUploadMock] = useState({ avatar: false, pan: false, aadhaar: false });
+  const [uploadMock, setUploadMock] = useState({ 
+    avatar: false, pan: false, aadhaar: false,
+    marksheet_10th: false, marksheet_12th: false,
+    sem_1: false, sem_2: false, sem_3: false, sem_4: false,
+    sem_5: false, sem_6: false, sem_7: false, sem_8: false
+  });
   const [isCropperOpen, setIsCropperOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState(null);
   const [croppedImageUrl, setCroppedImageUrl] = useState(null);
@@ -202,6 +217,94 @@ const AddEmployeeWizard = () => {
     toast.success('Draft cleared');
   };
 
+  const handleZipUpload = async (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const uploadFormData = new FormData();
+      uploadFormData.append('zipFile', file);
+      
+      setIsExtracting(true);
+      toast.loading('Analyzing ZIP contents using AI...', { id: 'zip-upload' });
+      try {
+        const res = await extractOnboardingZipApi(uploadFormData);
+        if (res.data?.success && res.data?.data) {
+          const extracted = res.data.data;
+          const extractedDocs = res.data.documents;
+          
+          setFormData(prev => ({
+            ...prev,
+            full_name: extracted.full_name || prev.full_name,
+            email: extracted.email || prev.email,
+            phone_number: extracted.phone_number || prev.phone_number,
+            personal_info: {
+              ...prev.personal_info,
+              dob: extracted.dob || prev.personal_info.dob,
+              gender: extracted.gender || prev.personal_info.gender,
+              fathers_name: extracted.fathers_name || prev.personal_info.fathers_name,
+              marital_status: extracted.marital_status || prev.personal_info.marital_status,
+              blood_group: extracted.blood_group || prev.personal_info.blood_group,
+              spouse_name: extracted.spouse_name || prev.personal_info.spouse_name,
+              marriage_date: extracted.marriage_date || prev.personal_info.marriage_date
+            },
+            address_info: {
+              ...prev.address_info,
+              current_address: extracted.current_address || prev.address_info.current_address,
+              current_city: extracted.current_city || prev.address_info.current_city,
+              current_state: extracted.current_state || prev.address_info.current_state,
+              current_zip: extracted.current_zip || prev.address_info.current_zip,
+              permanent_address: extracted.current_address || prev.address_info.permanent_address,
+              permanent_city: extracted.current_city || prev.address_info.permanent_city,
+              permanent_state: extracted.current_state || prev.address_info.permanent_state,
+              permanent_zip: extracted.current_zip || prev.address_info.permanent_zip,
+              same_as_current: true
+            },
+            pay_info: {
+              ...prev.pay_info,
+              bank_name: extracted.bank_name || prev.pay_info.bank_name,
+              bank_account_no: extracted.bank_account_no || prev.pay_info.bank_account_no,
+              ifsc_code: extracted.ifsc_code || prev.pay_info.ifsc_code,
+              name_on_account: extracted.full_name || prev.pay_info.name_on_account
+            },
+            statutory_info: {
+              ...prev.statutory_info,
+              esi_covered: extracted.esi_number ? 'Yes' : prev.statutory_info.esi_covered,
+              esi_number: extracted.esi_number || prev.statutory_info.esi_number,
+              pf_covered: extracted.pf_no ? 'Yes' : prev.statutory_info.pf_covered,
+              pf_no: extracted.pf_no || prev.statutory_info.pf_no,
+              uan: extracted.uan || prev.statutory_info.uan
+            },
+            identities_info: {
+              ...prev.identities_info,
+              pan_doc_no: extracted.pan_doc_no || prev.identities_info.pan_doc_no,
+              pan_name: extracted.pan_name || prev.identities_info.pan_name,
+              aadhaar_doc_no: extracted.aadhaar_doc_no || prev.identities_info.aadhaar_doc_no,
+              aadhaar_name: extracted.aadhaar_name || prev.identities_info.aadhaar_name,
+              bank_doc_no: extracted.bank_account_no || prev.identities_info.bank_doc_no,
+              bank_name_on_doc: extracted.full_name || prev.identities_info.bank_name_on_doc,
+              ...(extractedDocs || {})
+            }
+          }));
+
+          if (extractedDocs && Object.keys(extractedDocs).length > 0) {
+            setUploadMock(prev => {
+              const newMock = { ...prev };
+              Object.keys(extractedDocs).forEach(key => newMock[key] = true);
+              return newMock;
+            });
+          }
+          
+          toast.success('Successfully extracted and filled data!', { id: 'zip-upload' });
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to extract data from ZIP file.', { id: 'zip-upload' });
+      } finally {
+        setIsExtracting(false);
+        e.target.value = '';
+      }
+    }
+  };
+
   const handleNext = () => {
     if (currentStep === 1) {
       if (!formData.full_name || !formData.email) {
@@ -259,21 +362,31 @@ const AddEmployeeWizard = () => {
       }
       
       const payload = { ...formData, face_embedding };
-      const res = await createHREmployeeApi(payload);
-      if (res.data?.success) {
-        if (isOnboarding) {
-            // Automatically create onboarding record
-            await createOnboardingRecordApi({
-                employee_id: res.data.employee_id,
-                offer_acceptance_date: formData.date_of_joining // Assume DOJ or today
-            });
-            toast.success('Onboarding initiated successfully');
-            localStorage.removeItem('employee_wizard_draft');
-            navigate('/hr/onboarding');
-        } else {
-            toast.success('Employee created successfully');
-            localStorage.removeItem('employee_wizard_draft');
-            navigate('/hr/employees');
+      
+      if (isPublicRegistration) {
+        const res = await registerEmployeeApi(payload);
+        if (res.data?.success) {
+          toast.success('Registration submitted! Please wait for admin approval.');
+          localStorage.removeItem('employee_wizard_draft');
+          navigate('/login');
+        }
+      } else {
+        const res = await createHREmployeeApi(payload);
+        if (res.data?.success) {
+          if (isOnboarding) {
+              // Automatically create onboarding record
+              await createOnboardingRecordApi({
+                  employee_id: res.data.employee_id,
+                  offer_acceptance_date: formData.date_of_joining // Assume DOJ or today
+              });
+              toast.success('Onboarding initiated successfully');
+              localStorage.removeItem('employee_wizard_draft');
+              navigate('/hr/onboarding');
+          } else {
+              toast.success('Employee created successfully');
+              localStorage.removeItem('employee_wizard_draft');
+              navigate('/hr/employees');
+          }
         }
       }
     } catch (error) {
@@ -308,13 +421,13 @@ const AddEmployeeWizard = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4 mt-2">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(isOnboarding ? '/hr/onboarding' : '/hr/employees')} className="p-2.5 hover:bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-colors bg-[var(--bg-workspace)] shadow-sm">
+          <button onClick={() => navigate(isPublicRegistration ? '/login' : isOnboarding ? '/hr/onboarding' : '/hr/employees')} className="p-2.5 hover:bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl transition-colors bg-[var(--bg-workspace)] shadow-sm">
             <ArrowLeft size={20} className="text-[var(--text-main)]" />
           </button>
           <div>
-            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight">{isOnboarding ? 'Onboard New Employee' : 'Add Employee'}</h1>
+            <h1 className="text-3xl font-black text-[var(--text-main)] tracking-tight">{isPublicRegistration ? 'Register Account' : isOnboarding ? 'Onboard New Employee' : 'Add Employee'}</h1>
             <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider mt-1">
-              {isOnboarding ? 'Initialize a new hire and add them to the onboarding track' : 'Add a new team member to the workspace'}
+              {isPublicRegistration ? 'Create your new employee account' : isOnboarding ? 'Initialize a new hire and add them to the onboarding track' : 'Add a new team member to the workspace'}
             </p>
           </div>
         </div>
@@ -371,6 +484,35 @@ const AddEmployeeWizard = () => {
           {currentStep === 1 && (
             <div className="space-y-8 max-w-6xl mx-auto">
               
+              {/* Smart ZIP Upload Dropzone */}
+              <div className="workspace-card p-6 border-2 border-dashed border-[var(--accent)] bg-[var(--accent)]/5 flex flex-col items-center justify-center relative group min-h-[140px]">
+                {isExtracting ? (
+                  <div className="flex flex-col items-center">
+                    <Loader2 size={32} className="text-[var(--accent)] animate-spin mb-3" />
+                    <p className="text-[14px] font-bold text-[var(--text-main)]">Extracting Document Data...</p>
+                    <p className="text-[12px] text-[var(--text-muted)] mt-1">Please wait while AI analyzes the contents.</p>
+                  </div>
+                ) : (
+                  <>
+                    <UploadCloud size={32} className="text-[var(--accent)] mb-3 group-hover:scale-110 transition-transform" />
+                    <p className="text-[15px] font-bold text-[var(--text-main)]">Smart Upload (ZIP / RAR)</p>
+                    <p className="text-[12px] text-[var(--text-muted)] mt-1 mb-2 text-center max-w-[400px]">
+                      Upload an archive containing Resume, Marksheets, Aadhar, and PAN. AI will auto-fill the forms.
+                    </p>
+                    <button type="button" className="px-4 py-1.5 bg-[var(--accent)] text-white font-bold text-xs rounded-lg uppercase tracking-wider shadow-md cursor-pointer pointer-events-none">
+                      Browse Archive
+                    </button>
+                    <input 
+                      type="file" 
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                      accept=".zip,application/zip,.rar,application/vnd.rar,application/x-rar-compressed" 
+                      onChange={handleZipUpload}
+                      disabled={isExtracting}
+                    />
+                  </>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
                 {/* Account Details & Avatar */}
@@ -760,7 +902,7 @@ const AddEmployeeWizard = () => {
                     </div>
                   </div>
                   <div className="mt-auto">
-                    <DocumentDropzone label="PAN Card" id="pan" isUploaded={uploadMock.pan} setUploadMock={setUploadMock} />
+                    <DocumentDropzone label="PAN Card" id="pan" isUploaded={uploadMock.pan} setUploadMock={setUploadMock} onUpload={(base64) => setFormData(prev => ({...prev, identities_info: {...prev.identities_info, pan_document: base64}}))} />
                   </div>
                 </div>
 
@@ -777,8 +919,55 @@ const AddEmployeeWizard = () => {
                     </div>
                   </div>
                   <div className="mt-auto">
-                    <DocumentDropzone label="Aadhaar Card" id="aadhaar" isUploaded={uploadMock.aadhaar} setUploadMock={setUploadMock} />
+                    <DocumentDropzone label="Aadhaar Card" id="aadhaar" isUploaded={uploadMock.aadhaar} setUploadMock={setUploadMock} onUpload={(base64) => setFormData(prev => ({...prev, identities_info: {...prev.identities_info, aadhaar_document: base64}}))} />
                   </div>
+                </div>
+              </div>
+
+              <h3 className={`${sectionTitleClass} mt-10`}>
+                <FileText size={18} className="text-[var(--accent)]" /> Education Documents
+              </h3>
+              
+              <div className="bg-[var(--bg-workspace)] p-6 rounded-xl border border-[var(--border-color)]">
+                <div className="mb-6 max-w-sm">
+                  <label className={labelClass}>Higher Education Type</label>
+                  <select 
+                    value={formData.identities_info.education_type} 
+                    onChange={e => setFormData(prev => ({...prev, identities_info: {...prev.identities_info, education_type: e.target.value}}))} 
+                    className={inputClass}
+                  >
+                    <option value="Degree">Degree (8 Semesters)</option>
+                    <option value="Diploma">Diploma (6 Semesters)</option>
+                  </select>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <DocumentDropzone 
+                    label="10th Marksheet" 
+                    id="marksheet_10th" 
+                    isUploaded={uploadMock.marksheet_10th} 
+                    setUploadMock={setUploadMock}
+                    onUpload={(base64) => setFormData(prev => ({...prev, identities_info: {...prev.identities_info, marksheet_10th: base64}}))}
+                  />
+                  
+                  <DocumentDropzone 
+                    label="12th Marksheet" 
+                    id="marksheet_12th" 
+                    isUploaded={uploadMock.marksheet_12th} 
+                    setUploadMock={setUploadMock}
+                    onUpload={(base64) => setFormData(prev => ({...prev, identities_info: {...prev.identities_info, marksheet_12th: base64}}))}
+                  />
+                  
+                  {[...Array(formData.identities_info.education_type === 'Diploma' ? 6 : 8)].map((_, i) => (
+                    <DocumentDropzone 
+                      key={`sem_${i+1}`}
+                      label={`Sem ${i+1} Marksheet`} 
+                      id={`sem_${i+1}`} 
+                      isUploaded={uploadMock[`sem_${i+1}`]} 
+                      setUploadMock={setUploadMock} 
+                      onUpload={(base64) => setFormData(prev => ({...prev, identities_info: {...prev.identities_info, [`sem_${i+1}`]: base64}}))}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -830,6 +1019,19 @@ const AddEmployeeWizard = () => {
                     <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">PAN Uploaded:</span> <span className="font-medium text-[var(--text-main)]">{uploadMock.pan ? 'Yes' : 'No'}</span></li>
                     <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Aadhaar Number:</span> <span className="font-medium text-[var(--text-main)]">{formData.identities_info.aadhaar_doc_no || '-'}</span></li>
                     <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Aadhaar Uploaded:</span> <span className="font-medium text-[var(--text-main)]">{uploadMock.aadhaar ? 'Yes' : 'No'}</span></li>
+                  </ul>
+                </div>
+
+                <div className="workspace-card p-6 bg-[var(--bg-card)]">
+                  <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-wider mb-4 border-b border-[var(--border-color)] pb-2">Education Documents</h4>
+                  <ul className="space-y-3">
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Education Type:</span> <span className="font-medium text-[var(--text-main)]">{formData.identities_info.education_type}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">10th Marksheet:</span> <span className="font-medium text-[var(--text-main)]">{uploadMock.marksheet_10th ? 'Uploaded' : 'Pending'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">12th Marksheet:</span> <span className="font-medium text-[var(--text-main)]">{uploadMock.marksheet_12th ? 'Uploaded' : 'Pending'}</span></li>
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Semester Marksheets:</span> <span className="font-medium text-[var(--text-main)]">
+                      {[...Array(formData.identities_info.education_type === 'Diploma' ? 6 : 8)]
+                        .filter((_, i) => uploadMock[`sem_${i+1}`]).length} / {formData.identities_info.education_type === 'Diploma' ? 6 : 8} Uploaded
+                    </span></li>
                   </ul>
                 </div>
 

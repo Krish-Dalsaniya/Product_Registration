@@ -548,6 +548,17 @@ const LoginPage = () => {
                     )}
                   </button>
                 </div>
+                
+                {/* REGISTER LINK */}
+                <div className="pt-4 flex justify-center">
+                  <button 
+                    type="button" 
+                    onClick={() => navigate('/register')}
+                    className="text-[11px] font-bold text-[#8c8279] uppercase tracking-wider hover:text-[#ff7944] transition-colors"
+                  >
+                    Don't have an account? <span className="text-[#ff7944] hover:underline">Register</span>
+                  </button>
+                </div>
               </form>
             )}
 

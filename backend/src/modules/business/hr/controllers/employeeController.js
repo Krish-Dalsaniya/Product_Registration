@@ -89,165 +89,280 @@ const getOrInsertDesignation = async (clientOrDb, name, deptId) => {
   return res.rows[0].designation_id;
 };
 
-const createEmployee = async (req, res, next) => {
-  const client = await db.pool.connect(); // Assuming db exposes the pool
-  try {
-    const { 
-      user_id, role_id, // New optional field to link existing user and assign role
-      full_name, email, password,
-      department_id, designation_id, designation_name,
-      manager_id,
-      date_of_joining, employment_status, base_salary, work_location,
-      personal_info, job_info, pay_info, statutory_info, identities_info, face_embedding, image_url
-    } = req.body;
+const executeCreateEmployee = async (client, payload) => {
+  const { 
+    user_id, role_id,
+    full_name, email, password,
+    department_id, designation_id, designation_name,
+    manager_id,
+    date_of_joining, employment_status, base_salary, work_location,
+    personal_info, job_info, pay_info, statutory_info, identities_info, address_info, education_info, emergency_contacts, face_embedding, image_url
+  } = payload;
 
-    // Start transaction
-    await client.query('BEGIN');
+  let finalUserId = user_id;
 
-    let finalUserId = user_id;
-
-    // If no existing user selected, create a new one
-    if (!finalUserId) {
-      // 1. Check if user already exists
-      const userCheck = await client.query('SELECT user_id FROM users WHERE email = $1', [email]);
-      if (userCheck.rows.length > 0) {
-        throw new Error('A user with this email already exists.');
-      }
-
-      // 2. Create the User record
-      const salt = await bcrypt.genSalt(10);
-      const plainPassword = password || 'Welcome@123';
-      const hashedPassword = await bcrypt.hash(plainPassword, salt);
-      
-      let assignedRoleId = role_id;
-      if (!assignedRoleId) {
-        const roleRes = await client.query('SELECT role_id FROM roles WHERE role_name = $1 LIMIT 1', ['User']);
-        if (roleRes.rows.length > 0) {
-          assignedRoleId = roleRes.rows[0].role_id;
-        } else {
-          // Fallback if 'User' role doesn't exist
-          const anyRole = await client.query('SELECT role_id FROM roles ORDER BY role_id DESC LIMIT 1');
-          assignedRoleId = anyRole.rows[0]?.role_id || null;
-        }
-      }
-
-      const userRes = await client.query(`
-        INSERT INTO users (full_name, email, password_hash, role_id) 
-        VALUES ($1, $2, $3, $4) RETURNING user_id
-      `, [full_name, email, hashedPassword, assignedRoleId]);
-      
-      finalUserId = userRes.rows[0].user_id;
-
-      let finalImageUrl = null;
-      if (image_url && image_url.startsWith('data:image')) {
-        try {
-          const uploadRes = await cloudinary.uploader.upload(image_url, {
-            folder: 'users/avatars',
-            public_id: `avatar_${finalUserId}_${Date.now()}`
-          });
-          finalImageUrl = uploadRes.secure_url;
-        } catch (err) {
-          console.error('Error saving profile image to Cloudinary in createEmployee:', err);
-        }
-      }
-
-      if (finalImageUrl) {
-        await client.query('UPDATE users SET image_url = $1 WHERE user_id = $2', [finalImageUrl, finalUserId]);
-      }
-
-      // Email Verification Token
-      const verificationToken = crypto.randomBytes(32).toString('hex');
-      const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-      
-      await client.query(
-        'INSERT INTO email_verification_tokens (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
-        [tokenHash, finalUserId, expiresAt]
-      );
-      
-      await client.query(
-        'INSERT INTO user_email_verified (user_id, is_verified) VALUES ($1, false) ON CONFLICT (user_id) DO NOTHING',
-        [finalUserId]
-      );
-
-      // Send Welcome Email
-      const frontendUrl = env.FRONTEND_URL;
-      const loginLink = `${frontendUrl}/login`;
-      
-      const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2>Welcome to Leon's Group Product Registration!</h2>
-          <p>Hello ${full_name},</p>
-          <p>An administrator has created an employee account for you.</p>
-          <p><strong>Your email:</strong> ${email}</p>
-          <p><strong>Your temporary password is:</strong> ${plainPassword}</p>
-          <p>Please log in using these credentials. You will be asked to set a permanent password upon your first login.</p>
-          <a href="${loginLink}" style="display: inline-block; padding: 10px 20px; background-color: #f06532; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">Log In to Your Account</a>
-        </div>
-      `;
-      
-      sendEmail({
-        to: email,
-        subject: "Welcome to Leon's Group - Your Employee Account Details",
-        html: emailHtml
-      }).catch(err => console.error('Failed to send employee welcome email:', err));
+  if (!finalUserId) {
+    const userCheck = await client.query('SELECT user_id FROM users WHERE email = $1', [email]);
+    if (userCheck.rows.length > 0) {
+      throw new Error('A user with this email already exists.');
     }
 
-    // 3. Generate EMP Code (e.g., EMP-001)
-    const countRes = await client.query('SELECT COUNT(*) FROM hr_employees');
-    let nextNum = parseInt(countRes.rows[0].count) + 1;
-    let empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
-    let isUnique = false;
+    const salt = await bcrypt.genSalt(10);
+    const plainPassword = password || 'Welcome@123';
+    const hashedPassword = await bcrypt.hash(plainPassword, salt);
     
-    while (!isUnique) {
-      const checkRes = await client.query('SELECT 1 FROM hr_employees WHERE emp_code = $1', [empCode]);
-      if (checkRes.rows.length === 0) {
-        isUnique = true;
+    let assignedRoleId = role_id;
+    if (!assignedRoleId) {
+      const roleRes = await client.query('SELECT role_id FROM roles WHERE role_name = $1 LIMIT 1', ['User']);
+      if (roleRes.rows.length > 0) {
+        assignedRoleId = roleRes.rows[0].role_id;
       } else {
-        nextNum++;
-        empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+        const anyRole = await client.query('SELECT role_id FROM roles ORDER BY role_id DESC LIMIT 1');
+        assignedRoleId = anyRole.rows[0]?.role_id || null;
       }
     }
 
-    let finalDesignationId = designation_id;
-    if (designation_name && !designation_id) {
-      finalDesignationId = await getOrInsertDesignation(client, designation_name, department_id || null);
+    const userRes = await client.query(`
+      INSERT INTO users (full_name, email, password_hash, role_id) 
+      VALUES ($1, $2, $3, $4) RETURNING user_id
+    `, [full_name, email, hashedPassword, assignedRoleId]);
+    
+    finalUserId = userRes.rows[0].user_id;
+
+    let finalImageUrl = null;
+    if (image_url && image_url.startsWith('data:image')) {
+      try {
+        const uploadRes = await cloudinary.uploader.upload(image_url, {
+          folder: 'users/avatars',
+          public_id: `avatar_${finalUserId}_${Date.now()}`
+        });
+        finalImageUrl = uploadRes.secure_url;
+      } catch (err) {
+        console.error('Error saving profile image to Cloudinary in createEmployee:', err);
+      }
     }
 
-    // 4. Create the HR Employee record
-    const empRes = await client.query(`
-      INSERT INTO hr_employees (
-        user_id, emp_code, department_id, designation_id, manager_id,
-        date_of_joining, employment_status, base_salary, work_location,
-        personal_info, address_info, education_info, emergency_contacts, 
-        job_info, pay_info, statutory_info, identities_info, face_embedding
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING employee_id
-    `, [
-      finalUserId, empCode, department_id || null, finalDesignationId, manager_id || null,
-      date_of_joining, employment_status, base_salary ? parseFloat(base_salary) : null, work_location,
-      personal_info ? JSON.stringify(personal_info) : '{}',
-      req.body.address_info ? JSON.stringify(req.body.address_info) : '{}',
-      req.body.education_info ? JSON.stringify(req.body.education_info) : '[]',
-      req.body.emergency_contacts ? JSON.stringify(req.body.emergency_contacts) : '[]',
-      job_info ? JSON.stringify(job_info) : '{}',
-      pay_info ? JSON.stringify(pay_info) : '{}',
-      statutory_info ? JSON.stringify(statutory_info) : '{}',
-      identities_info ? JSON.stringify(identities_info) : '{}',
-      face_embedding ? JSON.stringify(face_embedding) : null
-    ]);
+    if (finalImageUrl) {
+      await client.query('UPDATE users SET image_url = $1 WHERE user_id = $2', [finalImageUrl, finalUserId]);
+    }
 
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); 
+    
+    await client.query(
+      'INSERT INTO email_verification_tokens (token_hash, user_id, expires_at) VALUES ($1, $2, $3)',
+      [tokenHash, finalUserId, expiresAt]
+    );
+    
+    await client.query(
+      'INSERT INTO user_email_verified (user_id, is_verified) VALUES ($1, false) ON CONFLICT (user_id) DO NOTHING',
+      [finalUserId]
+    );
+
+    const frontendUrl = env.FRONTEND_URL;
+    const loginLink = `${frontendUrl}/login`;
+    
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>Welcome to Leon's Group Product Registration!</h2>
+        <p>Hello ${full_name},</p>
+        <p>An administrator has created an employee account for you.</p>
+        <p><strong>Your email:</strong> ${email}</p>
+        <p><strong>Your temporary password is:</strong> ${plainPassword}</p>
+        <p>Please log in using these credentials. You will be asked to set a permanent password upon your first login.</p>
+        <a href="${loginLink}" style="display: inline-block; padding: 10px 20px; background-color: #f06532; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">Log In to Your Account</a>
+      </div>
+    `;
+    
+    sendEmail({
+      to: email,
+      subject: "Welcome to Leon's Group - Your Employee Account Details",
+      html: emailHtml
+    }).catch(err => console.error('Failed to send employee welcome email:', err));
+  }
+
+  const countRes = await client.query('SELECT COUNT(*) FROM hr_employees');
+  let nextNum = parseInt(countRes.rows[0].count) + 1;
+  let empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+  let isUnique = false;
+  
+  while (!isUnique) {
+    const checkRes = await client.query('SELECT 1 FROM hr_employees WHERE emp_code = $1', [empCode]);
+    if (checkRes.rows.length === 0) {
+      isUnique = true;
+    } else {
+      nextNum++;
+      empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+    }
+  }
+
+  let finalDesignationId = designation_id;
+  if (designation_name && !designation_id) {
+    finalDesignationId = await getOrInsertDesignation(client, designation_name, department_id || null);
+  }
+
+  const empRes = await client.query(`
+    INSERT INTO hr_employees (
+      user_id, emp_code, department_id, designation_id, manager_id,
+      date_of_joining, employment_status, base_salary, work_location,
+      personal_info, address_info, education_info, emergency_contacts, 
+      job_info, pay_info, statutory_info, identities_info, face_embedding
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING employee_id
+  `, [
+    finalUserId, empCode, department_id || null, finalDesignationId, manager_id || null,
+    date_of_joining, employment_status, base_salary ? parseFloat(base_salary) : null, work_location,
+    personal_info ? JSON.stringify(personal_info) : '{}',
+    address_info ? JSON.stringify(address_info) : '{}',
+    education_info ? JSON.stringify(education_info) : '[]',
+    emergency_contacts ? JSON.stringify(emergency_contacts) : '[]',
+    job_info ? JSON.stringify(job_info) : '{}',
+    pay_info ? JSON.stringify(pay_info) : '{}',
+    statutory_info ? JSON.stringify(statutory_info) : '{}',
+    identities_info ? JSON.stringify(identities_info) : '{}',
+    face_embedding ? JSON.stringify(face_embedding) : null
+  ]);
+
+  return empRes.rows[0].employee_id;
+};
+
+const createEmployee = async (req, res, next) => {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const employee_id = await executeCreateEmployee(client, req.body);
     await client.query('COMMIT');
-    sendSuccess(res, { employee_id: empRes.rows[0].employee_id }, 'Employee created successfully', 201);
+    sendSuccess(res, { employee_id }, 'Employee created successfully', 201);
   } catch (error) {
     await client.query('ROLLBACK');
-    // If it's our custom error, send standard error format
     if (error.message === 'A user with this email already exists.') {
        return res.status(400).json({ success: false, error: { message: error.message } });
     }
     next(error);
   } finally {
     client.release();
+  }
+};
+
+const registerEmployee = async (req, res, next) => {
+  try {
+    const { full_name, email } = req.body;
+    if (!full_name || !email) {
+      return sendError(res, 'BAD_REQUEST', 'Full name and email are required', 400);
+    }
+    
+    // Check if user already exists
+    const userCheck = await db.query('SELECT user_id FROM users WHERE email = $1', [email]);
+    if (userCheck.rows.length > 0) {
+      return sendError(res, 'BAD_REQUEST', 'A user with this email already exists in the system.', 400);
+    }
+
+    const payload = JSON.stringify(req.body);
+    await db.query(`
+      INSERT INTO hr_pending_registrations (full_name, email, payload, status)
+      VALUES ($1, $2, $3, 'pending')
+    `, [full_name, email, payload]);
+
+    sendSuccess(res, null, 'Registration submitted successfully. Waiting for admin approval.', 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getPendingRegistrations = async (req, res, next) => {
+  try {
+    const query = `
+      SELECT id, full_name, email, status, created_at, payload
+      FROM hr_pending_registrations
+      WHERE status = 'pending'
+      ORDER BY created_at DESC
+    `;
+    const result = await db.query(query);
+    sendSuccess(res, result.rows, 'Pending registrations fetched successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+const approveRegistration = async (req, res, next) => {
+  const client = await db.pool.connect();
+  try {
+    const { id } = req.params;
+    
+    await client.query('BEGIN');
+    
+    const recordCheck = await client.query('SELECT * FROM hr_pending_registrations WHERE id = $1 AND status = $2 FOR UPDATE', [id, 'pending']);
+    if (recordCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return sendError(res, 'NOT_FOUND', 'Pending registration not found or already processed.', 404);
+    }
+
+    const registration = recordCheck.rows[0];
+    const payload = registration.payload;
+
+    const employee_id = await executeCreateEmployee(client, payload);
+    
+    await client.query('UPDATE hr_pending_registrations SET status = $1 WHERE id = $2', ['approved', id]);
+    
+    await client.query('COMMIT');
+    
+    // Optionally send an approval email
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>Registration Approved!</h2>
+        <p>Hello ${registration.full_name},</p>
+        <p>Your registration for Leon's Group Product Registration has been approved.</p>
+        <p>You can now log in using the email and password you provided during registration.</p>
+        <a href="${env.FRONTEND_URL}/login" style="display: inline-block; padding: 10px 20px; background-color: #f06532; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px;">Log In Now</a>
+      </div>
+    `;
+    
+    sendEmail({
+      to: registration.email,
+      subject: "Registration Approved - Welcome to Leon's Group",
+      html: emailHtml
+    }).catch(err => console.error('Failed to send approval email:', err));
+
+    sendSuccess(res, { employee_id }, 'Registration approved and employee created successfully.');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    if (error.message === 'A user with this email already exists.') {
+       return res.status(400).json({ success: false, error: { message: error.message } });
+    }
+    next(error);
+  } finally {
+    client.release();
+  }
+};
+
+const rejectRegistration = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query('UPDATE hr_pending_registrations SET status = $1 WHERE id = $2 AND status = $3 RETURNING *', ['rejected', id, 'pending']);
+    if (result.rows.length === 0) {
+      return sendError(res, 'NOT_FOUND', 'Pending registration not found or already processed.', 404);
+    }
+    
+    const registration = result.rows[0];
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>Registration Status Update</h2>
+        <p>Hello ${registration.full_name},</p>
+        <p>We regret to inform you that your registration request for Leon's Group Product Registration has been rejected by the administration.</p>
+        <p>If you believe this was an error, please contact support.</p>
+      </div>
+    `;
+    
+    sendEmail({
+      to: registration.email,
+      subject: "Registration Update - Leon's Group",
+      html: emailHtml
+    }).catch(err => console.error('Failed to send rejection email:', err));
+    
+    sendSuccess(res, null, 'Registration rejected successfully.');
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -451,5 +566,9 @@ module.exports = {
   deleteEmployee,
   getDepartmentsAndDesignations,
   updateEmployeeRole,
-  getEmployeeHierarchy
+  getEmployeeHierarchy,
+  registerEmployee,
+  getPendingRegistrations,
+  approveRegistration,
+  rejectRegistration
 };

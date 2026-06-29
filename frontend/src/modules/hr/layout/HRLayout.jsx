@@ -760,9 +760,9 @@ const HRLayout = () => {
         onTabClick={() => {}}
         onClearAllTabs={() => navigate('/dashboard')}
       />
-      <div className="flex">
+      <div>
         <HRSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        <main className="flex-1 md:ml-64 px-4 md:px-8 pt-[60px] pb-8 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]">
+        <main className="md:ml-64 px-4 md:px-8 pt-[60px] pb-8 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]">
           {!location.pathname.match(/\/(employees|user-access)\/[^\/]+$/) && (
             <div className="max-w-[1600px] mx-auto h-0 overflow-visible flex justify-end mt-0 relative z-20 pointer-events-none">
               <div className="pointer-events-auto">

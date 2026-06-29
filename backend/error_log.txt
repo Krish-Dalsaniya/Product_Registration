@@ -102,3 +102,37 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async createEmployee (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:207:20)
 
+2026-06-29T03:40:04.021Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:193:23)
+
+2026-06-29T03:40:15.045Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:193:23)
+
+2026-06-29T03:40:27.066Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:193:23)
+
+2026-06-29T03:40:41.106Z - Error: Connection terminated due to connection timeout
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async safeQuery (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:7:12)
+    at async getNotifications (D:\Product_Registration\backend\src\modules\admin\dashboardController.js:193:23)
+
+2026-06-29T05:01:25.599Z - error: invalid input syntax for type uuid: "pending"
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployeeById (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:387:20)
+
+2026-06-29T05:01:25.751Z - error: invalid input syntax for type uuid: "pending"
+    at D:\Product_Registration\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getEmployeeById (D:\Product_Registration\backend\src\modules\business\hr\controllers\employeeController.js:387:20)
+

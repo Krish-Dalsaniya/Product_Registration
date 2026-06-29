@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDashboardMetrics } = require('../controllers/hrController');
-const { getEmployees, getDepartmentsAndDesignations, createEmployee, getEmployeeById, updateEmployee, deleteEmployee, updateEmployeeRole, getEmployeeHierarchy } = require('../controllers/employeeController');
+const { getEmployees, getDepartmentsAndDesignations, createEmployee, getEmployeeById, updateEmployee, deleteEmployee, updateEmployeeRole, getEmployeeHierarchy, registerEmployee, getPendingRegistrations, approveRegistration, rejectRegistration } = require('../controllers/employeeController');
 const { verifyToken } = require('../../../../middleware/auth');
 const payrollController = require('../controllers/payrollController');
 
@@ -18,6 +18,8 @@ const {
 router.get('/attendance/verify/:token', getVerificationSession);
 router.post('/attendance/verify', verifyAttendance);
 
+router.post('/employees/register', registerEmployee);
+
 router.use(verifyToken);
 // router.use(requireModuleAccess('hr'));
 
@@ -25,6 +27,9 @@ router.get('/dashboard/metrics', getDashboardMetrics);
 router.get('/employees/hierarchy', getEmployeeHierarchy);
 router.get('/employees', getEmployees);
 router.post('/employees', createEmployee);
+router.get('/employees/pending-registrations', getPendingRegistrations);
+router.post('/employees/pending-registrations/:id/approve', approveRegistration);
+router.post('/employees/pending-registrations/:id/reject', rejectRegistration);
 router.get('/employees/:id', getEmployeeById);
 router.put('/employees/:id', updateEmployee);
 router.delete('/employees/:id', deleteEmployee);

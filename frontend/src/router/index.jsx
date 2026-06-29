@@ -121,6 +121,7 @@ const getTabMetadata = (pathname, search) => {
 
 // Lazy load components
 const LoginPage = lazy(() => import('../modules/auth/LoginPage'));
+const RegisterPage = lazy(() => import('../modules/auth/RegisterPage'));
 const AdminDashboard = lazy(() => import('../modules/admin/AdminDashboard'));
 const SalesDashboard = lazy(() => import('../modules/admin/dashboards/SalesDashboard'));
 const MaintenanceDashboard = lazy(() => import('../modules/admin/dashboards/MaintenanceDashboard'));
@@ -350,6 +351,7 @@ const Router = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/attendance/verify/:token" element={<AttendanceVerification />} />
         <Route path="/payslip/:payrollId" element={<PayslipDownload />} />
         <Route path="/unauthorized" element={<div className="p-10 text-center text-rose-500 font-bold bg-[var(--bg-workspace)] h-screen uppercase tracking-widest text-sm">Unauthorized Access Restricted</div>} />

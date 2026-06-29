@@ -3,7 +3,9 @@ import { Menu, X, Briefcase, ChevronLeft, ChevronRight, Trash2, Package, Bell, A
 import { Home, Users, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid } from 'lucide-react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { getNotifications, addPCBStock, addElectronicsStock, addElectricalStock, addStructuralStock } from '../../api/inventory';
+import { fetchPendingRegistrationsApi, approveRegistrationApi, rejectRegistrationApi } from '../../api/hr';
 import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 import Modal from './Modal';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -55,19 +57,29 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
 
   const hasInventoryAccess = hasPermission('inventory', 'view');
   const hasTicketsAccess = hasPermission('support_tickets', 'view');
-  const hasNotificationsAccess = hasInventoryAccess || hasTicketsAccess;
+  const hasHRAccess = hasPermission('hr', 'view', 'employees');
+  const hasNotificationsAccess = hasInventoryAccess || hasTicketsAccess || hasHRAccess;
 
   const [quickAddModal, setQuickAddModal] = useState({ isOpen: false, item: null, quantityToAdd: '' });
 
   const { data: notificationsRes } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => getNotifications().then(res => res.data.data),
-    enabled: !!hasNotificationsAccess,
+    enabled: !!(hasInventoryAccess || hasTicketsAccess),
     refetchInterval: 60000,
   });
+
+  const { data: pendingRegRes } = useQuery({
+    queryKey: ['pendingRegistrations'],
+    queryFn: () => fetchPendingRegistrationsApi().then(res => res.data.data),
+    enabled: !!hasHRAccess,
+    refetchInterval: 60000,
+  });
+
   const alerts = notificationsRes?.inventoryAlerts || [];
   const tickets = notificationsRes?.supportTickets || [];
-  const totalNotifications = alerts.length + tickets.length;
+  const pendingRegistrations = pendingRegRes || [];
+  const totalNotifications = alerts.length + tickets.length + pendingRegistrations.length;
 
   const addStockMutation = useMutation({
     mutationFn: async ({ category, id, quantity }) => {
@@ -90,8 +102,56 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
     addStockMutation.mutate({
       category: quickAddModal.item.category,
       id: quickAddModal.item.id,
-      quantity: quickAddModal.quantityToAdd
+      quantity: parseInt(quickAddModal.quantityToAdd, 10)
     });
+  };
+
+  const handleApproveRegistration = async (id) => {
+    const result = await Swal.fire({
+      title: 'Approve Registration?',
+      text: 'This will create an employee account and send a welcome email.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Approve'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await approveRegistrationApi(id);
+        if (res.data?.success) {
+          toast.success('Registration approved successfully.');
+          queryClient.invalidateQueries(['pendingRegistrations']);
+        }
+      } catch (error) {
+        toast.error(error.response?.data?.error?.message || 'Failed to approve registration');
+      }
+    }
+  };
+
+  const handleRejectRegistration = async (id) => {
+    const result = await Swal.fire({
+      title: 'Reject Registration?',
+      text: 'This will reject the request and notify the user.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, Reject'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await rejectRegistrationApi(id);
+        if (res.data?.success) {
+          toast.success('Registration rejected successfully.');
+          queryClient.invalidateQueries(['pendingRegistrations']);
+        }
+      } catch (error) {
+        toast.error('Failed to reject registration');
+      }
+    }
   };
 
   // Close notifications when clicking outside
@@ -251,6 +311,33 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
                       </div>
                     ) : (
                       <div className="divide-y divide-[var(--border-color)]/50">
+                        {pendingRegistrations.length > 0 && (
+                          <div className="py-2">
+                            <h4 className="px-4 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Pending Registrations</h4>
+                            {pendingRegistrations.map((reg) => (
+                              <div key={`reg-${reg.id}`} className="px-4 py-3 hover:bg-[var(--nav-hover)] transition-colors group border-b border-[var(--border-color)]/30 last:border-0">
+                                <div className="flex-1 min-w-0 pr-4">
+                                  <p className="text-[12px] font-bold text-[var(--text-main)] truncate">{reg.full_name}</p>
+                                  <p className="text-[10px] font-black tracking-widest text-[var(--text-dim)] mt-1 truncate">{reg.email}</p>
+                                </div>
+                                <div className="flex gap-2 mt-2">
+                                  <button
+                                    onClick={() => { setShowNotifications(false); handleApproveRegistration(reg.id); }}
+                                    className="flex-1 py-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded text-[10px] font-bold transition-colors"
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() => { setShowNotifications(false); handleRejectRegistration(reg.id); }}
+                                    className="flex-1 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded text-[10px] font-bold transition-colors"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         {tickets.length > 0 && (
                           <div className="py-2">
                             <h4 className="px-4 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Support Tickets</h4>
