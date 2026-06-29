@@ -391,8 +391,8 @@ const getPdfHtml = (payslip, isFrontend = false) => {
     </style>
 </head>
 <body>
-    \${generateReceiverCopy(payslip, monthName, lastDay, fixedPay, variablePay, totalDeductions)}
-    \${generateOfficeCopy(payslip, monthName, lastDay, fixedPay, variablePay, totalDeductions)}
+    ${generateReceiverCopy(payslip, monthName, lastDay, fixedPay, variablePay, totalDeductions)}
+    ${generateOfficeCopy(payslip, monthName, lastDay, fixedPay, variablePay, totalDeductions)}
 </body>
 </html>
     `;
