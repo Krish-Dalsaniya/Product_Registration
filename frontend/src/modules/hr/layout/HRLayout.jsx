@@ -750,20 +750,141 @@ const HRSidebar = ({ isOpen, onClose }) => {
   );
 };
 
+const getHRTabMetadata = (pathname) => {
+  if (pathname === '/hr/dashboard') return { label: 'HR Dashboard', iconType: 'Home' };
+  if (pathname === '/hr/employees') return { label: 'Employees', iconType: 'Users' };
+  if (pathname.startsWith('/hr/employees/')) return { label: 'Employee Profile', iconType: 'UserCog' };
+  if (pathname === '/hr/roaster/holiday') return { label: 'Holiday', iconType: 'Palmtree' };
+  if (pathname === '/hr/attendance') return { label: 'Attendance', iconType: 'Clock' };
+  if (pathname === '/hr/payrolls/claims') return { label: 'Claims', iconType: 'FileText' };
+  if (pathname === '/hr/payrolls/advances') return { label: 'Advances', iconType: 'Banknote' };
+  if (pathname === '/hr/pms/closure') return { label: 'Closure', iconType: 'CheckSquare' };
+  if (pathname === '/hr/pms/projects') return { label: 'Projects', iconType: 'FolderGit2' };
+  if (pathname === '/hr/pms/teams') return { label: 'Teams', iconType: 'Users' };
+  if (pathname === '/hr/pms/task-management') return { label: 'Task Management', iconType: 'CheckCircle' };
+  if (pathname === '/hr/pms/scrums-and-sprints') return { label: 'Scrums & Sprints', iconType: 'Zap' };
+  if (pathname === '/hr/lms') return { label: 'LMS', iconType: 'BookOpen' };
+  if (pathname === '/hr/user-access') return { label: 'User Access', iconType: 'LockKeyhole' };
+  if (pathname.startsWith('/hr/user-access/')) return { label: 'Access Detail', iconType: 'LockKeyhole' };
+  
+  const segments = pathname.split('/').filter(Boolean);
+  const lastSegment = segments[segments.length - 1];
+  const label = lastSegment ? lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1).replace(/-/g, ' ') : 'HR Workspace';
+  return { label, iconType: 'Users' };
+};
+
 const HRLayout = () => {
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const storageKey = user?.user_id ? `workspace_tabs_hr_${user.user_id}` : 'workspace_tabs_hr_default';
+
+  const [tabs, setTabs] = React.useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return [];
+  });
+
+  const activePath = location.pathname + location.search;
+
+  React.useEffect(() => {
+    if (['/login', '/unauthorized', '/unauthorized/'].includes(location.pathname)) return;
+    if (location.pathname === '/' || location.pathname === '') return;
+    if (location.pathname === '/hr/dashboard') return; // Do not add tabs for dashboards
+
+    const meta = getHRTabMetadata(location.pathname);
+    
+    setTabs(prevTabs => {
+      const exists = prevTabs.some(t => t.fullPath === activePath);
+      if (exists) return prevTabs;
+      
+      const newTabs = [...prevTabs, {
+        fullPath: activePath,
+        label: meta.label,
+        iconType: meta.iconType
+      }];
+      
+      localStorage.setItem(storageKey, JSON.stringify(newTabs));
+      return newTabs;
+    });
+  }, [activePath, location.pathname, location.search]);
+
+  const handleCloseTab = (e, pathToDelete) => {
+    e.stopPropagation();
+    
+    const indexToDelete = tabs.findIndex(t => t.fullPath === pathToDelete);
+    const newTabs = tabs.filter(t => t.fullPath !== pathToDelete);
+    
+    if (newTabs.length === 0) {
+      setTabs([]);
+      localStorage.removeItem(storageKey);
+      navigate('/hr/dashboard');
+      return;
+    }
+
+    setTabs(newTabs);
+    localStorage.setItem(storageKey, JSON.stringify(newTabs));
+
+    if (activePath === pathToDelete) {
+      const nextIndex = indexToDelete < newTabs.length ? indexToDelete : newTabs.length - 1;
+      const nextTab = newTabs[nextIndex];
+      navigate(nextTab.fullPath);
+    }
+  };
+
+  const handleClearAllTabs = async () => {
+    const result = await Swal.fire({
+      title: 'Clear all tabs?',
+      text: "Would you like to close all open tabs?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, clear them!'
+    });
+    
+    if (result.isConfirmed) {
+      setTabs([]);
+      localStorage.removeItem(storageKey);
+      navigate('/hr/dashboard');
+      toast.success('All tabs cleared');
+    }
+  };
+
+  const updateTabLabel = React.useCallback((fullPath, newLabel) => {
+    setTabs(prevTabs => {
+      const needsUpdate = prevTabs.some(t => t.fullPath === fullPath && t.label !== newLabel);
+      if (!needsUpdate) return prevTabs;
+
+      const updated = prevTabs.map(t => {
+        if (t.fullPath === fullPath) {
+          return { ...t, label: newLabel };
+        }
+        return t;
+      });
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-[var(--bg-workspace)] transition-colors duration-300">
       <Navbar 
         onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-        tabs={[{ fullPath: location.pathname, label: 'HR Workspace', iconType: 'Users' }]}
-        activePath={location.pathname}
-        onTabClose={() => navigate('/dashboard')}
-        onTabClick={() => {}}
-        onClearAllTabs={() => navigate('/dashboard')}
+        tabs={tabs}
+        activePath={activePath}
+        onTabClose={handleCloseTab}
+        onTabClick={(path) => navigate(path)}
+        onClearAllTabs={handleClearAllTabs}
       />
       <div>
         <HRSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -776,7 +897,7 @@ const HRLayout = () => {
             </div>
           )}
           <Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--accent)]"></div></div>}>
-            <Outlet />
+            <Outlet context={{ updateTabLabel }} />
           </Suspense>
         </main>
       </div>

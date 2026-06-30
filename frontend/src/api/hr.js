@@ -34,17 +34,16 @@ export const createHolidayApi = async (data) => {
 export const deleteHolidayApi = async (id) => {
   return await api.delete(`/hr/holidays/${id}`);
 };
+export const updateHolidayApi = async (id, data) => {
+  return await api.put(`/hr/holidays/${id}`, data);
+};
 
 // Onboarding
 export const fetchOnboardingRecordsApi = () => api.get('/hr/onboarding');
 export const createOnboardingRecordApi = (data) => api.post('/hr/onboarding', data);
 export const updateOnboardingStatusApi = (id, status) => api.patch(`/hr/onboarding/${id}/status`, { status });
 export const updateOnboardingChecklistApi = (id, data) => api.patch(`/hr/onboarding/${id}/checklist`, data);
-export const extractOnboardingZipApi = (formData) => api.post('/hr/onboarding/extract-zip', formData, {
-  headers: {
-    'Content-Type': 'multipart/form-data',
-  }
-});
+export const extractOnboardingZipApi = (formData) => api.post('/hr/onboarding/extract-zip', formData);
 
 // Trainees
 export const fetchTraineesApi = () => api.get('/hr/trainees');

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Clock, Users, Calendar as CalendarIcon, FileText, Loader2, ChevronLeft, ChevronRight, User, Check, X, CheckCircle, Palmtree, LayoutDashboard, ListChecks } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../../context/AuthContext';
-import { fetchLeaveSummaryApi, fetchUpcomingLeavesApi, fetchCalendarDataApi, fetchAllPendingRequestsApi, updateLeaveStatusApi, fetchUserLeaveBalancesApi, fetchMyLeaveHistoryApi } from '../../../api/leaves';
+import { fetchLeaveSummaryApi, fetchUpcomingLeavesApi, fetchCalendarDataApi, fetchAllLeaveRequestsApi, updateLeaveStatusApi, fetchUserLeaveBalancesApi, fetchMyLeaveHistoryApi } from '../../../api/leaves';
 import ApplyLeaveModal from '../components/ApplyLeaveModal';
 import Modal from '../../../components/shared/Modal';
 import toast from 'react-hot-toast';
@@ -25,7 +25,9 @@ const LeaveManagement = () => {
 
   const [summary, setSummary] = useState(null);
   const [upcoming, setUpcoming] = useState([]);
-  const [pendingRequests, setPendingRequests] = useState([]);
+  const [allRequests, setAllRequests] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
   const [myHistory, setMyHistory] = useState([]);
   const [calendarData, setCalendarData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,14 +63,14 @@ const LeaveManagement = () => {
           fetchLeaveSummaryApi(),
           fetchUpcomingLeavesApi(),
           fetchCalendarDataApi(currentDate.getMonth() + 1, currentDate.getFullYear()),
-          fetchAllPendingRequestsApi(),
+          fetchAllLeaveRequestsApi(),
           fetchUserLeaveBalancesApi()
         ]);
 
         if (sumRes.data?.success) setSummary(sumRes.data.data);
         if (upRes.data?.success) setUpcoming(upRes.data.data);
         if (calRes.data?.success) setCalendarData(calRes.data.data);
-        if (pendRes.data?.success) setPendingRequests(pendRes.data.data);
+        if (pendRes.data?.success) setAllRequests(pendRes.data.data);
         if (balRes.data?.success) setUserBalances(balRes.data.data);
       } else {
         const [calRes, balRes, histRes] = await Promise.all([
@@ -92,6 +94,10 @@ const LeaveManagement = () => {
   useEffect(() => {
     loadData();
   }, [currentDate]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
 
   const handleStatusUpdate = async (id, status) => {
     try {
@@ -201,6 +207,10 @@ const LeaveManagement = () => {
   };
   const balances = formatBalances();
 
+  const filteredRequests = allRequests.filter(r => statusFilter === 'All' || r.status === statusFilter);
+  const totalPages = Math.ceil(filteredRequests.length / 7) || 1;
+  const paginatedRequests = filteredRequests.slice((currentPage - 1) * 7, currentPage * 7);
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-12">
       {/* Header */}
@@ -236,8 +246,8 @@ const LeaveManagement = () => {
               <div className="flex items-center gap-2"><LayoutDashboard size={16} /> Overview</div>
             </button>
             <button onClick={() => setActiveTab('approvals')} className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'approvals' ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
-              <div className="flex items-center gap-2"><ListChecks size={16} /> Pending Approvals 
-              {pendingRequests.length > 0 && <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full text-[10px] ml-1">{pendingRequests.length}</span>}</div>
+              <div className="flex items-center gap-2"><ListChecks size={16} /> Leaves 
+              {allRequests.filter(r => r.status === 'Pending').length > 0 && <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full text-[10px] ml-1">{allRequests.filter(r => r.status === 'Pending').length}</span>}</div>
             </button>
             <button onClick={() => setActiveTab('calendar')} className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'calendar' ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
               <div className="flex items-center gap-2"><CalendarIcon size={16} /> Team Calendar</div>
@@ -304,26 +314,37 @@ const LeaveManagement = () => {
 
           {activeTab === 'approvals' && (
             <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-0 shadow-sm overflow-x-auto mb-6">
+              <div className="p-4 border-b border-[var(--border-color)] flex items-center gap-2">
+                {['All', 'Pending', 'Approved', 'Rejected'].map(status => (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-colors ${statusFilter === status ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-workspace)] text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
                   <tr className="bg-[var(--bg-workspace)] border-b border-[var(--border-color)]">
                     <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Employee</th>
                     <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Leave Type</th>
                     <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Duration</th>
-                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Reason</th>
+                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Status</th>
                     <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pendingRequests.length > 0 ? (
-                    pendingRequests.map(req => (
+                  {paginatedRequests.length > 0 ? (
+                    paginatedRequests.map(req => (
                       <tr key={req.id} className="border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-workspace)] transition-colors">
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shadow-inner">{req.employee_name.charAt(0)}</div>
                             <div>
                               <p className="text-[13px] font-bold text-[var(--text-main)]">{req.employee_name}</p>
-                              <p className="text-[11px] font-medium text-[var(--text-muted)] mt-0.5">{req.email}</p>
+                              <p className="text-[11px] font-medium text-[var(--text-muted)] mt-0.5">{req.reason || '-'}</p>
                             </div>
                           </div>
                         </td>
@@ -337,11 +358,17 @@ const LeaveManagement = () => {
                           <span className="text-[var(--text-muted)] mx-1">to</span>
                           <span className="font-semibold">{new Date(req.end_date).toLocaleDateString()}</span>
                         </td>
-                        <td className="p-4 text-[12px] text-[var(--text-muted)] max-w-[200px] truncate">
-                          {req.reason || '-'}
+                        <td className="p-4">
+                          <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest ${
+                            req.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
+                            req.status === 'Rejected' ? 'bg-rose-50 text-rose-600 border border-rose-200' :
+                            'bg-amber-50 text-amber-600 border border-amber-200'
+                          }`}>
+                            {req.status}
+                          </span>
                         </td>
                         <td className="p-4 flex items-center justify-end gap-2 h-full">
-                          {hasPermission('hr', 'edit', 'payrolls_leaves') && (
+                          {hasPermission('hr', 'edit', 'payrolls_leaves') && req.status === 'Pending' && (
                             <>
                               <button onClick={() => handleStatusUpdate(req.id, 'Approved')} className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-md border border-emerald-200 transition-colors" title="Approve">
                                 <Check size={16} strokeWidth={3} />
@@ -357,14 +384,53 @@ const LeaveManagement = () => {
                   ) : (
                     <tr>
                       <td colSpan="5" className="p-12 text-center">
-                        <CheckCircle size={32} className="text-emerald-500 mb-4 opacity-80 mx-auto" />
-                        <p className="text-[14px] font-black text-[var(--text-main)] mb-1">All caught up!</p>
-                        <p className="text-[12px] font-medium text-[var(--text-muted)]">No pending leave requests to review.</p>
+                        <CheckCircle size={32} className="text-[var(--text-muted)] mb-4 opacity-50 mx-auto" />
+                        <p className="text-[14px] font-black text-[var(--text-main)] mb-1">No requests found</p>
+                        <p className="text-[12px] font-medium text-[var(--text-muted)]">There are no {statusFilter !== 'All' ? statusFilter.toLowerCase() : ''} leave requests to show.</p>
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+              
+              {totalPages > 1 && (
+                <div className="p-4 border-t border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-workspace)]">
+                  <span className="text-[12px] font-medium text-[var(--text-muted)]">
+                    Showing {(currentPage - 1) * 7 + 1} to {Math.min(currentPage * 7, filteredRequests.length)} of {filteredRequests.length} entries
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--text-muted)] transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-7 h-7 rounded-lg text-[12px] font-bold transition-colors ${
+                            currentPage === page 
+                              ? 'bg-[var(--accent)] text-white border border-[var(--accent)]' 
+                              : 'border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--text-muted)]'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    <button 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--text-muted)] transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

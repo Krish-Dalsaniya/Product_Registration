@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../../middleware/auth');
-const { getLeaveSummary, getUpcomingLeaves, applyForLeave, getCalendarData, getAllPendingRequests, updateLeaveStatus, getUserLeaveBalances, getEmployeeLeaveData, getMyLeaveHistory } = require('./leavesController');
+const { getLeaveSummary, getUpcomingLeaves, applyForLeave, getCalendarData, getAllRequests, updateLeaveStatus, getUserLeaveBalances, getEmployeeLeaveData, getMyLeaveHistory } = require('./leavesController');
 
 router.use(verifyToken);
 
@@ -13,7 +13,7 @@ router.get('/my-history', getMyLeaveHistory);
 router.post('/apply', applyForLeave);
 
 // Admin Routes
-router.get('/requests/pending', getAllPendingRequests);
+router.get('/requests/all', getAllRequests);
 router.put('/requests/:id/status', updateLeaveStatus);
 router.get('/employee/:id', getEmployeeLeaveData);
 

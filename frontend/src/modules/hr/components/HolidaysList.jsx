@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { fetchHolidaysApi, createHolidayApi, deleteHolidayApi } from '../../../api/hr';
-import { Calendar, Trash2, Plus, Loader2 } from 'lucide-react';
+import { fetchHolidaysApi, createHolidayApi, deleteHolidayApi, updateHolidayApi } from '../../../api/hr';
+import { Calendar, Trash2, Plus, Loader2, Pencil, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const HolidaysList = () => {
   const [holidays, setHolidays] = useState([]);
@@ -11,6 +12,7 @@ const HolidaysList = () => {
   const [newName, setNewName] = useState('');
   const [newDate, setNewDate] = useState('');
   const [newType, setNewType] = useState('NATIONAL');
+  const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadHolidays = async () => {
@@ -36,23 +38,55 @@ const HolidaysList = () => {
     
     try {
       setIsSubmitting(true);
-      const res = await createHolidayApi({ name: newName, date: newDate, type: newType });
-      if (res.data?.success) {
-        toast.success('Holiday added successfully!');
-        setNewName('');
-        setNewDate('');
-        setNewType('NATIONAL');
-        loadHolidays();
+      if (editingId) {
+        const res = await updateHolidayApi(editingId, { name: newName, date: newDate, type: newType });
+        if (res.data?.success) {
+          toast.success('Holiday updated successfully!');
+          cancelEdit();
+          loadHolidays();
+        }
+      } else {
+        const res = await createHolidayApi({ name: newName, date: newDate, type: newType });
+        if (res.data?.success) {
+          toast.success('Holiday added successfully!');
+          cancelEdit();
+          loadHolidays();
+        }
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to add holiday');
+      toast.error(err.response?.data?.message || `Failed to ${editingId ? 'update' : 'add'} holiday`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const cancelEdit = () => {
+    setEditingId(null);
+    setNewName('');
+    setNewDate('');
+    setNewType('NATIONAL');
+  };
+
+  const handleEditClick = (h) => {
+    setEditingId(h.holiday_id);
+    setNewName(h.name);
+    setNewDate(new Date(h.date).toISOString().split('T')[0]);
+    setNewType(h.type || 'NATIONAL');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this holiday?')) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You want to delete this holiday?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: 'var(--accent)',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
     
     try {
       const res = await deleteHolidayApi(id);
@@ -135,14 +169,25 @@ const HolidaysList = () => {
               <option value="COMPANY">COMPANY</option>
             </select>
           </div>
-          <button 
-            type="submit" 
-            disabled={isSubmitting}
-            className="w-full md:w-auto px-6 py-2 bg-[var(--accent)] text-white rounded-xl font-bold text-[13px] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-            Add
-          </button>
+          <div className="flex w-full md:w-auto gap-2">
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="flex-1 md:flex-none px-6 py-2 bg-[var(--accent)] text-white rounded-xl font-bold text-[13px] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : (editingId ? <Pencil size={16} /> : <Plus size={16} />)}
+              {editingId ? 'Update' : 'Add'}
+            </button>
+            {editingId && (
+              <button 
+                type="button"
+                onClick={cancelEdit}
+                className="flex-1 md:flex-none px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-[13px] hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
+              >
+                <X size={16} /> Cancel
+              </button>
+            )}
+          </div>
         </form>
 
         {/* Grid Calendar View */}
@@ -190,13 +235,22 @@ const HolidaysList = () => {
                           <h4 className="text-[13px] font-bold text-slate-900 truncate">{h.name}</h4>
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{h.type || 'NATIONAL'}</span>
                         </div>
-                        <button 
-                          onClick={() => handleDelete(h.holiday_id)}
-                          className="opacity-0 group-hover:opacity-100 p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all absolute right-0 bg-white shadow-sm border border-rose-100"
-                          title="Delete Holiday"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="opacity-0 group-hover:opacity-100 absolute right-0 flex gap-2">
+                          <button 
+                            onClick={() => handleEditClick(h)}
+                            className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all bg-white shadow-sm border border-indigo-100"
+                            title="Edit Holiday"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(h.holiday_id)}
+                            className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all bg-white shadow-sm border border-rose-100"
+                            title="Delete Holiday"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     );
                   })}

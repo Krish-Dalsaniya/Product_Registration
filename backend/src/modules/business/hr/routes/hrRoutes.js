@@ -46,9 +46,10 @@ router.post('/attendance/clock-in', clockIn);
 router.post('/attendance/clock-out', clockOut);
 router.put('/attendance/:id', updateAttendance);
 
-const { getHolidays, createHoliday, deleteHoliday } = require('../controllers/holidayController');
+const { getHolidays, createHoliday, deleteHoliday, updateHoliday } = require('../controllers/holidayController');
 router.get('/holidays', getHolidays);
 router.post('/holidays', createHoliday);
+router.put('/holidays/:id', updateHoliday);
 router.delete('/holidays/:id', deleteHoliday);
 
 const payrollRoutes = require('./payrollRoutes');

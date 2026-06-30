@@ -65,3 +65,33 @@ exports.deleteHoliday = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
+
+exports.updateHoliday = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, date, type } = req.body;
+        
+        if (!name || !date) {
+            return res.status(400).json({ success: false, message: 'Name and date are required' });
+        }
+
+        const holidayType = type || 'NATIONAL';
+
+        const result = await pool.query(
+            'UPDATE hr_holidays SET name = $1, date = $2, type = $3 WHERE holiday_id = $4 RETURNING *',
+            [name, date, holidayType, id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: 'Holiday not found' });
+        }
+
+        res.json({ success: true, data: result.rows[0], message: 'Holiday updated successfully' });
+    } catch (error) {
+        console.error('Error updating holiday:', error);
+        if (error.code === '23505') {
+            return res.status(400).json({ success: false, message: 'A holiday already exists for this date' });
+        }
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};

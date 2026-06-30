@@ -154,6 +154,61 @@ const applyForLeave = async (req, res) => {
       return res.status(400).json({ success: false, error: { message: `Insufficient leave balance. You requested ${requestedDays} days but only have ${available} days available.` } });
     }
 
+    // Apply special rules for Paid Leave
+    if (leaveType === 'Paid Leave') {
+      const reqStart = new Date(startDate);
+      const reqMonth = reqStart.getMonth() + 1; // 1 to 12
+      const reqYear = reqStart.getFullYear();
+
+      if (reqMonth >= 1 && reqMonth <= 3) {
+        // Q1 (Jan, Feb, Mar): Max 3 paid leaves combined
+        const q1Query = `
+          SELECT start_date, end_date, is_half_day
+          FROM leave_requests
+          WHERE user_id = $1
+            AND leave_type = 'Paid Leave'
+            AND status IN ('Approved', 'Pending')
+            AND EXTRACT(MONTH FROM start_date) IN (1, 2, 3)
+            AND EXTRACT(YEAR FROM start_date) = $2
+        `;
+        const q1Res = await pool.query(q1Query, [userId, reqYear]);
+        let usedQ1Days = 0;
+        for (const row of q1Res.rows) {
+          usedQ1Days += calculateWorkingDays(row.start_date, row.end_date, row.is_half_day);
+        }
+        
+        if (usedQ1Days + requestedDays > 3) {
+          return res.status(400).json({ 
+            success: false, 
+            error: { message: `You can only take a maximum of 3 Paid Leaves in Jan, Feb, and Mar combined. You have already used/requested ${usedQ1Days} days.` } 
+          });
+        }
+      } else {
+        // Other months (Apr - Dec): Max 1 paid leave per month
+        const monthQuery = `
+          SELECT start_date, end_date, is_half_day
+          FROM leave_requests
+          WHERE user_id = $1
+            AND leave_type = 'Paid Leave'
+            AND status IN ('Approved', 'Pending')
+            AND EXTRACT(MONTH FROM start_date) = $2
+            AND EXTRACT(YEAR FROM start_date) = $3
+        `;
+        const monthRes = await pool.query(monthQuery, [userId, reqMonth, reqYear]);
+        let usedMonthDays = 0;
+        for (const row of monthRes.rows) {
+          usedMonthDays += calculateWorkingDays(row.start_date, row.end_date, row.is_half_day);
+        }
+        
+        if (usedMonthDays + requestedDays > 1) {
+          return res.status(400).json({ 
+            success: false, 
+            error: { message: `You can only take 1 Paid Leave per month from April to December. You have already used/requested ${usedMonthDays} days this month.` } 
+          });
+        }
+      }
+    }
+
     // Insert request as 'Pending'
     const insertQuery = `
       INSERT INTO leave_requests (user_id, leave_type, start_date, end_date, status, reason, is_half_day, half_day_type, attachment_url)
@@ -198,8 +253,8 @@ const getCalendarData = async (req, res) => {
   }
 };
 
-// Fetch all Pending Requests for Admin
-const getAllPendingRequests = async (req, res) => {
+// Fetch all Requests for Admin
+const getAllRequests = async (req, res) => {
   try {
     const isManager = await checkManagerAccess(req.user.user_id, req.user.role_name);
     if (!isManager) {
@@ -210,14 +265,13 @@ const getAllPendingRequests = async (req, res) => {
       SELECT lr.id, lr.user_id, lr.leave_type, lr.start_date, lr.end_date, lr.status, lr.reason, lr.created_at, u.full_name as employee_name, u.email
       FROM leave_requests lr
       JOIN users u ON lr.user_id = u.user_id
-      WHERE lr.status = 'Pending'
-      ORDER BY lr.created_at ASC
+      ORDER BY lr.created_at DESC
     `;
     const result = await pool.query(query);
     res.json({ success: true, data: result.rows });
   } catch (error) {
-    console.error('Error fetching pending requests:', error);
-    res.status(500).json({ success: false, error: { message: 'Failed to fetch pending requests' } });
+    console.error('Error fetching requests:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to fetch requests' } });
   }
 };
 
@@ -352,7 +406,7 @@ module.exports = {
   getUpcomingLeaves,
   getCalendarData,
   applyForLeave,
-  getAllPendingRequests,
+  getAllRequests,
   updateLeaveStatus,
   getUserLeaveBalances,
   getEmployeeLeaveData,

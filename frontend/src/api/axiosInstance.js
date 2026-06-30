@@ -56,7 +56,7 @@ axiosInstance.interceptors.response.use(
         return await axiosInstance(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        if (refreshError.response && refreshError.response.status === 401) {
+        if (refreshError.response && (refreshError.response.status === 401 || refreshError.response.status === 400)) {
           localStorage.removeItem('user');
           window.dispatchEvent(new Event('unauthorized'));
         }

@@ -141,10 +141,12 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
   const [croppedImageUrl, setCroppedImageUrl] = useState(null);
 
   useEffect(() => {
-    loadMetadata();
-    loadRoles();
-    loadEmployees();
-  }, []);
+    if (!isPublicRegistration) {
+      loadMetadata();
+      loadRoles();
+      loadEmployees();
+    }
+  }, [isPublicRegistration]);
 
   // Auto-save draft (debounced to prevent UI lag on selections)
   useEffect(() => {

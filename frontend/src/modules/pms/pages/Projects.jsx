@@ -358,8 +358,14 @@ const AddEditProjectModal = ({ isOpen, onClose, onSuccess, initialData }) => {
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userSearch, setUserSearch] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
   
   const dropdownRef = React.useRef(null);
+
+  const uniqueDepartments = React.useMemo(() => {
+    const depts = allUsers.map(u => u.department_name).filter(Boolean);
+    return [...new Set(depts)];
+  }, [allUsers]);
   
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -557,77 +563,6 @@ const AddEditProjectModal = ({ isOpen, onClose, onSuccess, initialData }) => {
             </select>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Progress (%)</label>
-            <input 
-              type="number" 
-              name="progress_percentage"
-              value={formData.progress_percentage}
-              onChange={handleChange}
-              min="0"
-              max="100"
-              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Linked Product Registration</label>
-            <select 
-              name="product_id"
-              value={formData.product_id}
-              onChange={handleChange}
-              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
-            >
-              <option value="">-- None --</option>
-              {products.map(p => (
-                <option key={p.product_id} value={p.product_id}>{p.product_code} - {p.product_name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Assigned Team</label>
-            <select 
-              name="team_id"
-              value={formData.team_id}
-              onChange={handleChange}
-              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
-            >
-              <option value="">-- None --</option>
-              {teams.map(t => (
-                <option key={t.team_id} value={t.team_id}>{t.team_name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Team Lead</label>
-            <select 
-              name="team_lead_id"
-              value={formData.team_lead_id}
-              onChange={handleChange}
-              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
-            >
-              <option value="">-- Select Team Lead --</option>
-              {allUsers.filter(u => selectedMembers.includes(u.user_id)).map(u => (
-                <option key={u.user_id} value={u.user_id}>{u.full_name} ({u.role_name})</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Client Handler</label>
-            <select 
-              name="client_handler_id"
-              value={formData.client_handler_id}
-              onChange={handleChange}
-              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
-            >
-              <option value="">-- Select Client Handler --</option>
-              {allUsers.filter(u => selectedMembers.includes(u.user_id)).map(u => (
-                <option key={u.user_id} value={u.user_id}>{u.full_name} ({u.role_name})</option>
-              ))}
-            </select>
-          </div>
-
           <div className="col-span-2 relative">
             <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Team Members</label>
             <div className="relative" ref={dropdownRef}>
@@ -683,6 +618,19 @@ const AddEditProjectModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                   </div>
 
                   <div className="p-3.5 border-b border-[var(--border-color)] space-y-3">
+                     <div className="relative">
+                       <select 
+                         value={selectedDepartment}
+                         onChange={(e) => setSelectedDepartment(e.target.value)}
+                         className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-3 py-2 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black uppercase tracking-widest text-[var(--text-main)] appearance-none cursor-pointer" 
+                         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1em', backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat' }}
+                       >
+                         <option value="">ALL DEPARTMENTS</option>
+                         {uniqueDepartments.map(dept => (
+                           <option key={dept} value={dept}>{dept}</option>
+                         ))}
+                       </select>
+                     </div>
                      <div className="relative group">
                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors" />
                        <input 
@@ -697,6 +645,7 @@ const AddEditProjectModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                   
                   <div className="max-h-[300px] overflow-y-auto custom-scrollbar bg-[var(--bg-card)]/50 divide-y divide-[var(--border-color)]/30">
                     {allUsers
+                      .filter(u => selectedDepartment ? u.department_name === selectedDepartment : true)
                       .filter(u => u.full_name.toLowerCase().includes(userSearch.toLowerCase()))
                       .map(u => {
                         const isChecked = selectedMembers.includes(u.user_id);
@@ -734,6 +683,14 @@ const AddEditProjectModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                         );
                       })
                     }
+                    {allUsers
+                      .filter(u => selectedDepartment ? u.department_name === selectedDepartment : true)
+                      .filter(u => u.full_name.toLowerCase().includes(userSearch.toLowerCase()))
+                      .length === 0 && (
+                      <div className="px-4 py-6 text-center text-xs font-medium text-[var(--text-muted)] opacity-60">
+                        No personnel found
+                      </div>
+                    )}
                   </div>
                   
                   <div className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-workspace)]/80 flex justify-end">
@@ -748,6 +705,63 @@ const AddEditProjectModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 </div>
               )}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Progress (%)</label>
+            <input 
+              type="number" 
+              name="progress_percentage"
+              value={formData.progress_percentage}
+              onChange={handleChange}
+              min="0"
+              max="100"
+              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Linked Product Registration</label>
+            <select 
+              name="product_id"
+              value={formData.product_id}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
+            >
+              <option value="">-- None --</option>
+              {products.map(p => (
+                <option key={p.product_id} value={p.product_id}>{p.product_code} - {p.product_name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Team Lead</label>
+            <select 
+              name="team_lead_id"
+              value={formData.team_lead_id}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
+            >
+              <option value="">-- Select Team Lead --</option>
+              {allUsers.filter(u => selectedMembers.includes(u.user_id)).map(u => (
+                <option key={u.user_id} value={u.user_id}>{u.full_name} ({u.role_name})</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Client Handler</label>
+            <select 
+              name="client_handler_id"
+              value={formData.client_handler_id}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
+            >
+              <option value="">-- Select Client Handler --</option>
+              {allUsers.filter(u => selectedMembers.includes(u.user_id)).map(u => (
+                <option key={u.user_id} value={u.user_id}>{u.full_name} ({u.role_name})</option>
+              ))}
+            </select>
           </div>
         </div>
 
