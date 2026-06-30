@@ -13,7 +13,7 @@ import Swal from 'sweetalert2';
 
 const LMSThumbnail = ({ url, type, title }) => {
     const [error, setError] = React.useState(false);
-    
+
     if (type === 'YouTube Video' && url && !error) {
         const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
         const match = url.match(regExp);
@@ -21,11 +21,11 @@ const LMSThumbnail = ({ url, type, title }) => {
             const thumbUrl = `https://img.youtube.com/vi/${match[7]}/hqdefault.jpg`;
             return (
                 <>
-                    <img 
-                        src={thumbUrl} 
-                        alt={title} 
+                    <img
+                        src={thumbUrl}
+                        alt={title}
                         onError={() => setError(true)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent"></div>
                 </>
@@ -213,21 +213,21 @@ const AssignedTrainings = () => {
         { key: 'employee_name', label: 'Assignee', sortable: true },
         { key: 'emp_code', label: 'ID Code', sortable: true },
         { key: 'module_title', label: 'Training Module', sortable: true },
-        { 
-            key: 'assigned_date', 
-            label: 'Assigned Date', 
+        {
+            key: 'assigned_date',
+            label: 'Assigned Date',
             sortable: true,
             render: (row) => new Date(row.assigned_date).toLocaleDateString()
         },
-        { 
-            key: 'due_date', 
-            label: 'Due Date', 
+        {
+            key: 'due_date',
+            label: 'Due Date',
             sortable: true,
             render: (row) => row.due_date ? new Date(row.due_date).toLocaleDateString() : 'No Due Date'
         },
-        { 
-            key: 'status', 
-            label: 'Status', 
+        {
+            key: 'status',
+            label: 'Status',
             sortable: true,
             align: 'center',
             render: (row) => {
@@ -253,8 +253,8 @@ const AssignedTrainings = () => {
             render: (row) => (
                 <div className="w-[120px] flex items-center gap-2">
                     <div className="flex-1 h-2 bg-[var(--border-color)] rounded-full overflow-hidden">
-                        <div 
-                            className={`h-full rounded-full ${row.progress_percentage === 100 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
+                        <div
+                            className={`h-full rounded-full ${row.progress_percentage === 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
                             style={{ width: `${row.progress_percentage || 0}%` }}
                         />
                     </div>
@@ -262,24 +262,24 @@ const AssignedTrainings = () => {
                 </div>
             )
         },
-        { 
-            key: 'completed_at', 
-            label: 'Completion Date', 
+        {
+            key: 'completed_at',
+            label: 'Completion Date',
             sortable: true,
             render: (row) => row.completed_at ? new Date(row.completed_at).toLocaleDateString() : '-'
         },
-        { 
-            key: 'actions', 
-            label: 'Actions', 
+        {
+            key: 'actions',
+            label: 'Actions',
             align: 'right',
             render: (row) => {
                 const canPlayInApp = row.training_type === 'YouTube Video' || row.training_type === 'PDF Document';
                 return (
                     <div className="flex items-center justify-end gap-2">
                         {canPlayInApp ? (
-                            <button 
+                            <button
                                 onClick={() => navigate(`/hr/lms/assignments/${row.assignment_id}/play`, { state: { assignment: row } })}
-                                className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors" 
+                                className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
                                 title="Play Training"
                             >
                                 <Play className="w-4 h-4" />
@@ -299,33 +299,33 @@ const AssignedTrainings = () => {
                             </>
                         )}
                         {row.status !== 'Completed' && hasPermission('hr', 'edit', 'lms') && (
-                        <>
-                            <button 
-                                onClick={() => setProgressModal({ isOpen: true, assignment: row, progress: row.progress_percentage || 0 })} 
-                                className="p-1.5 text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors" 
-                                title="Update Progress"
+                            <>
+                                <button
+                                    onClick={() => setProgressModal({ isOpen: true, assignment: row, progress: row.progress_percentage || 0 })}
+                                    className="p-1.5 text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
+                                    title="Update Progress"
+                                >
+                                    <TrendingUp className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleMarkComplete(row.assignment_id)}
+                                    className="p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                                    title="Mark Complete"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                </button>
+                            </>
+                        )}
+                        {hasPermission('hr', 'delete', 'lms') && (
+                            <button
+                                onClick={() => handleDelete(row.assignment_id)}
+                                className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                title="Delete Assignment"
                             >
-                                <TrendingUp className="w-4 h-4" />
+                                <Trash2 className="w-4 h-4" />
                             </button>
-                            <button 
-                                onClick={() => handleMarkComplete(row.assignment_id)} 
-                                className="p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors" 
-                                title="Mark Complete"
-                            >
-                                <CheckCircle className="w-4 h-4" />
-                            </button>
-                        </>
-                    )}
-                    {hasPermission('hr', 'delete', 'lms') && (
-                    <button 
-                        onClick={() => handleDelete(row.assignment_id)} 
-                        className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors" 
-                        title="Delete Assignment"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                    )}
-                </div>
+                        )}
+                    </div>
                 );
             }
         }
@@ -337,27 +337,27 @@ const AssignedTrainings = () => {
         <div className="p-6 h-full flex flex-col">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-4">
                 <div className="flex items-center gap-5">
-                    <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+                    <div className="p-3 md:p-4 bg-white/40 backdrop-blur-md border border-white/60 rounded-2xl shadow-lg group animate-float">
                         <Briefcase size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
                     </div>
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Assigned Trainings</h1>
+                        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none drop-shadow-sm">Assigned Trainings</h1>
                         <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">Track training assignments and completion status</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
                     <ViewToggle viewMode={viewMode} setViewMode={setViewMode} listMode="list" />
                     {hasPermission('hr', 'create', 'lms') && (
-                    <button
-                        onClick={() => {
-                            setFormData({ assignee: '', module_id: '', due_date: '' });
-                            setIsModalOpen(true);
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-xl font-bold hover:bg-opacity-90 transition-all"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Assign Training
-                    </button>
+                        <button
+                            onClick={() => {
+                                setFormData({ assignee: '', module_id: '', due_date: '' });
+                                setIsModalOpen(true);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white hover:bg-opacity-90 rounded-xl font-bold transition-all shadow-md hover:shadow-lg"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Assign Training
+                        </button>
                     )}
                 </div>
             </div>
@@ -376,32 +376,31 @@ const AssignedTrainings = () => {
                         {assignments.map((assignment, index) => {
                             const canPlayInApp = assignment.training_type === 'YouTube Video' || assignment.training_type === 'PDF Document' || assignment.training_type === 'NAS / Local Video (MP4)' || assignment.training_type === 'NAS Video Playlist (JSON)';
                             return (
-                                <motion.div 
+                                <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.05 }}
                                     key={assignment.assignment_id}
-                                    className="bg-[var(--bg-card)] rounded-[20px] shadow-sm overflow-hidden flex flex-col hover:shadow-xl hover:shadow-[var(--accent)]/10 transition-all duration-300 group border border-[var(--border-color)]/50 hover:border-[var(--accent)]/30"
+                                    className="bg-white/40 backdrop-blur-xl rounded-[20px] shadow-lg overflow-hidden flex flex-col hover:shadow-xl hover:shadow-[var(--accent)]/10 transition-all duration-300 group border border-white/50 hover:border-[var(--accent)]/30 hover:-translate-y-1"
                                 >
                                     {/* Thumbnail Area */}
-                                    <div className="h-44 w-full relative bg-[var(--bg-workspace)] overflow-hidden flex items-center justify-center">
+                                    <div className="h-44 w-full relative bg-white/50 overflow-hidden flex items-center justify-center">
                                         <LMSThumbnail url={assignment.training_url} type={assignment.training_type} title={assignment.module_title} />
                                         <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
-                                            <span className={`px-3 py-1 text-[11px] uppercase tracking-widest font-black rounded-full shadow-lg backdrop-blur-md ${
-                                                assignment.status === 'Completed' ? 'bg-emerald-500/90 text-white' : 
-                                                assignment.status === 'In Progress' ? 'bg-amber-500/90 text-white' : 
-                                                assignment.status === 'Overdue' ? 'bg-rose-500/90 text-white' : 
-                                                'bg-blue-500/90 text-white'
-                                            }`}>
+                                            <span className={`px-3 py-1 text-[11px] uppercase tracking-widest font-black rounded-full shadow-lg backdrop-blur-md ${assignment.status === 'Completed' ? 'bg-emerald-500/90 text-white' :
+                                                    assignment.status === 'In Progress' ? 'bg-amber-500/90 text-white' :
+                                                        assignment.status === 'Overdue' ? 'bg-rose-500/90 text-white' :
+                                                            'bg-blue-500/90 text-white'
+                                                }`}>
                                                 {assignment.status}
                                             </span>
                                         </div>
                                     </div>
 
                                     {/* Progress Bar (Attached precisely below image) */}
-                                    <div className="w-full h-1.5 bg-[var(--border-color)] relative">
-                                        <div 
-                                            className={`absolute left-0 top-0 bottom-0 ${assignment.progress_percentage === 100 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
+                                    <div className="w-full h-1.5 bg-black/5 relative">
+                                        <div
+                                            className={`absolute left-0 top-0 bottom-0 ${assignment.progress_percentage === 100 ? 'bg-emerald-400' : 'bg-amber-400'} shadow-sm`}
                                             style={{ width: `${assignment.progress_percentage || 0}%`, transition: 'width 0.5s ease-in-out' }}
                                         />
                                     </div>
@@ -409,21 +408,21 @@ const AssignedTrainings = () => {
                                     {/* Content Area */}
                                     <div className="p-6 flex-1 flex flex-col">
                                         <div className="flex justify-between items-start mb-2">
-                                            <h3 className="text-xl font-black text-[var(--text-main)] line-clamp-2 leading-tight tracking-tight">{assignment.module_title}</h3>
+                                            <h3 className="text-xl font-black text-[var(--text-main)] line-clamp-2 leading-tight tracking-tight drop-shadow-sm group-hover:text-[var(--accent)] transition-colors">{assignment.module_title}</h3>
                                         </div>
-                                        <p className="text-sm font-bold text-[var(--accent)] mb-4">{assignment.employee_name} <span className="text-[var(--text-muted)] font-semibold">({assignment.emp_code})</span></p>
-                                        
+                                        <p className="text-sm font-bold text-[var(--text-muted)] mb-4">{assignment.employee_name} <span className="text-[var(--text-muted)] font-semibold opacity-70">({assignment.emp_code})</span></p>
+
                                         <div className="flex items-center justify-between text-[12px] font-bold text-[var(--text-muted)] mb-5">
                                             <span>Assigned: {new Date(assignment.assigned_date).toLocaleDateString()}</span>
                                             <span>Progress: <span className="text-[var(--text-main)]">{assignment.progress_percentage || 0}%</span></span>
                                         </div>
-                                        
-                                        <div className="mt-auto flex items-center justify-between pt-5 border-t border-[var(--border-color)]/30">
+
+                                        <div className="mt-auto flex items-center justify-between pt-5 border-t border-[var(--border-color)]">
                                             <div className="flex gap-1.5">
                                                 {canPlayInApp ? (
-                                                    <button 
+                                                    <button
                                                         onClick={() => navigate(`/hr/lms/assignments/${assignment.assignment_id}/play`, { state: { assignment } })}
-                                                        className="px-4 py-2 bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white rounded-xl transition-all duration-300 font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                                                        className="px-4 py-2 bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 hover:bg-[var(--accent)] hover:text-white rounded-xl transition-all duration-300 font-bold text-xs flex items-center gap-1.5 shadow-sm"
                                                     >
                                                         <Play className="w-4 h-4" /> Play Course
                                                     </button>
@@ -445,16 +444,16 @@ const AssignedTrainings = () => {
 
                                             {assignment.status !== 'Completed' && hasPermission('hr', 'edit', 'lms') && (
                                                 <div className="flex gap-1.5">
-                                                    <button 
-                                                        onClick={() => setProgressModal({ isOpen: true, assignment, progress: assignment.progress_percentage || 0 })} 
-                                                        className="p-2 text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white rounded-xl transition-all duration-300 shadow-sm" 
+                                                    <button
+                                                        onClick={() => setProgressModal({ isOpen: true, assignment, progress: assignment.progress_percentage || 0 })}
+                                                        className="p-2 text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white rounded-xl transition-all duration-300 shadow-sm"
                                                         title="Update Progress"
                                                     >
                                                         <TrendingUp className="w-4 h-4" />
                                                     </button>
-                                                    <button 
-                                                        onClick={() => handleMarkComplete(assignment.assignment_id)} 
-                                                        className="p-2 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white rounded-xl transition-all duration-300 shadow-sm" 
+                                                    <button
+                                                        onClick={() => handleMarkComplete(assignment.assignment_id)}
+                                                        className="p-2 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white rounded-xl transition-all duration-300 shadow-sm"
                                                         title="Mark Complete"
                                                     >
                                                         <CheckCircle className="w-4 h-4" />
@@ -462,15 +461,15 @@ const AssignedTrainings = () => {
                                                 </div>
                                             )}
                                             {hasPermission('hr', 'delete', 'lms') && (
-                                            <div className="flex gap-1.5 ml-auto">
-                                                <button 
-                                                    onClick={() => handleDelete(assignment.assignment_id)} 
-                                                    className="p-2 text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-xl transition-all duration-300 shadow-sm" 
-                                                    title="Delete Assignment"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
+                                                <div className="flex gap-1.5 ml-auto">
+                                                    <button
+                                                        onClick={() => handleDelete(assignment.assignment_id)}
+                                                        className="p-2 text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-xl transition-all duration-300 shadow-sm"
+                                                        title="Delete Assignment"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -498,7 +497,7 @@ const AssignedTrainings = () => {
                         <select
                             required
                             value={formData.assignee}
-                            onChange={(e) => setFormData({...formData, assignee: e.target.value})}
+                            onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
                             className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-semibold text-[var(--text-main)] focus:outline-none focus:border-[var(--accent)]"
                         >
                             <option value="">Select Employee or Trainee</option>
@@ -524,7 +523,7 @@ const AssignedTrainings = () => {
                         <select
                             required
                             value={formData.module_id}
-                            onChange={(e) => setFormData({...formData, module_id: e.target.value})}
+                            onChange={(e) => setFormData({ ...formData, module_id: e.target.value })}
                             className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-semibold text-[var(--text-main)] focus:outline-none focus:border-[var(--accent)]"
                         >
                             <option value="">Select Module</option>
@@ -541,7 +540,7 @@ const AssignedTrainings = () => {
                         <input
                             type="date"
                             value={formData.due_date}
-                            onChange={(e) => setFormData({...formData, due_date: e.target.value})}
+                            onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                             className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-semibold text-[var(--text-main)] focus:outline-none focus:border-[var(--accent)]"
                         />
                     </div>
