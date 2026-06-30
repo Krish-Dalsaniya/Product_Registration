@@ -19,7 +19,7 @@ const login = async (req, res, next) => {
     return sendError(res, 'BAD_REQUEST', errors.array()[0].msg, 400);
   }
 
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
 
   try {
     const result = await db.query(
@@ -121,19 +121,23 @@ const login = async (req, res, next) => {
     const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
     const useSecureCookies = isHttps && (env.NODE_ENV === 'production' || (env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false));
 
-    res.cookie('accessToken', accessToken, {
+    const cookieOptions = {
       httpOnly: true,
       secure: useSecureCookies,
       sameSite: useSecureCookies ? 'none' : 'lax',
-      maxAge: 15 * 60 * 1000 // 15 minutes
+    };
+    
+    // If rememberMe is true, set a long expiry (30 days). Otherwise, make them session cookies.
+    if (rememberMe) {
+      cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+    }
+
+    res.cookie('accessToken', accessToken, {
+      ...cookieOptions,
+      maxAge: rememberMe ? 15 * 60 * 1000 : undefined // accessToken always expires fast or on session close
     });
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: useSecureCookies,
-      sameSite: useSecureCookies ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    res.cookie('refreshToken', refreshToken, cookieOptions);
 
     let permissions = [];
     if (user.has_custom_permissions) {
@@ -601,7 +605,7 @@ const disable2FA = async (req, res, next) => {
 };
 
 const login2FA = async (req, res, next) => {
-  const { tempToken, otp } = req.body;
+  const { tempToken, otp, rememberMe } = req.body;
   if (!tempToken || !otp) return sendError(res, 'BAD_REQUEST', 'Missing token or OTP', 400);
 
   try {
@@ -652,19 +656,22 @@ const login2FA = async (req, res, next) => {
     const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
     const useSecureCookies = isHttps && (env.NODE_ENV === 'production' || (env.FRONTEND_URL ? env.FRONTEND_URL.startsWith('https://') : false));
 
-    res.cookie('accessToken', accessToken, {
+    const cookieOptions = {
       httpOnly: true,
       secure: useSecureCookies,
       sameSite: useSecureCookies ? 'none' : 'lax',
-      maxAge: 15 * 60 * 1000 // 15 minutes
+    };
+    
+    if (rememberMe) {
+      cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+    }
+
+    res.cookie('accessToken', accessToken, {
+      ...cookieOptions,
+      maxAge: rememberMe ? 15 * 60 * 1000 : undefined
     });
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: useSecureCookies,
-      sameSite: useSecureCookies ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    res.cookie('refreshToken', refreshToken, cookieOptions);
 
     let permissions = [];
     const customPermsResult = await db.query('SELECT has_custom_permissions FROM user_custom_access WHERE user_id = $1', [user.user_id]);
