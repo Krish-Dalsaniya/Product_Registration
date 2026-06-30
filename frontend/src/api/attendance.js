@@ -31,3 +31,7 @@ export const fetchAttendanceMusterApi = (params) => {
 export const generateVerificationTokenApi = (data) => {
   return api.post('/hr/attendance/verification-token', data);
 };
+
+export const checkTokenStatusApi = (token) => {
+  return api.get(`/hr/attendance/verify/${token}`);
+};

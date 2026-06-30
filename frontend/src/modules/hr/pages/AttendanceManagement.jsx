@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { fetchAttendanceRecordsApi, fetchAttendanceMetricsApi, updateAttendanceApi, createManualAttendanceApi, generateVerificationTokenApi } from '../../../api/attendance';
+import { fetchAttendanceRecordsApi, fetchAttendanceMetricsApi, updateAttendanceApi, createManualAttendanceApi, generateVerificationTokenApi, checkTokenStatusApi } from '../../../api/attendance';
 import { fetchHREmployeesApi, fetchHRMetadataApi } from '../../../api/hr';
 import { Clock, Search, Filter, Calendar as CalendarIcon, UserCheck, UserX, AlertCircle, Edit, Plus, X, Loader2, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -44,6 +44,7 @@ const AttendanceManagement = () => {
   const [qrAction, setQrAction] = useState('');
   const [qrCountdown, setQrCountdown] = useState(60);
   const timerRef = useRef(null);
+  const pollTimerRef = useRef(null);
 
   useEffect(() => {
     loadMetadata();
@@ -201,11 +202,30 @@ const AttendanceManagement = () => {
           setQrCountdown((prev) => {
             if (prev <= 1) {
               clearInterval(timerRef.current);
+              if (pollTimerRef.current) clearInterval(pollTimerRef.current);
               return 0;
             }
             return prev - 1;
           });
         }, 1000);
+
+        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+        pollTimerRef.current = setInterval(async () => {
+          try {
+            await checkTokenStatusApi(res.data.data.token);
+          } catch (pollErr) {
+            if (pollErr.response?.data?.error?.code === 'TOKEN_USED') {
+              clearInterval(pollTimerRef.current);
+              clearInterval(timerRef.current);
+              toast.success('Attendance verified successfully!');
+              closeQrModal();
+              loadRecords();
+              loadMetrics();
+            } else if (pollErr.response?.data?.error?.code === 'TOKEN_EXPIRED' || pollErr.response?.status === 400) {
+              clearInterval(pollTimerRef.current);
+            }
+          }
+        }, 2000);
       }
     } catch (err) {
       toast.error(err.response?.data?.error?.message || 'Failed to generate QR token');
@@ -218,6 +238,7 @@ const AttendanceManagement = () => {
     setIsQrModalOpen(false);
     setQrToken('');
     if (timerRef.current) clearInterval(timerRef.current);
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
   };
 
   const getStatusBadge = (status) => {
