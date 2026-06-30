@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchTraineeByIdApi } from '../../../api/trainee';
 import { ArrowLeft, GraduationCap, Briefcase, Mail, Phone, Calendar, CheckCircle, Clock, BookOpen, AlertCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 
 const TraineeProfile = () => {
     const { id } = useParams();
@@ -52,9 +53,18 @@ const TraineeProfile = () => {
         return <Clock size={16} className="text-amber-500" />;
     };
 
+    const breadcrumbItems = [
+        { label: 'Trainees', path: '/hr/trainee' },
+        { label: `${trainee.first_name} ${trainee.last_name}`, path: '' }
+    ];
+
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto pb-10">
-            <button onClick={() => navigate('/hr/trainee')} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--accent)] font-bold mb-6 transition-colors">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto pb-10 relative">
+            <div className="absolute top-0 right-0 z-20 mt-4 mr-4">
+                <Breadcrumbs items={breadcrumbItems} />
+            </div>
+
+            <button onClick={() => navigate('/hr/trainee')} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--accent)] font-bold mb-6 pt-4 transition-colors">
                 <ArrowLeft size={18} /> Back to Trainees
             </button>
 

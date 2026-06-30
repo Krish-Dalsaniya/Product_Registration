@@ -132,9 +132,9 @@ const clockIn = async (req, res, next) => {
       return sendError(res, 'ALREADY_CLOCKED_IN', 'Employee has already clocked in today', 400);
     }
 
-    // Determine if late (e.g., after 09:15 AM)
+    // Determine if late (e.g., after 08:45 AM)
     const lateThreshold = new Date();
-    lateThreshold.setHours(9, 15, 0, 0);
+    lateThreshold.setHours(8, 45, 0, 0);
     const status = clockInTime > lateThreshold ? 'Late' : 'Present';
 
     const query = `
@@ -174,16 +174,20 @@ const clockOut = async (req, res, next) => {
     const diffMs = clockOutTime - clockInTime;
     const workHours = (diffMs / (1000 * 60 * 60)).toFixed(2); // hours with 2 decimal places
 
+    const minPunchOut = new Date();
+    minPunchOut.setHours(18, 30, 0, 0);
+    const newStatus = clockOutTime < minPunchOut ? 'Absent' : record.status;
+
     const updatedNotes = notes ? (record.notes ? record.notes + ' | ' + notes : notes) : record.notes;
 
     const updateQuery = `
       UPDATE hr_attendance
-      SET clock_out = $1, work_hours = $2, notes = $3, updated_at = CURRENT_TIMESTAMP
-      WHERE attendance_id = $4
+      SET clock_out = $1, work_hours = $2, notes = $3, status = $4, updated_at = CURRENT_TIMESTAMP
+      WHERE attendance_id = $5
       RETURNING *
     `;
 
-    const result = await db.query(updateQuery, [clockOutTime, workHours, updatedNotes, record.attendance_id]);
+    const result = await db.query(updateQuery, [clockOutTime, workHours, updatedNotes, newStatus, record.attendance_id]);
     sendSuccess(res, result.rows[0], 'Clocked out successfully');
   } catch (error) {
     next(error);
@@ -551,7 +555,7 @@ const verifyAttendance = async (req, res, next) => {
       }
       
       const lateThreshold = new Date();
-      lateThreshold.setHours(9, 15, 0, 0);
+      lateThreshold.setHours(8, 45, 0, 0);
       const status = timestamp > lateThreshold ? 'Late' : 'Present';
 
       const insertQuery = `
@@ -584,16 +588,20 @@ const verifyAttendance = async (req, res, next) => {
       const diffMs = timestamp - clockInTime;
       const workHours = (diffMs / (1000 * 60 * 60)).toFixed(2);
 
+      const minPunchOut = new Date();
+      minPunchOut.setHours(18, 30, 0, 0);
+      const newStatus = timestamp < minPunchOut ? 'Absent' : record.status;
+
       const updateQuery = `
         UPDATE hr_attendance
-        SET clock_out = $1, work_hours = $2, updated_at = CURRENT_TIMESTAMP,
-            punch_out_selfie_url = $3, punch_out_latitude = $4, punch_out_longitude = $5,
-            punch_out_device_info = $6, punch_out_ip = $7, punch_out_liveness_challenge = $8, punch_out_liveness_status = $9,
-            punch_out_face_match_score = $10, punch_out_face_status = $11
-        WHERE attendance_id = $12
+        SET clock_out = $1, work_hours = $2, status = $3, updated_at = CURRENT_TIMESTAMP,
+            punch_out_selfie_url = $4, punch_out_latitude = $5, punch_out_longitude = $6,
+            punch_out_device_info = $7, punch_out_ip = $8, punch_out_liveness_challenge = $9, punch_out_liveness_status = $10,
+            punch_out_face_match_score = $11, punch_out_face_status = $12
+        WHERE attendance_id = $13
       `;
       await db.query(updateQuery, [
-        timestamp, workHours, imageUrl, latitude, longitude, 
+        timestamp, workHours, newStatus, imageUrl, latitude, longitude, 
         device_info, clientIp, session.liveness_challenge, liveness_status,
         face_match_score, face_verification_status, record.attendance_id
       ]);

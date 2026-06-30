@@ -5,15 +5,16 @@ import { useAuth } from '../../../context/AuthContext';
 import { Banknote, Plus, Search, Check, X, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../../../components/shared/Modal';
+import EmployeeAdvancesDashboard from '../components/EmployeeAdvancesDashboard';
 
 const Advances = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdvanceModalOpen, setIsAdvanceModalOpen] = useState(false);
 
   const queryClient = useQueryClient();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   
-  const canManage = hasPermission('hr', 'edit', 'payrolls_leaves');
+  const canManage = hasPermission('hr', 'edit', 'payrolls_advances');
 
   const { data: advancesRes, isLoading: isLoadingAdvances } = useQuery({
     queryKey: ['hr_advances'],
@@ -78,6 +79,11 @@ const Advances = () => {
       </span>
     );
   };
+
+  if (!canManage) {
+    const myAdvances = advances.filter(a => a.employee_id === user?.employee_id);
+    return <EmployeeAdvancesDashboard advances={myAdvances} user={user} />;
+  }
 
   return (
     <div className="h-full flex flex-col bg-[var(--bg-main)]">

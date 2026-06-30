@@ -20,7 +20,9 @@ const HR_MODULES = [
     subsections: [
       { name: 'Leaves', prefix: 'hr.payrolls_leaves' },
       { name: 'Holiday (Roaster)', prefix: 'hr.payrolls_holiday' },
-      { name: 'Attendance', prefix: 'hr.payrolls_attendance' }
+      { name: 'Attendance', prefix: 'hr.payrolls_attendance' },
+      { name: 'Claims', prefix: 'hr.payrolls_claims' },
+      { name: 'Advances', prefix: 'hr.payrolls_advances' }
     ]
   },
   { 

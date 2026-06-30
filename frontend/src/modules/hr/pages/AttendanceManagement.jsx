@@ -284,11 +284,19 @@ const AttendanceManagement = () => {
     { key: 'status', label: 'Status', render: (row) => getStatusBadge(row.status) },
     { key: 'clock_in', label: 'Clock In', render: (row) => formatTime(row.clock_in) },
     { key: 'clock_out', label: 'Clock Out', render: (row) => formatTime(row.clock_out) },
-    { key: 'work_hours', label: 'Work Hrs', render: (row) => (
-      <span className="font-semibold text-[var(--text-main)]">
-        {row.work_hours ? `${row.work_hours}h` : '--'}
-      </span>
-    ) }
+    { key: 'work_hours', label: 'Work Hrs', render: (row) => {
+      if (!row.clock_in || !row.clock_out) return <span className="font-semibold text-[var(--text-main)]">--</span>;
+      const diffMs = new Date(row.clock_out) - new Date(row.clock_in);
+      if (diffMs <= 0) return <span className="font-semibold text-[var(--text-main)]">--</span>;
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+      return (
+        <span className="font-semibold text-[var(--text-main)]">
+          {hours}h {minutes}m {seconds}s
+        </span>
+      );
+    } }
   ];
 
   if (!isAdmin) {

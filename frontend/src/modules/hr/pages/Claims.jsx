@@ -5,15 +5,16 @@ import { useAuth } from '../../../context/AuthContext';
 import { FileText, Plus, Search, Check, X, ExternalLink, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../../../components/shared/Modal';
+import EmployeeClaimsDashboard from '../components/EmployeeClaimsDashboard';
 
 const Claims = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
 
   const queryClient = useQueryClient();
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   
-  const canManage = hasPermission('hr', 'edit', 'payrolls_leaves');
+  const canManage = hasPermission('hr', 'edit', 'payrolls_claims');
 
   const { data: claimsRes, isLoading: isLoadingClaims } = useQuery({
     queryKey: ['hr_claims'],
@@ -71,6 +72,11 @@ const Claims = () => {
       </span>
     );
   };
+
+  if (!canManage) {
+    const myClaims = claims.filter(c => c.employee_id === user?.employee_id);
+    return <EmployeeClaimsDashboard claims={myClaims} user={user} />;
+  }
 
   return (
     <div className="h-full flex flex-col bg-[var(--bg-main)]">
