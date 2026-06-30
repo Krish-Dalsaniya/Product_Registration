@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, rememberMe = false) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const res = await loginApi(email, password);
+      const res = await loginApi(email, password, rememberMe);
       
       if (res.data.data.requirePasswordChange) {
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -139,7 +139,7 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const { login2FaApi } = await import('../api/auth');
-      const res = await login2FaApi(tempToken, otp);
+      const res = await login2FaApi(tempToken, otp, rememberMe);
       const { user } = res.data.data;
 
       if (rememberMe) {
