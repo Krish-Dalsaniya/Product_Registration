@@ -18,6 +18,7 @@ const getEmployees = async (req, res, next) => {
         e.employment_status, 
         e.work_location,
         e.manager_id,
+        e.org_chart_parent_id,
         u.user_id,
         u.full_name,
         u.email,
@@ -558,6 +559,39 @@ const getEmployeeHierarchy = async (req, res, next) => {
   }
 };
 
+const updateOrgChartPlacements = async (req, res, next) => {
+  const { placements } = req.body;
+  if (!placements || typeof placements !== 'object') {
+    return sendError(res, 'Invalid placements data', 400);
+  }
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // First, clear all org_chart_parent_id to avoid constraint issues and remove unassigned ones
+    await client.query('UPDATE hr_employees SET org_chart_parent_id = NULL');
+
+    // Update each placed employee
+    for (const [employeeId, config] of Object.entries(placements)) {
+      if (config.parentId) {
+        await client.query(
+          'UPDATE hr_employees SET org_chart_parent_id = $1 WHERE employee_id = $2',
+          [config.parentId, employeeId]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    sendSuccess(res, null, 'Organization chart placements saved successfully');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    next(error);
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getEmployees,
   getEmployeeById,
@@ -570,5 +604,6 @@ module.exports = {
   registerEmployee,
   getPendingRegistrations,
   approveRegistration,
-  rejectRegistration
+  rejectRegistration,
+  updateOrgChartPlacements
 };

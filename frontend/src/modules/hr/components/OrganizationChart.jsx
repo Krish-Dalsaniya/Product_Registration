@@ -3,31 +3,8 @@ import {
   Loader2, User, ChevronDown, ChevronUp, ZoomIn, ZoomOut, Maximize2, Move,
   Plus, X, Search, Pencil, Check, RotateCcw, UserPlus
 } from 'lucide-react';
-import { fetchHREmployeesApi } from '../../../api/hr';
+import { fetchHREmployeesApi, updateOrgChartApi } from '../../../api/hr';
 import toast from 'react-hot-toast';
-
-const STORAGE_KEY = 'org_chart_placements_v1';
-
-// ---- localStorage helpers -------------------------------------------------
-// placements shape: { [employeeId]: { parentId: string | null } }
-// Presence of an id in `placements` means "this employee has been placed
-// onto the chart". Absence means they sit in the "Unassigned" pool.
-const loadPlacements = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-};
-
-const savePlacements = (placements) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(placements));
-  } catch (err) {
-    console.error('Failed to save org chart', err);
-  }
-};
 
 // ---- tree building ----------------------------------------------------
 const buildTree = (employees, placements) => {
@@ -237,10 +214,20 @@ const OrganizationChart = () => {
     const load = async () => {
       try {
         setIsLoading(true);
-        const res = await fetchHREmployeesApi(); // <-- replace with your actual flat-list employee API
+        const res = await fetchHREmployeesApi();
         const list = res.data?.data || res.data?.employees || [];
         setEmployees(list);
-        setPlacements(loadPlacements());
+
+        const placed = {};
+        list.forEach(emp => {
+          if (emp.org_chart_parent_id) {
+            placed[emp.employee_id] = { parentId: emp.org_chart_parent_id };
+            if (!placed[emp.org_chart_parent_id]) {
+               placed[emp.org_chart_parent_id] = { parentId: null };
+            }
+          }
+        });
+        setPlacements(placed);
       } catch (error) {
         toast.error('Failed to load employees');
         console.error(error);
@@ -251,11 +238,6 @@ const OrganizationChart = () => {
     load();
   }, []);
 
-  // persist placements whenever they change
-  useEffect(() => {
-    if (!isLoading) savePlacements(placements);
-  }, [placements, isLoading]);
-
   const treeData = useMemo(() => buildTree(employees, placements), [employees, placements]);
 
   const unassigned = useMemo(() => {
@@ -263,36 +245,54 @@ const OrganizationChart = () => {
   }, [employees, placements]);
 
   // ---- chart editing actions --------------------------------------------
-  const handlePick = (employeeId) => {
+  const handlePick = async (employeeId) => {
     const parentId = pickerFor === 'root' ? null : pickerFor;
-    setPlacements(prev => ({
-      ...prev,
+    const next = {
+      ...placements,
       [employeeId]: { parentId },
-    }));
-    setPickerFor(null);
-    toast.success('Added to chart');
+    };
+    try {
+      await updateOrgChartApi(next);
+      setPlacements(next);
+      setPickerFor(null);
+      toast.success('Added to chart');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save changes to database');
+    }
   };
 
-  const handleRemove = (employeeId) => {
-    setPlacements(prev => {
-      const next = { ...prev };
-      const removedParentId = next[employeeId]?.parentId ?? null;
-      delete next[employeeId];
-      // reattach this person's direct reports to their old parent
-      // (so removing a middle manager doesn't orphan their whole team)
-      Object.keys(next).forEach(id => {
-        if (next[id].parentId === employeeId) {
-          next[id] = { parentId: removedParentId };
-        }
-      });
-      return next;
+  const handleRemove = async (employeeId) => {
+    const next = { ...placements };
+    const removedParentId = next[employeeId]?.parentId ?? null;
+    delete next[employeeId];
+    
+    Object.keys(next).forEach(id => {
+      if (next[id].parentId === employeeId) {
+        next[id] = { parentId: removedParentId };
+      }
     });
-    toast.success('Removed from chart');
+
+    try {
+      await updateOrgChartApi(next);
+      setPlacements(next);
+      toast.success('Removed from chart');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save changes to database');
+    }
   };
 
-  const handleResetChart = () => {
+  const handleResetChart = async () => {
     if (!window.confirm('Clear the entire chart? Employees will move back to Unassigned.')) return;
-    setPlacements({});
+    try {
+      await updateOrgChartApi({});
+      setPlacements({});
+      toast.success('Chart reset');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to reset chart');
+    }
   };
 
   // ---- zoom / pan (same as before) --------------------------------------

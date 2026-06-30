@@ -70,3 +70,6 @@ export const updateClaimStatusApi = (id, data) => api.put(`/hr/claims/${id}/stat
 export const fetchAdvancesApi = () => api.get('/hr/advances');
 export const createAdvanceApi = (data) => api.post('/hr/advances', data);
 export const updateAdvanceStatusApi = (id, data) => api.put(`/hr/advances/${id}/status`, data);
+
+// Org Chart
+export const updateOrgChartApi = (placements) => api.post('/hr/org-chart/placements', { placements });

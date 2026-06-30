@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDashboardMetrics } = require('../controllers/hrController');
-const { getEmployees, getDepartmentsAndDesignations, createEmployee, getEmployeeById, updateEmployee, deleteEmployee, updateEmployeeRole, getEmployeeHierarchy, registerEmployee, getPendingRegistrations, approveRegistration, rejectRegistration } = require('../controllers/employeeController');
+const { getEmployees, getDepartmentsAndDesignations, createEmployee, getEmployeeById, updateEmployee, deleteEmployee, updateEmployeeRole, getEmployeeHierarchy, registerEmployee, getPendingRegistrations, approveRegistration, rejectRegistration, updateOrgChartPlacements } = require('../controllers/employeeController');
 const { verifyToken } = require('../../../../middleware/auth');
 const payrollController = require('../controllers/payrollController');
 
@@ -35,6 +35,7 @@ router.put('/employees/:id', updateEmployee);
 router.delete('/employees/:id', deleteEmployee);
 router.put('/employees/:id/role', updateEmployeeRole);
 router.get('/metadata', getDepartmentsAndDesignations);
+router.post('/org-chart/placements', updateOrgChartPlacements);
 
 router.post('/attendance/verification-token', generateVerificationToken);
 

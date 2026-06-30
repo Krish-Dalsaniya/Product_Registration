@@ -702,3 +702,6 @@ CREATE TABLE IF NOT EXISTS hr_advances (
     approved_date TIMESTAMP,
     remarks TEXT
 );
+
+-- Add org_chart_parent_id for independent org chart structure
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS org_chart_parent_id UUID REFERENCES hr_employees(employee_id) ON DELETE SET NULL;
