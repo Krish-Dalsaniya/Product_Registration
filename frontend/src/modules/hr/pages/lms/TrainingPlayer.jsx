@@ -100,6 +100,31 @@ const TrainingPlayer = () => {
                     if (Array.isArray(data)) {
                         setNasPlaylistData(data);
                         setCurrentVideoIndex(startingIndex);
+                        
+                        // Automatically fetch video duration for items missing it
+                        data.forEach((vid, idx) => {
+                            if (!vid.duration) {
+                                const tempVideo = document.createElement('video');
+                                tempVideo.preload = 'metadata';
+                                tempVideo.onloadedmetadata = () => {
+                                    if (tempVideo.duration && tempVideo.duration !== Infinity) {
+                                        const mins = Math.floor(tempVideo.duration / 60);
+                                        const secs = Math.floor(tempVideo.duration % 60);
+                                        const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                                        
+                                        setNasPlaylistData(prev => {
+                                            const newData = [...prev];
+                                            if (newData[idx]) {
+                                                newData[idx] = { ...newData[idx], duration: formatted };
+                                            }
+                                            return newData;
+                                        });
+                                    }
+                                    tempVideo.remove();
+                                };
+                                tempVideo.src = vid.url;
+                            }
+                        });
                     }
                 })
                 .catch(err => {
