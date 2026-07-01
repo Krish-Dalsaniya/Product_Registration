@@ -24,6 +24,9 @@ const OffboardingPage = () => {
     const [editNotes, setEditNotes] = useState('');
     const [editStatus, setEditStatus] = useState('');
 
+    // New item inputs
+    const [newItemInputs, setNewItemInputs] = useState({ clearance: '', assets: '' });
+
     const loadRecords = async () => {
         try {
             setIsLoading(true);
@@ -94,6 +97,26 @@ const OffboardingPage = () => {
         }
     };
 
+    const handleAddItem = (type) => {
+        const val = newItemInputs[type]?.trim();
+        if (!val) return;
+
+        if (type === 'clearance') {
+            setEditClearance([...editClearance, { name: val, checked: false }]);
+        } else if (type === 'assets') {
+            setEditAssets([...editAssets, { name: val, checked: false }]);
+        }
+        setNewItemInputs(prev => ({ ...prev, [type]: '' }));
+    };
+
+    const handleDeleteItem = (type, idx) => {
+        if (type === 'clearance') {
+            setEditClearance(editClearance.filter((_, i) => i !== idx));
+        } else if (type === 'assets') {
+            setEditAssets(editAssets.filter((_, i) => i !== idx));
+        }
+    };
+
     const calculateProgress = (record) => {
         if (record.status === 'Completed') return 100;
 
@@ -108,6 +131,40 @@ const OffboardingPage = () => {
             assets.filter(i => i.checked).length;
             
         return Math.round((checked / total) * 100);
+    };
+
+    const getTaskCategoryStatus = (checklist) => {
+        if (!checklist || checklist.length === 0) return 'NA';
+        const checkedCount = checklist.filter(i => i.checked).length;
+        if (checkedCount === 0) return 'PENDING';
+        if (checkedCount === checklist.length) return 'COMPLETED';
+        return 'PARTIAL';
+    };
+
+    const TaskIndicator = ({ label, status }) => {
+        let colorClass = 'text-[var(--text-muted)]';
+        let bgClass = 'bg-transparent border-transparent';
+        
+        if (status === 'COMPLETED') {
+            colorClass = 'text-emerald-600';
+            bgClass = 'bg-emerald-50 border-emerald-200';
+        } else if (status === 'PARTIAL') {
+            colorClass = 'text-amber-600';
+            bgClass = 'bg-amber-50 border-amber-200';
+        } else if (status === 'PENDING') {
+            colorClass = 'text-rose-600';
+            bgClass = 'bg-rose-50 border-rose-200';
+        }
+
+        return (
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${bgClass} ${status === 'NA' ? 'opacity-50' : ''}`} title={`${label}: ${status}`}>
+                {status === 'COMPLETED' && <CheckCircle size={14} className={colorClass} />}
+                {status === 'PARTIAL' && <Clock size={14} className={colorClass} />}
+                {status === 'PENDING' && <div className={`w-3 h-3 rounded-full border-2 border-rose-400`} />}
+                {status === 'NA' && <div className="w-3 h-[2px] bg-[var(--text-muted)] rounded-full" />}
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
+            </div>
+        );
     };
 
     const filteredRecords = records.filter(r => 
@@ -132,6 +189,37 @@ const OffboardingPage = () => {
             )
         },
         {
+            key: 'dates',
+            label: 'Key Dates',
+            render: (row) => (
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                        <span className="text-[var(--text-muted)] uppercase">Resigned:</span>
+                        <span className="text-[var(--text-main)]">{row.resignation_date ? new Date(row.resignation_date).toLocaleDateString() : '-'}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                        <span className="text-[var(--text-muted)] uppercase">Last Day:</span>
+                        <span className="text-rose-600">{row.last_working_day ? new Date(row.last_working_day).toLocaleDateString() : '-'}</span>
+                    </div>
+                </div>
+            )
+        },
+        {
+            key: 'tasks',
+            label: 'Task Breakdown',
+            render: (row) => {
+                const clearanceStatus = getTaskCategoryStatus(row.clearance_checklist);
+                const assetsStatus = getTaskCategoryStatus(row.asset_recovery_checklist);
+                
+                return (
+                    <div className="flex items-center gap-2">
+                        <TaskIndicator label="Clearance" status={clearanceStatus} />
+                        <TaskIndicator label="Assets" status={assetsStatus} />
+                    </div>
+                );
+            }
+        },
+        {
             key: 'status',
             label: 'Status',
             render: (row) => {
@@ -144,45 +232,6 @@ const OffboardingPage = () => {
                     </span>
                 );
             }
-        },
-        {
-            key: 'progress',
-            label: 'Offboarding Progress',
-            render: (row) => {
-                const pct = calculateProgress(row);
-                return (
-                    <div className="w-full max-w-[200px]">
-                        <div className="flex items-center justify-between text-[12px] font-bold mb-1.5">
-                            <span className="text-[var(--text-muted)]">Completion</span>
-                            <span className="text-[var(--text-main)]">{pct}%</span>
-                        </div>
-                        <div className="w-full bg-[var(--border-color)] rounded-full h-1.5 overflow-hidden">
-                            <div 
-                                className="bg-[var(--accent)] h-full transition-all duration-500" 
-                                style={{ width: `${pct}%` }}
-                            ></div>
-                        </div>
-                    </div>
-                );
-            }
-        },
-        {
-            key: 'date',
-            label: 'Resignation Date',
-            render: (row) => (
-                <span className="text-[13px] md:text-[14px] font-semibold text-[var(--text-main)]">
-                    {row.resignation_date ? new Date(row.resignation_date).toLocaleDateString() : '-'}
-                </span>
-            )
-        },
-        {
-            key: 'last_day',
-            label: 'Last Day',
-            render: (row) => (
-                <span className="text-[13px] md:text-[14px] font-semibold text-rose-600">
-                    {row.last_working_day ? new Date(row.last_working_day).toLocaleDateString() : '-'}
-                </span>
-            )
         }
     ];
 
@@ -319,56 +368,108 @@ const OffboardingPage = () => {
                             
                             {/* Clearance */}
                             <div>
-                                <div className="flex items-center gap-2 mb-4 border-b border-[var(--border-color)] pb-2">
-                                    <CheckCircle size={18} className="text-emerald-500" />
-                                    <h4 className="text-[14px] font-bold text-[var(--text-main)]">Clearances</h4>
+                                <div className="flex items-center justify-between mb-4 border-b border-[var(--border-color)] pb-2">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle size={18} className="text-emerald-500" />
+                                        <h4 className="text-[14px] font-bold text-[var(--text-main)]">Clearances</h4>
+                                    </div>
                                 </div>
-                                {editClearance.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {editClearance.map((item, idx) => (
-                                            <label key={idx} className="flex items-center gap-3 cursor-pointer group">
+                                <div className="space-y-3 mb-3">
+                                    {editClearance.map((item, idx) => (
+                                        <div key={idx} className="flex items-center justify-between group">
+                                            <label className="flex items-center gap-3 cursor-pointer">
                                                 <input 
                                                     type="checkbox" 
                                                     checked={item.checked} 
                                                     onChange={() => toggleChecklist('clearance', idx)}
                                                     className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
                                                 />
-                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] group-hover:text-[var(--accent)]'}`}>
+                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
                                                     {item.name}
                                                 </span>
                                             </label>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-[12px] text-[var(--text-muted)] italic">No clearance items in checklist.</p>
-                                )}
+                                            <button 
+                                                onClick={() => handleDeleteItem('clearance', idx)}
+                                                className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Remove item"
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {editClearance.length === 0 && (
+                                        <p className="text-[12px] text-[var(--text-muted)] italic">No clearance items in checklist.</p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Add a clearance item..." 
+                                        className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--accent)]"
+                                        value={newItemInputs.clearance}
+                                        onChange={(e) => setNewItemInputs(prev => ({ ...prev, clearance: e.target.value }))}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddItem('clearance')}
+                                    />
+                                    <button 
+                                        onClick={() => handleAddItem('clearance')}
+                                        className="p-1.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)] hover:text-white transition-colors"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Assets */}
                             <div>
-                                <div className="flex items-center gap-2 mb-4 border-b border-[var(--border-color)] pb-2">
-                                    <Clock size={18} className="text-amber-500" />
-                                    <h4 className="text-[14px] font-bold text-[var(--text-main)]">Asset Recovery</h4>
+                                <div className="flex items-center justify-between mb-4 border-b border-[var(--border-color)] pb-2">
+                                    <div className="flex items-center gap-2">
+                                        <Clock size={18} className="text-amber-500" />
+                                        <h4 className="text-[14px] font-bold text-[var(--text-main)]">Asset Recovery</h4>
+                                    </div>
                                 </div>
-                                {editAssets.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {editAssets.map((item, idx) => (
-                                            <label key={idx} className="flex items-center gap-3 cursor-pointer group">
+                                <div className="space-y-3 mb-3">
+                                    {editAssets.map((item, idx) => (
+                                        <div key={idx} className="flex items-center justify-between group">
+                                            <label className="flex items-center gap-3 cursor-pointer">
                                                 <input 
                                                     type="checkbox" 
                                                     checked={item.checked} 
                                                     onChange={() => toggleChecklist('assets', idx)}
                                                     className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
                                                 />
-                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] group-hover:text-[var(--accent)]'}`}>
+                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
                                                     {item.name}
                                                 </span>
                                             </label>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-[12px] text-[var(--text-muted)] italic">No assets to recover.</p>
-                                )}
+                                            <button 
+                                                onClick={() => handleDeleteItem('assets', idx)}
+                                                className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Remove item"
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {editAssets.length === 0 && (
+                                        <p className="text-[12px] text-[var(--text-muted)] italic">No assets to recover.</p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Add an asset..." 
+                                        className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--accent)]"
+                                        value={newItemInputs.assets}
+                                        onChange={(e) => setNewItemInputs(prev => ({ ...prev, assets: e.target.value }))}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddItem('assets')}
+                                    />
+                                    <button 
+                                        onClick={() => handleAddItem('assets')}
+                                        className="p-1.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)] hover:text-white transition-colors"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Exit Notes */}

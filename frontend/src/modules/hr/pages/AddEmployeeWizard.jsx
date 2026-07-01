@@ -324,8 +324,9 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
         }
       }
     } else if (currentStep === 2) {
-      if (!(formData.designation_name || formData.designation_id) || !formData.date_of_joining) {
-        toast.error('Please fill out all mandatory fields in the Job step (Designation, DOJ).');
+      const hasDesignation = (formData.designation_name && formData.designation_name.trim() !== '') || formData.designation_id;
+      if (!hasDesignation || !formData.date_of_joining || !formData.department_id) {
+        toast.error('Please fill out all mandatory fields in the Job step (Department, Designation, DOJ).');
         return;
       }
     }
@@ -340,7 +341,8 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.full_name || !formData.email || !(formData.designation_name || formData.designation_id) || !formData.date_of_joining) {
+    const hasDesignation = (formData.designation_name && formData.designation_name.trim() !== '') || formData.designation_id;
+    if (!formData.full_name?.trim() || !formData.email?.trim() || !hasDesignation || !formData.date_of_joining || !formData.department_id) {
       toast.error('Please ensure all mandatory Personal and Job fields are filled before submitting.');
       return;
     }
@@ -758,7 +760,7 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className={labelClass}>Department</label>
+                  <label className={labelClass}>Department *</label>
                   <select value={formData.department_id} onChange={e => setFormData(prev => ({...prev, department_id: e.target.value, designation_id: null, designation_name: ''}))} className={inputClass}>
                     <option value="">Select Department</option>
                     {metadata.departments.map(d => (

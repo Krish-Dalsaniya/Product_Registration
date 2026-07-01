@@ -24,6 +24,9 @@ const OnboardingPage = () => {
     const [editTraining, setEditTraining] = useState([]);
     const [editStatus, setEditStatus] = useState('');
 
+    // New item inputs
+    const [newItemInputs, setNewItemInputs] = useState({ docs: '', assets: '', training: '' });
+
     const loadRecords = async () => {
         try {
             setIsLoading(true);
@@ -98,6 +101,30 @@ const OnboardingPage = () => {
         }
     };
 
+    const handleAddItem = (type) => {
+        const val = newItemInputs[type]?.trim();
+        if (!val) return;
+
+        if (type === 'docs') {
+            setEditDocs([...editDocs, { name: val, checked: false }]);
+        } else if (type === 'assets') {
+            setEditAssets([...editAssets, { name: val, checked: false }]);
+        } else if (type === 'training') {
+            setEditTraining([...editTraining, { name: val, checked: false }]);
+        }
+        setNewItemInputs(prev => ({ ...prev, [type]: '' }));
+    };
+
+    const handleDeleteItem = (type, idx) => {
+        if (type === 'docs') {
+            setEditDocs(editDocs.filter((_, i) => i !== idx));
+        } else if (type === 'assets') {
+            setEditAssets(editAssets.filter((_, i) => i !== idx));
+        } else if (type === 'training') {
+            setEditTraining(editTraining.filter((_, i) => i !== idx));
+        }
+    };
+
     const calculateProgress = (record) => {
         if (record.status === 'Completed') return 100;
         
@@ -114,6 +141,40 @@ const OnboardingPage = () => {
             training.filter(i => i.checked).length;
             
         return Math.round((checked / total) * 100);
+    };
+
+    const getTaskCategoryStatus = (checklist) => {
+        if (!checklist || checklist.length === 0) return 'NA';
+        const checkedCount = checklist.filter(i => i.checked).length;
+        if (checkedCount === 0) return 'PENDING';
+        if (checkedCount === checklist.length) return 'COMPLETED';
+        return 'PARTIAL';
+    };
+
+    const TaskIndicator = ({ label, status }) => {
+        let colorClass = 'text-[var(--text-muted)]';
+        let bgClass = 'bg-transparent border-transparent';
+        
+        if (status === 'COMPLETED') {
+            colorClass = 'text-emerald-600';
+            bgClass = 'bg-emerald-50 border-emerald-200';
+        } else if (status === 'PARTIAL') {
+            colorClass = 'text-amber-600';
+            bgClass = 'bg-amber-50 border-amber-200';
+        } else if (status === 'PENDING') {
+            colorClass = 'text-rose-600';
+            bgClass = 'bg-rose-50 border-rose-200';
+        }
+
+        return (
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded border ${bgClass} ${status === 'NA' ? 'opacity-50' : ''}`} title={`${label}: ${status}`}>
+                {status === 'COMPLETED' && <CheckCircle size={14} className={colorClass} />}
+                {status === 'PARTIAL' && <Clock size={14} className={colorClass} />}
+                {status === 'PENDING' && <div className={`w-3 h-3 rounded-full border-2 border-rose-400`} />}
+                {status === 'NA' && <div className="w-3 h-[2px] bg-[var(--text-muted)] rounded-full" />}
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${colorClass}`}>{label}</span>
+            </div>
+        );
     };
 
     const filteredRecords = records.filter(r => 
@@ -138,6 +199,32 @@ const OnboardingPage = () => {
             )
         },
         {
+            key: 'date',
+            label: 'Start Date',
+            render: (row) => (
+                <span className="text-[13px] md:text-[14px] font-semibold text-[var(--text-main)]">
+                    {row.offer_acceptance_date ? new Date(row.offer_acceptance_date).toLocaleDateString() : '-'}
+                </span>
+            )
+        },
+        {
+            key: 'tasks',
+            label: 'Task Breakdown',
+            render: (row) => {
+                const docsStatus = getTaskCategoryStatus(row.document_checklist);
+                const assetsStatus = getTaskCategoryStatus(row.asset_checklist);
+                const trainingStatus = getTaskCategoryStatus(row.training_checklist);
+                
+                return (
+                    <div className="flex items-center gap-2">
+                        <TaskIndicator label="Docs" status={docsStatus} />
+                        <TaskIndicator label="Assets" status={assetsStatus} />
+                        <TaskIndicator label="Training" status={trainingStatus} />
+                    </div>
+                );
+            }
+        },
+        {
             key: 'status',
             label: 'Status',
             render: (row) => {
@@ -150,36 +237,6 @@ const OnboardingPage = () => {
                     </span>
                 );
             }
-        },
-        {
-            key: 'progress',
-            label: 'Onboarding Progress',
-            render: (row) => {
-                const pct = calculateProgress(row);
-                return (
-                    <div className="w-full max-w-[200px]">
-                        <div className="flex items-center justify-between text-[12px] font-bold mb-1.5">
-                            <span className="text-[var(--text-muted)]">Completion</span>
-                            <span className="text-[var(--text-main)]">{pct}%</span>
-                        </div>
-                        <div className="w-full bg-[var(--border-color)] rounded-full h-1.5 overflow-hidden">
-                            <div 
-                                className="bg-[var(--accent)] h-full transition-all duration-500" 
-                                style={{ width: `${pct}%` }}
-                            ></div>
-                        </div>
-                    </div>
-                );
-            }
-        },
-        {
-            key: 'date',
-            label: 'Offer Accepted',
-            render: (row) => (
-                <span className="text-[13px] md:text-[14px] font-semibold text-[var(--text-main)]">
-                    {row.offer_acceptance_date ? new Date(row.offer_acceptance_date).toLocaleDateString() : '-'}
-                </span>
-            )
         }
     ];
 
@@ -316,83 +373,161 @@ const OnboardingPage = () => {
                             
                             {/* Documents */}
                             <div>
-                                <div className="flex items-center gap-2 mb-4 border-b border-[var(--border-color)] pb-2">
-                                    <FileText size={18} className="text-blue-500" />
-                                    <h4 className="text-[14px] font-bold text-[var(--text-main)]">Documents Collection</h4>
+                                <div className="flex items-center justify-between mb-4 border-b border-[var(--border-color)] pb-2">
+                                    <div className="flex items-center gap-2">
+                                        <FileText size={18} className="text-blue-500" />
+                                        <h4 className="text-[14px] font-bold text-[var(--text-main)]">Documents Collection</h4>
+                                    </div>
                                 </div>
-                                {editDocs.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {editDocs.map((item, idx) => (
-                                            <label key={idx} className="flex items-center gap-3 cursor-pointer group">
+                                <div className="space-y-3 mb-3">
+                                    {editDocs.map((item, idx) => (
+                                        <div key={idx} className="flex items-center justify-between group">
+                                            <label className="flex items-center gap-3 cursor-pointer">
                                                 <input 
                                                     type="checkbox" 
                                                     checked={item.checked} 
                                                     onChange={() => toggleChecklist('docs', idx)}
                                                     className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
                                                 />
-                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] group-hover:text-[var(--accent)]'}`}>
+                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
                                                     {item.name}
                                                 </span>
                                             </label>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-[12px] text-[var(--text-muted)] italic">No documents in checklist.</p>
-                                )}
+                                            <button 
+                                                onClick={() => handleDeleteItem('docs', idx)}
+                                                className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Remove item"
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {editDocs.length === 0 && (
+                                        <p className="text-[12px] text-[var(--text-muted)] italic">No documents in checklist.</p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Add a document..." 
+                                        className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--accent)]"
+                                        value={newItemInputs.docs}
+                                        onChange={(e) => setNewItemInputs(prev => ({ ...prev, docs: e.target.value }))}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddItem('docs')}
+                                    />
+                                    <button 
+                                        onClick={() => handleAddItem('docs')}
+                                        className="p-1.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)] hover:text-white transition-colors"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Assets */}
                             <div>
-                                <div className="flex items-center gap-2 mb-4 border-b border-[var(--border-color)] pb-2">
-                                    <Clock size={18} className="text-amber-500" />
-                                    <h4 className="text-[14px] font-bold text-[var(--text-main)]">Asset Provisioning</h4>
+                                <div className="flex items-center justify-between mb-4 border-b border-[var(--border-color)] pb-2">
+                                    <div className="flex items-center gap-2">
+                                        <Clock size={18} className="text-amber-500" />
+                                        <h4 className="text-[14px] font-bold text-[var(--text-main)]">Asset Provisioning</h4>
+                                    </div>
                                 </div>
-                                {editAssets.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {editAssets.map((item, idx) => (
-                                            <label key={idx} className="flex items-center gap-3 cursor-pointer group">
+                                <div className="space-y-3 mb-3">
+                                    {editAssets.map((item, idx) => (
+                                        <div key={idx} className="flex items-center justify-between group">
+                                            <label className="flex items-center gap-3 cursor-pointer">
                                                 <input 
                                                     type="checkbox" 
                                                     checked={item.checked} 
                                                     onChange={() => toggleChecklist('assets', idx)}
                                                     className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
                                                 />
-                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] group-hover:text-[var(--accent)]'}`}>
+                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
                                                     {item.name}
                                                 </span>
                                             </label>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-[12px] text-[var(--text-muted)] italic">No assets in checklist.</p>
-                                )}
+                                            <button 
+                                                onClick={() => handleDeleteItem('assets', idx)}
+                                                className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Remove item"
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {editAssets.length === 0 && (
+                                        <p className="text-[12px] text-[var(--text-muted)] italic">No assets in checklist.</p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Add an asset..." 
+                                        className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--accent)]"
+                                        value={newItemInputs.assets}
+                                        onChange={(e) => setNewItemInputs(prev => ({ ...prev, assets: e.target.value }))}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddItem('assets')}
+                                    />
+                                    <button 
+                                        onClick={() => handleAddItem('assets')}
+                                        className="p-1.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)] hover:text-white transition-colors"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Training */}
                             <div>
-                                <div className="flex items-center gap-2 mb-4 border-b border-[var(--border-color)] pb-2">
-                                    <CheckCircle size={18} className="text-emerald-500" />
-                                    <h4 className="text-[14px] font-bold text-[var(--text-main)]">Required Training</h4>
+                                <div className="flex items-center justify-between mb-4 border-b border-[var(--border-color)] pb-2">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle size={18} className="text-emerald-500" />
+                                        <h4 className="text-[14px] font-bold text-[var(--text-main)]">Required Training</h4>
+                                    </div>
                                 </div>
-                                {editTraining.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {editTraining.map((item, idx) => (
-                                            <label key={idx} className="flex items-center gap-3 cursor-pointer group">
+                                <div className="space-y-3 mb-3">
+                                    {editTraining.map((item, idx) => (
+                                        <div key={idx} className="flex items-center justify-between group">
+                                            <label className="flex items-center gap-3 cursor-pointer">
                                                 <input 
                                                     type="checkbox" 
                                                     checked={item.checked} 
                                                     onChange={() => toggleChecklist('training', idx)}
                                                     className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
                                                 />
-                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] group-hover:text-[var(--accent)]'}`}>
+                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
                                                     {item.name}
                                                 </span>
                                             </label>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-[12px] text-[var(--text-muted)] italic">No training in checklist.</p>
-                                )}
+                                            <button 
+                                                onClick={() => handleDeleteItem('training', idx)}
+                                                className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Remove item"
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {editTraining.length === 0 && (
+                                        <p className="text-[12px] text-[var(--text-muted)] italic">No training in checklist.</p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Add training..." 
+                                        className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--accent)]"
+                                        value={newItemInputs.training}
+                                        onChange={(e) => setNewItemInputs(prev => ({ ...prev, training: e.target.value }))}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddItem('training')}
+                                    />
+                                    <button 
+                                        onClick={() => handleAddItem('training')}
+                                        className="p-1.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)] hover:text-white transition-colors"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
 

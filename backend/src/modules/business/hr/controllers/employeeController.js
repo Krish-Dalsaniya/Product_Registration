@@ -118,8 +118,8 @@ const executeCreateEmployee = async (client, payload) => {
       if (roleRes.rows.length > 0) {
         assignedRoleId = roleRes.rows[0].role_id;
       } else {
-        const anyRole = await client.query('SELECT role_id FROM roles ORDER BY role_id DESC LIMIT 1');
-        assignedRoleId = anyRole.rows[0]?.role_id || null;
+        const insertRole = await client.query('INSERT INTO roles (role_name, description) VALUES ($1, $2) RETURNING role_id', ['User', 'Standard employee role']);
+        assignedRoleId = insertRole.rows[0].role_id;
       }
     }
 
@@ -198,9 +198,17 @@ const executeCreateEmployee = async (client, payload) => {
     }
   }
 
+  if (!department_id) {
+    throw new Error('Department is required.');
+  }
+
   let finalDesignationId = designation_id;
-  if (designation_name && !designation_id) {
-    finalDesignationId = await getOrInsertDesignation(client, designation_name, department_id || null);
+  if (designation_name && !designation_id && designation_name.trim() !== '') {
+    finalDesignationId = await getOrInsertDesignation(client, designation_name.trim(), department_id);
+  }
+
+  if (!finalDesignationId) {
+    throw new Error('Designation is required.');
   }
 
   const empRes = await client.query(`
@@ -251,6 +259,11 @@ const registerEmployee = async (req, res, next) => {
     const { full_name, email } = req.body;
     if (!full_name || !email) {
       return sendError(res, 'BAD_REQUEST', 'Full name and email are required', 400);
+    }
+    
+    const hasDesignation = (req.body.designation_name && req.body.designation_name.trim() !== '') || req.body.designation_id;
+    if (!hasDesignation || !req.body.department_id) {
+      return sendError(res, 'BAD_REQUEST', 'Department and Designation are required', 400);
     }
     
     // Check if user already exists
