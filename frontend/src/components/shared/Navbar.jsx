@@ -23,7 +23,7 @@ const IconMap = {
   Package
 };
 
-const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClick, onClearAllTabs }) => {
+const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClick, onClearAllTabs, isSidebarCollapsed }) => {
   const scrollContainerRef = useRef(null);
   const activeTabRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -192,7 +192,7 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
   };
 
   return (
-    <header className="fixed top-0 right-0 left-0 md:left-64 h-[52px] z-30 transition-all">
+    <header className={`fixed top-0 right-0 left-0 ${isSidebarCollapsed ? 'md:left-0' : 'md:left-64'} h-[52px] z-30 transition-all duration-500 ease-in-out`}>
       <div
         className="h-full px-4 md:px-8 flex items-center justify-between gap-4"
         style={{
@@ -203,7 +203,7 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
       >
         <button
           onClick={onMenuClick}
-          className="md:hidden p-3 rounded-xl transition-all bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--accent)]"
+          className="p-1.5 md:p-3 rounded-xl transition-all hover:bg-[var(--bg-elevated)] border border-transparent hover:border-[var(--border-color)] text-[var(--accent)] flex-shrink-0"
         >
           <Menu size={20} strokeWidth={3} />
         </button>

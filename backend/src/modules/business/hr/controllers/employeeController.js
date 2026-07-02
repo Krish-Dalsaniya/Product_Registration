@@ -605,6 +605,142 @@ const updateOrgChartPlacements = async (req, res, next) => {
   }
 };
 
+const getOrgProfiles = async (req, res, next) => {
+  try {
+    const query = `
+      SELECT d.*, dept.name as department_name,
+        (SELECT COUNT(*) FROM hr_employees e WHERE e.designation_id = d.designation_id) as employee_count
+      FROM hr_designations d
+      LEFT JOIN hr_departments dept ON d.department_id = dept.department_id
+    `;
+    const result = await db.query(query);
+    sendSuccess(res, result.rows, 'Profiles fetched successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createOrgProfile = async (req, res, next) => {
+  const client = await db.pool.connect();
+  try {
+    const { name, department_id, parent_id, child_id, job_description, perks } = req.body;
+    if (!name) return sendError(res, 'Profile Name is required', 400);
+
+    await client.query('BEGIN');
+    
+    // Create the new designation
+    const insertRes = await client.query(
+      `INSERT INTO hr_designations (name, department_id, parent_id, job_description, perks) 
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [name, department_id || null, parent_id || null, job_description, perks]
+    );
+    
+    const newProfile = insertRes.rows[0];
+
+    // If 'child_id' is provided (above which profile), update the child's parent_id
+    if (child_id) {
+      await client.query(
+        'UPDATE hr_designations SET parent_id = $1 WHERE designation_id = $2',
+        [newProfile.designation_id, child_id]
+      );
+    }
+
+    await client.query('COMMIT');
+    sendSuccess(res, newProfile, 'Profile created successfully');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    next(error);
+  } finally {
+    client.release();
+  }
+};
+
+const updateOrgProfile = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { 
+      name, department_id, parent_id, job_description, perks,
+      pre_requisites, training_requirements, eligibility_criteria, kpi, kra,
+      rcd_base64 
+    } = req.body;
+    
+    let rcd_document_url = undefined;
+    if (rcd_base64 && rcd_base64.startsWith('data:')) {
+      try {
+        const uploadRes = await cloudinary.uploader.upload(rcd_base64, {
+          folder: 'hr/rcd',
+          public_id: `rcd_${id}_${Date.now()}`,
+          resource_type: 'auto'
+        });
+        rcd_document_url = uploadRes.secure_url;
+      } catch (err) {
+        console.error('Error saving RCD to Cloudinary in updateOrgProfile:', err);
+      }
+    }
+
+    const query = `
+      UPDATE hr_designations
+      SET name = COALESCE($1, name),
+          department_id = COALESCE($2, department_id),
+          parent_id = CASE WHEN $13::boolean THEN $3 ELSE parent_id END,
+          job_description = COALESCE($4, job_description),
+          perks = COALESCE($5, perks),
+          pre_requisites = COALESCE($6, pre_requisites),
+          training_requirements = COALESCE($7, training_requirements),
+          eligibility_criteria = COALESCE($8, eligibility_criteria),
+          kpi = COALESCE($9, kpi),
+          kra = COALESCE($10, kra),
+          rcd_document_url = COALESCE($11, rcd_document_url)
+      WHERE designation_id = $12
+      RETURNING *
+    `;
+    
+    const values = [
+      name, department_id, parent_id, job_description, perks,
+      pre_requisites, training_requirements, eligibility_criteria, kpi, kra,
+      rcd_document_url, id, 'parent_id' in req.body
+    ];
+    
+    const result = await db.query(query, values);
+    
+    if (result.rows.length === 0) return sendError(res, 'Profile not found', 404);
+    
+    sendSuccess(res, result.rows[0], 'Profile updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteOrgProfile = async (req, res, next) => {
+  const client = await db.pool.connect();
+  try {
+    const { id } = req.params;
+    
+    await client.query('BEGIN');
+
+    // To prevent breaking the tree, reassign children of the deleted node to its parent
+    const nodeRes = await client.query('SELECT parent_id FROM hr_designations WHERE designation_id = $1', [id]);
+    if (nodeRes.rows.length === 0) {
+       await client.query('ROLLBACK');
+       return sendError(res, 'Profile not found', 404);
+    }
+    
+    const parentId = nodeRes.rows[0].parent_id;
+    await client.query('UPDATE hr_designations SET parent_id = $1 WHERE parent_id = $2', [parentId, id]);
+
+    // Finally delete the profile
+    await client.query('DELETE FROM hr_designations WHERE designation_id = $1', [id]);
+    
+    await client.query('COMMIT');
+    sendSuccess(res, null, 'Profile deleted successfully');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    next(error);
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getEmployees,
   getEmployeeById,
@@ -618,5 +754,9 @@ module.exports = {
   getPendingRegistrations,
   approveRegistration,
   rejectRegistration,
-  updateOrgChartPlacements
+  updateOrgChartPlacements,
+  getOrgProfiles,
+  createOrgProfile,
+  updateOrgProfile,
+  deleteOrgProfile
 };

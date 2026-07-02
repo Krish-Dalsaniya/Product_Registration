@@ -61,6 +61,22 @@ export const fetchPendingRegistrationsApi = () => api.get('/hr/employees/pending
 export const approveRegistrationApi = (id) => api.post(`/hr/employees/pending-registrations/${id}/approve`);
 export const rejectRegistrationApi = (id) => api.post(`/hr/employees/pending-registrations/${id}/reject`);
 
+// Candidates
+export const fetchCandidatesApi = () => api.get('/hr/candidates');
+export const updateCandidateStatusApi = (id, status) => api.put(`/hr/candidates/${id}/status`, { status });
+export const createCandidateApi = (formData) => api.post('/hr/candidates', formData, {
+  headers: {
+    'Content-Type': 'multipart/form-data'
+  }
+});
+export const fetchCandidateByIdApi = (id) => api.get(`/hr/candidates/${id}`);
+export const updateCandidateApi = (id, formData) => api.put(`/hr/candidates/${id}`, formData, {
+  headers: {
+    'Content-Type': 'multipart/form-data'
+  }
+});
+export const deleteCandidateApi = (id) => api.delete(`/hr/candidates/${id}`);
+
 // Claims
 export const fetchClaimsApi = () => api.get('/hr/claims');
 export const createClaimApi = (data) => api.post('/hr/claims', data);
@@ -73,3 +89,7 @@ export const updateAdvanceStatusApi = (id, data) => api.put(`/hr/advances/${id}/
 
 // Org Chart
 export const updateOrgChartApi = (placements) => api.post('/hr/org-chart/placements', { placements });
+export const fetchOrgProfilesApi = () => api.get('/hr/org-chart/profiles');
+export const createOrgProfileApi = (data) => api.post('/hr/org-chart/profiles', data);
+export const updateOrgProfileApi = (id, data) => api.put(`/hr/org-chart/profiles/${id}`, data);
+export const deleteOrgProfileApi = (id) => api.delete(`/hr/org-chart/profiles/${id}`);

@@ -415,8 +415,8 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
 
 
 
-  const inputClass = "w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 px-4 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm";
-  const labelClass = "block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-1.5";
+  const inputClass = "w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2.5 px-4 outline-none focus:border-[var(--accent)] hover:border-[var(--border-hover)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all duration-300 text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md";
+  const labelClass = "block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-2";
   const sectionTitleClass = "text-[14px] font-black uppercase tracking-widest text-[var(--text-main)] border-b border-[var(--border-color)] pb-2 mb-5 flex items-center gap-2";
 
   return (
@@ -770,7 +770,20 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
                 </div>
                 <div>
                   <label className={labelClass}>Designation *</label>
-                  <input type="text" value={formData.designation_name || ''} onChange={e => setFormData(prev => ({...prev, designation_name: e.target.value, designation_id: null}))} placeholder="e.g. Software Engineer" className={inputClass} />
+                  <select 
+                    value={formData.designation_id || ''} 
+                    onChange={e => {
+                      const id = e.target.value;
+                      const name = metadata.designations?.find(d => String(d.designation_id) === String(id))?.name || '';
+                      setFormData(prev => ({...prev, designation_id: id, designation_name: name}));
+                    }} 
+                    className={inputClass}
+                  >
+                    <option value="">Select Designation</option>
+                    {metadata.designations?.map(d => (
+                      <option key={d.designation_id} value={d.designation_id}>{d.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className={labelClass}>Date of Joining *</label>

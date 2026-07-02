@@ -595,12 +595,20 @@ const EmployeeProfile = () => {
               <div>
                 <FormField 
                   label="Core Designation" 
-                  type="text" 
+                  type="select" 
                   disabled={!isEditing} 
-                  value={employee.designation_name || ''} 
-                  onChange={e => setEmployee({...employee, designation_name: e.target.value, designation_id: null})} 
+                  value={employee.designation_id || ''} 
+                  onChange={e => {
+                    const id = e.target.value;
+                    const name = metadata.designations?.find(d => String(d.designation_id) === String(id))?.name || '';
+                    setEmployee({...employee, designation_id: id, designation_name: name});
+                  }} 
                   isEditing={isEditing} 
                   readOnlyText={employee.designation_name}
+                  options={[
+                    { value: '', label: 'Select Designation' },
+                    ...(metadata.designations || []).map(d => ({ value: d.designation_id, label: d.name }))
+                  ]}
                 />
               </div>
             </div>

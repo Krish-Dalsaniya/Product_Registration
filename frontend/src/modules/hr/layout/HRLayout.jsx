@@ -38,7 +38,7 @@ import {
   LockKeyhole
 } from 'lucide-react';
 
-const HRSidebar = ({ isOpen, onClose }) => {
+const HRSidebar = ({ isOpen, onClose, isCollapsed }) => {
   const { user, logout, updateUserImage, hasPermission } = useAuth();
   const { theme, setTheme, font, setFont, AVAILABLE_THEMES, AVAILABLE_FONTS } = useTheme();
   
@@ -50,6 +50,7 @@ const HRSidebar = ({ isOpen, onClose }) => {
   const fileInputRef = useRef(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [openMenus, setOpenMenus] = useState({
+    recruitment: location.pathname.startsWith('/hr/recruitment'),
     payrolls: location.pathname.startsWith('/hr/payrolls') || location.pathname.startsWith('/hr/leaves') || location.pathname.startsWith('/hr/roaster') || location.pathname.startsWith('/hr/attendance'),
     roaster: location.pathname.startsWith('/hr/roaster'),
     pms: location.pathname.startsWith('/hr/pms'),
@@ -159,6 +160,9 @@ const HRSidebar = ({ isOpen, onClose }) => {
   }, []);
 
   useEffect(() => {
+    if (location.pathname.startsWith('/hr/recruitment')) {
+      setOpenMenus(prev => ({ ...prev, recruitment: true }));
+    }
     if (location.pathname.startsWith('/hr/payrolls') || location.pathname.startsWith('/hr/leaves') || location.pathname.startsWith('/hr/roaster') || location.pathname.startsWith('/hr/attendance')) {
       setOpenMenus(prev => ({ ...prev, payrolls: true }));
     }
@@ -318,7 +322,7 @@ const HRSidebar = ({ isOpen, onClose }) => {
       )}
 
       <aside
-        className={`w-64 h-screen fixed left-0 top-0 z-50 md:flex flex-col shadow-2xl transition-all duration-500 ease-in-out transform ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        className={`w-64 h-screen fixed left-0 top-0 z-50 md:flex flex-col shadow-2xl transition-all duration-500 ease-in-out transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${!isOpen && isCollapsed ? 'md:-translate-x-full' : 'md:translate-x-0'}`}
         style={{
           background: 'var(--grad-sidebar)',
           borderRight: '1px solid var(--border-color)',
@@ -499,7 +503,58 @@ const HRSidebar = ({ isOpen, onClose }) => {
 
           {hasPermission('hr', 'view', 'dashboard') && <NavItem to="/hr/dashboard" label="Dashboard" icon={LayoutDashboard} />}
           {hasPermission('hr', 'view', 'organogram') && <NavItem to="/hr/organization-chart" label="Organogram" icon={Network} />}
-          {hasPermission('hr', 'view', 'recruitment') && <NavItem to="/hr/recruitment" label="Recruitment" icon={UserPlus} />}
+          
+          {/* Recruitment Menu */}
+          {hasPermission('hr', 'view', 'recruitment') && (
+          <div>
+            <div 
+              className="w-full flex items-center justify-between px-8 py-2.5 transition-all duration-300 relative group cursor-pointer hover:bg-[var(--nav-hover)]"
+              onClick={() => {
+                handleNavigate('/hr/recruitment');
+                toggleMenu('recruitment');
+              }}
+              style={{
+                color: location.pathname.startsWith('/hr/recruitment') ? 'var(--accent)' : 'var(--text-muted)',
+                background: location.pathname === '/hr/recruitment' ? 'var(--nav-active)' : undefined,
+              }}
+            >
+              <div
+                className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-300"
+                style={{
+                  background: 'var(--accent)',
+                  transform: location.pathname.startsWith('/hr/recruitment') ? 'scaleY(1)' : 'scaleY(0)',
+                  opacity: location.pathname.startsWith('/hr/recruitment') ? 1 : 0,
+                  transformOrigin: 'center',
+                }}
+              />
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-6 flex justify-center">
+                  <UserPlus size={20} strokeWidth={2.5} className="transition-colors duration-300 group-hover:text-[var(--accent)]" style={{ color: location.pathname.startsWith('/hr/recruitment') ? 'var(--accent)' : 'var(--text-dim)' }} />
+                </div>
+                <span className="text-[12px] font-bold tracking-wider uppercase transition-all duration-300 group-hover:text-[var(--text-main)] whitespace-nowrap">
+                  Recruitment
+                </span>
+              </div>
+              <div 
+                className="relative z-10 text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors p-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMenu('recruitment');
+                }}
+              >
+                <ChevronDown size={16} className={`transition-transform duration-300 ${openMenus.recruitment ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
+            
+            <SubMenu isOpen={openMenus.recruitment}>
+              <div className="flex flex-col py-1">
+                <NavItem to="/hr/recruitment/campaigning" label="Campaigning" icon={Briefcase} isSubItem />
+                <NavItem to="/hr/recruitment/candidate" label="Candidate" icon={Users} isSubItem />
+                <NavItem to="/hr/recruitment/process" label="Process" icon={Layers} isSubItem isLastSubItem />
+              </div>
+            </SubMenu>
+          </div>
+          )}
           
           {/* Onboarding/Offboarding Menu */}
           {(hasPermission('hr', 'view', 'onboarding') || hasPermission('hr', 'view', 'offboarding')) && (
@@ -763,6 +818,9 @@ const getHRTabMetadata = (pathname) => {
   if (pathname === '/hr/pms/teams') return { label: 'Teams', iconType: 'Users' };
   if (pathname === '/hr/pms/task-management') return { label: 'Task Management', iconType: 'CheckCircle' };
   if (pathname === '/hr/pms/scrums-and-sprints') return { label: 'Scrums & Sprints', iconType: 'Zap' };
+  if (pathname === '/hr/recruitment/campaigning') return { label: 'Campaigning', iconType: 'Briefcase' };
+  if (pathname === '/hr/recruitment/candidate') return { label: 'Candidate', iconType: 'Users' };
+  if (pathname === '/hr/recruitment/process') return { label: 'Process', iconType: 'Layers' };
   if (pathname === '/hr/lms') return { label: 'LMS', iconType: 'BookOpen' };
   if (pathname === '/hr/user-access') return { label: 'User Access', iconType: 'LockKeyhole' };
   if (pathname.startsWith('/hr/user-access/')) return { label: 'Access Detail', iconType: 'LockKeyhole' };
@@ -776,8 +834,17 @@ const getHRTabMetadata = (pathname) => {
 const HRLayout = () => {
   const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const handleMenuClick = () => {
+    if (window.innerWidth >= 768) {
+      setIsSidebarCollapsed(!isSidebarCollapsed);
+    } else {
+      setIsSidebarOpen(!isSidebarOpen);
+    }
+  };
 
   const storageKey = user?.user_id ? `workspace_tabs_hr_${user.user_id}` : 'workspace_tabs_hr_default';
 
@@ -879,17 +946,18 @@ const HRLayout = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-workspace)] transition-colors duration-300">
       <Navbar 
-        onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+        onMenuClick={handleMenuClick} 
         tabs={tabs}
         activePath={activePath}
         onTabClose={handleCloseTab}
         onTabClick={(path) => navigate(path)}
         onClearAllTabs={handleClearAllTabs}
+        isSidebarCollapsed={isSidebarCollapsed}
       />
       <div>
-        <HRSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        <main className="md:ml-64 px-4 md:px-8 pt-[60px] pb-8 min-h-screen transition-all duration-300 bg-[var(--bg-workspace)]">
-          {!location.pathname.match(/\/(employees|user-access|trainee)\/[^\/]+$/) && (
+        <HRSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} isCollapsed={isSidebarCollapsed} />
+        <main className={`${isSidebarCollapsed ? 'md:ml-0' : 'md:ml-64'} px-4 md:px-8 pt-[60px] pb-8 min-h-screen transition-all duration-500 ease-in-out bg-[var(--bg-workspace)]`}>
+          {!location.pathname.match(/\/(employees|user-access|trainee|candidate\/(view|edit))\/[^\/]+$/) && !location.pathname.endsWith('/candidate/new') && (
             <div className="max-w-[1600px] mx-auto h-0 overflow-visible flex justify-end mt-0 relative z-20 pointer-events-none">
               <div className="pointer-events-auto">
                 <Breadcrumbs />
@@ -897,7 +965,7 @@ const HRLayout = () => {
             </div>
           )}
           <Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--accent)]"></div></div>}>
-            <Outlet context={{ updateTabLabel }} />
+            <Outlet context={{ updateTabLabel, isSidebarCollapsed, setIsSidebarCollapsed }} />
           </Suspense>
         </main>
       </div>
