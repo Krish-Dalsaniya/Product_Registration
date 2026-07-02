@@ -130,6 +130,30 @@ const getDashboardMetrics = async (req, res, next) => {
       time: formatTimeAgo(new Date(row.created_at))
     }));
 
+    // 7. Top Performers
+    const topPerformersResult = await pool.query(`
+      SELECT e.employee_id, e.emp_code, u.full_name, d.name as department_name, u.image_url,
+      (SELECT COUNT(*)::int FROM hr_attendance a WHERE a.employee_id = e.employee_id AND a.status = 'Present') as present_days,
+      (SELECT COUNT(*)::int FROM hr_attendance a WHERE a.employee_id = e.employee_id AND a.status IN ('Present', 'Late', 'Absent', 'Half Day')) as total_days
+      FROM hr_employees e
+      JOIN users u ON e.user_id = u.user_id
+      LEFT JOIN hr_departments d ON e.department_id = d.department_id
+      WHERE e.employment_status != 'Terminated'
+      LIMIT 10
+    `);
+    
+    metrics.topPerformers = topPerformersResult.rows.map(emp => {
+      const attendanceScore = emp.total_days > 0 ? Math.round((emp.present_days / emp.total_days) * 100) : 100;
+      // Add a mock performance rating out of 5 based on attendance + random offset for demo
+      const rating = Math.min(5, Math.max(1, (attendanceScore / 20) + (Math.random() * 0.5 - 0.25))).toFixed(1);
+      return {
+        ...emp,
+        attendance_score: attendanceScore,
+        performance_rating: parseFloat(rating),
+        review_status: parseFloat(rating) >= 4.5 ? 'Excellent' : (parseFloat(rating) >= 3.5 ? 'Good' : 'Average')
+      }
+    }).sort((a, b) => b.performance_rating - a.performance_rating).slice(0, 5);
+
     sendSuccess(res, metrics, 'HR Dashboard metrics fetched successfully');
   } catch (error) {
     next(error);

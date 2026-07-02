@@ -170,6 +170,7 @@ const HRUserAccessDetail = lazy(() => import('../modules/hr/pages/HRUserAccessDe
 const CandidatePage = lazy(() => import('../modules/hr/pages/CandidatePage'));
 const CandidateViewPage = lazy(() => import('../modules/hr/pages/CandidateViewPage'));
 const CandidateListPage = lazy(() => import('../modules/hr/pages/CandidateListPage'));
+const ProcessPage = lazy(() => import('../modules/hr/pages/ProcessPage'));
 
 // PMS Module
 const Closures = lazy(() => import('../modules/pms/pages/Closures'));
@@ -443,7 +444,7 @@ const Router = () => {
           <Route path="/hr/recruitment/candidate/new" element={<CandidatePage />} />
           <Route path="/hr/recruitment/candidate/view/:id" element={<CandidateViewPage />} />
           <Route path="/hr/recruitment/candidate/edit/:id" element={<CandidatePage />} />
-          <Route path="/hr/recruitment/process" element={<ComingSoon feature="Recruitment Process" />} />
+          <Route path="/hr/recruitment/process" element={<ProcessPage />} />
           <Route path="/hr/recruitment" element={<Navigate to="/hr/recruitment/campaigning" replace />} />
           <Route path="/hr/employees/new" element={<AddEmployeeWizard />} />
           <Route path="/hr/employees/:id" element={<EmployeeProfile />} />
