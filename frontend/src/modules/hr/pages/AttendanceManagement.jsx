@@ -296,7 +296,11 @@ const AttendanceManagement = () => {
           {hours}h {minutes}m {seconds}s
         </span>
       );
-    } }
+    } },
+    { key: 'late_coming', label: 'Late', render: (row) => <span className={`font-semibold ${row.late_coming && row.late_coming !== '00:00' ? 'text-amber-500' : 'text-[var(--text-main)]'}`}>{row.late_coming || '00:00'}</span> },
+    { key: 'early_going', label: 'Early', render: (row) => <span className={`font-semibold ${row.early_going && row.early_going !== '00:00' ? 'text-rose-500' : 'text-[var(--text-main)]'}`}>{row.early_going || '00:00'}</span> },
+    { key: 'break_hours', label: 'Break', render: (row) => <span className="font-semibold text-[var(--text-main)]">{row.break_hours || '00:00'}</span> },
+    { key: 'extra_hours', label: 'OT', render: (row) => <span className={`font-semibold ${row.extra_hours && row.extra_hours !== '00:00' ? 'text-emerald-500' : 'text-[var(--text-main)]'}`}>{row.extra_hours || '00:00'}</span> }
   ];
 
   if (!isAdmin) {

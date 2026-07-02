@@ -705,3 +705,52 @@ CREATE TABLE IF NOT EXISTS hr_advances (
 
 -- Add org_chart_parent_id for independent org chart structure
 ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS org_chart_parent_id UUID REFERENCES hr_employees(employee_id) ON DELETE SET NULL;
+
+-- Make hr_designations hierarchical for organogram
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES hr_designations(designation_id) ON DELETE SET NULL;
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS job_description TEXT;
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS perks TEXT;
+
+
+-- Add extra details fields to hr_designations
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS rcd_document_url TEXT;
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS pre_requisites TEXT;
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS training_requirements TEXT;
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS eligibility_criteria TEXT;
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS kpi TEXT;
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS kra TEXT;
+
+-- ==============================================================================
+-- Candidate Application Table
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS hr_candidates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    position VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    experience_type VARCHAR(50) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    whatsapp VARCHAR(50),
+    mobile VARCHAR(50),
+    current_location VARCHAR(255),
+    relocate BOOLEAN DEFAULT true,
+    education_route VARCHAR(50) DEFAULT 'REGULAR',
+    total_years NUMERIC,
+    designation VARCHAR(255),
+    current_company VARCHAR(255),
+    monthly_taken_home NUMERIC,
+    expected_monthly NUMERIC,
+    documents JSONB DEFAULT '{}',
+    status VARCHAR(50) DEFAULT 'Pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add JSONB column for technical/role-specific assessment details
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS technical_details JSONB DEFAULT '{}';
+
+COMMIT;
+
+-- Added advanced attendance metrics
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS late_coming VARCHAR(10) DEFAULT '00:00', ADD COLUMN IF NOT EXISTS early_going VARCHAR(10) DEFAULT '00:00', ADD COLUMN IF NOT EXISTS break_hours VARCHAR(10) DEFAULT '00:00', ADD COLUMN IF NOT EXISTS extra_hours VARCHAR(10) DEFAULT '00:00';
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS emergency_info JSONB, ADD COLUMN IF NOT EXISTS family_info JSONB;

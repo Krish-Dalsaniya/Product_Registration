@@ -1099,7 +1099,7 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  min-height: 40px; /* accessibility touch target */
+  min-height: 44px; /* accessibility touch target */
 }
 .btn-primary:hover {
   opacity: 0.9;
@@ -1110,6 +1110,11 @@
 }
 .btn-primary:focus-visible {
   box-shadow: var(--focus-ring);
+}
+
+/* Global input touch targets */
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, .touch-target {
+  min-height: 44px;
 }
 
 /* ═══════════════════════════════════════

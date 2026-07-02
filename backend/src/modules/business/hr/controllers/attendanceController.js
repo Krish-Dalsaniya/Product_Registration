@@ -5,6 +5,52 @@ const fs = require('fs');
 const path = require('path');
 const cloudinary = require('../../../../config/cloudinary');
 
+const calculateAdvancedMetrics = (clockInDate, clockOutDate) => {
+  if (!clockInDate) return { late_coming: '00:00', early_going: '00:00', break_hours: '00:00', extra_hours: '00:00' };
+  
+  const inDate = new Date(clockInDate);
+  const outDate = clockOutDate ? new Date(clockOutDate) : null;
+  
+  const shiftStart = new Date(inDate);
+  shiftStart.setHours(9, 0, 0, 0); 
+  
+  const shiftEnd = new Date(inDate);
+  shiftEnd.setHours(18, 30, 0, 0); 
+
+  const formatMs = (ms) => {
+    if (ms <= 0) return '00:00';
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    const mins = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  };
+
+  const lateMs = inDate > shiftStart ? inDate - shiftStart : 0;
+  
+  if (!outDate) {
+    return {
+      late_coming: formatMs(lateMs),
+      early_going: '00:00',
+      break_hours: '00:00',
+      extra_hours: '00:00'
+    };
+  }
+
+  const earlyMs = outDate < shiftEnd ? shiftEnd - outDate : 0;
+  
+  const totalMs = outDate - inDate;
+  const standardMs = 9.5 * 60 * 60 * 1000; 
+  const extraMs = totalMs > standardMs ? totalMs - standardMs : 0;
+  
+  const breakMs = totalMs > (5 * 60 * 60 * 1000) ? (60 * 60 * 1000) : 0;
+
+  return {
+    late_coming: formatMs(lateMs),
+    early_going: formatMs(earlyMs),
+    break_hours: formatMs(breakMs),
+    extra_hours: formatMs(extraMs)
+  };
+};
+
 const getAttendance = async (req, res, next) => {
   try {
     const { start_date, end_date, department_id, search } = req.query;
@@ -19,6 +65,10 @@ const getAttendance = async (req, res, next) => {
         a.clock_out,
         a.status,
         a.work_hours,
+        a.late_coming,
+        a.early_going,
+        a.break_hours,
+        a.extra_hours,
         a.notes,
         e.emp_code,
         e.department_id,
@@ -138,12 +188,14 @@ const clockIn = async (req, res, next) => {
     const status = clockInTime > lateThreshold ? 'Late' : 'Present';
 
     const query = `
-      INSERT INTO hr_attendance (employee_id, date, clock_in, status, notes)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO hr_attendance (employee_id, date, clock_in, status, notes, late_coming, early_going, break_hours, extra_hours)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `;
 
-    const result = await db.query(query, [employee_id, date, clockInTime, status, notes]);
+    const advMetrics = calculateAdvancedMetrics(clockInTime, null);
+
+    const result = await db.query(query, [employee_id, date, clockInTime, status, notes, advMetrics.late_coming, advMetrics.early_going, advMetrics.break_hours, advMetrics.extra_hours]);
     sendSuccess(res, result.rows[0], 'Clocked in successfully', 201);
   } catch (error) {
     next(error);
@@ -179,15 +231,17 @@ const clockOut = async (req, res, next) => {
     const newStatus = clockOutTime < minPunchOut ? 'Absent' : record.status;
 
     const updatedNotes = notes ? (record.notes ? record.notes + ' | ' + notes : notes) : record.notes;
+    
+    const advMetrics = calculateAdvancedMetrics(record.clock_in, clockOutTime);
 
     const updateQuery = `
       UPDATE hr_attendance
-      SET clock_out = $1, work_hours = $2, notes = $3, status = $4, updated_at = CURRENT_TIMESTAMP
-      WHERE attendance_id = $5
+      SET clock_out = $1, work_hours = $2, notes = $3, status = $4, late_coming = $5, early_going = $6, break_hours = $7, extra_hours = $8, updated_at = CURRENT_TIMESTAMP
+      WHERE attendance_id = $9
       RETURNING *
     `;
 
-    const result = await db.query(updateQuery, [clockOutTime, workHours, updatedNotes, newStatus, record.attendance_id]);
+    const result = await db.query(updateQuery, [clockOutTime, workHours, updatedNotes, newStatus, advMetrics.late_coming, advMetrics.early_going, advMetrics.break_hours, advMetrics.extra_hours, record.attendance_id]);
     sendSuccess(res, result.rows[0], 'Clocked out successfully');
   } catch (error) {
     next(error);
@@ -206,14 +260,19 @@ const updateAttendance = async (req, res, next) => {
       return sendError(res, 'NOT_FOUND', 'Attendance record not found', 404);
     }
 
-    // Recalculate work hours if both times are provided
-    let workHours = null;
-    if (clock_in && clock_out) {
-      const diffMs = new Date(clock_out) - new Date(clock_in);
+    const record = checkResult.rows[0];
+    const finalClockIn = clock_in !== undefined ? clock_in : record.clock_in;
+    const finalClockOut = clock_out !== undefined ? clock_out : record.clock_out;
+
+    let workHours = record.work_hours;
+    if (finalClockIn && finalClockOut) {
+      const diffMs = new Date(finalClockOut) - new Date(finalClockIn);
       if (diffMs > 0) {
         workHours = (diffMs / (1000 * 60 * 60)).toFixed(2);
       }
     }
+    
+    const advMetrics = calculateAdvancedMetrics(finalClockIn, finalClockOut);
 
     const updateQuery = `
       UPDATE hr_attendance
@@ -223,17 +282,25 @@ const updateAttendance = async (req, res, next) => {
         status = COALESCE($3, status),
         work_hours = COALESCE($4, work_hours),
         notes = COALESCE($5, notes),
+        late_coming = COALESCE($6, late_coming),
+        early_going = COALESCE($7, early_going),
+        break_hours = COALESCE($8, break_hours),
+        extra_hours = COALESCE($9, extra_hours),
         updated_at = CURRENT_TIMESTAMP
-      WHERE attendance_id = $6
+      WHERE attendance_id = $10
       RETURNING *
     `;
 
     const result = await db.query(updateQuery, [
-      clock_in || null,
-      clock_out || null,
+      clock_in !== undefined ? (clock_in || null) : null,
+      clock_out !== undefined ? (clock_out || null) : null,
       status,
       workHours,
       notes,
+      advMetrics.late_coming,
+      advMetrics.early_going,
+      advMetrics.break_hours,
+      advMetrics.extra_hours,
       id
     ]);
 
@@ -261,10 +328,11 @@ const createManualAttendance = async (req, res, next) => {
         workHours = (diffMs / (1000 * 60 * 60)).toFixed(2);
       }
     }
+    const advMetrics = calculateAdvancedMetrics(clock_in || null, clock_out || null);
 
     const query = `
-      INSERT INTO hr_attendance (employee_id, date, clock_in, clock_out, status, work_hours, notes)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO hr_attendance (employee_id, date, clock_in, clock_out, status, work_hours, late_coming, early_going, break_hours, extra_hours, notes)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `;
 
@@ -275,6 +343,10 @@ const createManualAttendance = async (req, res, next) => {
       clock_out || null,
       status || 'Present',
       workHours,
+      advMetrics.late_coming,
+      advMetrics.early_going,
+      advMetrics.break_hours,
+      advMetrics.extra_hours,
       notes
     ]);
 

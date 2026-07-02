@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, useNavigate } from 'react-router-dom';
+import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -12,6 +12,7 @@ function App() {
       <ThemeProvider>
         <BrowserRouter>
           <AuthInterceptor />
+          <TitleUpdater />
           <Router />
           <Toaster position="top-right" />
         </BrowserRouter>
@@ -32,6 +33,53 @@ function AuthInterceptor() {
     window.addEventListener('unauthorized', handleUnauthorized);
     return () => window.removeEventListener('unauthorized', handleUnauthorized);
   }, [navigate, logout]);
+
+  return null;
+}
+
+function TitleUpdater() {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    const defaultTitle = "Leons' Integration ERP";
+    const path = location.pathname;
+    const segment = path.split('/')[1];
+
+    let moduleName = "";
+
+    switch (segment) {
+      case 'hr':
+        moduleName = 'HR';
+        break;
+      case 'admin':
+      case 'designer':
+      case 'sales':
+      case 'maintenance':
+      case 'accountant':
+        moduleName = 'Product Registration';
+        break;
+      case 'crm':
+        moduleName = 'CRM';
+        break;
+      case 'logistics':
+        moduleName = 'Logistics';
+        break;
+      case 'accounts':
+        moduleName = 'Accounts';
+        break;
+      case 'settings':
+        moduleName = 'Settings';
+        break;
+      default:
+        moduleName = '';
+    }
+
+    if (moduleName) {
+      document.title = `${moduleName} | ${defaultTitle}`;
+    } else {
+      document.title = defaultTitle;
+    }
+  }, [location]);
 
   return null;
 }

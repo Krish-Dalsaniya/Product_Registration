@@ -4,7 +4,7 @@ import { fetchHREmployeeByIdApi, updateHREmployeeApi, fetchHRMetadataApi, update
 import { fetchEmployeeLeavesApi } from '../../../api/leaves';
 import { getRoles } from '../../../api/roles';
 import { useAuth } from '../../../context/AuthContext';
-import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X, Lock, Calendar, FileText, Eye } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, User, Briefcase, IndianRupee, ShieldCheck, Fingerprint, Edit, Camera, X, Lock, Calendar, FileText, Eye, Phone, Home } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
@@ -177,6 +177,15 @@ const EmployeeProfile = () => {
     aadhaar_doc_no: '', aadhaar_name: ''
   });
 
+  const [emergencyInfo, setEmergencyInfo] = useState({
+    contact1_name: '', contact1_relation: '', contact1_phone: '',
+    contact2_name: '', contact2_relation: '', contact2_phone: ''
+  });
+
+  const [familyInfo, setFamilyInfo] = useState({
+    father_name: '', mother_name: '', spouse_name: '', children: ''
+  });
+
   useEffect(() => {
     loadEmployee();
   }, [id]);
@@ -199,6 +208,8 @@ const EmployeeProfile = () => {
         if (emp.pay_info) setPayInfo({ ...payInfo, ...emp.pay_info });
         if (emp.statutory_info) setStatutoryInfo({ ...statutoryInfo, ...emp.statutory_info });
         if (emp.identities_info) setIdentitiesInfo({ ...identitiesInfo, ...emp.identities_info });
+        if (emp.emergency_info) setEmergencyInfo({ ...emergencyInfo, ...emp.emergency_info });
+        if (emp.family_info) setFamilyInfo({ ...familyInfo, ...emp.family_info });
       }
       
       if (metaRes.data?.success) {
@@ -313,6 +324,8 @@ const EmployeeProfile = () => {
         pay_info: payInfo,
         statutory_info: statutoryInfo,
         identities_info: identitiesInfo,
+        emergency_info: emergencyInfo,
+        family_info: familyInfo,
         image_url: employee.image_url,
         face_embedding,
         department_id: employee.department_id || null,
@@ -349,6 +362,8 @@ const EmployeeProfile = () => {
     { id: 'Statutory', icon: ShieldCheck },
     { id: 'Identities', icon: Fingerprint },
     { id: 'Time Off', icon: Calendar },
+    { id: 'Emergency Contacts', icon: Phone },
+    { id: 'Family Details', icon: Home },
     { id: 'Admin Data', icon: Lock }
   ];
 
@@ -360,7 +375,7 @@ const EmployeeProfile = () => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1200px] mx-auto pb-12">
       {/* Breadcrumbs Row */}
-      <div className="mb-4">
+      <div className="mb-4 flex justify-end">
         <Breadcrumbs items={breadcrumbItems} />
       </div>
 
@@ -595,12 +610,20 @@ const EmployeeProfile = () => {
               <div>
                 <FormField 
                   label="Core Designation" 
-                  type="text" 
+                  type="select" 
                   disabled={!isEditing} 
-                  value={employee.designation_name || ''} 
-                  onChange={e => setEmployee({...employee, designation_name: e.target.value, designation_id: null})} 
+                  value={employee.designation_id || ''} 
+                  onChange={e => {
+                    const id = e.target.value;
+                    const name = metadata.designations?.find(d => String(d.designation_id) === String(id))?.name || '';
+                    setEmployee({...employee, designation_id: id, designation_name: name});
+                  }} 
                   isEditing={isEditing} 
                   readOnlyText={employee.designation_name}
+                  options={[
+                    { value: '', label: 'Select Designation' },
+                    ...(metadata.designations || []).map(d => ({ value: d.designation_id, label: d.name }))
+                  ]}
                 />
               </div>
             </div>
@@ -954,6 +977,53 @@ const EmployeeProfile = () => {
                 </button>
               </div>
               <p className="text-[11px] text-[var(--text-muted)] mt-2">Changing the role will immediately update the user's permissions and access level across the entire platform.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Emergency Contacts Tab */}
+      {activeTab === 'Emergency Contacts' && (
+        <div className="space-y-8 animate-in fade-in duration-300">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-[var(--text-main)] mb-6 flex items-center gap-2">
+              <span className="p-2 bg-[var(--bg-workspace)] rounded-lg text-[var(--accent)]"><Phone size={20} /></span>
+              Primary Contact
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
+              <FormField label="Name" type="text" disabled={!isEditing} value={emergencyInfo.contact1_name} onChange={e => setEmergencyInfo({...emergencyInfo, contact1_name: e.target.value})} isEditing={isEditing} />
+              <FormField label="Relation" type="text" disabled={!isEditing} value={emergencyInfo.contact1_relation} onChange={e => setEmergencyInfo({...emergencyInfo, contact1_relation: e.target.value})} isEditing={isEditing} />
+              <FormField label="Phone Number" type="text" disabled={!isEditing} value={emergencyInfo.contact1_phone} onChange={e => setEmergencyInfo({...emergencyInfo, contact1_phone: e.target.value})} isEditing={isEditing} />
+            </div>
+          </div>
+          
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-[var(--text-main)] mb-6 flex items-center gap-2">
+              <span className="p-2 bg-[var(--bg-workspace)] rounded-lg text-[var(--accent)]"><Phone size={20} /></span>
+              Secondary Contact
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8">
+              <FormField label="Name" type="text" disabled={!isEditing} value={emergencyInfo.contact2_name} onChange={e => setEmergencyInfo({...emergencyInfo, contact2_name: e.target.value})} isEditing={isEditing} />
+              <FormField label="Relation" type="text" disabled={!isEditing} value={emergencyInfo.contact2_relation} onChange={e => setEmergencyInfo({...emergencyInfo, contact2_relation: e.target.value})} isEditing={isEditing} />
+              <FormField label="Phone Number" type="text" disabled={!isEditing} value={emergencyInfo.contact2_phone} onChange={e => setEmergencyInfo({...emergencyInfo, contact2_phone: e.target.value})} isEditing={isEditing} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Family Details Tab */}
+      {activeTab === 'Family Details' && (
+        <div className="space-y-8 animate-in fade-in duration-300">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-[var(--text-main)] mb-6 flex items-center gap-2">
+              <span className="p-2 bg-[var(--bg-workspace)] rounded-lg text-[var(--accent)]"><Home size={20} /></span>
+              Family Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
+              <FormField label="Father's Name" type="text" disabled={!isEditing} value={familyInfo.father_name} onChange={e => setFamilyInfo({...familyInfo, father_name: e.target.value})} isEditing={isEditing} />
+              <FormField label="Mother's Name" type="text" disabled={!isEditing} value={familyInfo.mother_name} onChange={e => setFamilyInfo({...familyInfo, mother_name: e.target.value})} isEditing={isEditing} />
+              <FormField label="Spouse's Name" type="text" disabled={!isEditing} value={familyInfo.spouse_name} onChange={e => setFamilyInfo({...familyInfo, spouse_name: e.target.value})} isEditing={isEditing} />
+              <FormField label="Children (Names & Ages)" type="text" disabled={!isEditing} value={familyInfo.children} onChange={e => setFamilyInfo({...familyInfo, children: e.target.value})} isEditing={isEditing} />
             </div>
           </div>
         </div>
