@@ -63,10 +63,13 @@ const CandidateListPage = () => {
 
   useEffect(() => {
     if (setIsSidebarCollapsed) {
-        setIsSidebarCollapsed(true);
+        setIsSidebarCollapsed(!!selectedCandidateId);
     }
+  }, [setIsSidebarCollapsed, selectedCandidateId]);
+
+  useEffect(() => {
     loadCandidates();
-  }, [setIsSidebarCollapsed]);
+  }, []);
 
   const loadCandidates = async () => {
     try {
@@ -150,7 +153,7 @@ const CandidateListPage = () => {
     <div className="flex h-[calc(100vh-80px)] relative overflow-hidden bg-[var(--bg-workspace)]">
         
         {/* Left Pane: Candidate List */}
-        <div className={`flex flex-col transition-all duration-300 ease-in-out ${selectedCandidateId ? 'w-[50%]' : 'w-full'} p-6 overflow-hidden`}>
+        <div className={`flex flex-col transition-all duration-300 ease-in-out ${selectedCandidateId ? 'w-[40%]' : 'w-full'} p-6 overflow-hidden`}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                 <div>
                 <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Candidates</h1>
@@ -275,18 +278,18 @@ const CandidateListPage = () => {
                                 </div>
                                 </td>
                                 <td className="px-3 py-3">
-                                <div className="font-bold text-[12px] text-[var(--text-main)] flex items-center gap-1.5">
-                                    <Briefcase size={12} className="text-[var(--text-muted)]" /> {candidate.position}
+                                <div className="font-bold text-[12px] text-[var(--text-main)] flex items-center gap-1.5 whitespace-nowrap">
+                                    <Briefcase size={12} className="text-[var(--text-muted)] shrink-0" /> <span className="truncate max-w-[100px]">{candidate.position}</span>
                                 </div>
                                 </td>
-                                <td className="px-3 py-3">
+                                <td className="px-3 py-3 whitespace-nowrap">
                                 <span className="inline-flex px-2 py-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-md text-[11px] font-bold text-[var(--text-main)] shadow-sm">
                                     {candidate.experience_type === 'FRESHER' ? 'Fresher' : `${candidate.total_years} yrs`}
                                 </span>
                                 </td>
                                 <td className="px-3 py-3">
-                                <div className="text-[11px] font-semibold text-[var(--text-main)] flex items-center gap-1.5">
-                                    <MapPin size={12} className="text-[var(--text-muted)]" /> {candidate.current_location}
+                                <div className="text-[11px] font-semibold text-[var(--text-main)] flex items-center gap-1.5 whitespace-nowrap">
+                                    <MapPin size={12} className="text-[var(--text-muted)] shrink-0" /> <span className="truncate max-w-[80px]">{candidate.current_location}</span>
                                 </div>
                                 </td>
                                 <td className="px-3 py-3">
@@ -355,7 +358,7 @@ const CandidateListPage = () => {
 
         {/* Right Pane: Candidate View Profile */}
         {selectedCandidateId && (
-            <div className="w-[50%] h-full">
+            <div className="w-[60%] h-full">
                 <CandidateViewPanel 
                     candidateId={selectedCandidateId} 
                     onClose={() => setSelectedCandidateId(null)} 

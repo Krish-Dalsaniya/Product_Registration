@@ -30,10 +30,13 @@ const ProcessPage = () => {
 
   useEffect(() => {
     if (setIsSidebarCollapsed) {
-        setIsSidebarCollapsed(true);
+        setIsSidebarCollapsed(false);
     }
-    loadCandidates();
   }, [setIsSidebarCollapsed]);
+
+  useEffect(() => {
+    loadCandidates();
+  }, []);
 
   const loadCandidates = async () => {
     try {

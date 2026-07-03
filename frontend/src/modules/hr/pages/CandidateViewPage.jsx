@@ -51,6 +51,7 @@ const CandidateViewPage = () => {
 
     const docs = typeof candidate.documents === 'string' ? JSON.parse(candidate.documents || '{}') : (candidate.documents || {});
     const tech = typeof candidate.technical_details === 'string' ? JSON.parse(candidate.technical_details || '{}') : (candidate.technical_details || {});
+    const extracted = typeof candidate.extracted_info === 'string' ? JSON.parse(candidate.extracted_info || '{}') : (candidate.extracted_info || {});
 
     const renderField = (label, value) => (
         <div className="flex flex-col gap-1.5 p-3 rounded-xl hover:bg-[var(--bg-workspace)]/50 transition-colors border border-transparent hover:border-[var(--border-color)]">
@@ -150,6 +151,24 @@ const CandidateViewPage = () => {
                         </div>
                     </div>
 
+                    {Object.keys(extracted).length > 0 && (
+                        <div className="workspace-card p-6 border-[var(--accent)]/30 border shadow-md relative overflow-hidden">
+                            <div className="absolute top-0 right-0 px-3 py-1 bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest rounded-bl-xl shadow-sm">
+                                AI Powered Insights
+                            </div>
+                            <h3 className="text-lg font-black text-[var(--text-main)] mb-6 tracking-tight flex items-center gap-3 border-b border-[var(--border-color)] pb-4">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg> 
+                                Document Extraction
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-4 gap-x-6">
+                                {extracted.birth_year && renderField('Birth Year', extracted.birth_year)}
+                                {extracted.tenth_percentage && renderField('10th Score', extracted.tenth_percentage)}
+                                {extracted.twelfth_percentage && renderField('12th / Diploma', extracted.twelfth_percentage)}
+                                {extracted.college_cgpa && renderField('College CGPA', extracted.college_cgpa)}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="workspace-card p-6">
                         <h3 className="text-lg font-black text-[var(--text-main)] mb-6 tracking-tight flex items-center gap-3 border-b border-[var(--border-color)] pb-4">
                             <Briefcase size={18} className="text-[var(--accent)]" /> Experience Details
@@ -201,7 +220,7 @@ const CandidateViewPage = () => {
 
             {renderTechSection()}
 
-            <CandidateTimeline educationRoute={candidate.education_route} documents={docs} />
+            <CandidateTimeline educationRoute={candidate.education_route} documents={docs} extractedInfo={extracted} />
         </div>
     );
 };

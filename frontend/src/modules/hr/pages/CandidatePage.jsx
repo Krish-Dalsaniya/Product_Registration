@@ -2,13 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Save, Briefcase, User, Check, UploadCloud, FileText, PhoneCall, IndianRupee } from 'lucide-react';
 import { useNavigate, useParams, useLocation, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { createCandidateApi, fetchCandidateByIdApi, updateCandidateApi } from '../../../api/hr';
+import { createCandidateApi, fetchCandidateByIdApi, updateCandidateApi, extractCandidateLiveApi } from '../../../api/hr';
 import CandidateTimeline from '../components/CandidateTimeline';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 
-const DocumentDropzone = ({ label, id, isUploaded, setUploadMock, onUpload }) => (
+const DocumentDropzone = ({ label, id, isUploaded, setUploadMock, onUpload, onFileSelected, isParsing }) => (
   <div className="border-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] transition-colors rounded-xl p-4 flex flex-col items-center justify-center bg-[var(--bg-workspace)] cursor-pointer relative group h-[120px] text-center">
-     {isUploaded ? (
+     {isParsing ? (
+       <>
+         <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin mb-2"></div>
+         <p className="text-[11px] font-bold text-[var(--accent)] uppercase tracking-wider">Parsing...</p>
+       </>
+     ) : isUploaded ? (
        <>
         <Check size={28} className="text-green-500 mb-2" />
         <p className="text-[11px] font-bold text-[var(--text-main)] uppercase tracking-wider">{label}</p>
@@ -30,6 +35,11 @@ const DocumentDropzone = ({ label, id, isUploaded, setUploadMock, onUpload }) =>
            const file = e.target.files[0];
            setUploadMock(prev => ({...prev, [id]: file}));
            toast.success(`${label} attached`);
+           
+           if (onFileSelected) {
+               onFileSelected(id, file);
+           }
+           
            if (onUpload) {
              const reader = new FileReader();
              reader.onloadend = () => {
@@ -65,6 +75,7 @@ const CandidatePage = () => {
   const { updateTabLabel } = useOutletContext() || {};
   
   const [activeTab, setActiveTab] = useState('Basic Information');
+  const [liveExtractedInfo, setLiveExtractedInfo] = useState({});
   const [formData, setFormData] = useState({
     position: [],
     name: '',
@@ -357,6 +368,9 @@ const CandidatePage = () => {
   const [uploadMock, setUploadMock] = useState({
     applicationForm: false,
     resume: false,
+    aadharCard: false,
+    panCard: false,
+    passport: false,
     marksheet_10th: false,
     marksheet_12th: false,
     deg_sem_1: false, deg_sem_2: false, deg_sem_3: false, deg_sem_4: false,
@@ -364,6 +378,64 @@ const CandidatePage = () => {
     dip_sem_1: false, dip_sem_2: false, dip_sem_3: false, dip_sem_4: false,
     dip_sem_5: false, dip_sem_6: false,
   });
+
+  const [parsingFiles, setParsingFiles] = useState({});
+
+  const handleDocumentExtract = async (fileId, file) => {
+    if (!file) return;
+    setParsingFiles(prev => ({...prev, [fileId]: true}));
+    
+    try {
+      const form = new FormData();
+      form.append('document', file);
+      
+      const res = await extractCandidateLiveApi(form);
+      if (res.data?.success && res.data.data) {
+        const info = res.data.data;
+        let extractedFields = [];
+        
+        if (info.name && !formData.name) extractedFields.push('Name');
+        if (info.email && !formData.email) extractedFields.push('Email');
+        if (info.mobile && !formData.mobile) extractedFields.push('Mobile');
+        if (info.current_location && !formData.currentLocation) extractedFields.push('Location');
+        if (info.total_years_experience) extractedFields.push('Experience');
+
+        if (extractedFields.length > 0) {
+            toast.success(`Information is extracted: ${extractedFields.join(', ')}`);
+        } else {
+            toast.error(`No information could be extracted from this document.`);
+        }
+
+        setLiveExtractedInfo(prev => ({ ...prev, ...info }));
+
+        setFormData(prev => {
+          const newData = { ...prev };
+          if (info.name && !newData.name) newData.name = info.name;
+          if (info.email && !newData.email) newData.email = info.email;
+          if (info.mobile && !newData.mobile) newData.mobile = info.mobile;
+          if (info.current_location && !newData.currentLocation) newData.currentLocation = info.current_location;
+          
+          if (info.total_years_experience || info.current_company || info.designation) {
+            newData.experienceType = (info.total_years_experience > 0 || info.total_years_experience === '1+') ? 'EXPERIENCE' : 'FRESHER';
+            newData.experience_details = {
+              ...newData.experience_details,
+              total_years: info.total_years_experience || newData.experience_details.total_years,
+              current_company: info.current_company || newData.experience_details.current_company,
+              designation: info.designation || newData.experience_details.designation
+            };
+          }
+          return newData;
+        });
+      } else {
+          toast.error("Server failed to extract data from document.");
+      }
+    } catch (err) {
+      console.error("Extraction failed", err);
+      toast.error(`Extraction Error: ${err.message || 'Unknown error'}`);
+    } finally {
+      setParsingFiles(prev => ({...prev, [fileId]: false}));
+    }
+  };
 
   const inputClass = "w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 px-4 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm";
   const labelClass = "block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-1.5";
@@ -734,11 +806,14 @@ const CandidatePage = () => {
                   <div>
                     <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">General Documents</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                      <DocumentDropzone label="Application Form" id="applicationForm" isUploaded={uploadMock.applicationForm} setUploadMock={setUploadMock} />
-                      <DocumentDropzone label="Resume" id="resume" isUploaded={uploadMock.resume} setUploadMock={setUploadMock} />
-                      <DocumentDropzone label="10th Marksheet" id="marksheet_10th" isUploaded={uploadMock.marksheet_10th} setUploadMock={setUploadMock} />
+                      <DocumentDropzone label="Application Form" id="applicationForm" isUploaded={uploadMock.applicationForm} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.applicationForm} />
+                      <DocumentDropzone label="Resume" id="resume" isUploaded={uploadMock.resume} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.resume} />
+                      <DocumentDropzone label="10th Marksheet" id="marksheet_10th" isUploaded={uploadMock.marksheet_10th} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.marksheet_10th} />
+                      <DocumentDropzone label="Aadhar Card" id="aadharCard" isUploaded={uploadMock.aadharCard} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.aadharCard} />
+                      <DocumentDropzone label="PAN Card" id="panCard" isUploaded={uploadMock.panCard} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.panCard} />
+                      <DocumentDropzone label="Indian Passport" id="passport" isUploaded={uploadMock.passport} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.passport} />
                       {formData.educationRoute === 'REGULAR' && (
-                        <DocumentDropzone label="12th Marksheet" id="marksheet_12th" isUploaded={uploadMock.marksheet_12th} setUploadMock={setUploadMock} />
+                        <DocumentDropzone label="12th Marksheet" id="marksheet_12th" isUploaded={uploadMock.marksheet_12th} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.marksheet_12th} />
                       )}
                     </div>
                   </div>
@@ -748,7 +823,7 @@ const CandidatePage = () => {
                       <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Diploma Marksheets</h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {[1, 2, 3, 4, 5, 6].map(sem => (
-                          <DocumentDropzone key={`dip_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`dip_sem_${sem}`} isUploaded={uploadMock[`dip_sem_${sem}`]} setUploadMock={setUploadMock} />
+                          <DocumentDropzone key={`dip_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`dip_sem_${sem}`} isUploaded={uploadMock[`dip_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`dip_sem_${sem}`]} />
                         ))}
                       </div>
                     </div>
@@ -759,11 +834,11 @@ const CandidatePage = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {formData.educationRoute === 'REGULAR' ? (
                         [1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
-                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} />
+                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
                         ))
                       ) : (
                         [3, 4, 5, 6, 7, 8].map(sem => (
-                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} />
+                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
                         ))
                       )}
                     </div>
@@ -775,7 +850,7 @@ const CandidatePage = () => {
                 </div> */}
               </div>
 
-              <CandidateTimeline educationRoute={formData.educationRoute} documents={uploadMock} />
+              <CandidateTimeline educationRoute={formData.educationRoute} documents={uploadMock} extractedInfo={liveExtractedInfo} />
 
             </div>
           )}

@@ -1,6 +1,7 @@
 const { query } = require('../../../../config/db');
 const path = require('path');
 const fs = require('fs');
+const { extractCandidateInfo } = require('../../../../utils/documentExtractor');
 
 /**
  * Helper to safely parse numeric values
@@ -8,6 +9,37 @@ const fs = require('fs');
 const safeParseFloat = (val) => {
     const parsed = parseFloat(val);
     return isNaN(parsed) ? null : parsed;
+};
+
+/**
+ * Handle POST /candidates/extract-live
+ * Extracts AI info from a single document synchronously
+ */
+exports.extractLiveCandidateInfo = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No document uploaded for extraction' });
+        }
+        
+        // Pass to the extractor
+        const documents = {
+            [req.file.fieldname]: `uploads/candidates/${req.file.filename}`
+        };
+        console.log("Documents object for extraction:", documents);
+        console.log("Absolute path will be:", require('path').join(process.cwd(), documents[req.file.fieldname]));
+        
+        const extractedInfo = await extractCandidateInfo(documents, process.cwd());
+        console.log("Extracted Info:", extractedInfo);
+        
+        res.status(200).json({
+            success: true,
+            data: extractedInfo
+        });
+        
+    } catch (error) {
+        console.error("Error in live AI extraction:", error);
+        res.status(500).json({ success: false, message: 'Failed to extract document details' });
+    }
 };
 
 /**
@@ -102,6 +134,21 @@ exports.createCandidate = async (req, res, next) => {
         ];
 
         const result = await query(sql, values);
+        const newCandidateId = result.rows[0].id;
+
+        // Asynchronously process OCR and AI extraction so we don't block the API response
+        extractCandidateInfo(documents, process.cwd()).then(async (extractedInfo) => {
+            if (extractedInfo && Object.keys(extractedInfo).length > 0) {
+                try {
+                    await query('UPDATE hr_candidates SET extracted_info = $1 WHERE id = $2', [JSON.stringify(extractedInfo), newCandidateId]);
+                    console.log(`Successfully updated AI insights for candidate ${newCandidateId}`);
+                } catch (e) {
+                    console.error("Failed to update candidate extracted_info:", e);
+                }
+            }
+        }).catch(err => {
+            console.error("Background AI Extraction Error:", err);
+        });
 
         res.status(201).json({
             success: true,
