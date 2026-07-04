@@ -175,6 +175,8 @@ const ProcessPage = lazy(() => import('../modules/hr/pages/ProcessPage'));
 // PMS Module
 const Closures = lazy(() => import('../modules/pms/pages/Closures'));
 const Projects = lazy(() => import('../modules/pms/pages/Projects'));
+const TaskManagement = lazy(() => import('../modules/pms/pages/TaskManagement'));
+const ScrumsSprints = lazy(() => import('../modules/pms/pages/ScrumsSprints'));
 
 // LMS Module
 const LMSLayout = lazy(() => import('../modules/hr/pages/lms/LMSLayout'));
@@ -459,8 +461,8 @@ const Router = () => {
           <Route path="/hr/pms/closure" element={<Closures />} />
           <Route path="/hr/pms/projects" element={<Projects />} />
           <Route path="/hr/pms/teams" element={<TeamsPage />} />
-          <Route path="/hr/pms/task-management" element={<ComingSoon feature="Task Management" />} />
-          <Route path="/hr/pms/scrums-and-sprints" element={<ComingSoon feature="Scrums & Sprints" />} />
+          <Route path="/hr/pms/task-management" element={<TaskManagement />} />
+          <Route path="/hr/pms/scrums-and-sprints" element={<ScrumsSprints />} />
           <Route path="/hr/pms" element={<Navigate to="/hr/pms/closure" replace />} />
           <Route path="/hr/lms" element={<LMSLayout />}>
             <Route index element={<Navigate to="modules" replace />} />

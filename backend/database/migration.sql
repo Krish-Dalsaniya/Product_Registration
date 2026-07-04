@@ -758,3 +758,111 @@ ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS emergency_info JSONB, ADD COLU
 
 ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS education_details JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS trello_metadata JSONB DEFAULT '{}'::jsonb;
+
+-- ==============================================================================
+-- MODULE: PMS TASK MANAGEMENT
+-- TABLES: pms_tasks, pms_task_comments, pms_task_activity_logs, etc.
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS pms_tasks (
+    task_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_title VARCHAR(255) NOT NULL,
+    task_description TEXT,
+    task_type VARCHAR(50) DEFAULT 'Task',
+    project_id UUID REFERENCES pms_projects(project_id) ON DELETE SET NULL,
+    team_id INTEGER REFERENCES teams(team_id) ON DELETE SET NULL,
+    assignee_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    reporter_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    reviewer_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    parent_task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
+    tags JSONB DEFAULT '[]'::jsonb,
+    priority VARCHAR(50) DEFAULT 'Medium',
+    status VARCHAR(50) DEFAULT 'Backlog',
+    start_date DATE,
+    due_date DATE,
+    estimated_hours NUMERIC(5,2) DEFAULT 0,
+    remaining_hours NUMERIC(5,2) DEFAULT 0,
+    actual_logged_hours NUMERIC(5,2) DEFAULT 0,
+    attachments JSONB DEFAULT '[]'::jsonb,
+    related_links JSONB DEFAULT '[]'::jsonb,
+    dependency_tasks JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS pms_task_comments (
+    comment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    comment_text TEXT NOT NULL,
+    mentions JSONB DEFAULT '[]'::jsonb,
+    attachments JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS pms_task_activity_logs (
+    log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    action VARCHAR(255) NOT NULL,
+    details JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS pms_task_attachments (
+    attachment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
+    uploaded_by UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    file_name VARCHAR(255) NOT NULL,
+    file_url TEXT NOT NULL,
+    file_size INTEGER,
+    file_type VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS pms_task_watchers (
+    task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (task_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS pms_task_time_logs (
+    log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    hours_logged NUMERIC(5,2) NOT NULL,
+    log_date DATE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS pms_task_dependencies (
+    task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
+    depends_on_task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
+    dependency_type VARCHAR(50) DEFAULT 'Blocks',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (task_id, depends_on_task_id)
+);
+
+-- ==============================================================================
+-- MODULE: PMS SCRUMS & SPRINTS
+-- TABLES: pms_sprints
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS pms_sprints (
+    sprint_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES pms_projects(project_id) ON DELETE CASCADE,
+    sprint_name VARCHAR(255) NOT NULL,
+    goal TEXT,
+    start_date DATE,
+    end_date DATE,
+    status VARCHAR(50) DEFAULT 'Planning', -- Planning, Active, Completed
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS sprint_id UUID REFERENCES pms_sprints(sprint_id) ON DELETE SET NULL;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS story_points INTEGER DEFAULT 0;
+
