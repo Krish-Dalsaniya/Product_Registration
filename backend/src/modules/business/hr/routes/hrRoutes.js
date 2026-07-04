@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDashboardMetrics } = require('../controllers/hrController');
 const { getEmployees, getDepartmentsAndDesignations, createEmployee, getEmployeeById, updateEmployee, deleteEmployee, updateEmployeeRole, getEmployeeHierarchy, registerEmployee, getPendingRegistrations, approveRegistration, rejectRegistration, updateOrgChartPlacements } = require('../controllers/employeeController');
-const { createCandidate, getCandidates, updateCandidateStatus, getCandidateById, updateCandidate, deleteCandidate, extractLiveCandidateInfo } = require('../controllers/candidateController');
+const { createCandidate, getCandidates, updateCandidateStatus, getCandidateById, updateCandidate, deleteCandidate, extractLiveCandidateInfo, updateCandidateTrelloMetadata } = require('../controllers/candidateController');
 const { verifyToken } = require('../../../../middleware/auth');
 const payrollController = require('../controllers/payrollController');
 const multer = require('multer');
@@ -45,6 +45,7 @@ router.use(verifyToken);
 // router.use(requireModuleAccess('hr'));
 
 router.put('/candidates/:id/status', updateCandidateStatus);
+router.put('/candidates/:id/trello', updateCandidateTrelloMetadata);
 router.get('/dashboard/metrics', getDashboardMetrics);
 router.get('/candidates', getCandidates);
 router.get('/candidates/:id', getCandidateById);

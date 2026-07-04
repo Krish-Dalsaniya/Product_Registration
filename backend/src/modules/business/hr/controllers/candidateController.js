@@ -59,7 +59,8 @@ exports.createCandidate = async (req, res, next) => {
             relocate,
             educationRoute,
             experience_details,
-            technical_details
+            technical_details,
+            education_details
         } = req.body;
 
         // experience_details may be sent as a JSON string if using FormData
@@ -84,6 +85,17 @@ exports.createCandidate = async (req, res, next) => {
             }
         }
 
+        // education_details may be sent as a JSON string
+        let eduDetails = education_details;
+        if (typeof education_details === 'string') {
+            try {
+                eduDetails = JSON.parse(education_details);
+            } catch (e) {
+                console.error("Failed to parse education_details:", e);
+                eduDetails = {};
+            }
+        }
+
         // Gather uploaded documents
         const documents = {};
         if (req.files) {
@@ -105,12 +117,12 @@ exports.createCandidate = async (req, res, next) => {
                 position, name, experience_type, email, whatsapp, mobile,
                 current_location, relocate, education_route,
                 total_years, designation, current_company, monthly_taken_home, expected_monthly,
-                documents, status, technical_details
+                documents, status, technical_details, education_details
             ) VALUES (
                 $1, $2, $3, $4, $5, $6,
                 $7, $8, $9,
                 $10, $11, $12, $13, $14,
-                $15, 'Applied', $16
+                $15, 'Applied', $16, $17
             ) RETURNING *
         `;
 
@@ -130,7 +142,8 @@ exports.createCandidate = async (req, res, next) => {
             expDetails?.monthly_taken_home ? safeParseFloat(expDetails.monthly_taken_home) : null,
             expDetails?.expected_monthly ? safeParseFloat(expDetails.expected_monthly) : null,
             JSON.stringify(documents),
-            JSON.stringify(techDetails || {})
+            JSON.stringify(techDetails || {}),
+            JSON.stringify(eduDetails || {})
         ];
 
         const result = await query(sql, values);
@@ -277,7 +290,8 @@ exports.updateCandidate = async (req, res, next) => {
             relocate,
             educationRoute,
             experience_details,
-            technical_details
+            technical_details,
+            education_details
         } = req.body;
 
         // Parse JSON strings if necessary
@@ -288,6 +302,10 @@ exports.updateCandidate = async (req, res, next) => {
         let techDetails = technical_details;
         if (typeof technical_details === 'string') {
             try { techDetails = JSON.parse(technical_details); } catch (e) { techDetails = {}; }
+        }
+        let eduDetails = education_details;
+        if (typeof education_details === 'string') {
+            try { eduDetails = JSON.parse(education_details); } catch (e) { eduDetails = {}; }
         }
 
         // Fetch existing candidate to merge documents if files aren't updated
@@ -323,8 +341,8 @@ exports.updateCandidate = async (req, res, next) => {
                 position = $1, name = $2, experience_type = $3, email = $4, whatsapp = $5, mobile = $6,
                 current_location = $7, relocate = $8, education_route = $9,
                 total_years = $10, designation = $11, current_company = $12, monthly_taken_home = $13, expected_monthly = $14,
-                documents = $15, technical_details = $16, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $17
+                documents = $15, technical_details = $16, education_details = $17, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $18
             RETURNING *
         `;
 
@@ -336,7 +354,7 @@ exports.updateCandidate = async (req, res, next) => {
             expDetails?.current_company || null,
             expDetails?.monthly_taken_home ? safeParseFloat(expDetails.monthly_taken_home) : null,
             expDetails?.expected_monthly ? safeParseFloat(expDetails.expected_monthly) : null,
-            JSON.stringify(documents), JSON.stringify(techDetails || {}), id
+            JSON.stringify(documents), JSON.stringify(techDetails || {}), JSON.stringify(eduDetails || {}), id
         ];
 
         const result = await query(sql, values);
@@ -374,5 +392,38 @@ exports.reorderCandidates = async (req, res, next) => {
     } catch (error) {
         console.error('Error reordering candidates:', error);
         res.status(500).json({ success: false, message: 'Failed to reorder' });
+    }
+};
+
+exports.updateCandidateTrelloMetadata = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { trello_metadata } = req.body;
+        
+        if (!trello_metadata) {
+            return res.status(400).json({ success: false, message: 'trello_metadata is required' });
+        }
+
+        const sql = `
+            UPDATE hr_candidates 
+            SET trello_metadata = $1, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $2
+            RETURNING *
+        `;
+        
+        const result = await query(sql, [JSON.stringify(trello_metadata), id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Candidate not found' });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Trello metadata updated',
+            data: result.rows[0]
+        });
+    } catch (error) {
+        console.error("Error updating candidate trello metadata:", error);
+        res.status(500).json({ success: false, message: 'Failed to update metadata' });
     }
 };

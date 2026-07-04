@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchCandidatesApi, updateCandidateStatusApi } from '../../../api/hr';
-import { Briefcase, LayoutGrid, List, MapPin } from 'lucide-react';
+import { Briefcase, LayoutGrid, List, MapPin, Users, X } from 'lucide-react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
+import CandidateViewPanel from '../components/CandidateViewPanel';
+import CandidateTrelloModal from '../components/CandidateTrelloModal';
 
 const STAGES = ['Applied', 'Screened', 'Primary Call', 'HR Round', 'Tech Round', 'Offered', 'Accepted'];
 
@@ -24,6 +26,7 @@ const ProcessPage = () => {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'table'
+  const [selectedCandidateId, setSelectedCandidateId] = useState(null);
   const navigate = useNavigate();
 
   const { setIsSidebarCollapsed } = useOutletContext() || {};
@@ -229,10 +232,15 @@ const ProcessPage = () => {
 
   return (
     <div className="max-w-[1600px] mx-auto pb-6 relative animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-80px)] flex flex-col px-4 md:px-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 mt-6 shrink-0">
-        <div>
-          <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Recruitment Process</h1>
-          <p className="text-sm font-bold text-[var(--text-muted)] mt-1 tracking-wide">Manage candidates across different stages</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 mt-8 shrink-0">
+        <div className="flex items-center gap-5">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <Users size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Recruitment Process</h1>
+            <p className="text-sm font-bold text-[var(--text-muted)] mt-2 tracking-wide">Manage candidates across different stages</p>
+          </div>
         </div>
         
         <div className="flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-color)] p-1 rounded-xl shadow-sm">
@@ -271,13 +279,13 @@ const ProcessPage = () => {
                         return (
                             <div 
                                 key={stage} 
-                                className="bg-[#f4f5f7] dark:bg-[#1a1a1c] border border-gray-200 dark:border-gray-800 rounded-lg flex flex-col min-w-[300px] w-[300px] max-h-full snap-start shadow-sm shrink-0"
+                                className="bg-[#ebecf0] dark:bg-[#1a1a1c] rounded-[10px] flex flex-col min-w-[300px] w-[300px] max-h-full snap-start shadow-sm shrink-0"
                                 onDragOver={(e) => handleDragOver(e, stage)}
                                 onDragLeave={(e) => handleDragLeave(e, stage)}
                                 onDrop={(e) => handleDrop(e, stage)}
                             >
-                                <div className="p-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between sticky top-0 bg-[#f4f5f7] dark:bg-[#1a1a1c] z-10 rounded-t-lg">
-                                    <h3 className="font-bold text-[14px] text-gray-800 dark:text-gray-200">{stage}</h3>
+                                <div className="p-3 pb-1 border-transparent flex items-center justify-between sticky top-0 bg-[#ebecf0] dark:bg-[#1a1a1c] z-10 rounded-t-[10px]">
+                                    <h3 className="font-bold text-[14px] text-gray-800 dark:text-gray-200 pl-1">{stage}</h3>
                                     <span className="bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[11px] font-bold px-2 py-0.5 rounded-full">
                                         {stageCandidates.length}
                                     </span>
@@ -294,11 +302,12 @@ const ProcessPage = () => {
                                         <div
                                             key={candidate.id}
                                             draggable
+                                            onClick={() => setSelectedCandidateId(candidate.id)}
                                             onDragStart={(e) => handleDragStart(e, candidate)}
                                             onDragEnd={handleDragEnd}
-                                            className="bg-white dark:bg-[#252528] border border-gray-200 dark:border-gray-800 rounded-lg p-3 mb-2.5 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                                            className="bg-white dark:bg-[#2c2c2e] rounded-lg p-3 mb-2 shadow-sm border border-black/5 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-[#323234] transition-colors cursor-pointer group"
                                         >
-                                            <div className="flex items-start gap-2 mb-2">
+                                            <div className="flex items-start gap-2 mb-2 pointer-events-none">
                                                 <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-[10px] shrink-0 shadow-sm">
                                                   {candidate.name.charAt(0).toUpperCase()}
                                                 </div>
@@ -332,6 +341,18 @@ const ProcessPage = () => {
                 renderTableView()
             )}
         </>
+      )}
+
+      {selectedCandidateId && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedCandidateId(null)}></div>
+              <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                  <CandidateTrelloModal 
+                      candidateId={selectedCandidateId} 
+                      onClose={() => setSelectedCandidateId(null)} 
+                  />
+              </div>
+          </div>
       )}
     </div>
   );

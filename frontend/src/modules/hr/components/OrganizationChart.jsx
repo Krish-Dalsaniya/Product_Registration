@@ -783,11 +783,11 @@ const OrgNode = ({ node, isRoot = false, editMode, onAddChild, onRemove, onClick
       <div className="inline-block relative z-10 group">
         <div 
           onClick={() => onClick(node)}
-          className={`bg-[var(--bg-card)] border-t-4 border-t-[var(--accent)] border ${isSelected ? 'border-[var(--accent)] ring-2 ring-[var(--accent)] ring-opacity-20' : 'border-[var(--border-color)]'} rounded-xl shadow-md p-4 min-w-[220px] max-w-[280px] text-left hover:-translate-y-1 transition-all cursor-pointer relative`}
+          className={`border-t-4 border-t-[var(--accent)] border ${isSelected ? 'bg-[var(--accent)]/10 border-[var(--accent)] ring-2 ring-[var(--accent)]/30 shadow-lg' : 'bg-[var(--bg-card)] border-[var(--border-color)] shadow-md'} rounded-xl p-4 min-w-[180px] max-w-[280px] min-h-[80px] flex items-center justify-center hover:-translate-y-1 transition-all cursor-pointer relative`}
         >
 
           {editMode && (
-            <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+            <div className="absolute -top-2 -left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
               <button
                 onClick={(e) => { e.stopPropagation(); onAddChild(node.designation_id); }}
                 title="Add profile below"
@@ -805,36 +805,15 @@ const OrgNode = ({ node, isRoot = false, editMode, onAddChild, onRemove, onClick
             </div>
           )}
 
-          <div className="flex flex-col gap-2 pointer-events-none">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 overflow-hidden flex-1">
-                <div className="w-10 h-10 rounded-xl overflow-hidden bg-[var(--bg-workspace)] border-2 border-[var(--border-color)] flex-shrink-0 flex items-center justify-center text-[var(--accent)]">
-                  <Briefcase size={20} />
-                </div>
-                <div className="overflow-hidden flex-1">
-                  <h4 className="text-[14px] font-black text-[var(--text-main)] truncate" title={node.name}>{node.name}</h4>
-                  <p className="text-[10px] font-bold text-[var(--text-muted)] truncate">{node.department_name || 'Organization'}</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-center bg-[var(--bg-workspace)] border border-[var(--border-color)] px-2 py-1 rounded-lg">
-                <span className="text-[11px] font-black text-[var(--text-main)]">👥 {profileEmployees.length}</span>
-              </div>
+          <div className="absolute top-2 right-2 pointer-events-none">
+            <div className="flex items-center justify-center bg-[var(--bg-workspace)]/80 backdrop-blur-sm border border-[var(--border-color)] px-1.5 py-0.5 rounded-md shadow-sm">
+              <span className="text-[10px] font-black text-[var(--text-main)]">👥 {profileEmployees.length}</span>
             </div>
-            
-            {node.job_description && (
-              <div className="mt-2 text-[11px] text-[var(--text-secondary)] line-clamp-2" title={node.job_description}>
-                <span className="font-bold text-[var(--text-muted)] mr-1">Job:</span> 
-                {node.job_description}
-              </div>
-            )}
-            
-            {node.perks && (
-              <div className="text-[11px] text-[var(--text-secondary)] line-clamp-1" title={node.perks}>
-                <span className="font-bold text-[var(--text-muted)] mr-1">Perks:</span> 
-                {node.perks}
-              </div>
-            )}
           </div>
+          
+          <h4 className="text-[15px] font-black text-[var(--text-main)] text-center break-words leading-tight w-full px-2 mt-3 pointer-events-none">
+            {node.name}
+          </h4>
 
           {hasChildren && (
             <button

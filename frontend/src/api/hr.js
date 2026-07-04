@@ -69,6 +69,7 @@ export const createCandidateApi = (formData) => api.post('/hr/candidates', formD
 export const fetchCandidateByIdApi = (id) => api.get(`/hr/candidates/${id}`);
 export const updateCandidateApi = (id, formData) => api.put(`/hr/candidates/${id}`, formData);
 export const deleteCandidateApi = (id) => api.delete(`/hr/candidates/${id}`);
+export const updateCandidateTrelloMetadataApi = (id, trello_metadata) => api.put(`/hr/candidates/${id}/trello`, { trello_metadata });
 
 // Claims
 export const fetchClaimsApi = () => api.get('/hr/claims');

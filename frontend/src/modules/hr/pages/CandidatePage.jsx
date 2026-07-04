@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Briefcase, User, Check, UploadCloud, FileText, PhoneCall, IndianRupee } from 'lucide-react';
+import { ArrowLeft, Save, Briefcase, User, Check, UploadCloud, FileText, PhoneCall, IndianRupee, UserPlus } from 'lucide-react';
 import { useNavigate, useParams, useLocation, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { createCandidateApi, fetchCandidateByIdApi, updateCandidateApi, extractCandidateLiveApi } from '../../../api/hr';
@@ -92,6 +92,20 @@ const CandidatePage = () => {
       current_company: 'N/A',
       monthly_taken_home: '0.00',
       expected_monthly: '0.00'
+    },
+    education_details: {
+      tenth_percentage: '',
+      tenth_passing_year: '',
+      twelfth_percentage: '',
+      twelfth_passing_year: '',
+      
+      diploma_sgpa_1: '', diploma_sgpa_2: '', diploma_sgpa_3: '', diploma_sgpa_4: '', diploma_sgpa_5: '', diploma_sgpa_6: '',
+      diploma_cgpa: '',
+      diploma_passing_year: '',
+      
+      degree_sgpa_1: '', degree_sgpa_2: '', degree_sgpa_3: '', degree_sgpa_4: '', degree_sgpa_5: '', degree_sgpa_6: '', degree_sgpa_7: '', degree_sgpa_8: '',
+      degree_cgpa: '',
+      degree_passing_year: ''
     }
   });
 
@@ -477,7 +491,17 @@ const CandidatePage = () => {
               current_company: candidate.current_company || 'N/A',
               monthly_taken_home: candidate.monthly_taken_home || '0.00',
               expected_monthly: candidate.expected_monthly || '0.00'
-            }
+            },
+            education_details: typeof candidate.education_details === 'string' 
+              ? JSON.parse(candidate.education_details) 
+              : (candidate.education_details || {
+                  tenth_percentage: '', tenth_passing_year: '',
+                  twelfth_percentage: '', twelfth_passing_year: '',
+                  diploma_sgpa_1: '', diploma_sgpa_2: '', diploma_sgpa_3: '', diploma_sgpa_4: '', diploma_sgpa_5: '', diploma_sgpa_6: '',
+                  diploma_cgpa: '', diploma_passing_year: '',
+                  degree_sgpa_1: '', degree_sgpa_2: '', degree_sgpa_3: '', degree_sgpa_4: '', degree_sgpa_5: '', degree_sgpa_6: '', degree_sgpa_7: '', degree_sgpa_8: '',
+                  degree_cgpa: '', degree_passing_year: ''
+              })
           });
 
           const docs = typeof candidate.documents === 'string' ? JSON.parse(candidate.documents || '{}') : (candidate.documents || {});
@@ -530,6 +554,7 @@ const CandidatePage = () => {
       submitData.append('relocate', formData.relocate);
       submitData.append('educationRoute', formData.educationRoute);
       submitData.append('experience_details', JSON.stringify(formData.experience_details));
+      submitData.append('education_details', JSON.stringify(formData.education_details));
 
       const combinedTechDetails = {};
       if (formData.position.includes('Python Developer')) {
@@ -598,13 +623,13 @@ const CandidatePage = () => {
   return (
     <div className="max-w-[1400px] mx-auto pb-6 relative">
       
-      <div className="mb-4 flex justify-end">
+      <div className="mb-2 flex justify-end">
         <Breadcrumbs items={breadcrumbItems} />
       </div>
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 mt-12 md:mt-8">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+        <div className="flex items-center gap-3">
           <button onClick={() => navigate('/hr/recruitment/candidate')} className="p-2 hover:bg-[var(--bg-card)] rounded-full transition-colors border border-transparent hover:border-[var(--border-color)] text-[var(--text-muted)]">
             <ArrowLeft size={20} />
           </button>
@@ -773,13 +798,12 @@ const CandidatePage = () => {
                 )}
               </div>
 
-              {/* Document Uploads */}
+              {/* Education Details Fields */}
               <div className="pt-8 border-t border-[var(--border-color)]">
-                <h3 className={sectionTitleClass}>
-                  <FileText size={18} className="text-[var(--accent)]" /> Documents & Attachments
-                </h3>
-                
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <h3 className={`${sectionTitleClass} !mb-0`}>
+                    <FileText size={18} className="text-[var(--accent)]" /> Education Details
+                  </h3>
                   <div className="flex items-center gap-6">
                     <label className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Education Route:</label>
                     <div onClick={() => setFormData(prev => ({...prev, educationRoute: 'REGULAR'}))} className="flex items-center gap-2 cursor-pointer group">
@@ -795,7 +819,91 @@ const CandidatePage = () => {
                       <span className={`text-[12px] font-bold uppercase tracking-widest ${formData.educationRoute === 'DIPLOMA' ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`}>Diploma + Degree</span>
                     </div>
                   </div>
+                </div>
 
+                <div className="space-y-6">
+                  {/* 10th Standard */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <label className={labelClass}>10th Percentage*</label>
+                      <input type="number" step="0.01" value={formData.education_details.tenth_percentage} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, tenth_percentage: e.target.value}}))} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>10th Passing Year*</label>
+                      <input type="text" value={formData.education_details.tenth_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, tenth_passing_year: e.target.value}}))} className={inputClass} />
+                    </div>
+                  </div>
+
+                  {/* 12th Standard - Conditional based on Route */}
+                  {formData.educationRoute === 'REGULAR' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-[var(--border-color)] pt-6">
+                      <div>
+                        <label className={labelClass}>12th Percentage*</label>
+                        <input type="number" step="0.01" value={formData.education_details.twelfth_percentage} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, twelfth_percentage: e.target.value}}))} className={inputClass} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>12th Passing Year*</label>
+                        <input type="text" value={formData.education_details.twelfth_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, twelfth_passing_year: e.target.value}}))} className={inputClass} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Diploma - Conditional based on Route */}
+                  {formData.educationRoute === 'DIPLOMA' && (
+                    <div className="border-t border-[var(--border-color)] pt-6">
+                      <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest mb-4">Diploma (6 Semesters)</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+                        {[1, 2, 3, 4, 5, 6].map(sem => (
+                          <div key={`dip_sem_${sem}`}>
+                            <label className={labelClass}>Sem {sem} SGPA</label>
+                            <input type="number" step="0.01" value={formData.education_details[`diploma_sgpa_${sem}`]} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`diploma_sgpa_${sem}`]: e.target.value}}))} className={inputClass} />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className={labelClass}>Diploma CGPA*</label>
+                          <input type="number" step="0.01" value={formData.education_details.diploma_cgpa} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, diploma_cgpa: e.target.value}}))} className={inputClass} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Diploma Passing Year*</label>
+                          <input type="text" value={formData.education_details.diploma_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, diploma_passing_year: e.target.value}}))} className={inputClass} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bachelor Degree */}
+                  <div className="border-t border-[var(--border-color)] pt-6">
+                    <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest mb-4">Degree ({formData.educationRoute === 'REGULAR' ? '8' : '6'} Semesters)</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      {(formData.educationRoute === 'REGULAR' ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3, 4, 5, 6]).map(sem => (
+                        <div key={`deg_sem_${sem}`}>
+                          <label className={labelClass}>Sem {sem} SGPA</label>
+                          <input type="number" step="0.01" value={formData.education_details[`degree_sgpa_${sem}`]} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`degree_sgpa_${sem}`]: e.target.value}}))} className={inputClass} />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className={labelClass}>Degree CGPA*</label>
+                        <input type="number" step="0.01" value={formData.education_details.degree_cgpa} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, degree_cgpa: e.target.value}}))} className={inputClass} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Degree Passing Year*</label>
+                        <input type="text" value={formData.education_details.degree_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, degree_passing_year: e.target.value}}))} className={inputClass} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Document Uploads */}
+              <div className="pt-8 border-t border-[var(--border-color)]">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <h3 className={`${sectionTitleClass} !mb-0`}>
+                    <FileText size={18} className="text-[var(--accent)]" /> Documents & Attachments
+                  </h3>
                   <a href="#" className="text-[12px] font-bold text-[var(--accent)] hover:underline flex items-center gap-2 uppercase tracking-widest">
                     <UploadCloud size={16} /> 
                     Download Candidate Application Form

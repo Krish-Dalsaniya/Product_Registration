@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchCandidatesApi, deleteCandidateApi } from '../../../api/hr';
-import { Plus, Download, Briefcase, MapPin, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import { Plus, Download, Briefcase, MapPin, CheckCircle2, XCircle, Trash2, Users } from 'lucide-react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -154,10 +154,15 @@ const CandidateListPage = () => {
         
         {/* Left Pane: Candidate List */}
         <div className={`flex flex-col transition-all duration-300 ease-in-out ${selectedCandidateId ? 'w-[40%]' : 'w-full'} p-6 overflow-hidden`}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <div>
-                <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Candidates</h1>
-                <p className="text-sm font-bold text-[var(--text-muted)] mt-1 tracking-wide">Review and manage recruitment applications</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-6">
+                <div className="flex items-center gap-5">
+                    <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+                        <Users size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Candidates</h1>
+                        <p className="text-sm font-bold text-[var(--text-muted)] mt-2 tracking-wide">Review and manage recruitment applications</p>
+                    </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
