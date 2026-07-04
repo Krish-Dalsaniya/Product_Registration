@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { fetchCandidatesApi, updateCandidateStatusApi } from '../../../api/hr';
-import { Briefcase, LayoutGrid, List, MapPin, Users, X } from 'lucide-react';
+import { fetchCandidatesApi, updateCandidateStatusApi, reorderCandidatesApi } from '../../../api/hr';
+import { Briefcase, LayoutGrid, List, MapPin, Users, X, Search, MoreHorizontal, Plus, Paperclip, CheckSquare, MessageSquare, ChevronRight, Filter } from 'lucide-react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import CandidateViewPanel from '../components/CandidateViewPanel';
 import CandidateTrelloModal from '../components/CandidateTrelloModal';
 
-const STAGES = ['Applied', 'Screened', 'Primary Call', 'HR Round', 'Tech Round', 'Offered', 'Accepted'];
+const INITIAL_STAGES = ['Applied', 'Screened', 'Primary Call', 'HR Round', 'Tech Round', 'Offered', 'Accepted'];
 
 const getStatusColor = (status) => {
     switch (status) {
@@ -27,7 +27,24 @@ const ProcessPage = () => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'table'
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
+  const [filterText, setFilterText] = useState('');
+  const [collapsedStages, setCollapsedStages] = useState([]);
+  const [stages, setStages] = useState(INITIAL_STAGES);
+  const [isAddingStage, setIsAddingStage] = useState(false);
+  const [newStageName, setNewStageName] = useState('');
   const navigate = useNavigate();
+
+  const handleAddStage = () => {
+      if (newStageName.trim() && !stages.includes(newStageName.trim())) {
+          setStages([...stages, newStageName.trim()]);
+      }
+      setNewStageName('');
+      setIsAddingStage(false);
+  };
+
+  const toggleStageCollapse = (stage) => {
+      setCollapsedStages(prev => prev.includes(stage) ? prev.filter(s => s !== stage) : [...prev, stage]);
+  };
 
   const { setIsSidebarCollapsed } = useOutletContext() || {};
 
@@ -114,11 +131,62 @@ const ProcessPage = () => {
     }
   };
 
-  const handleDrop = (e, stage) => {
+  const handleDrop = async (e, stage) => {
     e.preventDefault();
     setDragOverStage(null);
-    if (draggedItem && draggedItem.status !== stage) {
-        updateStatus(draggedItem.id, stage);
+    if (!draggedItem) return;
+
+    // Determine drop position (Fractional Indexing)
+    const container = e.currentTarget.querySelector('.column-content') || e.currentTarget;
+    const y = e.clientY;
+    const cardElements = [...container.querySelectorAll('.candidate-card')];
+    
+    let nextElement = null;
+    for (const card of cardElements) {
+      const box = card.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0) {
+        nextElement = card;
+        break;
+      }
+    }
+
+    const stageCandidates = candidates.filter(c => c.status === stage).sort((a,b) => a.kanban_order - b.kanban_order);
+    let newPosition = 0;
+    
+    if (stageCandidates.length === 0) {
+      newPosition = 1000;
+    } else if (!nextElement) {
+      const lastCard = stageCandidates[stageCandidates.length - 1];
+      newPosition = (lastCard.kanban_order || 0) + 1000;
+    } else {
+      const nextId = nextElement.getAttribute('data-id');
+      const nextIndex = stageCandidates.findIndex(c => c.id === nextId);
+      if (nextIndex >= 0) {
+        const nextOrder = stageCandidates[nextIndex].kanban_order || 0;
+        if (nextIndex === 0) {
+          newPosition = nextOrder / 2;
+        } else {
+          const prevOrder = stageCandidates[nextIndex - 1].kanban_order || 0;
+          newPosition = (prevOrder + nextOrder) / 2;
+        }
+      }
+    }
+
+    // Optimistically update
+    const updatedCandidates = candidates.map(c => 
+        c.id === draggedItem.id ? { ...c, status: stage, kanban_order: newPosition } : c
+    );
+    setCandidates(updatedCandidates);
+
+    try {
+        await reorderCandidatesApi([{ id: draggedItem.id, status: stage, kanban_order: newPosition }]);
+        if (draggedItem.status !== stage) {
+            toast.success(`Candidate moved to ${stage}`);
+        }
+    } catch (error) {
+        toast.error('Failed to save order');
+        loadCandidates();
     }
   };
 
@@ -203,7 +271,7 @@ const ProcessPage = () => {
                                       onChange={(e) => handleTableStatusChange(candidate.id, e.target.value)}
                                       className={`appearance-none font-bold text-[11px] uppercase tracking-wider rounded-lg px-3 py-1.5 border outline-none cursor-pointer pr-8 ${getStatusColor(candidate.status)}`}
                                   >
-                                      {STAGES.map(stage => (
+                                      {stages.map(stage => (
                                           <option key={stage} value={stage} className="text-[var(--text-main)] bg-[var(--bg-card)]">
                                               {stage}
                                           </option>
@@ -243,7 +311,18 @@ const ProcessPage = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-color)] p-1 rounded-xl shadow-sm">
+        <div className="flex items-center gap-2">
+            <div className="relative flex items-center bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-sm px-3 hidden md:flex">
+                <Search size={16} className="text-[var(--text-muted)]" />
+                <input 
+                    type="text" 
+                    placeholder="Filter by name, role..."
+                    value={filterText}
+                    onChange={(e) => setFilterText(e.target.value)}
+                    className="bg-transparent border-none outline-none text-[12px] font-semibold text-[var(--text-main)] w-[160px] py-2 px-2"
+                />
+            </div>
+            <div className="flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-color)] p-1 rounded-xl shadow-sm">
             <button 
                 onClick={() => setViewMode('kanban')}
                 className={`p-2 rounded-lg flex items-center gap-2 text-[11px] font-black uppercase tracking-wider transition-colors ${viewMode === 'kanban' ? 'bg-[var(--text-main)] text-[var(--bg-workspace)] shadow-md' : 'text-[var(--text-muted)] hover:bg-[var(--bg-workspace)]'}`}
@@ -256,6 +335,7 @@ const ProcessPage = () => {
             >
                 <List size={16} /> Table
             </button>
+            </div>
         </div>
       </div>
 
@@ -274,8 +354,25 @@ const ProcessPage = () => {
                     onMouseMove={handleCanvasMouseMove}
                     className={`flex gap-4 overflow-x-auto pb-6 pt-2 px-2 items-start flex-1 custom-scrollbar ${isDraggingCanvas ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
                 >
-                    {STAGES.map(stage => {
-                        const stageCandidates = candidates.filter(c => c.status === stage).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+                    {stages.map(stage => {
+                        const isCollapsed = collapsedStages.includes(stage);
+                        const stageCandidates = candidates
+                            .filter(c => c.status === stage && (filterText === '' || c.name.toLowerCase().includes(filterText.toLowerCase()) || c.position.toLowerCase().includes(filterText.toLowerCase())))
+                            .sort((a,b) => a.kanban_order - b.kanban_order);
+                        
+                        if (isCollapsed) {
+                            return (
+                                <div key={stage} onClick={() => toggleStageCollapse(stage)} className="bg-[#ebecf0] dark:bg-[#1a1a1c] rounded-[10px] w-12 min-w-[48px] max-h-full shrink-0 flex flex-col items-center py-4 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors shadow-sm">
+                                    <div className="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[11px] font-bold px-2 py-0.5 rounded-full mb-4">
+                                        {stageCandidates.length}
+                                    </div>
+                                    <div className="font-bold text-[14px] text-gray-600 dark:text-gray-400 [writing-mode:vertical-lr] rotate-180 flex-1 flex items-center justify-center tracking-wider">
+                                        {stage}
+                                    </div>
+                                </div>
+                            );
+                        }
+
                         return (
                             <div 
                                 key={stage} 
@@ -285,10 +382,17 @@ const ProcessPage = () => {
                                 onDrop={(e) => handleDrop(e, stage)}
                             >
                                 <div className="p-3 pb-1 border-transparent flex items-center justify-between sticky top-0 bg-[#ebecf0] dark:bg-[#1a1a1c] z-10 rounded-t-[10px]">
-                                    <h3 className="font-bold text-[14px] text-gray-800 dark:text-gray-200 pl-1">{stage}</h3>
-                                    <span className="bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                                        {stageCandidates.length}
-                                    </span>
+                                    <div className="flex items-center gap-2 cursor-pointer group" onClick={() => toggleStageCollapse(stage)}>
+                                        <h3 className="font-bold text-[14px] text-gray-800 dark:text-gray-200 pl-1 group-hover:text-blue-600 transition-colors">{stage}</h3>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                                            {stageCandidates.length}
+                                        </span>
+                                        <button className="p-1 text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-700 rounded transition-colors group relative cursor-pointer" title="List actions">
+                                            <MoreHorizontal size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div 
                                   className={`p-2.5 flex-1 overflow-y-auto min-h-[150px] custom-scrollbar transition-colors ${dragOverStage === stage ? 'bg-black/5 dark:bg-white/5' : ''}`}
@@ -299,13 +403,14 @@ const ProcessPage = () => {
                                         </div>
                                     )}
                                     {stageCandidates.map((candidate) => (
-                                        <div
-                                            key={candidate.id}
-                                            draggable
-                                            onClick={() => setSelectedCandidateId(candidate.id)}
-                                            onDragStart={(e) => handleDragStart(e, candidate)}
-                                            onDragEnd={handleDragEnd}
-                                            className="bg-white dark:bg-[#2c2c2e] rounded-lg p-3 mb-2 shadow-sm border border-black/5 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-[#323234] transition-colors cursor-pointer group"
+                                        <div 
+                                                key={candidate.id}
+                                                data-id={candidate.id}
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, candidate)}
+                                                onDragEnd={handleDragEnd}
+                                                onClick={() => setSelectedCandidateId(candidate.id)}
+                                                className="candidate-card bg-white dark:bg-[#252528] rounded-[8px] p-3 mb-2 shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all active:cursor-grabbing group relative"
                                         >
                                             <div className="flex items-start gap-2 mb-2 pointer-events-none">
                                                 <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-[10px] shrink-0 shadow-sm">
@@ -321,7 +426,7 @@ const ProcessPage = () => {
                                                 <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-700 dark:text-gray-300">
                                                     <Briefcase size={12} className="text-gray-400" /> <span className="truncate">{candidate.position}</span>
                                                 </div>
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex items-center justify-between w-full">
                                                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(candidate.status)}`}>
                                                         {candidate.experience_type === 'FRESHER' ? 'Fresher' : `${candidate.total_years} yrs`}
                                                     </span>
@@ -329,13 +434,74 @@ const ProcessPage = () => {
                                                         {formatDistanceToNow(new Date(candidate.created_at), { addSuffix: true })}
                                                     </span>
                                                 </div>
+                                                
+                                                <div className="flex gap-2.5 mt-1 pointer-events-none">
+                                                    {(() => {
+                                                        const docs = typeof candidate.documents === 'string' ? JSON.parse(candidate.documents || '{}') : (candidate.documents || {});
+                                                        const meta = typeof candidate.trello_metadata === 'string' ? JSON.parse(candidate.trello_metadata || '{}') : (candidate.trello_metadata || {});
+                                                        const checklists = meta.checklists || [];
+                                                        const hasDocs = Object.keys(docs).length > 0;
+                                                        const hasChecklist = checklists.length > 0;
+                                                        const completedChecklists = checklists.filter(c => c.completed).length;
+                                                        const isChecklistDone = hasChecklist && completedChecklists === checklists.length;
+
+                                                        return (
+                                                            <>
+                                                                {hasDocs && (
+                                                                    <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400" title="Attachments">
+                                                                        <Paperclip size={12} />
+                                                                        <span>{Object.keys(docs).length}</span>
+                                                                    </div>
+                                                                )}
+                                                                {hasChecklist && (
+                                                                    <div className={`flex items-center gap-1 text-[11px] font-semibold ${isChecklistDone ? 'text-green-600 dark:text-green-500 bg-green-100 dark:bg-green-900/30 px-1.5 rounded' : 'text-gray-500 dark:text-gray-400'}`} title="Checklist items">
+                                                                        <CheckSquare size={12} />
+                                                                        <span>{completedChecklists}/{checklists.length}</span>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )
+                                                    })()}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
+                                <div className="p-2 pt-0 sticky bottom-0 bg-[#ebecf0] dark:bg-[#1a1a1c] rounded-b-[10px]">
+                                    <button onClick={() => navigate('/hr/recruitment/candidate/new', { state: { status: stage } })} className="w-full text-left px-2 py-1.5 text-[13px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-800 rounded transition-colors flex items-center gap-1.5 cursor-pointer">
+                                        <Plus size={14} /> Add a candidate
+                                    </button>
+                                </div>
                             </div>
                         );
                     })}
+                    
+                    {/* Add Stage Block */}
+                    {isAddingStage ? (
+                        <div className="bg-[#ebecf0] dark:bg-[#1a1a1c] rounded-[10px] min-w-[300px] w-[300px] p-2 shadow-sm shrink-0 flex flex-col gap-2">
+                            <input 
+                                autoFocus
+                                type="text"
+                                value={newStageName}
+                                onChange={e => setNewStageName(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleAddStage()}
+                                placeholder="Enter stage name"
+                                className="w-full px-3 py-2 text-[13px] font-semibold border border-blue-500 rounded focus:outline-none"
+                            />
+                            <div className="flex items-center gap-2">
+                                <button onClick={handleAddStage} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[12px] rounded transition-colors">
+                                    Add Stage
+                                </button>
+                                <button onClick={() => setIsAddingStage(false)} className="p-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors">
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div onClick={() => setIsAddingStage(true)} className="bg-[#ebecf0]/50 dark:bg-[#1a1a1c]/50 rounded-[10px] min-w-[300px] w-[300px] h-12 p-3 hover:bg-[#ebecf0] dark:hover:bg-[#1a1a1c] transition-colors cursor-pointer flex items-center gap-2 text-gray-600 dark:text-gray-400 shadow-sm shrink-0 border border-transparent hover:border-gray-300 dark:hover:border-gray-700">
+                            <Plus size={16} className="ml-1" /> <span className="font-bold text-[14px]">Add another stage</span>
+                        </div>
+                    )}
                 </div>
             ) : (
                 renderTableView()
@@ -346,7 +512,7 @@ const ProcessPage = () => {
       {selectedCandidateId && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedCandidateId(null)}></div>
-              <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="relative w-full max-w-5xl h-[92vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                   <CandidateTrelloModal 
                       candidateId={selectedCandidateId} 
                       onClose={() => setSelectedCandidateId(null)} 

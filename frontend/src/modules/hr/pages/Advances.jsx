@@ -89,7 +89,7 @@ const Advances = () => {
     <div className="h-full flex flex-col bg-[var(--bg-main)]">
       <div className="flex-1 p-8 overflow-y-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 mt-4 md:mt-6 px-2">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 mt-2 px-2">
           <div className="flex-1">
             <div className="flex items-center gap-4 md:gap-6">
               <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
@@ -105,26 +105,24 @@ const Advances = () => {
               </div>
             </div>
           </div>
-          <button
-            onClick={() => setIsAdvanceModalOpen(true)}
-            className="btn-primary shadow-lg px-6 py-2.5 group flex items-center gap-2 rounded-xl h-fit"
-          >
-            <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
-            <span className="text-[12px] font-black uppercase tracking-widest">New Advance</span>
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="flex justify-end mb-6 px-2">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" size={16} />
-            <input
-              type="text"
-              placeholder="Search by employee..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 text-[12px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 transition-all font-bold placeholder-[var(--text-dim)]"
-            />
+          <div className="flex items-center gap-4 w-full md:w-auto mt-4 md:mt-0">
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" size={16} />
+              <input
+                type="text"
+                placeholder="Search by employee..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 text-[12px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 transition-all font-bold placeholder-[var(--text-dim)]"
+              />
+            </div>
+            <button
+              onClick={() => setIsAdvanceModalOpen(true)}
+              className="btn-primary shadow-lg px-6 py-2.5 group flex items-center gap-2 rounded-xl h-fit whitespace-nowrap"
+            >
+              <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
+              <span className="text-[12px] font-black uppercase tracking-widest hidden sm:inline">New Advance</span>
+            </button>
           </div>
         </div>
 

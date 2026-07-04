@@ -70,7 +70,10 @@ export const fetchCandidateByIdApi = (id) => api.get(`/hr/candidates/${id}`);
 export const updateCandidateApi = (id, formData) => api.put(`/hr/candidates/${id}`, formData);
 export const deleteCandidateApi = (id) => api.delete(`/hr/candidates/${id}`);
 export const updateCandidateTrelloMetadataApi = (id, trello_metadata) => api.put(`/hr/candidates/${id}/trello`, { trello_metadata });
-
+export const reorderCandidatesApi = (updates) => api.put(`/hr/candidates/reorder`, { updates });
+export const fetchCandidateCommentsApi = (id) => api.get(`/hr/candidates/${id}/comments`);
+export const addCandidateCommentApi = (id, body) => api.post(`/hr/candidates/${id}/comments`, { body });
+export const fetchCandidateActivityApi = (id) => api.get(`/hr/candidates/${id}/activity`);
 // Claims
 export const fetchClaimsApi = () => api.get('/hr/claims');
 export const createClaimApi = (data) => api.post('/hr/claims', data);

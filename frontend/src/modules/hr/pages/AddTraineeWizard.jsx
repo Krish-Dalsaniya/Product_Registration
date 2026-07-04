@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Loader2, ArrowLeft, Save, User, Briefcase, FileText, ChevronRight, Check, ClipboardCheck, Camera, GraduationCap, Trash2 } from 'lucide-react';
-import { fetchHRMetadataApi, fetchHREmployeesApi } from '../../../api/hr';
+import { fetchHRMetadataApi, fetchHREmployeesApi, fetchCandidatesApi, updateCandidateStatusApi, createOnboardingRecordApi } from '../../../api/hr';
 import { createTraineeApi } from '../../../api/trainee';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 
@@ -22,6 +22,9 @@ const INITIAL_FORM_DATA = {
 
 const AddTraineeWizard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const candidateId = searchParams.get('candidateId');
   
   const [formData, setFormData] = useState(() => {
     const draft = localStorage.getItem('trainee_wizard_draft');
@@ -51,6 +54,37 @@ const AddTraineeWizard = () => {
     loadMetadata();
     loadEmployees();
   }, []);
+
+  useEffect(() => {
+    if (candidateId) {
+      loadCandidateData(candidateId);
+    }
+  }, [candidateId]);
+
+  const loadCandidateData = async (id) => {
+    try {
+      const res = await fetchCandidatesApi();
+      if (res.data?.success) {
+        const candidate = res.data.data.find(c => c.id === parseInt(id) || c.id === id);
+        if (candidate) {
+          const names = (candidate.name || '').split(' ');
+          const firstName = names[0] || '';
+          const lastName = names.slice(1).join(' ') || '';
+          
+          setFormData(prev => ({
+            ...prev,
+            first_name: firstName || prev.first_name,
+            last_name: lastName || prev.last_name,
+            email: candidate.email || prev.email,
+            mobile: candidate.phone || prev.mobile
+          }));
+          toast.success('Pre-filled data from Candidate profile');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load candidate data', err);
+    }
+  };
 
   // Auto-save draft
   useEffect(() => {
@@ -159,9 +193,25 @@ const AddTraineeWizard = () => {
       setIsSubmitting(true);
       const res = await createTraineeApi(formData);
       if (res.data?.success) {
-        toast.success('Trainee created successfully');
-        localStorage.removeItem('trainee_wizard_draft');
-        navigate('/hr/trainee');
+          if (candidateId) {
+            try {
+              await updateCandidateStatusApi(candidateId, 'Hired');
+            } catch(e) {
+              console.warn('Failed to update candidate status to Hired', e);
+            }
+            try {
+              // Automatically create onboarding record for trainee
+              await createOnboardingRecordApi({
+                  trainee_id: res.data.data?.trainee_id || res.data.trainee_id,
+                  offer_acceptance_date: formData.joining_date || new Date().toISOString().split('T')[0]
+              });
+            } catch(e) {
+              console.warn('Failed to initiate onboarding', e);
+            }
+          }
+          toast.success('Trainee created successfully');
+          localStorage.removeItem('trainee_wizard_draft');
+          navigate(candidateId ? '/hr/onboarding' : '/hr/trainee');
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create trainee');

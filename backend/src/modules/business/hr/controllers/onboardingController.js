@@ -9,11 +9,17 @@ exports.getOnboardingRecords = async (req, res) => {
     try {
         const result = await db.query(`
             SELECT o.*, 
-                   e.emp_code, e.department_id, e.designation_id,
-                   u.full_name, u.email, u.image_url
+                   COALESCE(e.emp_code, t.trainee_code) as emp_code, 
+                   COALESCE(e.department_id, t.department_id) as department_id, 
+                   e.designation_id,
+                   COALESCE(u.full_name, t.first_name || ' ' || t.last_name) as full_name, 
+                   COALESCE(u.email, t.email) as email, 
+                   COALESCE(u.image_url, t.image_url) as image_url,
+                   CASE WHEN o.employee_id IS NOT NULL THEN 'Employee' ELSE 'Trainee' END as type
             FROM hr_onboarding o
-            JOIN hr_employees e ON o.employee_id = e.employee_id
-            JOIN users u ON e.user_id = u.user_id
+            LEFT JOIN hr_employees e ON o.employee_id = e.employee_id
+            LEFT JOIN hr_trainees t ON o.trainee_id = t.trainee_id
+            LEFT JOIN users u ON e.user_id = u.user_id OR t.user_id = u.user_id
             ORDER BY o.created_at DESC
         `);
         res.status(200).json({ success: true, data: result.rows });
@@ -85,10 +91,13 @@ exports.updateChecklist = async (req, res) => {
 
 exports.createOnboardingRecord = async (req, res) => {
     try {
-        const { employee_id, offer_acceptance_date } = req.body;
+        const { employee_id, trainee_id, offer_acceptance_date } = req.body;
+        if (!employee_id && !trainee_id) {
+            return res.status(400).json({ success: false, error: { message: 'Must provide either employee_id or trainee_id' } });
+        }
         const result = await db.query(
-            `INSERT INTO hr_onboarding (employee_id, offer_acceptance_date) VALUES ($1, $2) RETURNING *`,
-            [employee_id, offer_acceptance_date || null]
+            `INSERT INTO hr_onboarding (employee_id, trainee_id, offer_acceptance_date) VALUES ($1, $2, $3) RETURNING *`,
+            [employee_id || null, trainee_id || null, offer_acceptance_date || null]
         );
         res.status(201).json({ success: true, data: result.rows[0] });
     } catch (error) {

@@ -410,6 +410,7 @@ CREATE TABLE IF NOT EXISTS hr_onboarding (
     document_checklist JSONB DEFAULT '[]'::jsonb,
     asset_checklist JSONB DEFAULT '[]'::jsonb,
     training_checklist JSONB DEFAULT '[]'::jsonb,
+    rcd_checklist JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

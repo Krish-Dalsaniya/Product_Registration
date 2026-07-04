@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, Plus, Search, UserPlus, FileText, CheckCircle, Clock, Edit, Monitor } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { fetchOnboardingRecordsApi, updateOnboardingStatusApi, updateOnboardingChecklistApi } from '../../../api/hr';
+import { fetchOnboardingRecordsApi, updateOnboardingStatusApi, updateOnboardingChecklistApi, fetchCandidatesApi } from '../../../api/hr';
 import { useAuth } from '../../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../../components/shared/DataTable';
@@ -11,8 +11,10 @@ const OnboardingPage = () => {
     const navigate = useNavigate();
     const { hasPermission } = useAuth();
     const [records, setRecords] = useState([]);
+    const [pendingCandidates, setPendingCandidates] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState('ongoing');
     
     // Modal state
     const [selectedRecord, setSelectedRecord] = useState(null);
@@ -22,20 +24,29 @@ const OnboardingPage = () => {
     const [editDocs, setEditDocs] = useState([]);
     const [editAssets, setEditAssets] = useState([]);
     const [editTraining, setEditTraining] = useState([]);
+    const [editRcd, setEditRcd] = useState([]);
     const [editStatus, setEditStatus] = useState('');
 
     // New item inputs
-    const [newItemInputs, setNewItemInputs] = useState({ docs: '', assets: '', training: '' });
+    const [newItemInputs, setNewItemInputs] = useState({ docs: '', assets: '', training: '', rcd: '' });
 
     const loadRecords = async () => {
         try {
             setIsLoading(true);
-            const res = await fetchOnboardingRecordsApi();
-            if (res.data?.success) {
-                setRecords(res.data.data);
+            const [onboardingRes, candidatesRes] = await Promise.all([
+                fetchOnboardingRecordsApi(),
+                fetchCandidatesApi()
+            ]);
+            
+            if (onboardingRes.data?.success) {
+                setRecords(onboardingRes.data.data);
+            }
+            if (candidatesRes.data?.success) {
+                const accepted = candidatesRes.data.data.filter(c => c.status === 'Accepted');
+                setPendingCandidates(accepted);
             }
         } catch (error) {
-            toast.error('Failed to load onboarding records');
+            toast.error('Failed to load records');
             console.error(error);
         } finally {
             setIsLoading(false);
@@ -51,6 +62,7 @@ const OnboardingPage = () => {
         setEditDocs(record.document_checklist || []);
         setEditAssets(record.asset_checklist || []);
         setEditTraining(record.training_checklist || []);
+        setEditRcd(record.rcd_checklist || []);
         setEditStatus(record.status || 'Pending');
     };
 
@@ -66,7 +78,8 @@ const OnboardingPage = () => {
             await updateOnboardingChecklistApi(selectedRecord.id, {
                 document_checklist: editDocs,
                 asset_checklist: editAssets,
-                training_checklist: editTraining
+                training_checklist: editTraining,
+                rcd_checklist: editRcd
             });
 
             // Update status if changed
@@ -98,30 +111,58 @@ const OnboardingPage = () => {
             const newList = [...editTraining];
             newList[idx].checked = !newList[idx].checked;
             setEditTraining(newList);
+        } else if (listName === 'rcd') {
+            const newList = [...editRcd];
+            newList[idx].checked = !newList[idx].checked;
+            setEditRcd(newList);
         }
     };
 
-    const handleAddItem = (type) => {
-        const val = newItemInputs[type]?.trim();
-        if (!val) return;
-
-        if (type === 'docs') {
-            setEditDocs([...editDocs, { name: val, checked: false }]);
-        } else if (type === 'assets') {
-            setEditAssets([...editAssets, { name: val, checked: false }]);
-        } else if (type === 'training') {
-            setEditTraining([...editTraining, { name: val, checked: false }]);
+    const handleRemarksChange = (listName, idx, val) => {
+        if (listName === 'docs') {
+            const newList = [...editDocs];
+            newList[idx].remarks = val;
+            setEditDocs(newList);
+        } else if (listName === 'assets') {
+            const newList = [...editAssets];
+            newList[idx].remarks = val;
+            setEditAssets(newList);
+        } else if (listName === 'training') {
+            const newList = [...editTraining];
+            newList[idx].remarks = val;
+            setEditTraining(newList);
+        } else if (listName === 'rcd') {
+            const newList = [...editRcd];
+            newList[idx].remarks = val;
+            setEditRcd(newList);
         }
-        setNewItemInputs(prev => ({ ...prev, [type]: '' }));
     };
 
-    const handleDeleteItem = (type, idx) => {
-        if (type === 'docs') {
+    const handleAddItem = (listName) => {
+        if (listName === 'docs' && newItemInputs.docs.trim()) {
+            setEditDocs([...editDocs, { name: newItemInputs.docs.trim(), checked: false, remarks: '' }]);
+            setNewItemInputs(prev => ({ ...prev, docs: '' }));
+        } else if (listName === 'assets' && newItemInputs.assets.trim()) {
+            setEditAssets([...editAssets, { name: newItemInputs.assets.trim(), checked: false, remarks: '' }]);
+            setNewItemInputs(prev => ({ ...prev, assets: '' }));
+        } else if (listName === 'training' && newItemInputs.training.trim()) {
+            setEditTraining([...editTraining, { name: newItemInputs.training.trim(), checked: false, remarks: '' }]);
+            setNewItemInputs(prev => ({ ...prev, training: '' }));
+        } else if (listName === 'rcd' && newItemInputs.rcd.trim()) {
+            setEditRcd([...editRcd, { name: newItemInputs.rcd.trim(), checked: false, remarks: '' }]);
+            setNewItemInputs(prev => ({ ...prev, rcd: '' }));
+        }
+    };
+
+    const handleDeleteItem = (listName, idx) => {
+        if (listName === 'docs') {
             setEditDocs(editDocs.filter((_, i) => i !== idx));
-        } else if (type === 'assets') {
+        } else if (listName === 'assets') {
             setEditAssets(editAssets.filter((_, i) => i !== idx));
-        } else if (type === 'training') {
+        } else if (listName === 'training') {
             setEditTraining(editTraining.filter((_, i) => i !== idx));
+        } else if (listName === 'rcd') {
+            setEditRcd(editRcd.filter((_, i) => i !== idx));
         }
     };
 
@@ -131,14 +172,16 @@ const OnboardingPage = () => {
         const docs = record.document_checklist || [];
         const assets = record.asset_checklist || [];
         const training = record.training_checklist || [];
+        const rcd = record.rcd_checklist || [];
         
-        const total = docs.length + assets.length + training.length;
+        const total = docs.length + assets.length + training.length + rcd.length;
         if (total === 0) return 0;
 
         const checked = 
             docs.filter(i => i.checked).length + 
             assets.filter(i => i.checked).length + 
-            training.filter(i => i.checked).length;
+            training.filter(i => i.checked).length +
+            rcd.filter(i => i.checked).length;
             
         return Math.round((checked / total) * 100);
     };
@@ -177,10 +220,15 @@ const OnboardingPage = () => {
         );
     };
 
-    const filteredRecords = records.filter(r => 
-        r.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        r.emp_code?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredRecords = activeTab === 'ongoing'
+        ? records.filter(r => 
+            r.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            r.emp_code?.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        : pendingCandidates.filter(c => 
+            c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            c.email?.toLowerCase().includes(searchTerm.toLowerCase())
+          );
 
     const columns = [
         {
@@ -192,7 +240,10 @@ const OnboardingPage = () => {
                         {row.full_name?.charAt(0) || 'U'}
                     </div>
                     <div>
-                        <h4 className="text-[14px] md:text-[15px] font-bold text-[var(--text-main)]">{row.full_name}</h4>
+                        <div className="flex items-center gap-2">
+                            <h4 className="text-[14px] md:text-[15px] font-bold text-[var(--text-main)]">{row.full_name}</h4>
+                            {row.type === 'Trainee' && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700 uppercase tracking-widest">Trainee</span>}
+                        </div>
                         <p className="text-[12px] md:text-[13px] text-[var(--text-muted)] font-medium mt-0.5">{row.emp_code || 'No Code'}</p>
                     </div>
                 </div>
@@ -214,12 +265,14 @@ const OnboardingPage = () => {
                 const docsStatus = getTaskCategoryStatus(row.document_checklist);
                 const assetsStatus = getTaskCategoryStatus(row.asset_checklist);
                 const trainingStatus = getTaskCategoryStatus(row.training_checklist);
+                const rcdStatus = getTaskCategoryStatus(row.rcd_checklist);
                 
                 return (
                     <div className="flex items-center gap-2">
                         <TaskIndicator label="Docs" status={docsStatus} />
                         <TaskIndicator label="Assets" status={assetsStatus} />
                         <TaskIndicator label="Training" status={trainingStatus} />
+                        <TaskIndicator label="RCD" status={rcdStatus} />
                     </div>
                 );
             }
@@ -237,6 +290,59 @@ const OnboardingPage = () => {
                     </span>
                 );
             }
+        }
+    ];
+
+    const pendingColumns = [
+        {
+            key: 'candidate',
+            label: 'Candidate',
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] font-bold text-sm shadow-inner">
+                        {row.name?.charAt(0) || 'U'}
+                    </div>
+                    <div>
+                        <h4 className="text-[14px] md:text-[15px] font-bold text-[var(--text-main)]">{row.name}</h4>
+                        <p className="text-[12px] md:text-[13px] text-[var(--text-muted)] font-medium mt-0.5">{row.email}</p>
+                    </div>
+                </div>
+            )
+        },
+        {
+            key: 'role',
+            label: 'Applied Role',
+            render: (row) => (
+                <span className="text-[13px] font-semibold text-[var(--text-main)]">
+                    {row.applied_for || 'N/A'}
+                </span>
+            )
+        },
+        {
+            key: 'actions',
+            label: 'Convert To',
+            render: (row) => (
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/hr/employees/new?candidateId=${row.id}`);
+                        }}
+                        className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-[12px] font-bold transition-colors shadow-sm border border-blue-200"
+                    >
+                        Employee
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/hr/trainee/new?candidateId=${row.id}`);
+                        }}
+                        className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-[12px] font-bold transition-colors shadow-sm border border-emerald-200"
+                    >
+                        Trainee
+                    </button>
+                </div>
+            )
         }
     ];
 
@@ -279,6 +385,33 @@ const OnboardingPage = () => {
                         </button>
                     )}
                 </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center gap-6 border-b border-[var(--border-color)] mb-6 px-2">
+                <button
+                    onClick={() => setActiveTab('ongoing')}
+                    className={`pb-3 text-[13px] font-bold uppercase tracking-widest transition-colors relative ${activeTab === 'ongoing' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                >
+                    Ongoing Onboarding
+                    {activeTab === 'ongoing' && (
+                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[var(--accent)] rounded-t-full" />
+                    )}
+                </button>
+                <button
+                    onClick={() => setActiveTab('pending')}
+                    className={`pb-3 text-[13px] font-bold uppercase tracking-widest transition-colors relative flex items-center gap-2 ${activeTab === 'pending' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                >
+                    Pending Conversions
+                    {pendingCandidates.length > 0 && (
+                        <span className="bg-rose-500 text-white text-[10px] px-1.5 py-0.5 rounded-md leading-none">
+                            {pendingCandidates.length}
+                        </span>
+                    )}
+                    {activeTab === 'pending' && (
+                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[var(--accent)] rounded-t-full" />
+                    )}
+                </button>
             </div>
 
             {/* Dashboard Metrics */}
@@ -329,9 +462,9 @@ const OnboardingPage = () => {
 
             <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm overflow-hidden min-h-[500px]">
                 <DataTable 
-                    columns={columns}
+                    columns={activeTab === 'ongoing' ? columns : pendingColumns}
                     data={filteredRecords}
-                    onEdit={hasPermission('hr', 'edit', 'onboarding') ? openEditModal : null}
+                    onEdit={activeTab === 'ongoing' && hasPermission('hr', 'edit', 'onboarding') ? openEditModal : null}
                     rowKey="id"
                 />
             </div>
@@ -381,25 +514,34 @@ const OnboardingPage = () => {
                                 </div>
                                 <div className="space-y-3 mb-3">
                                     {editDocs.map((item, idx) => (
-                                        <div key={idx} className="flex items-center justify-between group">
-                                            <label className="flex items-center gap-3 cursor-pointer">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={item.checked} 
-                                                    onChange={() => toggleChecklist('docs', idx)}
-                                                    className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
-                                                />
-                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
-                                                    {item.name}
-                                                </span>
-                                            </label>
-                                            <button 
-                                                onClick={() => handleDeleteItem('docs', idx)}
-                                                className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                title="Remove item"
-                                            >
-                                                &times;
-                                            </button>
+                                        <div key={idx} className="flex flex-col gap-2 group mb-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="flex items-center gap-3 cursor-pointer flex-1">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={item.checked} 
+                                                        onChange={() => toggleChecklist('docs', idx)}
+                                                        className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                                                    />
+                                                    <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
+                                                        {item.name}
+                                                    </span>
+                                                </label>
+                                                <button 
+                                                    onClick={() => handleDeleteItem('docs', idx)}
+                                                    className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                                                    title="Remove item"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                            <input 
+                                                type="text"
+                                                placeholder="Add remarks..."
+                                                className="w-[calc(100%-1.75rem)] ml-7 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-md px-2 py-1 text-[11px] focus:outline-none focus:border-[var(--accent)]"
+                                                value={item.remarks || ''}
+                                                onChange={(e) => handleRemarksChange('docs', idx, e.target.value)}
+                                            />
                                         </div>
                                     ))}
                                     {editDocs.length === 0 && (
@@ -434,25 +576,34 @@ const OnboardingPage = () => {
                                 </div>
                                 <div className="space-y-3 mb-3">
                                     {editAssets.map((item, idx) => (
-                                        <div key={idx} className="flex items-center justify-between group">
-                                            <label className="flex items-center gap-3 cursor-pointer">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={item.checked} 
-                                                    onChange={() => toggleChecklist('assets', idx)}
-                                                    className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
-                                                />
-                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
-                                                    {item.name}
-                                                </span>
-                                            </label>
-                                            <button 
-                                                onClick={() => handleDeleteItem('assets', idx)}
-                                                className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                title="Remove item"
-                                            >
-                                                &times;
-                                            </button>
+                                        <div key={idx} className="flex flex-col gap-2 group mb-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="flex items-center gap-3 cursor-pointer flex-1">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={item.checked} 
+                                                        onChange={() => toggleChecklist('assets', idx)}
+                                                        className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                                                    />
+                                                    <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
+                                                        {item.name}
+                                                    </span>
+                                                </label>
+                                                <button 
+                                                    onClick={() => handleDeleteItem('assets', idx)}
+                                                    className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                                                    title="Remove item"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                            <input 
+                                                type="text"
+                                                placeholder="Add remarks..."
+                                                className="w-[calc(100%-1.75rem)] ml-7 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-md px-2 py-1 text-[11px] focus:outline-none focus:border-[var(--accent)]"
+                                                value={item.remarks || ''}
+                                                onChange={(e) => handleRemarksChange('assets', idx, e.target.value)}
+                                            />
                                         </div>
                                     ))}
                                     {editAssets.length === 0 && (
@@ -487,25 +638,34 @@ const OnboardingPage = () => {
                                 </div>
                                 <div className="space-y-3 mb-3">
                                     {editTraining.map((item, idx) => (
-                                        <div key={idx} className="flex items-center justify-between group">
-                                            <label className="flex items-center gap-3 cursor-pointer">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={item.checked} 
-                                                    onChange={() => toggleChecklist('training', idx)}
-                                                    className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
-                                                />
-                                                <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
-                                                    {item.name}
-                                                </span>
-                                            </label>
-                                            <button 
-                                                onClick={() => handleDeleteItem('training', idx)}
-                                                className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                title="Remove item"
-                                            >
-                                                &times;
-                                            </button>
+                                        <div key={idx} className="flex flex-col gap-2 group mb-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="flex items-center gap-3 cursor-pointer flex-1">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={item.checked} 
+                                                        onChange={() => toggleChecklist('training', idx)}
+                                                        className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                                                    />
+                                                    <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
+                                                        {item.name}
+                                                    </span>
+                                                </label>
+                                                <button 
+                                                    onClick={() => handleDeleteItem('training', idx)}
+                                                    className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                                                    title="Remove item"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                            <input 
+                                                type="text"
+                                                placeholder="Add remarks..."
+                                                className="w-[calc(100%-1.75rem)] ml-7 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-md px-2 py-1 text-[11px] focus:outline-none focus:border-[var(--accent)]"
+                                                value={item.remarks || ''}
+                                                onChange={(e) => handleRemarksChange('training', idx, e.target.value)}
+                                            />
                                         </div>
                                     ))}
                                     {editTraining.length === 0 && (
@@ -529,6 +689,69 @@ const OnboardingPage = () => {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Role Clarity Document (RCD) */}
+                            <div>
+                                <div className="flex items-center justify-between mb-4 border-b border-[var(--border-color)] pb-2">
+                                    <div className="flex items-center gap-2">
+                                        <FileText size={18} className="text-purple-500" />
+                                        <h4 className="text-[14px] font-bold text-[var(--text-main)]">Role Clarity Document (RCD)</h4>
+                                    </div>
+                                </div>
+                                <div className="space-y-3 mb-3">
+                                    {editRcd.map((item, idx) => (
+                                        <div key={idx} className="flex flex-col gap-2 group mb-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="flex items-center gap-3 cursor-pointer flex-1">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={item.checked} 
+                                                        onChange={() => toggleChecklist('rcd', idx)}
+                                                        className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                                                    />
+                                                    <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
+                                                        {item.name}
+                                                    </span>
+                                                </label>
+                                                <button 
+                                                    onClick={() => handleDeleteItem('rcd', idx)}
+                                                    className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                                                    title="Remove item"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                            <input 
+                                                type="text"
+                                                placeholder="Add remarks..."
+                                                className="w-[calc(100%-1.75rem)] ml-7 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-md px-2 py-1 text-[11px] focus:outline-none focus:border-[var(--accent)]"
+                                                value={item.remarks || ''}
+                                                onChange={(e) => handleRemarksChange('rcd', idx, e.target.value)}
+                                            />
+                                        </div>
+                                    ))}
+                                    {editRcd.length === 0 && (
+                                        <p className="text-[12px] text-[var(--text-muted)] italic">No RCD checklist items.</p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Add an RCD item..." 
+                                        className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--accent)]"
+                                        value={newItemInputs.rcd}
+                                        onChange={(e) => setNewItemInputs(prev => ({ ...prev, rcd: e.target.value }))}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddItem('rcd')}
+                                    />
+                                    <button 
+                                        onClick={() => handleAddItem('rcd')}
+                                        className="p-1.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)] hover:text-white transition-colors"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
+                            </div>
+
                         </div>
 
                         <div className="p-6 border-t border-[var(--border-color)] flex justify-end gap-3 shrink-0 bg-[var(--bg-workspace)]">

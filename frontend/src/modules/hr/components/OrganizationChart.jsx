@@ -772,9 +772,13 @@ const SidePanel = ({ profile, allProfiles, onClose, onUpdate, onUpdateEmployee, 
 };
 
 // ---- node ---------------------------------------------------------------
-const OrgNode = ({ node, isRoot = false, editMode, onAddChild, onRemove, onClick, selectedProfileId, employees = [] }) => {
+const OrgNode = ({ node, isRoot = false, isOpen = true, onToggle, editMode, onAddChild, onRemove, onClick, selectedProfileId, employees = [] }) => {
   const hasChildren = node.children && node.children.length > 0;
-  const [isOpen, setIsOpen] = useState(true); 
+  
+  // Manage which child is currently expanded (accordion style)
+  // Default to null so branches start collapsed
+  const [activeChildId, setActiveChildId] = useState(null);
+
   const isSelected = selectedProfileId === node.designation_id;
   const profileEmployees = employees.filter(e => e.designation_id === node.designation_id);
 
@@ -817,7 +821,12 @@ const OrgNode = ({ node, isRoot = false, editMode, onAddChild, onRemove, onClick
 
           {hasChildren && (
             <button
-              onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                if (onToggle) {
+                  onToggle(node.designation_id);
+                }
+              }}
               className={`absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full px-2.5 py-0.5 text-[10px] font-bold text-[var(--text-main)] shadow-sm z-20 flex items-center gap-1 hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors cursor-pointer whitespace-nowrap`}
             >
               <ChevronDown size={12} strokeWidth={3} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
@@ -837,6 +846,8 @@ const OrgNode = ({ node, isRoot = false, editMode, onAddChild, onRemove, onClick
                 <OrgNode
                   key={child.designation_id}
                   node={child}
+                  isOpen={activeChildId === child.designation_id}
+                  onToggle={(toggledId) => setActiveChildId(activeChildId === toggledId ? null : toggledId)}
                   editMode={editMode}
                   onAddChild={onAddChild}
                   onRemove={onRemove}
@@ -863,6 +874,7 @@ const OrganizationChart = () => {
   const [editMode, setEditMode] = useState(false);
 
   const [selectedProfileId, setSelectedProfileId] = useState(null);
+  const [activeRootId, setActiveRootId] = useState(null);
 
   // modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1116,6 +1128,8 @@ const OrganizationChart = () => {
                   <OrgNode
                     node={rootNode}
                     isRoot={true}
+                    isOpen={activeRootId === rootNode.designation_id}
+                    onToggle={(id) => setActiveRootId(activeRootId === id ? null : id)}
                     editMode={editMode}
                     onAddChild={(parentId) => {
                       setInitialParentId(parentId);
