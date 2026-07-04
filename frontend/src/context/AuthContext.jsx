@@ -42,23 +42,23 @@ export const AuthProvider = ({ children }) => {
           type: 'LOGIN',
           payload: { user }
         });
+      }
 
-        try {
-          const { getMeApi } = await import('../api/auth');
-          const res = await getMeApi();
-          if (res.data?.data?.user) {
-            const freshUser = res.data.data.user;
-            if (localStorage.getItem('user')) {
-              localStorage.setItem('user', JSON.stringify(freshUser));
-            } else {
-              sessionStorage.setItem('user', JSON.stringify(freshUser));
-            }
-            dispatch({ type: 'LOGIN', payload: { user: freshUser } });
+      try {
+        const { getMeApi } = await import('../api/auth');
+        const res = await getMeApi();
+        if (res.data?.data?.user) {
+          const freshUser = res.data.data.user;
+          if (localStorage.getItem('user')) {
+            localStorage.setItem('user', JSON.stringify(freshUser));
+          } else {
+            sessionStorage.setItem('user', JSON.stringify(freshUser));
           }
-        } catch (error) {
-          console.error("Failed to refresh user data silently:", error);
+          dispatch({ type: 'LOGIN', payload: { user: freshUser } });
         }
-      } else {
+      } catch (error) {
+        console.error("Failed to refresh user data silently:", error);
+      } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     };

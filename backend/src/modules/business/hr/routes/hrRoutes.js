@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDashboardMetrics } = require('../controllers/hrController');
 const { getEmployees, getDepartmentsAndDesignations, createEmployee, getEmployeeById, updateEmployee, deleteEmployee, updateEmployeeRole, getEmployeeHierarchy, registerEmployee, getPendingRegistrations, approveRegistration, rejectRegistration, updateOrgChartPlacements } = require('../controllers/employeeController');
-const { createCandidate, getCandidates, updateCandidateStatus, getCandidateById, updateCandidate, deleteCandidate } = require('../controllers/candidateController');
+const { createCandidate, getCandidates, updateCandidateStatus, getCandidateById, updateCandidate, deleteCandidate, extractLiveCandidateInfo, updateCandidateTrelloMetadata, addCandidateComment, getCandidateComments, getCandidateActivity, reorderCandidates } = require('../controllers/candidateController');
 const { verifyToken } = require('../../../../middleware/auth');
 const payrollController = require('../controllers/payrollController');
 const multer = require('multer');
@@ -35,7 +35,8 @@ const {
 router.get('/attendance/verify/:token', getVerificationSession);
 router.post('/attendance/verify', verifyAttendance);
 
-// Public Candidate route
+// Public Candidate routes
+router.post('/candidates/extract-live', uploadCandidate.single('document'), extractLiveCandidateInfo);
 router.post('/candidates', uploadCandidate.any(), createCandidate);
 
 router.post('/employees/register', registerEmployee);
@@ -43,7 +44,12 @@ router.post('/employees/register', registerEmployee);
 router.use(verifyToken);
 // router.use(requireModuleAccess('hr'));
 
+router.put('/candidates/reorder', reorderCandidates);
 router.put('/candidates/:id/status', updateCandidateStatus);
+router.put('/candidates/:id/trello', updateCandidateTrelloMetadata);
+router.get('/candidates/:id/comments', getCandidateComments);
+router.post('/candidates/:id/comments', addCandidateComment);
+router.get('/candidates/:id/activity', getCandidateActivity);
 router.get('/dashboard/metrics', getDashboardMetrics);
 router.get('/candidates', getCandidates);
 router.get('/candidates/:id', getCandidateById);

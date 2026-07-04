@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 import { generateFaceEmbedding } from '../../../utils/faceRecognition';
 import { Loader2, ArrowLeft, Save, User, Briefcase, IndianRupee, FileText, ChevronRight, Check, CreditCard, ClipboardCheck, UploadCloud, Camera, MapPin, PhoneCall, Trash2 } from 'lucide-react';
-import { fetchHRMetadataApi, createHREmployeeApi, fetchHREmployeesApi, createOnboardingRecordApi, extractOnboardingZipApi, registerEmployeeApi } from '../../../api/hr';
+import { fetchHRMetadataApi, createHREmployeeApi, fetchHREmployeesApi, createOnboardingRecordApi, extractOnboardingZipApi, registerEmployeeApi, fetchCandidatesApi, updateCandidateStatusApi } from '../../../api/hr';
 import { getRoles } from '../../../api/roles';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 
@@ -18,7 +18,7 @@ const STEPS = [
 ];
 
 const INITIAL_FORM_DATA = {
-  user_id: '', role_id: '', full_name: '', email: '', phone_number: '', image_url: '', password: '', confirmPassword: '',
+  user_id: '', role_id: '', full_name: '', email: '', phone_number: '', image_url: '', password: '', confirmPassword: '', company_code: '',
   department_id: '', designation_id: '', designation_name: '', manager_id: '',
   date_of_joining: '', employment_status: 'Full-Time', 
   base_salary: '', work_location: '',
@@ -107,7 +107,9 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const isOnboarding = new URLSearchParams(location.search).get('onboarding') === 'true';
+  const searchParams = new URLSearchParams(location.search);
+  const isOnboarding = searchParams.get('onboarding') === 'true';
+  const candidateId = searchParams.get('candidateId');
   
   const [formData, setFormData] = useState(() => {
     const draft = localStorage.getItem('employee_wizard_draft');
@@ -147,6 +149,42 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
       loadEmployees();
     }
   }, [isPublicRegistration]);
+
+  useEffect(() => {
+    if (candidateId) {
+      loadCandidateData(candidateId);
+    }
+  }, [candidateId]);
+
+  const loadCandidateData = async (id) => {
+    try {
+      const res = await fetchCandidatesApi();
+      if (res.data?.success) {
+        const candidate = res.data.data.find(c => c.id === parseInt(id) || c.id === id);
+        if (candidate) {
+          setFormData(prev => ({
+            ...prev,
+            full_name: candidate.name || prev.full_name,
+            email: candidate.email || prev.email,
+            phone_number: candidate.phone || prev.phone_number,
+            designation_name: candidate.applied_for || prev.designation_name,
+            address_info: {
+              ...prev.address_info,
+              current_city: candidate.location || prev.address_info.current_city
+            }
+          }));
+          // Pre-fill resume document URL if applicable
+          if (candidate.document_url) {
+            // we can simulate setting the uploaded mock if we want it to visually reflect
+            // For now, we'll just keep it in formData or rely on the HR admin verifying it.
+          }
+          toast.success('Pre-filled data from Candidate profile');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load candidate data', err);
+    }
+  };
 
   // Auto-save draft (debounced to prevent UI lag on selections)
   useEffect(() => {
@@ -377,6 +415,13 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
       } else {
         const res = await createHREmployeeApi(payload);
         if (res.data?.success) {
+          if (candidateId) {
+            try {
+              await updateCandidateStatusApi(candidateId, 'Hired');
+            } catch(e) {
+              console.warn('Failed to update candidate status to Hired', e);
+            }
+          }
           if (isOnboarding) {
               // Automatically create onboarding record
               await createOnboardingRecordApi({
@@ -389,7 +434,7 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
           } else {
               toast.success('Employee created successfully');
               localStorage.removeItem('employee_wizard_draft');
-              navigate('/hr/employees');
+              navigate(candidateId ? '/hr/onboarding' : '/hr/employees');
           }
         }
       }
@@ -566,6 +611,24 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
                           <option key={role.role_id} value={role.role_id}>{role.role_name}</option>
                         ))}
                       </select>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Company</label>
+                      <select 
+                        value={formData.company_code || ''} 
+                        onChange={e => setFormData(prev => ({...prev, company_code: e.target.value}))} 
+                        className={inputClass}
+                      >
+                        <option value="">Select Company</option>
+                        <option value="01">SmarTec</option>
+                        <option value="02">Illuminated Minds</option>
+                        <option value="03">Leons Integration</option>
+                        <option value="04">NAF Media</option>
+                        <option value="05">Peg-IT Healthcare</option>
+                        <option value="06">Crudex Controls</option>
+                      </select>
+                      <p className="text-[11px] text-[var(--text-dim)] mt-2 italic">Used to set the Company prefix (CC) for auto-generated Employee IDs.</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

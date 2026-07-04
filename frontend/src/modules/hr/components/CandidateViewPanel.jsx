@@ -50,122 +50,129 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
 
     const docs = typeof candidate.documents === 'string' ? JSON.parse(candidate.documents || '{}') : (candidate.documents || {});
     const tech = typeof candidate.technical_details === 'string' ? JSON.parse(candidate.technical_details || '{}') : (candidate.technical_details || {});
+    const extracted = typeof candidate.extracted_info === 'string' ? JSON.parse(candidate.extracted_info || '{}') : (candidate.extracted_info || {});
 
-    const renderField = (label, value) => (
-        <div className="flex flex-col gap-1 p-2.5 rounded-lg hover:bg-[var(--bg-workspace)] transition-colors">
-            <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
-            <span className="text-[13px] font-bold text-[var(--text-main)] leading-tight">{value || '—'}</span>
+    const renderBentoBox = (title, icon, fields) => (
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <h3 className="text-[12px] font-black text-[var(--text-main)] mb-4 flex items-center gap-2 tracking-wide uppercase">
+                {React.cloneElement(icon, { size: 14, className: 'text-[var(--accent)]' })} {title}
+            </h3>
+            <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                {fields.map((field, idx) => field.value && (
+                    <div key={idx} className="flex flex-col gap-1 group">
+                        <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider group-hover:text-[var(--accent)] transition-colors">{field.label}</span>
+                        <span className="text-[13px] font-bold text-[var(--text-main)] leading-tight">{field.value}</span>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] bg-[var(--bg-card)] border-l border-[var(--border-color)] shadow-[-10px_0_30px_rgba(0,0,0,0.05)] relative animate-in slide-in-from-right duration-300">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)] bg-[var(--bg-card)] z-10 shrink-0">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center text-white font-black text-lg shadow-sm">
+        <div className="flex flex-col h-[calc(100vh-140px)] bg-[#fcfcfc] border-l border-[var(--border-color)] shadow-[-20px_0_40px_rgba(0,0,0,0.03)] relative animate-in slide-in-from-right duration-300">
+            {/* Elegant Header */}
+            <div className="flex items-center justify-between p-6 border-b border-[var(--border-color)] bg-white z-10 shrink-0">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-blue-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-500/20">
                         {candidate.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                        <h2 className="text-lg font-black text-[var(--text-main)] tracking-tight leading-tight">{candidate.name}</h2>
-                        <p className="text-[11px] font-bold text-[var(--text-muted)]">{candidate.position}</p>
+                        <h2 className="text-xl font-black text-[var(--text-main)] tracking-tight leading-none mb-1">{candidate.name}</h2>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[12px] font-bold text-[var(--text-muted)]">{candidate.position}</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--border-color)]"></span>
+                            <span className="text-[10px] font-black text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                {candidate.status}
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-[var(--bg-workspace)] p-1 rounded-xl border border-[var(--border-color)] shadow-sm">
                     <button 
                         onClick={() => navigate(`/hr/recruitment/candidate/edit/${candidate.id}`)}
-                        className="p-2 hover:bg-[var(--bg-workspace)] text-[var(--text-muted)] hover:text-blue-500 rounded-lg transition-colors"
+                        className="p-2 hover:bg-white text-[var(--text-muted)] hover:text-[var(--accent)] rounded-lg transition-all shadow-sm hover:shadow"
                         title="Edit Candidate"
                     >
                         <Edit size={16} />
                     </button>
                     <button 
                         onClick={onClose}
-                        className="p-2 hover:bg-[var(--bg-workspace)] text-[var(--text-muted)] hover:text-red-500 rounded-lg transition-colors"
+                        className="p-2 hover:bg-white text-[var(--text-muted)] hover:text-red-500 rounded-lg transition-all shadow-sm hover:shadow"
+                        title="Close Panel"
                     >
-                        <X size={18} />
+                        <X size={16} />
                     </button>
                 </div>
             </div>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
+            {/* Two-Column Split Layout */}
+            <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
                 
-                {/* Status & Applied Date */}
-                <div className="flex items-center justify-between bg-[var(--bg-workspace)] p-3 rounded-xl border border-[var(--border-color)]">
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider">Status</span>
-                        <span className="text-xs font-bold text-[var(--accent)] uppercase tracking-wider">{candidate.status}</span>
+                {/* Left Column: Details & Documents (Scrollable) */}
+                <div className="w-full lg:w-[65%] h-full overflow-y-auto custom-scrollbar p-6 space-y-6">
+                    
+                    {/* Bento Grid: Basic Info & Experience */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {renderBentoBox('Basic Info', <User />, [
+                            { label: 'Email', value: candidate.email },
+                            { label: 'Mobile', value: candidate.mobile },
+                            { label: 'Location', value: candidate.current_location },
+                            { label: 'Edu Route', value: candidate.education_route === 'REGULAR' ? 'Regular' : 'Diploma' }
+                        ])}
+                        
+                        {renderBentoBox('Experience', <Briefcase />, [
+                            { label: 'Type', value: candidate.experience_type === 'FRESHER' ? 'Fresher' : 'Experienced' },
+                            ...(candidate.experience_type !== 'FRESHER' ? [
+                                { label: 'Total Yrs', value: candidate.total_years },
+                                { label: 'Company', value: candidate.current_company },
+                                { label: 'Expected Salary', value: candidate.expected_monthly ? `₹${candidate.expected_monthly}` : null }
+                            ] : [])
+                        ])}
                     </div>
-                    <div className="flex flex-col gap-1 items-end">
-                        <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider">Applied</span>
-                        <span className="text-xs font-bold text-[var(--text-main)]">{formatDistanceToNow(new Date(candidate.created_at), { addSuffix: true })}</span>
-                    </div>
-                </div>
 
-                {/* Basic Info */}
-                <div>
-                    <h3 className="text-sm font-black text-[var(--text-main)] mb-3 flex items-center gap-2">
-                        <User size={14} className="text-[var(--accent)]" /> Basic Info
-                    </h3>
-                    <div className="grid grid-cols-2 gap-2">
-                        {renderField('Email', candidate.email)}
-                        {renderField('Mobile', candidate.mobile)}
-                        {renderField('Location', candidate.current_location)}
-                        {renderField('Relocate', candidate.relocate ? 'Yes' : 'No')}
-                        {renderField('Edu Route', candidate.education_route === 'REGULAR' ? 'Regular' : 'Diploma')}
-                    </div>
-                </div>
-
-                {/* Experience */}
-                <div>
-                    <h3 className="text-sm font-black text-[var(--text-main)] mb-3 flex items-center gap-2">
-                        <Briefcase size={14} className="text-[var(--accent)]" /> Experience
-                    </h3>
-                    <div className="grid grid-cols-2 gap-2">
-                        {renderField('Type', candidate.experience_type === 'FRESHER' ? 'Fresher' : 'Experienced')}
-                        {candidate.experience_type !== 'FRESHER' && (
-                            <>
-                                {renderField('Total Yrs', candidate.total_years)}
-                                {renderField('Company', candidate.current_company)}
-                                {renderField('Expected Salary', candidate.expected_monthly ? `₹${candidate.expected_monthly}` : '—')}
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                {/* Documents */}
-                {Object.keys(docs).length > 0 && (
-                    <div>
-                        <h3 className="text-sm font-black text-[var(--text-main)] mb-3 flex items-center gap-2">
-                            <Download size={14} className="text-[var(--accent)]" /> Documents
-                        </h3>
-                        <div className="flex flex-col gap-2">
-                            {Object.entries(docs).map(([key, path]) => (
-                                <a 
-                                    key={key} 
-                                    href={getFullUrl(path)} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] transition-colors group"
-                                >
-                                    <span className="text-[11px] font-bold text-[var(--text-main)] truncate mr-2">
-                                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                    </span>
-                                    <Download size={14} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] shrink-0 transition-colors" />
-                                </a>
-                            ))}
+                    {/* Documents Grid */}
+                    {Object.keys(docs).length > 0 && (
+                        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-5 shadow-sm">
+                            <h3 className="text-[12px] font-black text-[var(--text-main)] mb-4 flex items-center gap-2 tracking-wide uppercase">
+                                <Download size={14} className="text-[var(--accent)]" /> Attached Documents
+                            </h3>
+                            <div className="flex flex-wrap gap-3">
+                                {Object.entries(docs).map(([key, path]) => (
+                                    <a 
+                                        key={key} 
+                                        href={getFullUrl(path)} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 py-2 px-3 pr-4 rounded-xl bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:shadow-md transition-all group shrink-0"
+                                    >
+                                        <div className="w-8 h-8 rounded-lg bg-white border border-[var(--border-color)] flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:border-[var(--accent)] transition-colors">
+                                            <Download size={14} className="text-[var(--text-muted)] group-hover:text-white transition-colors" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[11px] font-bold text-[var(--text-main)] max-w-[120px] truncate">
+                                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/Marksheet/, '').trim()}
+                                            </span>
+                                            <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">PDF Document</span>
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Fixed Timeline at Bottom */}
-            <div className="shrink-0 border-t border-[var(--border-color)] bg-[var(--bg-card)] p-4">
-                <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Application Timeline</h3>
-                <div className="overflow-x-auto custom-scrollbar pb-2">
-                   <CandidateTimeline educationRoute={candidate.education_route} documents={docs} />
+                    )}
                 </div>
+
+                {/* Right Column: Application Timeline */}
+                <div className="w-full lg:w-[35%] h-full overflow-y-auto custom-scrollbar bg-white border-l border-[var(--border-color)] p-6 relative">
+                    <div className="sticky top-0 bg-white z-10 pb-4 mb-4 border-b border-[var(--border-color)]/50">
+                        <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Application Timeline</h3>
+                        <p className="text-[10px] font-semibold text-[var(--text-muted)] mt-1">Track candidate progress</p>
+                    </div>
+                    
+                    <div className="pr-2">
+                        <CandidateTimeline educationRoute={candidate.education_route} documents={docs} extractedInfo={extracted} compact />
+                    </div>
+                </div>
+
             </div>
         </div>
     );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchCandidatesApi, deleteCandidateApi } from '../../../api/hr';
-import { Plus, Download, Briefcase, MapPin, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import { Plus, Download, Briefcase, MapPin, CheckCircle2, XCircle, Trash2, Users } from 'lucide-react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -63,10 +63,13 @@ const CandidateListPage = () => {
 
   useEffect(() => {
     if (setIsSidebarCollapsed) {
-        setIsSidebarCollapsed(true);
+        setIsSidebarCollapsed(!!selectedCandidateId);
     }
+  }, [setIsSidebarCollapsed, selectedCandidateId]);
+
+  useEffect(() => {
     loadCandidates();
-  }, [setIsSidebarCollapsed]);
+  }, []);
 
   const loadCandidates = async () => {
     try {
@@ -150,11 +153,16 @@ const CandidateListPage = () => {
     <div className="flex h-[calc(100vh-80px)] relative overflow-hidden bg-[var(--bg-workspace)]">
         
         {/* Left Pane: Candidate List */}
-        <div className={`flex flex-col transition-all duration-300 ease-in-out ${selectedCandidateId ? 'w-[50%]' : 'w-full'} p-6 overflow-hidden`}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <div>
-                <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Candidates</h1>
-                <p className="text-sm font-bold text-[var(--text-muted)] mt-1 tracking-wide">Review and manage recruitment applications</p>
+        <div className={`flex flex-col transition-all duration-300 ease-in-out ${selectedCandidateId ? 'w-[40%]' : 'w-full'} p-6 overflow-hidden`}>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-6">
+                <div className="flex items-center gap-5">
+                    <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+                        <Users size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">Candidates</h1>
+                        <p className="text-sm font-bold text-[var(--text-muted)] mt-2 tracking-wide">Review and manage recruitment applications</p>
+                    </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -275,18 +283,18 @@ const CandidateListPage = () => {
                                 </div>
                                 </td>
                                 <td className="px-3 py-3">
-                                <div className="font-bold text-[12px] text-[var(--text-main)] flex items-center gap-1.5">
-                                    <Briefcase size={12} className="text-[var(--text-muted)]" /> {candidate.position}
+                                <div className="font-bold text-[12px] text-[var(--text-main)] flex items-center gap-1.5 whitespace-nowrap">
+                                    <Briefcase size={12} className="text-[var(--text-muted)] shrink-0" /> <span className="truncate max-w-[100px]">{candidate.position}</span>
                                 </div>
                                 </td>
-                                <td className="px-3 py-3">
+                                <td className="px-3 py-3 whitespace-nowrap">
                                 <span className="inline-flex px-2 py-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-md text-[11px] font-bold text-[var(--text-main)] shadow-sm">
                                     {candidate.experience_type === 'FRESHER' ? 'Fresher' : `${candidate.total_years} yrs`}
                                 </span>
                                 </td>
                                 <td className="px-3 py-3">
-                                <div className="text-[11px] font-semibold text-[var(--text-main)] flex items-center gap-1.5">
-                                    <MapPin size={12} className="text-[var(--text-muted)]" /> {candidate.current_location}
+                                <div className="text-[11px] font-semibold text-[var(--text-main)] flex items-center gap-1.5 whitespace-nowrap">
+                                    <MapPin size={12} className="text-[var(--text-muted)] shrink-0" /> <span className="truncate max-w-[80px]">{candidate.current_location}</span>
                                 </div>
                                 </td>
                                 <td className="px-3 py-3">
@@ -355,7 +363,7 @@ const CandidateListPage = () => {
 
         {/* Right Pane: Candidate View Profile */}
         {selectedCandidateId && (
-            <div className="w-[50%] h-full">
+            <div className="w-[60%] h-full">
                 <CandidateViewPanel 
                     candidateId={selectedCandidateId} 
                     onClose={() => setSelectedCandidateId(null)} 

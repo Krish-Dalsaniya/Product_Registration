@@ -97,7 +97,7 @@ const executeCreateEmployee = async (client, payload) => {
     department_id, designation_id, designation_name,
     manager_id,
     date_of_joining, employment_status, base_salary, work_location,
-    personal_info, job_info, pay_info, statutory_info, identities_info, address_info, education_info, emergency_contacts, face_embedding, image_url
+    personal_info, job_info, pay_info, statutory_info, identities_info, address_info, education_info, emergency_contacts, face_embedding, image_url, company_code
   } = payload;
 
   let finalUserId = user_id;
@@ -183,9 +183,27 @@ const executeCreateEmployee = async (client, payload) => {
     }).catch(err => console.error('Failed to send employee welcome email:', err));
   }
 
-  const countRes = await client.query('SELECT COUNT(*) FROM hr_employees');
+  // Generate Employee ID: CCYYYYMMXX
+  // CC = company_code (e.g. 03)
+  // YYYY = Year of joining
+  // MM = Month of joining
+  // XX = Serial number of employee onboarded in that month
+  
+  const compCode = (company_code && company_code.trim()) ? company_code.trim().padStart(2, '0').substring(0,2) : '00';
+  
+  const dojDate = new Date(date_of_joining);
+  const dojYear = dojDate.getFullYear().toString();
+  const dojMonth = (dojDate.getMonth() + 1).toString().padStart(2, '0');
+  
+  const countRes = await client.query(`
+    SELECT COUNT(*) 
+    FROM hr_employees 
+    WHERE EXTRACT(YEAR FROM date_of_joining) = $1 
+    AND EXTRACT(MONTH FROM date_of_joining) = $2
+  `, [dojDate.getFullYear(), dojDate.getMonth() + 1]);
+  
   let nextNum = parseInt(countRes.rows[0].count) + 1;
-  let empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+  let empCode = `${compCode}${dojYear}${dojMonth}${nextNum.toString().padStart(2, '0')}`;
   let isUnique = false;
   
   while (!isUnique) {
@@ -194,7 +212,7 @@ const executeCreateEmployee = async (client, payload) => {
       isUnique = true;
     } else {
       nextNum++;
-      empCode = `EMP-${nextNum.toString().padStart(3, '0')}`;
+      empCode = `${compCode}${dojYear}${dojMonth}${nextNum.toString().padStart(2, '0')}`;
     }
   }
 

@@ -410,6 +410,7 @@ CREATE TABLE IF NOT EXISTS hr_onboarding (
     document_checklist JSONB DEFAULT '[]'::jsonb,
     asset_checklist JSONB DEFAULT '[]'::jsonb,
     training_checklist JSONB DEFAULT '[]'::jsonb,
+    rcd_checklist JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -754,3 +755,6 @@ COMMIT;
 -- Added advanced attendance metrics
 ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS late_coming VARCHAR(10) DEFAULT '00:00', ADD COLUMN IF NOT EXISTS early_going VARCHAR(10) DEFAULT '00:00', ADD COLUMN IF NOT EXISTS break_hours VARCHAR(10) DEFAULT '00:00', ADD COLUMN IF NOT EXISTS extra_hours VARCHAR(10) DEFAULT '00:00';
 ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS emergency_info JSONB, ADD COLUMN IF NOT EXISTS family_info JSONB;
+
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS education_details JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS trello_metadata JSONB DEFAULT '{}'::jsonb;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, useOutletContext } from 'react-router-dom';
 import { fetchCandidateByIdApi } from '../../../api/hr';
-import { ArrowLeft, User, Briefcase, Mail, Phone, MapPin, Download } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, Mail, Phone, MapPin, Download, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import CandidateTimeline from '../components/CandidateTimeline';
@@ -51,6 +51,8 @@ const CandidateViewPage = () => {
 
     const docs = typeof candidate.documents === 'string' ? JSON.parse(candidate.documents || '{}') : (candidate.documents || {});
     const tech = typeof candidate.technical_details === 'string' ? JSON.parse(candidate.technical_details || '{}') : (candidate.technical_details || {});
+    const extracted = typeof candidate.extracted_info === 'string' ? JSON.parse(candidate.extracted_info || '{}') : (candidate.extracted_info || {});
+    const eduDetails = typeof candidate.education_details === 'string' ? JSON.parse(candidate.education_details || '{}') : (candidate.education_details || {});
 
     const renderField = (label, value) => (
         <div className="flex flex-col gap-1.5 p-3 rounded-xl hover:bg-[var(--bg-workspace)]/50 transition-colors border border-transparent hover:border-[var(--border-color)]">
@@ -152,6 +154,72 @@ const CandidateViewPage = () => {
 
                     <div className="workspace-card p-6">
                         <h3 className="text-lg font-black text-[var(--text-main)] mb-6 tracking-tight flex items-center gap-3 border-b border-[var(--border-color)] pb-4">
+                            <FileText size={18} className="text-[var(--accent)]" /> Education Details
+                        </h3>
+                        
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-4 gap-x-6">
+                                {renderField('10th Percentage', eduDetails.tenth_percentage ? `${eduDetails.tenth_percentage}%` : '')}
+                                {renderField('10th Passing Year', eduDetails.tenth_passing_year)}
+                                {candidate.education_route === 'REGULAR' ? (
+                                    <>
+                                        {renderField('12th Percentage', eduDetails.twelfth_percentage ? `${eduDetails.twelfth_percentage}%` : '')}
+                                        {renderField('12th Passing Year', eduDetails.twelfth_passing_year)}
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="hidden lg:block"></div>
+                                        <div className="hidden lg:block"></div>
+                                    </>
+                                )}
+                            </div>
+
+                            {candidate.education_route === 'DIPLOMA' && (
+                                <div className="pt-4 border-t border-[var(--border-color)] border-dashed">
+                                    <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Diploma (6 Semesters)</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-y-4 gap-x-6 mb-4">
+                                        {[1, 2, 3, 4, 5, 6].map(sem => renderField(`Sem ${sem} SGPA`, eduDetails[`diploma_sgpa_${sem}`]))}
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
+                                        {renderField('Diploma CGPA', eduDetails.diploma_cgpa)}
+                                        {renderField('Diploma Passing Year', eduDetails.diploma_passing_year)}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="pt-4 border-t border-[var(--border-color)] border-dashed">
+                                <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Degree ({candidate.education_route === 'REGULAR' ? '8' : '6'} Semesters)</h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-y-4 gap-x-4 mb-4">
+                                    {(candidate.education_route === 'REGULAR' ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3, 4, 5, 6]).map(sem => renderField(`Sem ${sem}`, eduDetails[`degree_sgpa_${sem}`]))}
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
+                                    {renderField('Degree CGPA', eduDetails.degree_cgpa)}
+                                    {renderField('Degree Passing Year', eduDetails.degree_passing_year)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {Object.keys(extracted).length > 0 && (
+                        <div className="workspace-card p-6 border-[var(--accent)]/30 border shadow-md relative overflow-hidden">
+                            <div className="absolute top-0 right-0 px-3 py-1 bg-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest rounded-bl-xl shadow-sm">
+                                AI Powered Insights
+                            </div>
+                            <h3 className="text-lg font-black text-[var(--text-main)] mb-6 tracking-tight flex items-center gap-3 border-b border-[var(--border-color)] pb-4">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg> 
+                                Document Extraction
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-4 gap-x-6">
+                                {extracted.birth_year && renderField('Birth Year', extracted.birth_year)}
+                                {extracted.tenth_percentage && renderField('10th Score', extracted.tenth_percentage)}
+                                {extracted.twelfth_percentage && renderField('12th / Diploma', extracted.twelfth_percentage)}
+                                {extracted.college_cgpa && renderField('College CGPA', extracted.college_cgpa)}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="workspace-card p-6">
+                        <h3 className="text-lg font-black text-[var(--text-main)] mb-6 tracking-tight flex items-center gap-3 border-b border-[var(--border-color)] pb-4">
                             <Briefcase size={18} className="text-[var(--accent)]" /> Experience Details
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
@@ -201,7 +269,7 @@ const CandidateViewPage = () => {
 
             {renderTechSection()}
 
-            <CandidateTimeline educationRoute={candidate.education_route} documents={docs} />
+            <CandidateTimeline educationRoute={candidate.education_route} documents={docs} extractedInfo={extracted} />
         </div>
     );
 };

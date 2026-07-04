@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Briefcase, User, Check, UploadCloud, FileText, PhoneCall, IndianRupee } from 'lucide-react';
+import { ArrowLeft, Save, Briefcase, User, Check, UploadCloud, FileText, PhoneCall, IndianRupee, UserPlus } from 'lucide-react';
 import { useNavigate, useParams, useLocation, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { createCandidateApi, fetchCandidateByIdApi, updateCandidateApi } from '../../../api/hr';
+import { createCandidateApi, fetchCandidateByIdApi, updateCandidateApi, extractCandidateLiveApi } from '../../../api/hr';
 import CandidateTimeline from '../components/CandidateTimeline';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 
-const DocumentDropzone = ({ label, id, isUploaded, setUploadMock, onUpload }) => (
+const DocumentDropzone = ({ label, id, isUploaded, setUploadMock, onUpload, onFileSelected, isParsing }) => (
   <div className="border-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] transition-colors rounded-xl p-4 flex flex-col items-center justify-center bg-[var(--bg-workspace)] cursor-pointer relative group h-[120px] text-center">
-     {isUploaded ? (
+     {isParsing ? (
+       <>
+         <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin mb-2"></div>
+         <p className="text-[11px] font-bold text-[var(--accent)] uppercase tracking-wider">Parsing...</p>
+       </>
+     ) : isUploaded ? (
        <>
         <Check size={28} className="text-green-500 mb-2" />
         <p className="text-[11px] font-bold text-[var(--text-main)] uppercase tracking-wider">{label}</p>
@@ -30,6 +35,11 @@ const DocumentDropzone = ({ label, id, isUploaded, setUploadMock, onUpload }) =>
            const file = e.target.files[0];
            setUploadMock(prev => ({...prev, [id]: file}));
            toast.success(`${label} attached`);
+           
+           if (onFileSelected) {
+               onFileSelected(id, file);
+           }
+           
            if (onUpload) {
              const reader = new FileReader();
              reader.onloadend = () => {
@@ -65,6 +75,7 @@ const CandidatePage = () => {
   const { updateTabLabel } = useOutletContext() || {};
   
   const [activeTab, setActiveTab] = useState('Basic Information');
+  const [liveExtractedInfo, setLiveExtractedInfo] = useState({});
   const [formData, setFormData] = useState({
     position: [],
     name: '',
@@ -81,6 +92,20 @@ const CandidatePage = () => {
       current_company: 'N/A',
       monthly_taken_home: '0.00',
       expected_monthly: '0.00'
+    },
+    education_details: {
+      tenth_percentage: '',
+      tenth_passing_year: '',
+      twelfth_percentage: '',
+      twelfth_passing_year: '',
+      
+      diploma_sgpa_1: '', diploma_sgpa_2: '', diploma_sgpa_3: '', diploma_sgpa_4: '', diploma_sgpa_5: '', diploma_sgpa_6: '',
+      diploma_cgpa: '',
+      diploma_passing_year: '',
+      
+      degree_sgpa_1: '', degree_sgpa_2: '', degree_sgpa_3: '', degree_sgpa_4: '', degree_sgpa_5: '', degree_sgpa_6: '', degree_sgpa_7: '', degree_sgpa_8: '',
+      degree_cgpa: '',
+      degree_passing_year: ''
     }
   });
 
@@ -357,6 +382,9 @@ const CandidatePage = () => {
   const [uploadMock, setUploadMock] = useState({
     applicationForm: false,
     resume: false,
+    aadharCard: false,
+    panCard: false,
+    passport: false,
     marksheet_10th: false,
     marksheet_12th: false,
     deg_sem_1: false, deg_sem_2: false, deg_sem_3: false, deg_sem_4: false,
@@ -364,6 +392,64 @@ const CandidatePage = () => {
     dip_sem_1: false, dip_sem_2: false, dip_sem_3: false, dip_sem_4: false,
     dip_sem_5: false, dip_sem_6: false,
   });
+
+  const [parsingFiles, setParsingFiles] = useState({});
+
+  const handleDocumentExtract = async (fileId, file) => {
+    if (!file) return;
+    setParsingFiles(prev => ({...prev, [fileId]: true}));
+    
+    try {
+      const form = new FormData();
+      form.append('document', file);
+      
+      const res = await extractCandidateLiveApi(form);
+      if (res.data?.success && res.data.data) {
+        const info = res.data.data;
+        let extractedFields = [];
+        
+        if (info.name && !formData.name) extractedFields.push('Name');
+        if (info.email && !formData.email) extractedFields.push('Email');
+        if (info.mobile && !formData.mobile) extractedFields.push('Mobile');
+        if (info.current_location && !formData.currentLocation) extractedFields.push('Location');
+        if (info.total_years_experience) extractedFields.push('Experience');
+
+        if (extractedFields.length > 0) {
+            toast.success(`Information is extracted: ${extractedFields.join(', ')}`);
+        } else {
+            toast.error(`No information could be extracted from this document.`);
+        }
+
+        setLiveExtractedInfo(prev => ({ ...prev, ...info }));
+
+        setFormData(prev => {
+          const newData = { ...prev };
+          if (info.name && !newData.name) newData.name = info.name;
+          if (info.email && !newData.email) newData.email = info.email;
+          if (info.mobile && !newData.mobile) newData.mobile = info.mobile;
+          if (info.current_location && !newData.currentLocation) newData.currentLocation = info.current_location;
+          
+          if (info.total_years_experience || info.current_company || info.designation) {
+            newData.experienceType = (info.total_years_experience > 0 || info.total_years_experience === '1+') ? 'EXPERIENCE' : 'FRESHER';
+            newData.experience_details = {
+              ...newData.experience_details,
+              total_years: info.total_years_experience || newData.experience_details.total_years,
+              current_company: info.current_company || newData.experience_details.current_company,
+              designation: info.designation || newData.experience_details.designation
+            };
+          }
+          return newData;
+        });
+      } else {
+          toast.error("Server failed to extract data from document.");
+      }
+    } catch (err) {
+      console.error("Extraction failed", err);
+      toast.error(`Extraction Error: ${err.message || 'Unknown error'}`);
+    } finally {
+      setParsingFiles(prev => ({...prev, [fileId]: false}));
+    }
+  };
 
   const inputClass = "w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 px-4 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm";
   const labelClass = "block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-1.5";
@@ -405,7 +491,17 @@ const CandidatePage = () => {
               current_company: candidate.current_company || 'N/A',
               monthly_taken_home: candidate.monthly_taken_home || '0.00',
               expected_monthly: candidate.expected_monthly || '0.00'
-            }
+            },
+            education_details: typeof candidate.education_details === 'string' 
+              ? JSON.parse(candidate.education_details) 
+              : (candidate.education_details || {
+                  tenth_percentage: '', tenth_passing_year: '',
+                  twelfth_percentage: '', twelfth_passing_year: '',
+                  diploma_sgpa_1: '', diploma_sgpa_2: '', diploma_sgpa_3: '', diploma_sgpa_4: '', diploma_sgpa_5: '', diploma_sgpa_6: '',
+                  diploma_cgpa: '', diploma_passing_year: '',
+                  degree_sgpa_1: '', degree_sgpa_2: '', degree_sgpa_3: '', degree_sgpa_4: '', degree_sgpa_5: '', degree_sgpa_6: '', degree_sgpa_7: '', degree_sgpa_8: '',
+                  degree_cgpa: '', degree_passing_year: ''
+              })
           });
 
           const docs = typeof candidate.documents === 'string' ? JSON.parse(candidate.documents || '{}') : (candidate.documents || {});
@@ -458,6 +554,7 @@ const CandidatePage = () => {
       submitData.append('relocate', formData.relocate);
       submitData.append('educationRoute', formData.educationRoute);
       submitData.append('experience_details', JSON.stringify(formData.experience_details));
+      submitData.append('education_details', JSON.stringify(formData.education_details));
 
       const combinedTechDetails = {};
       if (formData.position.includes('Python Developer')) {
@@ -526,13 +623,13 @@ const CandidatePage = () => {
   return (
     <div className="max-w-[1400px] mx-auto pb-6 relative">
       
-      <div className="mb-4 flex justify-end">
+      <div className="mb-2 flex justify-end">
         <Breadcrumbs items={breadcrumbItems} />
       </div>
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 mt-12 md:mt-8">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+        <div className="flex items-center gap-3">
           <button onClick={() => navigate('/hr/recruitment/candidate')} className="p-2 hover:bg-[var(--bg-card)] rounded-full transition-colors border border-transparent hover:border-[var(--border-color)] text-[var(--text-muted)]">
             <ArrowLeft size={20} />
           </button>
@@ -701,13 +798,12 @@ const CandidatePage = () => {
                 )}
               </div>
 
-              {/* Document Uploads */}
+              {/* Education Details Fields */}
               <div className="pt-8 border-t border-[var(--border-color)]">
-                <h3 className={sectionTitleClass}>
-                  <FileText size={18} className="text-[var(--accent)]" /> Documents & Attachments
-                </h3>
-                
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <h3 className={`${sectionTitleClass} !mb-0`}>
+                    <FileText size={18} className="text-[var(--accent)]" /> Education Details
+                  </h3>
                   <div className="flex items-center gap-6">
                     <label className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Education Route:</label>
                     <div onClick={() => setFormData(prev => ({...prev, educationRoute: 'REGULAR'}))} className="flex items-center gap-2 cursor-pointer group">
@@ -723,7 +819,91 @@ const CandidatePage = () => {
                       <span className={`text-[12px] font-bold uppercase tracking-widest ${formData.educationRoute === 'DIPLOMA' ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`}>Diploma + Degree</span>
                     </div>
                   </div>
+                </div>
 
+                <div className="space-y-6">
+                  {/* 10th Standard */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <label className={labelClass}>10th Percentage*</label>
+                      <input type="number" step="0.01" value={formData.education_details.tenth_percentage} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, tenth_percentage: e.target.value}}))} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>10th Passing Year*</label>
+                      <input type="text" value={formData.education_details.tenth_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, tenth_passing_year: e.target.value}}))} className={inputClass} />
+                    </div>
+                  </div>
+
+                  {/* 12th Standard - Conditional based on Route */}
+                  {formData.educationRoute === 'REGULAR' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-[var(--border-color)] pt-6">
+                      <div>
+                        <label className={labelClass}>12th Percentage*</label>
+                        <input type="number" step="0.01" value={formData.education_details.twelfth_percentage} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, twelfth_percentage: e.target.value}}))} className={inputClass} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>12th Passing Year*</label>
+                        <input type="text" value={formData.education_details.twelfth_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, twelfth_passing_year: e.target.value}}))} className={inputClass} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Diploma - Conditional based on Route */}
+                  {formData.educationRoute === 'DIPLOMA' && (
+                    <div className="border-t border-[var(--border-color)] pt-6">
+                      <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest mb-4">Diploma (6 Semesters)</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+                        {[1, 2, 3, 4, 5, 6].map(sem => (
+                          <div key={`dip_sem_${sem}`}>
+                            <label className={labelClass}>Sem {sem} SGPA</label>
+                            <input type="number" step="0.01" value={formData.education_details[`diploma_sgpa_${sem}`]} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`diploma_sgpa_${sem}`]: e.target.value}}))} className={inputClass} />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className={labelClass}>Diploma CGPA*</label>
+                          <input type="number" step="0.01" value={formData.education_details.diploma_cgpa} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, diploma_cgpa: e.target.value}}))} className={inputClass} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Diploma Passing Year*</label>
+                          <input type="text" value={formData.education_details.diploma_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, diploma_passing_year: e.target.value}}))} className={inputClass} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bachelor Degree */}
+                  <div className="border-t border-[var(--border-color)] pt-6">
+                    <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest mb-4">Degree ({formData.educationRoute === 'REGULAR' ? '8' : '6'} Semesters)</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      {(formData.educationRoute === 'REGULAR' ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3, 4, 5, 6]).map(sem => (
+                        <div key={`deg_sem_${sem}`}>
+                          <label className={labelClass}>Sem {sem} SGPA</label>
+                          <input type="number" step="0.01" value={formData.education_details[`degree_sgpa_${sem}`]} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`degree_sgpa_${sem}`]: e.target.value}}))} className={inputClass} />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className={labelClass}>Degree CGPA*</label>
+                        <input type="number" step="0.01" value={formData.education_details.degree_cgpa} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, degree_cgpa: e.target.value}}))} className={inputClass} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Degree Passing Year*</label>
+                        <input type="text" value={formData.education_details.degree_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, degree_passing_year: e.target.value}}))} className={inputClass} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Document Uploads */}
+              <div className="pt-8 border-t border-[var(--border-color)]">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <h3 className={`${sectionTitleClass} !mb-0`}>
+                    <FileText size={18} className="text-[var(--accent)]" /> Documents & Attachments
+                  </h3>
                   <a href="#" className="text-[12px] font-bold text-[var(--accent)] hover:underline flex items-center gap-2 uppercase tracking-widest">
                     <UploadCloud size={16} /> 
                     Download Candidate Application Form
@@ -734,11 +914,14 @@ const CandidatePage = () => {
                   <div>
                     <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">General Documents</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                      <DocumentDropzone label="Application Form" id="applicationForm" isUploaded={uploadMock.applicationForm} setUploadMock={setUploadMock} />
-                      <DocumentDropzone label="Resume" id="resume" isUploaded={uploadMock.resume} setUploadMock={setUploadMock} />
-                      <DocumentDropzone label="10th Marksheet" id="marksheet_10th" isUploaded={uploadMock.marksheet_10th} setUploadMock={setUploadMock} />
+                      <DocumentDropzone label="Application Form" id="applicationForm" isUploaded={uploadMock.applicationForm} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.applicationForm} />
+                      <DocumentDropzone label="Resume" id="resume" isUploaded={uploadMock.resume} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.resume} />
+                      <DocumentDropzone label="10th Marksheet" id="marksheet_10th" isUploaded={uploadMock.marksheet_10th} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.marksheet_10th} />
+                      <DocumentDropzone label="Aadhar Card" id="aadharCard" isUploaded={uploadMock.aadharCard} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.aadharCard} />
+                      <DocumentDropzone label="PAN Card" id="panCard" isUploaded={uploadMock.panCard} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.panCard} />
+                      <DocumentDropzone label="Indian Passport" id="passport" isUploaded={uploadMock.passport} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.passport} />
                       {formData.educationRoute === 'REGULAR' && (
-                        <DocumentDropzone label="12th Marksheet" id="marksheet_12th" isUploaded={uploadMock.marksheet_12th} setUploadMock={setUploadMock} />
+                        <DocumentDropzone label="12th Marksheet" id="marksheet_12th" isUploaded={uploadMock.marksheet_12th} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.marksheet_12th} />
                       )}
                     </div>
                   </div>
@@ -748,7 +931,7 @@ const CandidatePage = () => {
                       <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Diploma Marksheets</h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {[1, 2, 3, 4, 5, 6].map(sem => (
-                          <DocumentDropzone key={`dip_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`dip_sem_${sem}`} isUploaded={uploadMock[`dip_sem_${sem}`]} setUploadMock={setUploadMock} />
+                          <DocumentDropzone key={`dip_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`dip_sem_${sem}`} isUploaded={uploadMock[`dip_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`dip_sem_${sem}`]} />
                         ))}
                       </div>
                     </div>
@@ -759,11 +942,11 @@ const CandidatePage = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {formData.educationRoute === 'REGULAR' ? (
                         [1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
-                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} />
+                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
                         ))
                       ) : (
                         [3, 4, 5, 6, 7, 8].map(sem => (
-                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} />
+                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
                         ))
                       )}
                     </div>
@@ -775,7 +958,7 @@ const CandidatePage = () => {
                 </div> */}
               </div>
 
-              <CandidateTimeline educationRoute={formData.educationRoute} documents={uploadMock} />
+              <CandidateTimeline educationRoute={formData.educationRoute} documents={uploadMock} extractedInfo={liveExtractedInfo} />
 
             </div>
           )}

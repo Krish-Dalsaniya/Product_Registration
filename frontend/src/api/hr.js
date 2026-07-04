@@ -64,19 +64,16 @@ export const rejectRegistrationApi = (id) => api.post(`/hr/employees/pending-reg
 // Candidates
 export const fetchCandidatesApi = () => api.get('/hr/candidates');
 export const updateCandidateStatusApi = (id, status) => api.put(`/hr/candidates/${id}/status`, { status });
-export const createCandidateApi = (formData) => api.post('/hr/candidates', formData, {
-  headers: {
-    'Content-Type': 'multipart/form-data'
-  }
-});
+export const extractCandidateLiveApi = (formData) => api.post('/hr/candidates/extract-live', formData);
+export const createCandidateApi = (formData) => api.post('/hr/candidates', formData);
 export const fetchCandidateByIdApi = (id) => api.get(`/hr/candidates/${id}`);
-export const updateCandidateApi = (id, formData) => api.put(`/hr/candidates/${id}`, formData, {
-  headers: {
-    'Content-Type': 'multipart/form-data'
-  }
-});
+export const updateCandidateApi = (id, formData) => api.put(`/hr/candidates/${id}`, formData);
 export const deleteCandidateApi = (id) => api.delete(`/hr/candidates/${id}`);
-
+export const updateCandidateTrelloMetadataApi = (id, trello_metadata) => api.put(`/hr/candidates/${id}/trello`, { trello_metadata });
+export const reorderCandidatesApi = (updates) => api.put(`/hr/candidates/reorder`, { updates });
+export const fetchCandidateCommentsApi = (id) => api.get(`/hr/candidates/${id}/comments`);
+export const addCandidateCommentApi = (id, body) => api.post(`/hr/candidates/${id}/comments`, { body });
+export const fetchCandidateActivityApi = (id) => api.get(`/hr/candidates/${id}/activity`);
 // Claims
 export const fetchClaimsApi = () => api.get('/hr/claims');
 export const createClaimApi = (data) => api.post('/hr/claims', data);

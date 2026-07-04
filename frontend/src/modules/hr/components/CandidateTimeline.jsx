@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, School, Award, ChevronDown } from 'lucide-react';
 
-const CandidateTimeline = ({ educationRoute, documents = {}, compact = false }) => {
+const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {}, compact = false }) => {
   const [selectedNode, setSelectedNode] = useState(null);
 
   // Helper to determine if a document exists
@@ -9,22 +9,39 @@ const CandidateTimeline = ({ educationRoute, documents = {}, compact = false }) 
 
   // Helper to generate details
   const generateDetails = (key, label) => {
-    return [
+    const details = [
       { key: 'Status', value: isFilled(key) ? 'Document Uploaded' : 'Pending Upload' }
     ];
+
+    if (key === 'marksheet_10th' && extractedInfo?.tenth_percentage) {
+        details.push({ key: 'Per', value: String(extractedInfo.tenth_percentage) });
+    }
+    if (key === 'marksheet_12th' && extractedInfo?.twelfth_percentage) {
+        details.push({ key: 'Percentage', value: String(extractedInfo.twelfth_percentage) });
+    }
+    if ((key.startsWith('deg_sem_') || key.startsWith('dip_sem_')) && extractedInfo?.college_cgpa) {
+        // Show CGPA on the degree/diploma semesters
+        details.push({ key: 'CGPA', value: String(extractedInfo.college_cgpa) });
+    }
+
+    return details;
   };
 
   // Build timeline array based on educationRoute
   const timelineNodes = [];
 
-  // Birth node (No DOB field currently, so always false)
+  // Birth node
   timelineNodes.push({
     id: 'birth',
-    label: 'Birth Year',
-    year: 'N/A',
+    label: 'Birth Date/Year',
+    year: extractedInfo?.birth_date || extractedInfo?.birth_year || 'N/A',
     type: 'birth',
-    filled: false,
-    details: [{ key: 'Status', value: 'Not Provided' }]
+    filled: !!(extractedInfo?.birth_date || extractedInfo?.birth_year),
+    details: [
+        { key: 'Status', value: (extractedInfo?.birth_date || extractedInfo?.birth_year) ? 'Extracted' : 'Not Provided' },
+        ...(extractedInfo?.birth_date ? [{ key: 'DOB', value: String(extractedInfo.birth_date) }] : []),
+        ...(extractedInfo?.birth_year ? [{ key: 'Year', value: String(extractedInfo.birth_year) }] : [])
+    ]
   });
 
   // 10th Node
@@ -174,7 +191,7 @@ const CandidateTimeline = ({ educationRoute, documents = {}, compact = false }) 
 
       {/* Track Container */}
       <div className="w-full overflow-x-auto custom-scrollbar pb-6 pt-2 px-2">
-        <div className="min-w-[820px] relative">
+        <div className="min-w-full relative">
           
           {/* Background Line */}
           <div className="absolute top-[20px] left-0 right-0 h-[2px] bg-[var(--border-color)] rounded-full z-0 pointer-events-none"></div>
