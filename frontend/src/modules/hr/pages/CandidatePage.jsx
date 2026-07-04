@@ -408,11 +408,29 @@ const CandidatePage = () => {
         const info = res.data.data;
         let extractedFields = [];
         
-        if (info.name && !formData.name) extractedFields.push('Name');
+        if (info.name) {
+          if (!formData.name) {
+            extractedFields.push('Name');
+          } else {
+            // Security check: verify if the document's name matches the candidate's existing name
+            const c1 = info.name.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(Boolean);
+            const c2 = formData.name.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(Boolean);
+            if (c1.length > 0 && c2.length > 0) {
+              const hasMatch = c1.some(w => c2.includes(w));
+              if (!hasMatch) {
+                toast.error(`Warning: Document name "${info.name}" does not match candidate name "${formData.name}". Please verify the document.`, { duration: 6000 });
+              }
+            }
+          }
+        }
+        
         if (info.email && !formData.email) extractedFields.push('Email');
         if (info.mobile && !formData.mobile) extractedFields.push('Mobile');
         if (info.current_location && !formData.currentLocation) extractedFields.push('Location');
         if (info.total_years_experience) extractedFields.push('Experience');
+        
+        if (fileId.startsWith('deg_sem_') && info.college_sgpa) extractedFields.push('SGPA');
+        if (fileId.startsWith('dip_sem_') && info.college_sgpa) extractedFields.push('SGPA');
 
         if (extractedFields.length > 0) {
             toast.success(`Information is extracted: ${extractedFields.join(', ')}`);
@@ -438,6 +456,23 @@ const CandidatePage = () => {
               designation: info.designation || newData.experience_details.designation
             };
           }
+
+          if (fileId.startsWith('deg_sem_') && info.college_sgpa) {
+            const sem = fileId.replace('deg_sem_', '');
+            newData.education_details = {
+              ...newData.education_details,
+              [`degree_sgpa_${sem}`]: info.college_sgpa
+            };
+          }
+
+          if (fileId.startsWith('dip_sem_') && info.college_sgpa) {
+            const sem = fileId.replace('dip_sem_', '');
+            newData.education_details = {
+              ...newData.education_details,
+              [`diploma_sgpa_${sem}`]: info.college_sgpa
+            };
+          }
+
           return newData;
         });
       } else {

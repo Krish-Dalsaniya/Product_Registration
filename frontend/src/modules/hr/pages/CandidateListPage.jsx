@@ -55,11 +55,18 @@ const CandidateListPage = () => {
   const [filterMonth, setFilterMonth] = useState('');
   const [filterYear, setFilterYear] = useState('');
   
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
+
   // Sort state for table
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
   // Sidebar controls
   const { setIsSidebarCollapsed } = useOutletContext() || {};
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterRoute, filterMonth, filterYear, sortConfig]);
 
   useEffect(() => {
     if (setIsSidebarCollapsed) {
@@ -148,6 +155,9 @@ const CandidateListPage = () => {
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
   });
+
+  const totalPages = Math.max(1, Math.ceil(sortedCandidates.length / pageSize));
+  const paginatedCandidates = sortedCandidates.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="flex h-[calc(100vh-80px)] relative overflow-hidden bg-[var(--bg-workspace)]">
@@ -264,7 +274,7 @@ const CandidateListPage = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--border-color)]">
-                            {sortedCandidates.map(candidate => (
+                            {paginatedCandidates.map(candidate => (
                             <tr 
                                 key={candidate.id} 
                                 onClick={() => setSelectedCandidateId(candidate.id)}
@@ -357,6 +367,32 @@ const CandidateListPage = () => {
                         </tbody>
                         </table>
                     </div>
+                    {totalPages > 1 && (
+                        <div className="flex justify-between items-center px-6 py-4 bg-[var(--bg-card)] border-t border-[var(--border-color)]">
+                            <span className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                Total Candidates: {sortedCandidates.length}
+                            </span>
+                            <div className="flex justify-center items-center gap-4">
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-[12px] font-bold text-[var(--text-muted)]">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

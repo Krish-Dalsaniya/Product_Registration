@@ -19,8 +19,15 @@ const EmployeesList = () => {
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [designationFilter, setDesignationFilter] = useState('');
   
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 12;
+
   // Dashboard & Metadata
   const [metadata, setMetadata] = useState({ departments: [], designations: [], available_users: [] });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, departmentFilter, designationFilter]);
 
   useEffect(() => {
     loadEmployees();
@@ -188,6 +195,9 @@ const EmployeesList = () => {
     }
   };
 
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / pageSize));
+  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-4 animate-entrance-down">
@@ -322,19 +332,21 @@ const EmployeesList = () => {
       ) : viewMode === 'table' ? (
         <DataTable
           columns={columns}
-          data={filteredEmployees}
+          data={paginatedEmployees}
           loading={isLoading}
           onView={(emp) => navigate(`/hr/employees/${emp.employee_id}`)}
           onEdit={hasPermission('hr', 'edit', 'employees') ? (emp) => navigate(`/hr/employees/${emp.employee_id}?edit=true`) : undefined}
           onDelete={hasPermission('hr', 'delete', 'employees') ? (emp) => handleDelete(emp.employee_id) : undefined}
           totalCount={employees.length}
           filteredCount={filteredEmployees.length}
-          currentPage={1}
-          totalPages={1}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
-          {filteredEmployees.length > 0 ? filteredEmployees.map((emp, index) => {
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
+            {paginatedEmployees.length > 0 ? paginatedEmployees.map((emp, index) => {
             const defaultAvatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(emp.full_name || 'User')}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
             const avatarUrl = emp.image_url ? getImageUrl(emp.image_url) : defaultAvatarUrl;
             
@@ -428,6 +440,28 @@ const EmployeesList = () => {
               <Users size={48} className="mx-auto text-[var(--border-color)] mb-4" />
               <h3 className="text-lg font-bold text-[var(--text-main)]">No employees found</h3>
               <p className="text-sm font-medium text-[var(--text-muted)] mt-1">Add an employee to get started.</p>
+            </div>
+          )}
+          </div>
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-4">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-[12px] font-bold text-[var(--text-muted)]">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

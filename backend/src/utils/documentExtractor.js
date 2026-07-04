@@ -86,7 +86,8 @@ async function extractCandidateInfo(documents, rootDir) {
                         "birth_year": "string or number",
                         "tenth_percentage": "string or number (e.g. 85.5 or '85.5%')",
                         "twelfth_percentage": "string or number",
-                        "college_cgpa": "string or number"
+                        "college_cgpa": "string or number",
+                        "college_sgpa": "string or number (Semester Grade Point Average, also known as SGPA, SPI, etc.)"
                     }`
                 },
                 {
