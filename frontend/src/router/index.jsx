@@ -171,6 +171,8 @@ const CandidatePage = lazy(() => import('../modules/hr/pages/CandidatePage'));
 const CandidateViewPage = lazy(() => import('../modules/hr/pages/CandidateViewPage'));
 const CandidateListPage = lazy(() => import('../modules/hr/pages/CandidateListPage'));
 const ProcessPage = lazy(() => import('../modules/hr/pages/ProcessPage'));
+const CandidateEvaluationFormPage = lazy(() => import('../modules/hr/pages/CandidateEvaluationFormPage'));
+const OpenPositionsPage = lazy(() => import('../modules/hr/pages/OpenPositionsPage'));
 
 // PMS Module
 const Closures = lazy(() => import('../modules/pms/pages/Closures'));
@@ -441,13 +443,15 @@ const Router = () => {
           <Route path="/hr/trainee/:id" element={<TraineeProfile />} />
           
           {/* Recruitment */}
+          <Route path="/hr/recruitment/open-positions" element={<OpenPositionsPage />} />
+          <Route path="/hr/recruitment/cef" element={<CandidateEvaluationFormPage />} />
           <Route path="/hr/recruitment/campaigning" element={<ComingSoon feature="Recruitment Campaigning" />} />
           <Route path="/hr/recruitment/candidate" element={<CandidateListPage />} />
           <Route path="/hr/recruitment/candidate/new" element={<CandidatePage />} />
           <Route path="/hr/recruitment/candidate/view/:id" element={<CandidateViewPage />} />
           <Route path="/hr/recruitment/candidate/edit/:id" element={<CandidatePage />} />
           <Route path="/hr/recruitment/process" element={<ProcessPage />} />
-          <Route path="/hr/recruitment" element={<Navigate to="/hr/recruitment/campaigning" replace />} />
+          <Route path="/hr/recruitment" element={<Navigate to="/hr/recruitment/open-positions" replace />} />
           <Route path="/hr/employees/new" element={<AddEmployeeWizard />} />
           <Route path="/hr/employees/:id" element={<EmployeeProfile />} />
           <Route path="/hr/organization-chart" element={<OrganizationChartPage />} />

@@ -130,12 +130,12 @@ const Advances = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[var(--border-color)] bg-[var(--bg-workspace)]">
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Date</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Employee</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Reason</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Amount</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] text-center">Status</th>
-                {canManage && <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] text-right">Actions</th>}
+                <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Date</th>
+                <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Employee</th>
+                <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Reason</th>
+                <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Amount</th>
+                <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] text-center">Status</th>
+                {canManage && <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-color)]">
@@ -144,29 +144,29 @@ const Advances = () => {
               ) : filteredAdvances.length === 0 ? (
                 <tr><td colSpan="6" className="p-8 text-center text-sm font-bold text-[var(--text-muted)]">No advances found.</td></tr>
               ) : (
-                filteredAdvances.map((adv) => (
-                  <tr key={adv.advance_id} className="hover:bg-[var(--bg-workspace)] transition-colors group">
-                    <td className="px-6 py-4 text-[12px] font-medium text-[var(--text-muted)]">
+                filteredAdvances.map((adv, index) => (
+                  <tr key={adv.advance_id} className={`group transition-colors ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}>
+                    <td className="px-3 py-1 text-[12px] font-medium text-[var(--text-muted)]">
                       {new Date(adv.submitted_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-1">
                       <div className="text-[13px] font-bold text-[var(--text-main)]">{adv.employee_name}</div>
                       <div className="text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-wider">{adv.emp_code}</div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-1">
                       <div className="text-[12px] font-bold text-[var(--text-main)] truncate max-w-[200px]">{adv.reason}</div>
                       <div className="text-[10px] text-[var(--text-dim)] mt-1 font-bold">
                         {adv.repayment_term_months} Months Term @ ₹{parseFloat(adv.monthly_deduction).toLocaleString()}/mo
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-[13px] font-black text-[var(--text-main)]">
+                    <td className="px-3 py-1 text-[13px] font-black text-[var(--text-main)]">
                       ₹{parseFloat(adv.amount).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-3 py-1 text-center">
                       <StatusBadge status={adv.status} />
                     </td>
                     {canManage && (
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-3 py-1 text-right">
                         {adv.status === 'Pending' ? (
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => updateAdvanceStatus(adv.advance_id, 'Approved')} className="p-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded transition-colors" title="Approve">

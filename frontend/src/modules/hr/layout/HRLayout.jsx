@@ -35,7 +35,9 @@ import {
   CheckCircle,
   Zap,
   BookOpen,
-  LockKeyhole
+  LockKeyhole,
+  ClipboardCheck,
+  Target
 } from 'lucide-react';
 
 const HRSidebar = ({ isOpen, onClose, isCollapsed }) => {
@@ -548,6 +550,8 @@ const HRSidebar = ({ isOpen, onClose, isCollapsed }) => {
             
             <SubMenu isOpen={openMenus.recruitment}>
               <div className="flex flex-col py-1">
+                <NavItem to="/hr/recruitment/open-positions" label="Open Positions" icon={Target} isSubItem />
+                <NavItem to="/hr/recruitment/cef" label="CEF" icon={ClipboardCheck} isSubItem />
                 <NavItem to="/hr/recruitment/campaigning" label="Campaigning" icon={Briefcase} isSubItem />
                 <NavItem to="/hr/recruitment/candidate" label="Candidate" icon={Users} isSubItem />
                 <NavItem to="/hr/recruitment/process" label="Process" icon={Layers} isSubItem isLastSubItem />

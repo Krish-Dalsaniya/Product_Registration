@@ -775,9 +775,9 @@ const SidePanel = ({ profile, allProfiles, onClose, onUpdate, onUpdateEmployee, 
 const OrgNode = ({ node, isRoot = false, isOpen = true, onToggle, editMode, onAddChild, onRemove, onClick, selectedProfileId, employees = [] }) => {
   const hasChildren = node.children && node.children.length > 0;
   
-  // Manage which child is currently expanded (accordion style)
-  // Default to null so branches start collapsed
-  const [activeChildId, setActiveChildId] = useState(null);
+  // Manage which children are currently expanded
+  // Default to empty object so branches start collapsed
+  const [activeChildIds, setActiveChildIds] = useState({});
 
   const isSelected = selectedProfileId === node.designation_id;
   const profileEmployees = employees.filter(e => e.designation_id === node.designation_id);
@@ -846,8 +846,8 @@ const OrgNode = ({ node, isRoot = false, isOpen = true, onToggle, editMode, onAd
                 <OrgNode
                   key={child.designation_id}
                   node={child}
-                  isOpen={activeChildId === child.designation_id}
-                  onToggle={(toggledId) => setActiveChildId(activeChildId === toggledId ? null : toggledId)}
+                  isOpen={!!activeChildIds[child.designation_id]}
+                  onToggle={(toggledId) => setActiveChildIds(prev => ({...prev, [toggledId]: !prev[toggledId]}))}
                   editMode={editMode}
                   onAddChild={onAddChild}
                   onRemove={onRemove}
@@ -874,7 +874,7 @@ const OrganizationChart = () => {
   const [editMode, setEditMode] = useState(false);
 
   const [selectedProfileId, setSelectedProfileId] = useState(null);
-  const [activeRootId, setActiveRootId] = useState(null);
+  const [activeRootIds, setActiveRootIds] = useState({});
 
   // modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1128,8 +1128,8 @@ const OrganizationChart = () => {
                   <OrgNode
                     node={rootNode}
                     isRoot={true}
-                    isOpen={activeRootId === rootNode.designation_id}
-                    onToggle={(id) => setActiveRootId(activeRootId === id ? null : id)}
+                    isOpen={!!activeRootIds[rootNode.designation_id]}
+                    onToggle={(id) => setActiveRootIds(prev => ({...prev, [id]: !prev[id]}))}
                     editMode={editMode}
                     onAddChild={(parentId) => {
                       setInitialParentId(parentId);

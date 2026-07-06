@@ -866,3 +866,34 @@ CREATE TABLE IF NOT EXISTS pms_sprints (
 ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS sprint_id UUID REFERENCES pms_sprints(sprint_id) ON DELETE SET NULL;
 ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS story_points INTEGER DEFAULT 0;
 
+
+-- ==============================================================================
+-- MODULE: HR RECRUITMENT
+-- TABLES: candidate_evaluation_forms
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS candidate_evaluation_forms (
+    id SERIAL PRIMARY KEY,
+    category VARCHAR(50) NOT NULL,
+    label VARCHAR(255) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_size VARCHAR(50),
+    file_path TEXT NOT NULL,
+    uploaded_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE IF NOT EXISTS open_positions (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  skills_form_id INT REFERENCES candidate_evaluation_forms(id) ON DELETE SET NULL,
+  knowledge_form_id INT REFERENCES candidate_evaluation_forms(id) ON DELETE SET NULL,
+  traits_form_id INT REFERENCES candidate_evaluation_forms(id) ON DELETE SET NULL,
+  self_image_form_id INT REFERENCES candidate_evaluation_forms(id) ON DELETE SET NULL,
+  motive_form_id INT REFERENCES candidate_evaluation_forms(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

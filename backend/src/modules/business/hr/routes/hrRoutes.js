@@ -3,6 +3,8 @@ const router = express.Router();
 const { getDashboardMetrics } = require('../controllers/hrController');
 const { getEmployees, getDepartmentsAndDesignations, createEmployee, getEmployeeById, updateEmployee, deleteEmployee, updateEmployeeRole, getEmployeeHierarchy, registerEmployee, getPendingRegistrations, approveRegistration, rejectRegistration, updateOrgChartPlacements } = require('../controllers/employeeController');
 const { createCandidate, getCandidates, updateCandidateStatus, getCandidateById, updateCandidate, deleteCandidate, extractLiveCandidateInfo, updateCandidateTrelloMetadata, addCandidateComment, getCandidateComments, getCandidateActivity, reorderCandidates } = require('../controllers/candidateController');
+const cefController = require('../controllers/cefController');
+const openPositionsController = require('../controllers/openPositionsController');
 const { verifyToken } = require('../../../../middleware/auth');
 const payrollController = require('../controllers/payrollController');
 const multer = require('multer');
@@ -23,6 +25,20 @@ const candidateStorage = multer.diskStorage({
 });
 const uploadCandidate = multer({ storage: candidateStorage });
 
+const cefStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = path.join(__dirname, '../../../../../uploads/cef');
+    if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'));
+  }
+});
+const uploadCef = multer({ storage: cefStorage });
+
 // Public route for email downloads (secured by unguessable UUID)
 router.get('/payrolls/download/:payroll_id', payrollController.downloadPayslip);
 
@@ -40,6 +56,13 @@ router.post('/candidates/extract-live', uploadCandidate.single('document'), extr
 router.post('/candidates', uploadCandidate.any(), createCandidate);
 
 router.post('/employees/register', registerEmployee);
+
+// Public route for CEF downloads and views
+router.get('/cef-forms/download/:id', cefController.downloadForm);
+router.get('/cef-forms/view/:id', cefController.viewForm);
+
+// Public route for Open Positions (if they need to be fetched without auth by applicants)
+router.get('/open-positions', openPositionsController.getPositions);
 
 router.use(verifyToken);
 // router.use(requireModuleAccess('hr'));
@@ -93,9 +116,20 @@ router.delete('/holidays/:id', deleteHoliday);
 
 const payrollRoutes = require('./payrollRoutes');
 router.use('/payrolls', payrollRoutes);
-
+// Onboarding
 const onboardingRoutes = require('./onboardingRoutes');
 router.use('/onboarding', onboardingRoutes);
+
+// Candidate Evaluation Forms (CEF)
+router.get('/cef-forms', cefController.getForms);
+router.post('/cef-forms', uploadCef.single('file'), cefController.uploadForm);
+router.put('/cef-forms/:id', uploadCef.single('file'), cefController.updateForm);
+router.delete('/cef-forms/:id', cefController.deleteForm);
+
+// Open Positions routes (auth required)
+router.post('/open-positions', openPositionsController.createPosition);
+router.put('/open-positions/:id', openPositionsController.updatePosition);
+router.delete('/open-positions/:id', openPositionsController.deletePosition);
 
 const offboardingRoutes = require('./offboardingRoutes');
 router.use('/offboarding', offboardingRoutes);
