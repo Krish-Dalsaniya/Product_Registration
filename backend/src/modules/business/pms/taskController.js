@@ -12,7 +12,8 @@ const getAllTasks = async (req, res) => {
              u1.full_name as assignee_name, u1.image_url as assignee_image,
              u2.full_name as reporter_name, u2.image_url as reporter_image,
              u3.full_name as reviewer_name, u3.image_url as reviewer_image,
-             sp.sprint_name
+             sp.sprint_name,
+             e.name as epic_name
       FROM pms_tasks t
       LEFT JOIN pms_projects p ON t.project_id = p.project_id
       LEFT JOIN teams tm ON t.team_id = tm.team_id
@@ -20,6 +21,7 @@ const getAllTasks = async (req, res) => {
       LEFT JOIN users u2 ON t.reporter_id = u2.user_id
       LEFT JOIN users u3 ON t.reviewer_id = u3.user_id
       LEFT JOIN pms_sprints sp ON t.sprint_id = sp.sprint_id
+      LEFT JOIN pms_epics e ON t.epic_id = e.epic_id
       WHERE 1=1
     `;
     const params = [];
@@ -78,7 +80,8 @@ const getTaskById = async (req, res) => {
              u1.full_name as assignee_name, u1.image_url as assignee_image,
              u2.full_name as reporter_name, u2.image_url as reporter_image,
              u3.full_name as reviewer_name, u3.image_url as reviewer_image,
-             sp.sprint_name
+             sp.sprint_name,
+             e.name as epic_name
       FROM pms_tasks t
       LEFT JOIN pms_projects p ON t.project_id = p.project_id
       LEFT JOIN teams tm ON t.team_id = tm.team_id
@@ -86,6 +89,7 @@ const getTaskById = async (req, res) => {
       LEFT JOIN users u2 ON t.reporter_id = u2.user_id
       LEFT JOIN users u3 ON t.reviewer_id = u3.user_id
       LEFT JOIN pms_sprints sp ON t.sprint_id = sp.sprint_id
+      LEFT JOIN pms_epics e ON t.epic_id = e.epic_id
       WHERE t.task_id = $1
     `;
     const result = await pool.query(query, [id]);
@@ -107,23 +111,23 @@ const createTask = async (req, res) => {
     const { 
       task_title, task_description, task_type, project_id, team_id,
       assignee_id, reporter_id, reviewer_id, parent_task_id, tags,
-      priority, status, start_date, due_date, estimated_hours, sprint_id, story_points
+      priority, status, start_date, due_date, estimated_hours, sprint_id, story_points, epic_id
     } = req.body;
 
     const query = `
       INSERT INTO pms_tasks (
         task_title, task_description, task_type, project_id, team_id,
         assignee_id, reporter_id, reviewer_id, parent_task_id, tags,
-        priority, status, start_date, due_date, estimated_hours, remaining_hours, sprint_id, story_points
+        priority, status, start_date, due_date, estimated_hours, remaining_hours, sprint_id, story_points, epic_id
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15, $16, $17)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15, $16, $17, $18)
       RETURNING task_id
     `;
     const values = [
       task_title, task_description || null, task_type || 'Task', project_id || null, team_id || null,
       assignee_id || null, reporter_id || req.user.user_id, reviewer_id || null, parent_task_id || null, tags ? JSON.stringify(tags) : '[]',
       priority || 'Medium', status || 'Backlog', start_date || null, due_date || null, estimated_hours || 0,
-      sprint_id || null, story_points || 0
+      sprint_id || null, story_points || 0, epic_id || null
     ];
 
     const result = await pool.query(query, values);
@@ -169,7 +173,7 @@ const updateTask = async (req, res) => {
     const updatableFields = [
       'task_title', 'task_description', 'task_type', 'project_id', 'team_id',
       'assignee_id', 'reporter_id', 'reviewer_id', 'parent_task_id',
-      'priority', 'status', 'start_date', 'due_date', 'estimated_hours', 'remaining_hours', 'sprint_id', 'story_points'
+      'priority', 'status', 'start_date', 'due_date', 'estimated_hours', 'remaining_hours', 'sprint_id', 'story_points', 'epic_id'
     ];
 
     updatableFields.forEach(field => buildUpdate(field, body[field]));
@@ -419,6 +423,25 @@ const getMetrics = async (req, res) => {
     }
 };
 
+// --- Subtasks ---
+const getTaskSubtasks = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const query = `
+            SELECT t.*, u.full_name as assignee_name, u.image_url as assignee_image
+            FROM pms_tasks t
+            LEFT JOIN users u ON t.assignee_id = u.user_id
+            WHERE t.parent_task_id = $1
+            ORDER BY t.created_at ASC
+        `;
+        const result = await pool.query(query, [id]);
+        res.json({ success: true, data: result.rows });
+    } catch (error) {
+        console.error('Error fetching subtasks:', error);
+        res.status(500).json({ success: false, error: { message: 'Failed to fetch subtasks' } });
+    }
+};
+
 module.exports = {
   getAllTasks,
   getTaskById,
@@ -431,5 +454,6 @@ module.exports = {
   getTaskTimeLogs,
   addTimeLog,
   getTaskActivityLogs,
-  getMetrics
+  getMetrics,
+  getTaskSubtasks
 };

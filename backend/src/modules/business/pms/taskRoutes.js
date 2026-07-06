@@ -22,5 +22,6 @@ router.get('/:id/time-logs', taskController.getTaskTimeLogs);
 router.post('/:id/time-logs', taskController.addTimeLog);
 
 router.get('/:id/activity', taskController.getTaskActivityLogs);
+router.get('/:id/subtasks', taskController.getTaskSubtasks);
 
 module.exports = router;

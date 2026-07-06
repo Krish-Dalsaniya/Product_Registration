@@ -45,8 +45,12 @@ const MotionCard = ({ mod, onClick }) => {
 
   return (
     <div className={`col-span-12 ${mod.colSpan} perspective-[1500px]`}>
-      <motion.button
-        onClick={onClick}
+      <motion.a
+        href={mod.path}
+        onClick={(e) => {
+          e.preventDefault();
+          onClick(e);
+        }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={{
@@ -99,7 +103,7 @@ const MotionCard = ({ mod, onClick }) => {
             <p className="text-slate-500 text-[14px] font-semibold leading-relaxed">{mod.description}</p>
           </div>
         </motion.div>
-      </motion.button>
+      </motion.a>
     </div>
   );
 };
@@ -218,22 +222,8 @@ const AppLauncher = () => {
             />
           </div>
 
-          {/* Center: Search */}
-          <div className="hidden md:flex items-center bg-white/70 border border-slate-200/70 rounded-full px-4 py-2 w-[360px] shadow-sm backdrop-blur-md transition-all focus-within:bg-white focus-within:shadow-md">
-            <Search size={16} className="text-slate-400 mr-2.5" />
-            <input
-              type="text"
-              placeholder="Search"
-              className="bg-transparent border-none outline-none w-full text-[14px] placeholder-slate-400 font-medium text-slate-700"
-            />
-          </div>
-
           {/* Right: User */}
           <div className="flex items-center gap-5">
-            <button className="relative p-2 rounded-full hover:bg-white/50 transition-colors">
-              <Bell size={20} className="text-slate-600" />
-              <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[#faf8f3]"></span>
-            </button>
 
             <div className="flex items-center gap-3 cursor-default p-1.5 pr-2 rounded-full">
               <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold overflow-hidden border-2 border-white shadow-sm">

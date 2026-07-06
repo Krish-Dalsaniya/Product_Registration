@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Clock, Users, Calendar as CalendarIcon, CheckCircle, FileText, Loader2, X, Trash2, Edit2, Search, CheckSquare, Download } from 'lucide-react';
-import { getClosures, createClosure, updateClosure, deleteClosure, getClosureMetrics, getProjects } from '../../../api/pms';
+import { getClosures, createClosure, updateClosure, deleteClosure, getClosureMetrics, getProjects, getTasks } from '../../../api/pms';
 import DataTable from '../../../components/shared/DataTable';
 import Modal from '../../../components/shared/Modal';
 import toast from 'react-hot-toast';
@@ -350,12 +350,19 @@ const Closures = () => {
                 {selectedClosure.items?.map((item, idx) => (
                   <div key={idx} className="bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--accent)] transition-colors duration-300 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center shadow-sm group">
                     <div className="flex-1 pr-4">
-                      <h5 className="text-[14px] font-bold text-[var(--text-main)] leading-tight mb-2">{item.task_description}</h5>
-                      {(item.project_name || item.project_id) && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-muted)]">
-                          Project: {item.project_name || item.project_id}
-                        </span>
-                      )}
+                      <h5 className="text-[14px] font-bold text-[var(--text-main)] leading-tight mb-2">{item.task_title || item.task_description}</h5>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {(item.project_name || item.project_id) && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-muted)]">
+                            Project: {item.project_name || item.project_id}
+                          </span>
+                        )}
+                        {item.task_id && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)]">
+                            Agile Task Linked
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="mt-4 md:mt-0 flex items-center gap-3 bg-[var(--nav-hover)] px-4 py-2 rounded-lg border border-[var(--border-color)]">
                       <Clock size={14} className="text-[var(--accent)]" />
@@ -404,27 +411,32 @@ const AddClosureModal = ({ isOpen, onClose, onSuccess, user }) => {
     status: 'Submitted'
   });
   const [items, setItems] = useState([
-    { project_id: '', task_description: '', hours_spent: '' }
+    { project_id: '', task_id: '', task_description: '', hours_spent: '' }
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [tasks, setTasks] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
-      const fetchProjects = async () => {
+      const fetchData = async () => {
         try {
-          const res = await getProjects({ limit: 100 });
-          if (res.data?.success) setProjects(res.data.data || []);
+          const [pRes, tRes] = await Promise.all([
+            getProjects({ limit: 100 }),
+            getTasks({ limit: 500 }) // fetch open tasks
+          ]);
+          if (pRes.data?.success) setProjects(pRes.data.data || []);
+          if (tRes.data?.success) setTasks(tRes.data.data || []);
         } catch (error) {
-          console.error('Failed to fetch projects', error);
+          console.error('Failed to fetch data', error);
         }
       };
-      fetchProjects();
+      fetchData();
     }
   }, [isOpen]);
 
   const handleAddItem = () => {
-    setItems([...items, { project_id: '', task_description: '', hours_spent: '' }]);
+    setItems([...items, { project_id: '', task_id: '', task_description: '', hours_spent: '' }]);
   };
 
   const handleRemoveItem = (index) => {
@@ -434,6 +446,18 @@ const AddClosureModal = ({ isOpen, onClose, onSuccess, user }) => {
   const handleItemChange = (index, field, value) => {
     const newItems = [...items];
     newItems[index][field] = value;
+    
+    // Auto-fill description if a task is selected
+    if (field === 'task_id' && value) {
+      const selectedTask = tasks.find(t => t.task_id === value);
+      if (selectedTask) {
+        newItems[index].task_description = `Worked on: ${selectedTask.task_title}`;
+        if (selectedTask.project_id) {
+          newItems[index].project_id = selectedTask.project_id;
+        }
+      }
+    }
+    
     setItems(newItems);
   };
 
@@ -460,7 +484,7 @@ const AddClosureModal = ({ isOpen, onClose, onSuccess, user }) => {
         onClose();
         // Reset
         setFormData({ closure_date: new Date().toISOString().split('T')[0], remarks: '', status: 'Submitted' });
-        setItems([{ project_id: '', task_description: '', hours_spent: '' }]);
+        setItems([{ project_id: '', task_id: '', task_description: '', hours_spent: '' }]);
       }
     } catch (error) {
       console.error(error);
@@ -520,7 +544,7 @@ const AddClosureModal = ({ isOpen, onClose, onSuccess, user }) => {
               )}
               
               <div className="flex gap-3 mb-3">
-                <div className="flex-1">
+                <div className="flex-1 space-y-2">
                   <select
                     value={item.project_id}
                     onChange={e => handleItemChange(idx, 'project_id', e.target.value)}
@@ -529,6 +553,19 @@ const AddClosureModal = ({ isOpen, onClose, onSuccess, user }) => {
                     <option value="">Select Project (Optional)</option>
                     {projects.map(p => (
                       <option key={p.project_id} value={p.project_id}>{p.project_code} - {p.project_name}</option>
+                    ))}
+                  </select>
+                  
+                  <select
+                    value={item.task_id}
+                    onChange={e => handleItemChange(idx, 'task_id', e.target.value)}
+                    className="w-full px-3 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-[13px] font-medium text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors"
+                  >
+                    <option value="">Link to an Agile Task (Optional)</option>
+                    {tasks
+                      .filter(t => !item.project_id || t.project_id === item.project_id)
+                      .map(t => (
+                      <option key={t.task_id} value={t.task_id}>#{t.task_id.split('-')[0]} - {t.task_title}</option>
                     ))}
                   </select>
                 </div>

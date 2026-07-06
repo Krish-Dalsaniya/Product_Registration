@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Clock, MessageSquare, Paperclip, Loader2, Link as LinkIcon, History, Tag, Activity } from 'lucide-react';
+import { X, Save, Clock, MessageSquare, Paperclip, Loader2, Link as LinkIcon, History, Tag, Activity, CheckSquare, ListTodo, Plus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../../context/AuthContext';
-import { getTaskById, createTask, updateTask, getTaskComments, addTaskComment, getTaskTimeLogs, addTaskTimeLog, getTaskActivityLogs } from '../../../../api/pms';
-import { getProjects, getProjectSprints } from '../../../../api/pms';
+import { getTaskById, createTask, updateTask, getTaskComments, addTaskComment, getTaskTimeLogs, addTaskTimeLog, getTaskActivityLogs, getTaskSubtasks } from '../../../../api/pms';
+import { getProjects, getProjectSprints, getProjectEpics } from '../../../../api/pms';
 import { getUsers, getTeams } from '../../../../api/admin';
 import { TASK_STATUSES, TASK_PRIORITIES, TASK_TYPES } from '../../utils/taskConstants';
 import { format } from 'date-fns';
@@ -21,8 +21,10 @@ const TaskModal = ({ taskId, onClose, onSaved }) => {
   const [teams, setTeams] = useState([]);
   const [users, setUsers] = useState([]);
   const [sprints, setSprints] = useState([]);
+  const [epics, setEpics] = useState([]);
 
   // Task related data
+  const [subtasks, setSubtasks] = useState([]);
   const [comments, setComments] = useState([]);
   const [timeLogs, setTimeLogs] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -47,6 +49,7 @@ const TaskModal = ({ taskId, onClose, onSaved }) => {
       actual_logged_hours: 0,
       tags: [],
       sprint_id: '',
+      epic_id: '',
       story_points: 0
     }
   });
@@ -64,12 +67,15 @@ const TaskModal = ({ taskId, onClose, onSaved }) => {
   useEffect(() => {
     if (watchedProjectId) {
       getProjectSprints({ project_id: watchedProjectId })
-        .then(res => {
-          if (res.data?.success) setSprints(res.data.data);
-        })
+        .then(res => { if (res.data?.success) setSprints(res.data.data); })
+        .catch(err => console.error(err));
+      
+      getProjectEpics({ project_id: watchedProjectId })
+        .then(res => { if (res.data?.success) setEpics(res.data.data); })
         .catch(err => console.error(err));
     } else {
       setSprints([]);
+      setEpics([]);
     }
   }, [watchedProjectId]);
 
@@ -92,11 +98,12 @@ const TaskModal = ({ taskId, onClose, onSaved }) => {
   const fetchTaskData = async () => {
     try {
       setLoading(true);
-      const [taskRes, commentsRes, logsRes, activityRes] = await Promise.all([
+      const [taskRes, commentsRes, logsRes, activityRes, subtasksRes] = await Promise.all([
         getTaskById(taskId),
         getTaskComments(taskId),
         getTaskTimeLogs(taskId),
-        getTaskActivityLogs(taskId)
+        getTaskActivityLogs(taskId),
+        getTaskSubtasks(taskId)
       ]);
 
       if (taskRes.data?.success) {
@@ -110,12 +117,14 @@ const TaskModal = ({ taskId, onClose, onSaved }) => {
           due_date: task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '',
           tags: Array.isArray(task.tags) ? task.tags : [],
           sprint_id: task.sprint_id || '',
+          epic_id: task.epic_id || '',
           story_points: task.story_points || 0
         });
       }
       if (commentsRes.data?.success) setComments(commentsRes.data.data);
       if (logsRes.data?.success) setTimeLogs(logsRes.data.data);
       if (activityRes.data?.success) setActivityLogs(activityRes.data.data);
+      if (subtasksRes.data?.success) setSubtasks(subtasksRes.data.data);
     } catch (err) {
       toast.error('Failed to load task details');
       onClose();
@@ -132,7 +141,8 @@ const TaskModal = ({ taskId, onClose, onSaved }) => {
         project_id: data.project_id || null,
         team_id: data.team_id || null,
         assignee_id: data.assignee_id || null,
-        sprint_id: data.sprint_id || null
+        sprint_id: data.sprint_id || null,
+        epic_id: data.epic_id || null
       };
 
       if (taskId) {
@@ -148,6 +158,32 @@ const TaskModal = ({ taskId, onClose, onSaved }) => {
       toast.error(err.response?.data?.error?.message || 'Failed to save task');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Subtasks
+  const handleAddSubtask = async (e) => {
+    e.preventDefault();
+    const title = e.target.subtask_title.value.trim();
+    if (!title) return;
+    
+    try {
+      const payload = {
+        task_title: title,
+        project_id: watchedProjectId || null,
+        parent_task_id: taskId,
+        status: 'Backlog',
+        task_type: 'Task'
+      };
+      const res = await createTask(payload);
+      if (res.data?.success) {
+        toast.success('Sub-task added');
+        e.target.reset();
+        const subRes = await getTaskSubtasks(taskId);
+        if (subRes.data?.success) setSubtasks(subRes.data.data);
+      }
+    } catch (err) {
+      toast.error('Failed to add sub-task');
     }
   };
 
@@ -256,6 +292,9 @@ const TaskModal = ({ taskId, onClose, onSaved }) => {
         {taskId && (
           <div className="flex px-6 border-b border-[var(--border-color)] bg-[var(--bg-workspace)]">
             <TabButton active={activeTab === 'details'} onClick={() => setActiveTab('details')}>Details</TabButton>
+            <TabButton active={activeTab === 'subtasks'} onClick={() => setActiveTab('subtasks')}>
+              <ListTodo size={14} className="mr-1.5" /> Sub-tasks ({subtasks.length})
+            </TabButton>
             <TabButton active={activeTab === 'comments'} onClick={() => setActiveTab('comments')}>
               <MessageSquare size={14} className="mr-1.5" /> Comments ({comments.length})
             </TabButton>
@@ -349,6 +388,13 @@ const TaskModal = ({ taskId, onClose, onSaved }) => {
                           </select>
                         </div>
                         <div>
+                          <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Epic Assignment</label>
+                          <select {...register('epic_id')} disabled={!watchedProjectId} className="w-full px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-medium focus:border-[var(--accent)] transition-colors disabled:opacity-50">
+                            <option value="">No Epic</option>
+                            {epics.map(e => <option key={e.epic_id} value={e.epic_id}>{e.name}</option>)}
+                          </select>
+                        </div>
+                        <div>
                           <label className="block text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Team Assignment</label>
                           <select {...register('team_id')} className="w-full px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-medium focus:border-[var(--accent)] transition-colors">
                             <option value="">No Team Assigned</option>
@@ -419,6 +465,53 @@ const TaskModal = ({ taskId, onClose, onSaved }) => {
                     </div>
                   </div>
                 </form>
+              )}
+
+              {activeTab === 'subtasks' && (
+                <div className="flex flex-col h-full">
+                  <div className="mb-4">
+                    <h3 className="font-bold text-[var(--text-main)] mb-1">Sub-tasks</h3>
+                    <p className="text-sm text-[var(--text-muted)] font-medium">Break down this task into smaller chunks.</p>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto mb-4 space-y-2 custom-scrollbar pr-2">
+                    {subtasks.length === 0 ? (
+                      <div className="text-center py-8 text-[var(--text-muted)] font-medium text-sm border-2 border-dashed border-[var(--border-color)] rounded-xl">
+                        No sub-tasks created yet.
+                      </div>
+                    ) : (
+                      subtasks.map(sub => (
+                        <div key={sub.task_id} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl group hover:border-[var(--accent)] transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded flex items-center justify-center border ${sub.status === 'Completed' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[var(--text-muted)] bg-white'}`}>
+                              {sub.status === 'Completed' && <CheckSquare size={12} />}
+                            </div>
+                            <span className={`text-sm font-bold ${sub.status === 'Completed' ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-main)]'}`}>
+                              {sub.task_title}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-black uppercase px-2 py-1 bg-[var(--bg-card)] rounded-md border border-[var(--border-color)] text-[var(--text-muted)]">
+                            {sub.status}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <form onSubmit={handleAddSubtask} className="mt-auto">
+                    <div className="relative flex items-center">
+                      <input 
+                        type="text" 
+                        name="subtask_title"
+                        placeholder="Add a new sub-task..." 
+                        className="w-full pl-4 pr-12 py-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm focus:border-[var(--accent)]"
+                      />
+                      <button type="submit" className="absolute right-2 p-1.5 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors">
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  </form>
+                </div>
               )}
 
               {activeTab === 'comments' && (

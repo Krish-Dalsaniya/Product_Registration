@@ -7,6 +7,7 @@ router.use(verifyToken);
 
 router.get('/', sprintController.getProjectSprints);
 router.post('/', sprintController.createSprint);
+router.get('/:id/metrics', sprintController.getSprintMetrics);
 router.get('/:id', sprintController.getSprintById);
 router.put('/:id', sprintController.updateSprint);
 router.delete('/:id', sprintController.deleteSprint);
