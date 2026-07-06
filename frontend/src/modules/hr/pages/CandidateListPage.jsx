@@ -23,8 +23,6 @@ const getStatusColor = (status) => {
 const OPTIONAL_COLUMNS = [
   { id: 'mobile', label: 'Mobile / WhatsApp' },
   { id: 'company', label: 'Current Company / Designation' },
-  { id: 'expected', label: 'Expected Monthly Salary' },
-  { id: 'current', label: 'Current Take-home' },
   { id: 'relocate', label: 'Ready to Relocate' },
   { id: 'documents', label: 'Documents' }
 ];
@@ -49,7 +47,7 @@ const CandidateListPage = () => {
 
   // State
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
-  const [visibleCols, setVisibleCols] = useState(OPTIONAL_COLUMNS.map(c => c.id).filter(c => c !== 'company' && c !== 'expected' && c !== 'current')); 
+  const [visibleCols, setVisibleCols] = useState(OPTIONAL_COLUMNS.map(c => c.id)); 
   const [showColDropdown, setShowColDropdown] = useState(false);
   const [filterRoute, setFilterRoute] = useState('ALL');
   const [filterMonth, setFilterMonth] = useState('');
@@ -163,7 +161,7 @@ const CandidateListPage = () => {
     <div className="flex h-[calc(100vh-80px)] relative overflow-hidden bg-[var(--bg-workspace)]">
         
         {/* Left Pane: Candidate List */}
-        <div className={`flex flex-col transition-all duration-300 ease-in-out ${selectedCandidateId ? 'w-[40%]' : 'w-full'} p-6 overflow-hidden`}>
+        <div className={`flex flex-col transition-all duration-300 ease-in-out ${selectedCandidateId ? 'w-[40%]' : 'w-full'} px-0 py-4 overflow-hidden`}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-2">
                 <div className="flex items-center gap-5">
                     <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
@@ -224,30 +222,7 @@ const CandidateListPage = () => {
                     </select>
                 </div>
 
-                <div className="relative">
-                    <button 
-                        onClick={() => setShowColDropdown(!showColDropdown)}
-                        className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-4 py-2 hover:bg-[var(--bg-workspace)] transition-colors flex items-center gap-2"
-                    >
-                        Columns <Plus size={14} />
-                    </button>
-                    {showColDropdown && (
-                        <div className="absolute right-0 top-full mt-2 w-64 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 p-2">
-                            <div className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-2 px-2">Toggle Optional Columns</div>
-                            {OPTIONAL_COLUMNS.map(col => (
-                                <label key={col.id} className="flex items-center gap-3 p-2 hover:bg-[var(--bg-workspace)] rounded-lg cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={visibleCols.includes(col.id)} 
-                                        onChange={() => toggleColumn(col.id)}
-                                        className="accent-[var(--accent)] w-4 h-4 rounded"
-                                    />
-                                    <span className="text-xs font-semibold text-[var(--text-main)]">{col.label}</span>
-                                </label>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                {/* Columns button removed per user request */}
             </div>
 
             {loading ? (
@@ -329,16 +304,7 @@ const CandidateListPage = () => {
                                         )}
                                     </td>
                                 )}
-                                {visibleCols.includes('expected') && (
-                                    <td className="px-3 py-1 text-[11px] font-bold text-[var(--text-main)]">
-                                        {candidate.expected_monthly ? `₹${candidate.expected_monthly.toLocaleString()}` : '—'}
-                                    </td>
-                                )}
-                                {visibleCols.includes('current') && (
-                                    <td className="px-3 py-1 text-[11px] font-bold text-[var(--text-main)]">
-                                        {candidate.experience_type === 'FRESHER' ? '—' : (candidate.monthly_taken_home ? `₹${candidate.monthly_taken_home.toLocaleString()}` : '—')}
-                                    </td>
-                                )}
+
                                 {visibleCols.includes('relocate') && (
                                     <td className="px-3 py-1 text-center">
                                         {candidate.relocate ? <CheckCircle2 size={14} className="text-green-500 mx-auto" /> : <XCircle size={14} className="text-red-500 mx-auto" />}

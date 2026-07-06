@@ -15,7 +15,7 @@ const STEPS = [
 
 const INITIAL_FORM_DATA = {
   first_name: '', last_name: '', email: '', mobile: '', gender: 'Male', date_of_birth: '',
-  joining_date: '', expected_completion_date: '', department_id: '', mentor_employee_id: '',
+  joining_date: '', expected_completion_date: '', company_code: '', department_id: '', mentor_employee_id: '',
   training_batch: '', education: '', institute: '', specialization: '', status: 'Applied', remarks: '',
   image_url: '', password: '', confirmPassword: ''
 };
@@ -164,8 +164,8 @@ const AddTraineeWizard = () => {
         return;
       }
     } else if (currentStep === 2) {
-      if (!formData.department_id) {
-        toast.error('Please fill out mandatory fields in the Training Info step (Department).');
+      if (!formData.company_code || !formData.department_id) {
+        toast.error('Please fill out mandatory fields in the Training Info step (Company, Department).');
         return;
       }
     }
@@ -179,8 +179,12 @@ const AddTraineeWizard = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.first_name || !formData.last_name || !formData.email || !formData.department_id) {
+    if (e) e.preventDefault();
+    if (currentStep < STEPS.length) {
+      handleNext();
+      return;
+    }
+    if (!formData.first_name || !formData.last_name || !formData.email || !formData.company_code || !formData.department_id) {
       toast.error('Please ensure all mandatory Personal and Training fields are filled before submitting.');
       return;
     }
@@ -362,6 +366,22 @@ const AddTraineeWizard = () => {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
+                  <label className={labelClass}>Company *</label>
+                  <select 
+                    value={formData.company_code} 
+                    onChange={e => setFormData(prev => ({...prev, company_code: e.target.value}))} 
+                    className={inputClass}
+                  >
+                        <option value="">Select Company</option>
+                        <option value="01">SmarTec</option>
+                        <option value="02">Illuminated Minds</option>
+                        <option value="03">Leons Integration</option>
+                        <option value="04">NAF Media</option>
+                        <option value="05">Peg-IT Healthcare</option>
+                        <option value="06">Crudex Controls</option>
+                  </select>
+                </div>
+                <div>
                   <label className={labelClass}>Department *</label>
                   <select value={formData.department_id} onChange={e => setFormData(prev => ({...prev, department_id: e.target.value}))} className={inputClass}>
                     <option value="">Select Department</option>
@@ -459,6 +479,7 @@ const AddTraineeWizard = () => {
                 <div className="workspace-card p-6 bg-[var(--bg-card)]">
                   <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-wider mb-4 border-b border-[var(--border-color)] pb-2">Training Info</h4>
                   <ul className="space-y-3">
+                    <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Company Code:</span> <span className="font-medium text-[var(--text-main)]">{formData.company_code || '-'}</span></li>
                     <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Department:</span> <span className="font-medium text-[var(--text-main)]">{metadata.departments.find(d => String(d.department_id) === String(formData.department_id))?.name || '-'}</span></li>
                     <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Mentor:</span> <span className="font-medium text-[var(--text-main)]">{employees.find(e => String(e.employee_id) === String(formData.mentor_employee_id))?.full_name || '-'}</span></li>
                     <li className="flex justify-between text-[13px]"><span className="text-[var(--text-muted)] font-bold">Joining Date:</span> <span className="font-medium text-[var(--text-main)]">{formData.joining_date || '-'}</span></li>
@@ -512,7 +533,8 @@ const AddTraineeWizard = () => {
               </button>
             ) : (
               <button 
-                type="submit" 
+                type="button" 
+                onClick={handleSubmit}
                 disabled={isSubmitting}
                 className="btn-primary px-8 py-2.5 flex items-center gap-2"
                 style={{ background: 'var(--grad-button)' }}

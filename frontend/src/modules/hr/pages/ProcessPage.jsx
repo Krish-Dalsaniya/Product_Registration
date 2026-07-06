@@ -269,7 +269,7 @@ const ProcessPage = () => {
                                   <select 
                                       value={candidate.status}
                                       onChange={(e) => handleTableStatusChange(candidate.id, e.target.value)}
-                                      className={`appearance-none font-bold text-[11px] uppercase tracking-wider rounded-lg px-3 py-1.5 border outline-none cursor-pointer pr-8 ${getStatusColor(candidate.status)}`}
+                                      className={`appearance-none font-bold text-[11px] uppercase tracking-wider rounded-lg px-3 py-0.5 border outline-none cursor-pointer pr-8 ${getStatusColor(candidate.status)}`}
                                   >
                                       {stages.map(stage => (
                                           <option key={stage} value={stage} className="text-[var(--text-main)] bg-[var(--bg-card)]">

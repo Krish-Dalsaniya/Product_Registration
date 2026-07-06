@@ -8,6 +8,7 @@ const AddOffboardingWizard = ({ onClose, onSuccess }) => {
     const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
     const [resignationDate, setResignationDate] = useState('');
     const [lastWorkingDay, setLastWorkingDay] = useState('');
+    const [offboardingMethod, setOffboardingMethod] = useState('Resigned');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -32,6 +33,7 @@ const AddOffboardingWizard = ({ onClose, onSuccess }) => {
             setIsSubmitting(true);
             const res = await createOffboardingRecordApi({
                 employee_id: selectedEmployeeId,
+                offboarding_method: offboardingMethod,
                 resignation_date: resignationDate || null,
                 last_working_day: lastWorkingDay || null
             });
@@ -75,6 +77,22 @@ const AddOffboardingWizard = ({ onClose, onSuccess }) => {
                                     {emp.full_name} ({emp.emp_code})
                                 </option>
                             ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+                            Offboarding Method
+                        </label>
+                        <select
+                            value={offboardingMethod}
+                            onChange={(e) => setOffboardingMethod(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[14px] font-semibold text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 transition-all"
+                            required
+                        >
+                            <option value="Resigned">Resigned</option>
+                            <option value="Released">Released</option>
+                            <option value="Absconded">Absconded</option>
+                            <option value="Terminated">Terminated</option>
                         </select>
                     </div>
                     <div className="grid grid-cols-2 gap-4">

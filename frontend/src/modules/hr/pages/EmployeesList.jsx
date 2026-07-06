@@ -330,7 +330,7 @@ const EmployeesList = () => {
           <Loader2 className="animate-spin text-[var(--accent)] w-10 h-10" />
         </div>
       ) : viewMode === 'table' ? (
-        <DataTable
+        <DataTable striped={true}
           columns={columns}
           data={paginatedEmployees}
           loading={isLoading}
@@ -356,7 +356,7 @@ const EmployeesList = () => {
               className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl animate-entrance-up"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
-              <div onClick={() => navigate(`/hr/employees/${emp.employee_id}`)} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] flex flex-col items-center justify-center cursor-pointer group/img">
+              <div onClick={() => navigate(`/hr/employees/${emp.employee_id}`)} className="relative py-6 w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] flex flex-col items-center justify-center cursor-pointer group/img">
                 <div className="w-24 h-24 rounded-full border-4 border-[var(--bg-card)] shadow-md overflow-hidden group-hover/img:scale-110 transition-transform duration-500">
                   <img 
                     src={avatarUrl} 
@@ -377,7 +377,7 @@ const EmployeesList = () => {
               </div>
 
               <div className="p-4 flex-1 flex flex-col">
-                <div className="flex-1 space-y-3">
+                <div className="flex-1 space-y-2">
                   <h3 className="text-[15px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300 text-center truncate">
                     {emp.full_name}
                   </h3>

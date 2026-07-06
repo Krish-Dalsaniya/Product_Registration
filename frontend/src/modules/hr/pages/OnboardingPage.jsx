@@ -220,10 +220,18 @@ const OnboardingPage = () => {
         );
     };
 
+    const isRecentHire = (dateStr) => {
+        if (!dateStr) return true;
+        const diffDays = (new Date() - new Date(dateStr)) / (1000 * 60 * 60 * 24);
+        return diffDays <= 60; // Hired within the last 60 days or in the future
+    };
+
     const filteredRecords = activeTab === 'ongoing'
         ? records.filter(r => 
-            r.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            r.emp_code?.toLowerCase().includes(searchTerm.toLowerCase())
+            (r.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            r.emp_code?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+            r.status !== 'Completed' &&
+            (r.type !== 'Employee' || isRecentHire(r.offer_acceptance_date))
           )
         : pendingCandidates.filter(c => 
             c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -236,15 +244,15 @@ const OnboardingPage = () => {
             label: 'Employee',
             render: (row) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] font-bold text-sm shadow-inner">
+                    <div className="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] font-bold text-xs shadow-sm">
                         {row.full_name?.charAt(0) || 'U'}
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h4 className="text-[14px] md:text-[15px] font-bold text-[var(--text-main)]">{row.full_name}</h4>
-                            {row.type === 'Trainee' && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700 uppercase tracking-widest">Trainee</span>}
+                            <h4 className="text-[12px] font-bold text-[var(--text-main)]">{row.full_name}</h4>
+                            {row.type === 'Trainee' && <span className="px-1 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700 uppercase tracking-widest">Trainee</span>}
                         </div>
-                        <p className="text-[12px] md:text-[13px] text-[var(--text-muted)] font-medium mt-0.5">{row.emp_code || 'No Code'}</p>
+                        <p className="text-[10px] text-[var(--text-muted)] font-semibold mt-0.5">{row.emp_code || 'No Code'}</p>
                     </div>
                 </div>
             )
@@ -253,7 +261,7 @@ const OnboardingPage = () => {
             key: 'date',
             label: 'Start Date',
             render: (row) => (
-                <span className="text-[13px] md:text-[14px] font-semibold text-[var(--text-main)]">
+                <span className="text-[12px] font-semibold text-[var(--text-main)]">
                     {row.offer_acceptance_date ? new Date(row.offer_acceptance_date).toLocaleDateString() : '-'}
                 </span>
             )
@@ -285,7 +293,7 @@ const OnboardingPage = () => {
                 if (row.status === 'In Progress') badgeClass = 'bg-blue-50 text-blue-600 border-blue-200';
                 if (row.status === 'Completed') badgeClass = 'bg-emerald-50 text-emerald-600 border-emerald-200';
                 return (
-                    <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest border ${badgeClass}`}>
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest border ${badgeClass}`}>
                         {row.status}
                     </span>
                 );
@@ -299,12 +307,12 @@ const OnboardingPage = () => {
             label: 'Candidate',
             render: (row) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] font-bold text-sm shadow-inner">
+                    <div className="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] font-bold text-xs shadow-sm">
                         {row.name?.charAt(0) || 'U'}
                     </div>
                     <div>
-                        <h4 className="text-[14px] md:text-[15px] font-bold text-[var(--text-main)]">{row.name}</h4>
-                        <p className="text-[12px] md:text-[13px] text-[var(--text-muted)] font-medium mt-0.5">{row.email}</p>
+                        <h4 className="text-[12px] font-bold text-[var(--text-main)]">{row.name}</h4>
+                        <p className="text-[10px] text-[var(--text-muted)] font-semibold mt-0.5">{row.email}</p>
                     </div>
                 </div>
             )
@@ -313,7 +321,7 @@ const OnboardingPage = () => {
             key: 'role',
             label: 'Applied Role',
             render: (row) => (
-                <span className="text-[13px] font-semibold text-[var(--text-main)]">
+                <span className="text-[12px] font-semibold text-[var(--text-main)]">
                     {row.applied_for || 'N/A'}
                 </span>
             )
@@ -355,7 +363,7 @@ const OnboardingPage = () => {
     }
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 mt-4 relative z-30">
                 <div className="flex items-center gap-5">
                     <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
@@ -466,6 +474,7 @@ const OnboardingPage = () => {
                     data={filteredRecords}
                     onEdit={activeTab === 'ongoing' && hasPermission('hr', 'edit', 'onboarding') ? openEditModal : null}
                     rowKey="id"
+                    striped={true}
                 />
             </div>
 

@@ -178,12 +178,19 @@ const OffboardingPage = () => {
             label: 'Employee',
             render: (row) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold text-sm shadow-inner">
+                    <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold text-sm shadow-inner">
                         {row.full_name?.charAt(0) || 'U'}
                     </div>
                     <div>
                         <h4 className="text-[14px] md:text-[15px] font-bold text-[var(--text-main)]">{row.full_name}</h4>
-                        <p className="text-[12px] md:text-[13px] text-[var(--text-muted)] font-medium mt-0.5">{row.emp_code || 'No Code'}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-[12px] md:text-[13px] text-[var(--text-muted)] font-medium">{row.emp_code || 'No Code'}</p>
+                            {row.offboarding_method && (
+                                <span className="text-[10px] bg-[var(--bg-body)] px-2 py-0.5 rounded-full border border-[var(--border-color)] text-[var(--text-muted)] font-bold uppercase tracking-wider">
+                                    {row.offboarding_method}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
             )
@@ -323,7 +330,7 @@ const OffboardingPage = () => {
             </div>
 
             <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm overflow-hidden min-h-[500px]">
-                <DataTable 
+                <DataTable striped={true} 
                     columns={columns}
                     data={filteredRecords}
                     onEdit={hasPermission('hr', 'edit', 'offboarding') ? openEditModal : null}

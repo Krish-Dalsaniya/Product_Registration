@@ -80,10 +80,10 @@ exports.updateChecklist = async (req, res) => {
 
 exports.createOffboardingRecord = async (req, res) => {
     try {
-        const { employee_id, resignation_date, last_working_day } = req.body;
+        const { employee_id, resignation_date, last_working_day, offboarding_method } = req.body;
         const result = await db.query(
-            `INSERT INTO hr_offboarding (employee_id, resignation_date, last_working_day) VALUES ($1, $2, $3) RETURNING *`,
-            [employee_id, resignation_date || null, last_working_day || null]
+            `INSERT INTO hr_offboarding (employee_id, resignation_date, last_working_day, offboarding_method) VALUES ($1, $2, $3, $4) RETURNING *`,
+            [employee_id, resignation_date || null, last_working_day || null, offboarding_method || 'Resigned']
         );
         res.status(201).json({ success: true, data: result.rows[0] });
     } catch (error) {

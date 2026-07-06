@@ -54,10 +54,37 @@ const createTrainee = async (req, res) => {
         
         const newUserId = userRes.rows[0].user_id;
 
-        // Generate unique trainee code (e.g., TRN-0001)
-        const codeResult = await client.query("SELECT COALESCE(MAX(CAST(NULLIF(regexp_replace(trainee_code, '\\D', '', 'g'), '') AS INTEGER)), 0) + 1 AS next_code FROM hr_trainees");
-        const nextCode = codeResult.rows[0].next_code;
-        const trainee_code = `TRN-${String(nextCode).padStart(4, '0')}`;
+        // Generate Trainee ID similar to Employee ID: CCYYYYMMXX
+        // CC = company_code (e.g. 03), defaulting to '00'
+        const compCode = (req.body.company_code && req.body.company_code.trim()) 
+            ? req.body.company_code.trim().padStart(2, '0').substring(0, 2) 
+            : '00';
+            
+        // Use joining_date or fallback to current date
+        const dojDate = joining_date ? new Date(joining_date) : new Date();
+        const dojYear = dojDate.getFullYear().toString();
+        const dojMonth = (dojDate.getMonth() + 1).toString().padStart(2, '0');
+        
+        const countRes = await client.query(`
+            SELECT COUNT(*) 
+            FROM hr_trainees 
+            WHERE EXTRACT(YEAR FROM joining_date) = $1 
+            AND EXTRACT(MONTH FROM joining_date) = $2
+        `, [dojDate.getFullYear(), dojDate.getMonth() + 1]);
+        
+        let nextNum = parseInt(countRes.rows[0].count) + 1;
+        let trainee_code = `${compCode}${dojYear}${dojMonth}${nextNum.toString().padStart(2, '0')}`;
+        let isUnique = false;
+        
+        while (!isUnique) {
+            const checkRes = await client.query('SELECT 1 FROM hr_trainees WHERE trainee_code = $1', [trainee_code]);
+            if (checkRes.rows.length === 0) {
+                isUnique = true;
+            } else {
+                nextNum++;
+                trainee_code = `${compCode}${dojYear}${dojMonth}${nextNum.toString().padStart(2, '0')}`;
+            }
+        }
 
         const insertQuery = `
             INSERT INTO hr_trainees 
@@ -315,6 +342,33 @@ const convertToEmployee = async (req, res) => {
         const userRes = await db.query(userQuery, [`${trainee.first_name} ${trainee.last_name}`, trainee.email, hashedPassword]);
         const new_user_id = userRes.rows[0].user_id;
 
+        // Generate Employee ID: CCYYYYMMXX for converted employee
+        const compCode = '00';
+        const dojDate = new Date();
+        const dojYear = dojDate.getFullYear().toString();
+        const dojMonth = (dojDate.getMonth() + 1).toString().padStart(2, '0');
+        
+        const countRes = await db.query(`
+            SELECT COUNT(*) 
+            FROM hr_employees 
+            WHERE EXTRACT(YEAR FROM date_of_joining) = $1 
+            AND EXTRACT(MONTH FROM date_of_joining) = $2
+        `, [dojDate.getFullYear(), dojDate.getMonth() + 1]);
+        
+        let nextNum = parseInt(countRes.rows[0].count) + 1;
+        let empCode = `${compCode}${dojYear}${dojMonth}${nextNum.toString().padStart(2, '0')}`;
+        let isUnique = false;
+        
+        while (!isUnique) {
+            const checkRes = await db.query('SELECT 1 FROM hr_employees WHERE emp_code = $1', [empCode]);
+            if (checkRes.rows.length === 0) {
+                isUnique = true;
+            } else {
+                nextNum++;
+                empCode = `${compCode}${dojYear}${dojMonth}${nextNum.toString().padStart(2, '0')}`;
+            }
+        }
+
         // 2. Create hr_employees record
         const empQuery = `
             INSERT INTO hr_employees (user_id, emp_code, department_id, manager_id, date_of_joining, employment_status, base_salary)
@@ -323,7 +377,7 @@ const convertToEmployee = async (req, res) => {
         `;
         const empRes = await db.query(empQuery, [
             new_user_id, 
-            `EMP-${Math.floor(1000 + Math.random() * 9000)}`, 
+            empCode, 
             trainee.department_id, 
             trainee.mentor_employee_id
         ]);

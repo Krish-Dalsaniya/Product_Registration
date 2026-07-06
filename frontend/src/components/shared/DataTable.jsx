@@ -5,7 +5,8 @@ const DataTable = ({
   columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, 
   onPageChange,
   onView, onEdit, onDelete, onRestock, rowKey = 'id', 
-  enableBulkSelection = false, onBulkDelete 
+  enableBulkSelection = false, onBulkDelete,
+  striped = false
 }) => {
   const [density, setDensity] = useState(() => {
     return localStorage.getItem('datatable_density') || 'compact';
@@ -42,12 +43,12 @@ const DataTable = ({
     );
   };
 
-  const isComfortable = density === 'comfortable';
-  const pyClass = isComfortable ? 'py-4' : 'py-2';
-  const textClass = isComfortable ? 'text-[14px] md:text-[15px]' : 'text-[12px] md:text-[14px]';
-  const headerTextClass = isComfortable ? 'text-[11px] md:text-[13px]' : 'text-[10px] md:text-[12px]';
-  const btnPad = isComfortable ? 'p-3' : 'p-2';
-  const iconSize = isComfortable ? 20 : 18;
+  const isComfortable = !striped && density === 'comfortable';
+  const pyClass = isComfortable ? 'py-4' : (striped ? 'py-1' : 'py-2');
+  const textClass = isComfortable ? 'text-[14px] md:text-[15px]' : (striped ? 'text-[11px] md:text-[12px]' : 'text-[12px] md:text-[14px]');
+  const headerTextClass = isComfortable ? 'text-[11px] md:text-[13px]' : (striped ? 'text-[10px]' : 'text-[10px] md:text-[12px]');
+  const btnPad = isComfortable ? 'p-3' : (striped ? 'p-1' : 'p-2');
+  const iconSize = isComfortable ? 20 : (striped ? 14 : 18);
 
   if (loading) {
     return (
@@ -110,8 +111,8 @@ const DataTable = ({
               return (
                 <tr
                   key={rId}
-                  className={`transition-colors duration-200 group ${isSelected ? 'bg-[var(--accent)]/5' : ''}`}
-                  onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background = 'var(--nav-hover)'; }}
+                  className={`transition-colors duration-200 group ${isSelected ? 'bg-[var(--accent)]/5' : ''} ${striped && !isSelected ? (index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60' : 'bg-transparent') : ''}`}
+                  onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background = striped ? (index % 2 === 1 ? 'var(--nav-hover)' : 'var(--nav-hover)') : 'var(--nav-hover)'; }}
                   onMouseLeave={e => { if(!isSelected) e.currentTarget.style.background = ''; }}
                 >
                   {enableBulkSelection && (
