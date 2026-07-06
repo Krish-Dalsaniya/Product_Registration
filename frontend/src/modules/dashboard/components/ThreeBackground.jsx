@@ -76,7 +76,7 @@ function FloatingShapes() {
 
 export default function ThreeBackground() {
   return (
-    <div className="absolute inset-0 z-0 opacity-100 pointer-events-none">
+    <div className="absolute inset-0 z-0 opacity-30 blur-[2px] pointer-events-none">
       <Canvas 
         camera={{ position: [0, 0, 8], fov: 40 }} 
         gl={{ powerPreference: "high-performance", antialias: false }}
