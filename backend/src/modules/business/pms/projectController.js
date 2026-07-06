@@ -231,11 +231,49 @@ const getMetrics = async (req, res) => {
   }
 };
 
+// Get Portfolio Metrics (for Gantt/Timeline)
+const getPortfolioMetrics = async (req, res) => {
+  try {
+    const query = `
+      SELECT p.project_id, p.project_code, p.project_name, p.status, p.start_date, p.end_date
+      FROM pms_projects p
+      ORDER BY p.created_at DESC
+    `;
+    const projectsRes = await pool.query(query);
+    
+    const epicsQuery = `
+      SELECT epic_id, project_id, name, start_date, target_date, status
+      FROM pms_epics
+    `;
+    const epicsRes = await pool.query(epicsQuery);
+
+    const sprintsQuery = `
+      SELECT sprint_id, project_id, sprint_name, start_date, end_date, status
+      FROM pms_sprints
+    `;
+    const sprintsRes = await pool.query(sprintsQuery);
+
+    const portfolio = projectsRes.rows.map(p => {
+       return {
+          ...p,
+          epics: epicsRes.rows.filter(e => e.project_id === p.project_id),
+          sprints: sprintsRes.rows.filter(s => s.project_id === p.project_id)
+       }
+    });
+
+    res.json({ success: true, data: portfolio });
+  } catch (error) {
+    console.error('Error fetching portfolio metrics:', error);
+    res.status(500).json({ success: false, error: { message: 'Failed to fetch portfolio metrics' } });
+  }
+};
+
 module.exports = {
   getAllProjects,
   getProjectById,
   createProject,
   updateProject,
   deleteProject,
-  getMetrics
+  getMetrics,
+  getPortfolioMetrics
 };

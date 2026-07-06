@@ -71,9 +71,10 @@ const getClosureById = async (req, res) => {
     }
 
     const itemsQuery = `
-      SELECT i.*, p.project_name
+      SELECT i.*, p.project_name, t.task_title
       FROM pms_closure_items i
       LEFT JOIN pms_projects p ON i.project_id = p.project_id
+      LEFT JOIN pms_tasks t ON i.task_id = t.task_id
       WHERE i.closure_id = $1
       ORDER BY i.created_at ASC
     `;
@@ -120,15 +121,37 @@ const createClosure = async (req, res) => {
 
     for (const item of items) {
       const itemQuery = `
-        INSERT INTO pms_closure_items (closure_id, project_id, task_description, hours_spent)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO pms_closure_items (closure_id, project_id, task_id, task_description, hours_spent)
+        VALUES ($1, $2, $3, $4, $5)
       `;
       await client.query(itemQuery, [
         closure_id,
         item.project_id || null,
+        item.task_id || null,
         item.task_description,
         item.hours_spent
       ]);
+    }
+
+    // Auto-approve if Admin created it with status Approved
+    if (status === 'Approved') {
+      const userRes = await client.query('SELECT user_id FROM hr_employees WHERE employee_id = $1', [employee_id]);
+      const userId = userRes.rows[0].user_id;
+
+      for (const item of items) {
+        if (item.task_id) {
+          await client.query(`
+            INSERT INTO pms_task_time_logs (task_id, user_id, hours_logged, log_date, description)
+            VALUES ($1, $2, $3, $4, $5)
+          `, [item.task_id, userId, item.hours_spent, closure_date, item.task_description]);
+
+          await client.query(`
+            UPDATE pms_tasks 
+            SET actual_logged_hours = COALESCE(actual_logged_hours, 0) + $1
+            WHERE task_id = $2
+          `, [item.hours_spent, item.task_id]);
+        }
+      }
     }
 
     await client.query('COMMIT');
@@ -150,6 +173,11 @@ const updateClosure = async (req, res) => {
     const { status, remarks, items } = req.body;
 
     await client.query('BEGIN');
+
+    const prevClosure = await client.query('SELECT status, employee_id, closure_date FROM pms_closures WHERE closure_id = $1', [id]);
+    const previousStatus = prevClosure.rows[0]?.status;
+    const employee_id = prevClosure.rows[0]?.employee_id;
+    const closure_date = prevClosure.rows[0]?.closure_date;
 
     if (status || remarks) {
       const updates = [];
@@ -182,18 +210,43 @@ const updateClosure = async (req, res) => {
       for (const item of items) {
         total_hours += Number(item.hours_spent);
         const itemQuery = `
-          INSERT INTO pms_closure_items (closure_id, project_id, task_description, hours_spent)
-          VALUES ($1, $2, $3, $4)
+          INSERT INTO pms_closure_items (closure_id, project_id, task_id, task_description, hours_spent)
+          VALUES ($1, $2, $3, $4, $5)
         `;
         await client.query(itemQuery, [
           id,
           item.project_id || null,
+          item.task_id || null,
           item.task_description,
           item.hours_spent
         ]);
       }
       
       await client.query('UPDATE pms_closures SET total_hours = $1 WHERE closure_id = $2', [total_hours, id]);
+    }
+
+    // If status transitioned to Approved, log time to tasks
+    if (status === 'Approved' && previousStatus !== 'Approved') {
+      const userRes = await client.query('SELECT user_id FROM hr_employees WHERE employee_id = $1', [employee_id]);
+      const userId = userRes.rows[0]?.user_id;
+
+      if (userId) {
+        const finalItems = await client.query('SELECT * FROM pms_closure_items WHERE closure_id = $1', [id]);
+        for (const item of finalItems.rows) {
+          if (item.task_id) {
+            await client.query(`
+              INSERT INTO pms_task_time_logs (task_id, user_id, hours_logged, log_date, description)
+              VALUES ($1, $2, $3, $4, $5)
+            `, [item.task_id, userId, item.hours_spent, closure_date, item.task_description]);
+  
+            await client.query(`
+              UPDATE pms_tasks 
+              SET actual_logged_hours = COALESCE(actual_logged_hours, 0) + $1
+              WHERE task_id = $2
+            `, [item.hours_spent, item.task_id]);
+          }
+        }
+      }
     }
 
     await client.query('COMMIT');

@@ -13,6 +13,7 @@ export const createProject = (data) => axiosInstance.post('/pms/projects', data)
 export const updateProject = (id, data) => axiosInstance.put(`/pms/projects/${id}`, data);
 export const deleteProject = (id) => axiosInstance.delete(`/pms/projects/${id}`);
 export const getProjectMetrics = () => axiosInstance.get('/pms/projects/metrics');
+export const getPortfolioMetrics = () => axiosInstance.get('/pms/projects/portfolio/metrics');
 
 // Task APIs
 export const getTasks = (params) => axiosInstance.get('/pms/tasks', { params });
@@ -34,3 +35,12 @@ export const getSprintById = (id) => axiosInstance.get(`/pms/sprints/${id}`);
 export const createSprint = (data) => axiosInstance.post('/pms/sprints', data);
 export const updateSprint = (id, data) => axiosInstance.put(`/pms/sprints/${id}`, data);
 export const deleteSprint = (id) => axiosInstance.delete(`/pms/sprints/${id}`);
+export const getSprintMetrics = (id) => axiosInstance.get(`/pms/sprints/${id}/metrics`);
+
+// Epic APIs
+export const getProjectEpics = (params) => axiosInstance.get('/pms/epics', { params });
+export const createEpic = (data) => axiosInstance.post('/pms/epics', data);
+export const updateEpic = (id, data) => axiosInstance.put(`/pms/epics/${id}`, data);
+export const deleteEpic = (id) => axiosInstance.delete(`/pms/epics/${id}`);
+
+export const getTaskSubtasks = (id) => axiosInstance.get(`/pms/tasks/${id}/subtasks`);

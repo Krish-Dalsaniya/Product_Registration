@@ -866,6 +866,20 @@ CREATE TABLE IF NOT EXISTS pms_sprints (
 ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS sprint_id UUID REFERENCES pms_sprints(sprint_id) ON DELETE SET NULL;
 ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS story_points INTEGER DEFAULT 0;
 
+CREATE TABLE IF NOT EXISTS pms_epics (
+    epic_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES pms_projects(project_id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'Planning', -- Planning, In Progress, Completed
+    start_date DATE,
+    target_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS epic_id UUID REFERENCES pms_epics(epic_id) ON DELETE SET NULL;
+
 
 -- ==============================================================================
 -- MODULE: HR RECRUITMENT

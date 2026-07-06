@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { KanbanSquare, ListTodo, Plus, Loader2, FolderTree } from 'lucide-react';
+import { KanbanSquare, ListTodo, Plus, Loader2, FolderTree, BarChart3, Flag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getProjects, getProjectSprints, createSprint } from '../../../api/pms';
 import SprintPlanning from '../components/sprint/SprintPlanning';
 import ActiveSprint from '../components/sprint/ActiveSprint';
+import SprintAnalytics from '../components/sprint/SprintAnalytics';
+import EpicsRoadmap from '../components/sprint/EpicsRoadmap';
 
 const ScrumsSprints = () => {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
-  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState(() => {
+    return localStorage.getItem('pms_selected_project_id') || '';
+  });
   
   const [sprints, setSprints] = useState([]);
   const [activeTab, setActiveTab] = useState('planning'); // planning, active
@@ -21,6 +25,7 @@ const ScrumsSprints = () => {
 
   useEffect(() => {
     if (selectedProjectId) {
+      localStorage.setItem('pms_selected_project_id', selectedProjectId);
       fetchSprints();
     } else {
       setSprints([]);
@@ -31,9 +36,14 @@ const ScrumsSprints = () => {
     try {
       const res = await getProjects({ limit: 100 });
       if (res.data?.success) {
-        setProjects(res.data.data);
-        if (res.data.data.length > 0) {
-          setSelectedProjectId(res.data.data[0].project_id);
+        const fetchedProjects = res.data.data;
+        setProjects(fetchedProjects);
+        
+        const savedProjectId = localStorage.getItem('pms_selected_project_id');
+        if (savedProjectId && fetchedProjects.some(p => p.project_id === savedProjectId)) {
+          setSelectedProjectId(savedProjectId);
+        } else if (fetchedProjects.length > 0) {
+          setSelectedProjectId(fetchedProjects[0].project_id);
         }
       }
     } catch (err) {
@@ -155,6 +165,26 @@ const ScrumsSprints = () => {
               </span>
             )}
           </button>
+          <button
+            onClick={() => setActiveTab('epics')}
+            className={`px-5 py-3 text-sm font-black tracking-wider uppercase transition-all flex items-center border-b-[3px] ${
+              activeTab === 'epics' ? 'text-[var(--accent)] border-[var(--accent)] bg-[var(--bg-workspace)]' : 'text-[var(--text-muted)] border-transparent hover:text-[var(--text-main)] hover:bg-[var(--bg-workspace)]'
+            }`}
+          >
+            <Flag size={16} className="mr-2" strokeWidth={2.5} />
+            Epics Roadmap
+          </button>
+          {activeSprint && (
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-5 py-3 text-sm font-black tracking-wider uppercase transition-all flex items-center border-b-[3px] ${
+                activeTab === 'analytics' ? 'text-[var(--accent)] border-[var(--accent)] bg-[var(--bg-workspace)]' : 'text-[var(--text-muted)] border-transparent hover:text-[var(--text-main)] hover:bg-[var(--bg-workspace)]'
+              }`}
+            >
+              <BarChart3 size={16} className="mr-2" strokeWidth={2.5} />
+              Sprint Analytics
+            </button>
+          )}
         </div>
       )}
 
@@ -211,6 +241,30 @@ const ScrumsSprints = () => {
                     </button>
                   </div>
                 )}
+              </motion.div>
+            )}
+            {activeTab === 'epics' && (
+              <motion.div
+                key="epics"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0"
+              >
+                <EpicsRoadmap projectId={selectedProjectId} />
+              </motion.div>
+            )}
+            {activeTab === 'analytics' && activeSprint && (
+              <motion.div
+                key="analytics"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0"
+              >
+                <SprintAnalytics sprintId={activeSprint.sprint_id} />
               </motion.div>
             )}
           </AnimatePresence>

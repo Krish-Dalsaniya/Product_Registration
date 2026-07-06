@@ -6,6 +6,7 @@ const { verifyToken } = require('../../../middleware/auth');
 
 router.use(verifyToken);
 
+router.get('/portfolio/metrics', projectController.getPortfolioMetrics);
 router.get('/metrics', projectController.getMetrics);
 router.get('/', projectController.getAllProjects);
 router.get('/:id', projectController.getProjectById);

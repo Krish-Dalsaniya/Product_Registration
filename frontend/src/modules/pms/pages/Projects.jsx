@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Clock, FileText, CheckCircle, Search, AlertCircle, Trash2, Edit2, Users, ChevronDown, X, Check, FolderGit2 } from 'lucide-react';
 import { getProjects, createProject, updateProject, deleteProject, getProjectMetrics } from '../../../api/pms';
+import PortfolioDashboard from '../components/project/PortfolioDashboard';
 
 import { getTeams } from '../../../api/adminTeams';
 import { getProducts } from '../../../api/products';
@@ -27,6 +28,7 @@ const Projects = () => {
   const [projects, setProjects] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('list'); // 'list' or 'portfolio'
   
   // Filters
   const [filters, setFilters] = useState({
@@ -83,6 +85,38 @@ const Projects = () => {
   const handleView = (row) => {
     setSelectedProject(row);
     setIsViewModalOpen(true);
+  };
+
+  const handleExportCSV = () => {
+    if (projects.length === 0) {
+      toast.error('No projects to export');
+      return;
+    }
+    const headers = ['Project Code', 'Project Name', 'Team', 'Team Lead', 'Client Handler', 'Product', 'Progress (%)', 'Priority', 'Status', 'Start Date', 'End Date'];
+    const csvData = projects.map(p => [
+      p.project_code,
+      `"${(p.project_name || '').replace(/"/g, '""')}"`,
+      `"${(p.team_name || '').replace(/"/g, '""')}"`,
+      `"${(p.team_lead_name || '').replace(/"/g, '""')}"`,
+      `"${(p.client_handler_name || '').replace(/"/g, '""')}"`,
+      `"${(p.product_name || '').replace(/"/g, '""')}"`,
+      p.progress_percentage || 0,
+      p.priority,
+      p.status,
+      p.start_date ? new Date(p.start_date).toLocaleDateString() : 'N/A',
+      p.end_date ? new Date(p.end_date).toLocaleDateString() : 'N/A'
+    ]);
+    
+    const csvContent = [headers.join(','), ...csvData.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `projects_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const columns = [
@@ -142,19 +176,38 @@ const Projects = () => {
             </p>
           </div>
         </div>
-        <div className="flex gap-4">
-          <button className="px-6 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-[12px] font-bold shadow-sm hover:bg-[var(--nav-hover)] transition-colors">
-            Export CSV
-          </button>
-          {hasPermission('hr', 'create', 'pms_projects') && (
-          <button
-            onClick={() => { setSelectedProject(null); setIsAddModalOpen(true); }}
-            className="btn-primary shadow-lg px-6 py-2.5 group flex items-center gap-2 rounded-xl"
-          >
-            <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
-            <span className="text-[12px] font-black uppercase tracking-widest">Add Project</span>
-          </button>
-          )}
+        <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="flex bg-[var(--bg-workspace)] p-1 rounded-xl border border-[var(--border-color)] shadow-sm">
+            <button 
+              onClick={() => setActiveTab('list')}
+              className={`px-6 py-2 text-[12px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'list' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm border border-[var(--border-color)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] border border-transparent'}`}
+            >
+              List View
+            </button>
+            <button 
+              onClick={() => setActiveTab('portfolio')}
+              className={`px-6 py-2 text-[12px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'portfolio' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm border border-[var(--border-color)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] border border-transparent'}`}
+            >
+              Portfolio Dashboard
+            </button>
+          </div>
+          <div className="flex gap-4">
+            <button 
+              onClick={handleExportCSV}
+              className="px-6 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl text-[12px] font-bold shadow-sm hover:bg-[var(--nav-hover)] transition-colors"
+            >
+              Export CSV
+            </button>
+            {hasPermission('hr', 'create', 'pms_projects') && (
+            <button
+              onClick={() => { setSelectedProject(null); setIsAddModalOpen(true); }}
+              className="btn-primary shadow-lg px-6 py-2.5 group flex items-center gap-2 rounded-xl"
+            >
+              <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
+              <span className="text-[12px] font-black uppercase tracking-widest">Add Project</span>
+            </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -190,58 +243,65 @@ const Projects = () => {
         />
       </div>
 
-      {/* Filters */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-sm mb-6 flex flex-wrap gap-4 items-center">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]" />
-          <input 
-            type="text" 
-            name="search"
-            value={filters.search}
-            onChange={handleFilterChange}
-            placeholder="Search by code or name..." 
-            className="w-full pl-9 pr-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] focus:border-[var(--accent)] outline-none"
-          />
-        </div>
-        <div className="flex gap-4 flex-wrap">
-          <select 
-            name="priority"
-            value={filters.priority}
-            onChange={handleFilterChange}
-            className="px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none"
-          >
-            <option value="">All Priorities</option>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Critical">Critical</option>
-          </select>
-          <select 
-            name="status"
-            value={filters.status}
-            onChange={handleFilterChange}
-            className="px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none"
-          >
-            <option value="">All Statuses</option>
-            <option value="Planned">Planned</option>
-            <option value="In Progress">In Progress</option>
-            <option value="On Hold">On Hold</option>
-            <option value="Completed">Completed</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-        </div>
-      </div>
+      {/* Tab Content */}
+      {activeTab === 'list' ? (
+        <>
+          {/* Filters */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-sm mb-6 flex flex-wrap gap-4 items-center">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]" />
+              <input 
+                type="text" 
+                name="search"
+                value={filters.search}
+                onChange={handleFilterChange}
+                placeholder="Search by code or name..." 
+                className="w-full pl-9 pr-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] focus:border-[var(--accent)] outline-none"
+              />
+            </div>
+            <div className="flex gap-4 flex-wrap">
+              <select 
+                name="priority"
+                value={filters.priority}
+                onChange={handleFilterChange}
+                className="px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none"
+              >
+                <option value="">All Priorities</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+              <select 
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+                className="px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none"
+              >
+                <option value="">All Statuses</option>
+                <option value="Planned">Planned</option>
+                <option value="In Progress">In Progress</option>
+                <option value="On Hold">On Hold</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
 
-      {/* Data Table */}
-      <DataTable 
-        columns={columns}
-        data={projects}
-        loading={isLoading}
-        onView={handleView}
-        onDelete={hasPermission('hr', 'delete', 'pms_projects') ? handleDelete : undefined}
-        rowKey="project_id"
-        totalCount={projects.length}
-      />
+          {/* Data Table */}
+          <DataTable 
+            columns={columns}
+            data={projects}
+            loading={isLoading}
+            onView={handleView}
+            onDelete={hasPermission('hr', 'delete', 'pms_projects') ? handleDelete : undefined}
+            rowKey="project_id"
+            totalCount={projects.length}
+          />
+        </>
+      ) : (
+        <PortfolioDashboard />
+      )}
 
       <AddEditProjectModal 
         isOpen={isAddModalOpen} 

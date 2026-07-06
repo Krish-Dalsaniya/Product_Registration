@@ -8,6 +8,7 @@ import { getTasks, getTaskMetrics, updateTaskStatus, deleteTask } from '../../..
 import TaskBoard from '../components/task/TaskBoard';
 import TaskList from '../components/task/TaskList';
 import TaskModal from '../components/task/TaskModal';
+import BacklogGrooming from '../components/task/BacklogGrooming';
 import Swal from 'sweetalert2';
 
 const TaskManagement = () => {
@@ -19,6 +20,8 @@ const TaskManagement = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterPriority, setFilterPriority] = useState('');
+  const [filterAssignee, setFilterAssignee] = useState('');
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,7 +30,12 @@ const TaskManagement = () => {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const res = await getTasks({ search, status: filterStatus });
+      const res = await getTasks({ 
+          search, 
+          status: filterStatus, 
+          priority: filterPriority, 
+          assignee_id: filterAssignee 
+      });
       if (res.data?.success) {
         setTasks(res.data.data);
       }
@@ -52,7 +60,7 @@ const TaskManagement = () => {
   useEffect(() => {
     fetchTasks();
     fetchMetrics();
-  }, [search, filterStatus]);
+  }, [search, filterStatus, filterPriority, filterAssignee]);
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
@@ -123,9 +131,9 @@ const TaskManagement = () => {
       </div>
 
       {/* Toolbar */}
-      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
+      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] p-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 shadow-sm z-10 relative">
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+          <div className="relative flex-1 min-w-[200px] xl:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] w-4 h-4" />
             <input 
               type="text" 
@@ -149,18 +157,36 @@ const TaskManagement = () => {
             <option value="Testing">Testing</option>
             <option value="Completed">Completed</option>
           </select>
+
+          <select 
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-medium text-[var(--text-main)] focus:border-[var(--accent)] focus:outline-none transition-colors appearance-none cursor-pointer flex-1 min-w-[140px]"
+          >
+            <option value="">All Priorities</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
         </div>
 
-        <div className="flex bg-[var(--bg-workspace)] p-1 rounded-xl border border-[var(--border-color)]">
+        <div className="flex bg-[var(--bg-workspace)] p-1 rounded-xl border border-[var(--border-color)] self-start xl:self-auto shrink-0 overflow-x-auto w-full xl:w-auto">
+          <button 
+            onClick={() => setView('grooming')}
+            className={`px-4 py-1.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all whitespace-nowrap ${view === 'grooming' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+          >
+            Grooming
+          </button>
           <button 
             onClick={() => setView('kanban')}
-            className={`px-4 py-1.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view === 'kanban' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+            className={`px-4 py-1.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all whitespace-nowrap ${view === 'kanban' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
           >
             <KanbanSquare size={16} /> Board
           </button>
           <button 
             onClick={() => setView('list')}
-            className={`px-4 py-1.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view === 'list' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+            className={`px-4 py-1.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all whitespace-nowrap ${view === 'list' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
           >
             <List size={16} /> List
           </button>
@@ -168,13 +194,17 @@ const TaskManagement = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
         {loading ? (
           <div className="h-full flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
           </div>
         ) : (
-          view === 'kanban' ? (
+          view === 'grooming' ? (
+            <BacklogGrooming 
+              onTaskClick={openTaskModal}
+            />
+          ) : view === 'kanban' ? (
             <TaskBoard 
               tasks={tasks} 
               onStatusChange={handleStatusChange} 

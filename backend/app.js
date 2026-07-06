@@ -114,6 +114,7 @@ app.use('/api/pms/closures', require('./src/modules/business/pms/closureRoutes')
 app.use('/api/pms/projects', require('./src/modules/business/pms/projectRoutes'));
 app.use('/api/pms/tasks', require('./src/modules/business/pms/taskRoutes'));
 app.use('/api/pms/sprints', require('./src/modules/business/pms/sprintRoutes'));
+app.use('/api/pms/epics', require('./src/modules/business/pms/epicRoutes'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'OK' }));
