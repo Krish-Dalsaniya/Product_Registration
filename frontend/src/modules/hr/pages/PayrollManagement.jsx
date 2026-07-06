@@ -220,7 +220,7 @@ const PayrollManagement = () => {
         const net = calcNet(row);
         return (
           <div className="flex items-center gap-2">
-            <span className={`font-black text-[14px] ${net === 0 ? 'text-rose-500' : 'text-[var(--accent)]'}`}>₹{net.toFixed(2)}</span>
+            <span className={`font-black text-[12px] ${net === 0 ? 'text-rose-500' : 'text-[var(--accent)]'}`}>₹{net.toFixed(2)}</span>
             {net === 0 && <AlertTriangle size={14} className="text-rose-500" title="Net Salary is zero" />}
           </div>
         );
@@ -246,7 +246,7 @@ const PayrollManagement = () => {
         );
       } 
     },
-    { key: 'net_salary', label: 'Net Salary', render: row => <span className="font-black text-[var(--text-main)] text-[15px]">₹{parseFloat(row.net_salary || 0).toFixed(2)}</span> },
+    { key: 'net_salary', label: 'Net Salary', render: row => <span className="font-black text-[var(--text-main)] text-[12px]">₹{parseFloat(row.net_salary || 0).toFixed(2)}</span> },
     { 
       key: 'status',
       label: 'Status', 
@@ -334,7 +334,7 @@ const PayrollManagement = () => {
             {loadingStructures ? (
               <div className="py-10 text-center text-[var(--text-muted)] text-sm font-bold animate-pulse">Loading structures...</div>
             ) : (
-              <DataTable columns={structureCols} data={structures} rowKey="employee_id" onEdit={hasPermission('hr', 'edit', 'payrolls_leaves') ? setEditStructure : undefined} />
+              <DataTable striped={true} columns={structureCols} data={structures} rowKey="employee_id" onEdit={hasPermission('hr', 'edit', 'payrolls_leaves') ? setEditStructure : undefined} />
             )}
           </div>
         )}
@@ -381,7 +381,7 @@ const PayrollManagement = () => {
             {loadingPayrolls ? (
               <div className="py-10 text-center text-[var(--text-muted)] text-sm font-bold animate-pulse">Loading payrolls...</div>
             ) : (
-              <DataTable columns={payrollCols} data={payrolls.filter(p => p.status === 'Draft')} rowKey="payroll_id" onView={() => {}} />
+              <DataTable striped={true} columns={payrollCols} data={payrolls.filter(p => p.status === 'Draft')} rowKey="payroll_id" onView={() => {}} />
             )}
           </div>
         )}
@@ -441,7 +441,7 @@ const PayrollManagement = () => {
               <div className="py-10 text-center text-[var(--text-muted)] text-sm font-bold animate-pulse">Loading payrolls...</div>
             ) : (
               // We pass the full columns definition, since historyCols has custom actions
-              <DataTable columns={historyCols} data={filteredHistory} rowKey="payroll_id" />
+              <DataTable striped={true} columns={historyCols} data={filteredHistory} rowKey="payroll_id" />
             )}
           </div>
         )}

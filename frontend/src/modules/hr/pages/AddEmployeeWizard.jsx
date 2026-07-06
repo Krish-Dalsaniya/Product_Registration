@@ -378,7 +378,11 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (currentStep < STEPS.length) {
+      handleNext();
+      return;
+    }
     const hasDesignation = (formData.designation_name && formData.designation_name.trim() !== '') || formData.designation_id;
     if (!formData.full_name?.trim() || !formData.email?.trim() || !hasDesignation || !formData.date_of_joining || !formData.department_id) {
       toast.error('Please ensure all mandatory Personal and Job fields are filled before submitting.');
