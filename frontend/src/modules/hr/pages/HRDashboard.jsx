@@ -220,64 +220,7 @@ const HRDashboard = () => {
         </div>
       </div>
       
-      {/* Top Performers Widget */}
-      <div className="grid grid-cols-1 gap-6 mb-4">
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[16px] font-black text-[var(--text-main)]">Top Performers</h3>
-            <span className="text-[11px] font-bold text-[var(--text-muted)] bg-[var(--bg-workspace)] px-2 py-1 rounded">THIS MONTH</span>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[var(--border-color)]">
-                  <th className="py-3 font-bold text-[11px] text-[var(--text-muted)] tracking-wider uppercase">Employee</th>
-                  <th className="py-3 font-bold text-[11px] text-[var(--text-muted)] tracking-wider uppercase">Department</th>
-                  <th className="py-3 font-bold text-[11px] text-[var(--text-muted)] tracking-wider uppercase text-center">Attendance</th>
-                  <th className="py-3 font-bold text-[11px] text-[var(--text-muted)] tracking-wider uppercase text-center">Rating</th>
-                  <th className="py-3 font-bold text-[11px] text-[var(--text-muted)] tracking-wider uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {metrics?.topPerformers?.map((emp, i) => (
-                  <tr key={emp.employee_id} className="border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-workspace)] transition-colors">
-                    <td className="py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[12px]">
-                          {emp.full_name?.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-[13px] font-bold text-[var(--text-main)]">{emp.full_name}</p>
-                          <p className="text-[11px] text-[var(--text-muted)]">{emp.emp_code}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 text-[13px] font-medium text-[var(--text-secondary)]">{emp.department_name || 'N/A'}</td>
-                    <td className="py-3 text-center">
-                      <span className={`text-[12px] font-bold px-2 py-0.5 rounded ${emp.attendance_score >= 90 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                        {emp.attendance_score}%
-                      </span>
-                    </td>
-                    <td className="py-3 text-center">
-                      <span className="text-[14px] font-black text-[var(--text-main)]">{emp.performance_rating}</span>
-                      <span className="text-[12px] text-amber-400 ml-1">★</span>
-                    </td>
-                    <td className="py-3">
-                      <span className={`text-[11px] font-bold px-2 py-1 rounded-full ${emp.review_status === 'Excellent' ? 'bg-emerald-100 text-emerald-700' : emp.review_status === 'Good' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
-                        {emp.review_status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {(!metrics?.topPerformers || metrics.topPerformers.length === 0) && (
-                   <tr><td colSpan="5" className="text-center py-6 text-[13px] text-[var(--text-muted)]">No data available</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { Eye, Trash2, Maximize2, Minimize2, CheckSquare } from 'lucide-react';
 
 const DataTable = ({ 
   columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, 
+  onPageChange,
   onView, onEdit, onDelete, onRestock, rowKey = 'id', 
   enableBulkSelection = false, onBulkDelete 
 }) => {
@@ -218,8 +219,26 @@ const DataTable = ({
           </button>
         </div>
         <div className="flex items-center gap-4">
+          {onPageChange && (
+            <div className="flex items-center gap-2 mr-4">
+              <button 
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button 
+                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          )}
           <span className="text-[12px] font-bold" style={{ color: 'var(--text-muted)' }}>
-            PAGE {currentPage} <span style={{ opacity: 0.3, margin: '0 4px' }}>/</span> {totalPages}
+            PAGE {totalPages === 0 ? 0 : currentPage} <span style={{ opacity: 0.3, margin: '0 4px' }}>/</span> {totalPages}
           </span>
         </div>
       </div>

@@ -28,6 +28,13 @@ const TraineeList = () => {
     const [departmentFilter, setDepartmentFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 12;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, departmentFilter, statusFilter]);
+
     // Metadata
     const [metadata, setMetadata] = useState({ departments: [], designations: [] });
     const [employees, setEmployees] = useState([]);
@@ -206,6 +213,9 @@ const TraineeList = () => {
         return matchesSearch && matchesDept && matchesStatus;
     });
 
+    const totalPages = Math.max(1, Math.ceil(filteredTrainees.length / pageSize));
+    const paginatedTrainees = filteredTrainees.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
     const columns = [
         { key: 'trainee_code', label: 'Trainee ID', render: (row) => <span className="font-bold text-[var(--accent)]">{row.trainee_code}</span> },
         { key: 'name', label: 'Name', render: (row) => (
@@ -322,10 +332,11 @@ const TraineeList = () => {
                     <Loader2 className="animate-spin text-[var(--accent)] w-10 h-10" />
                 </div>
             ) : viewMode === 'table' ? (
-                <DataTable columns={columns} data={filteredTrainees} loading={isLoading} />
+                <DataTable columns={columns} data={paginatedTrainees} loading={isLoading} totalCount={trainees.length} filteredCount={filteredTrainees.length} currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             ) : (
+                <div className="flex flex-col gap-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mb-6">
-                    {filteredTrainees.length > 0 ? filteredTrainees.map((trainee, index) => {
+                    {paginatedTrainees.length > 0 ? paginatedTrainees.map((trainee, index) => {
                         const defaultAvatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(trainee.first_name + ' ' + trainee.last_name)}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
                         const avatarUrl = trainee.image_url || defaultAvatarUrl;
                         
@@ -423,6 +434,28 @@ const TraineeList = () => {
                             <p className="text-sm font-medium text-[var(--text-muted)] mt-1">Adjust your filters or add a trainee.</p>
                         </div>
                     )}
+                </div>
+                {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-4 mb-6">
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Previous
+                        </button>
+                        <span className="text-[12px] font-bold text-[var(--text-muted)]">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
                 </div>
             )}
 

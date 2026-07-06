@@ -209,7 +209,7 @@ const AttendanceMuster = () => {
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-20 bg-[var(--bg-workspace)] border-b border-r border-[var(--border-color)] px-3 py-4 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[160px] min-w-[160px] max-w-[160px]">
+                  <th className="sticky left-0 z-20 bg-[var(--bg-workspace)] border-b border-r border-[var(--border-color)] px-3 py-1.5 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[160px] min-w-[160px] max-w-[160px]">
                     <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Employee</span>
                   </th>
                   {daysArray.map(day => (
@@ -230,9 +230,9 @@ const AttendanceMuster = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-color)] text-[11px]">
-                {filteredRecords.map((emp) => (
-                  <tr key={emp.employee_id} className="hover:bg-[var(--bg-workspace)] transition-colors group">
-                    <td className="sticky left-0 z-10 bg-white group-hover:bg-[#f8fafc] border-r border-[var(--border-color)] p-2 shadow-[2px_0_5px_rgba(0,0,0,0.02)] transition-colors w-[160px] min-w-[160px] max-w-[160px]">
+                {filteredRecords.map((emp, index) => (
+                  <tr key={emp.employee_id} className={`group transition-colors ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}>
+                    <td className={`sticky left-0 z-10 border-r border-[var(--border-color)] px-3 py-1 shadow-[2px_0_5px_rgba(0,0,0,0.02)] transition-colors w-[160px] min-w-[160px] max-w-[160px] ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 group-hover:bg-gray-200 dark:group-hover:bg-gray-700/50' : 'bg-white group-hover:bg-gray-50 dark:bg-[var(--bg-card)] dark:group-hover:bg-gray-800/30'}`}>
                       <div className="flex flex-col overflow-hidden">
                         <span className="font-bold text-[12px] text-[var(--text-main)] truncate" title={emp.full_name}>{emp.full_name}</span>
                         <span className="text-[9px] text-[var(--text-muted)] font-semibold truncate" title={`${emp.emp_code} • ${emp.department_name || 'N/A'}`}>{emp.emp_code}</span>
@@ -245,7 +245,7 @@ const AttendanceMuster = () => {
                       
                       return (
                         <td key={day} className={`border-r border-[var(--border-color)] p-0 text-center relative`}>
-                          <div className={`w-full h-full min-h-[44px] flex items-center justify-center ${style}`}>
+                          <div className={`w-full h-full min-h-[36px] flex items-center justify-center ${style}`}>
                             {shortStatus}
                           </div>
                         </td>

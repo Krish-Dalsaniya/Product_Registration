@@ -28,7 +28,7 @@ const ProcessPage = () => {
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'table'
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
   const [filterText, setFilterText] = useState('');
-  const [collapsedStages, setCollapsedStages] = useState([]);
+  const [collapsedStages, setCollapsedStages] = useState(INITIAL_STAGES.filter(stage => stage !== 'Applied'));
   const [stages, setStages] = useState(INITIAL_STAGES);
   const [isAddingStage, setIsAddingStage] = useState(false);
   const [newStageName, setNewStageName] = useState('');
@@ -224,18 +224,18 @@ const ProcessPage = () => {
           <table className="w-full text-left border-collapse min-w-[800px]">
               <thead className="sticky top-0 z-10">
                   <tr className="border-b-2 border-[var(--border-color)] bg-[var(--bg-workspace)]">
-                      <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Candidate</th>
-                      <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Position</th>
-                      <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Experience</th>
-                      <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Location</th>
-                      <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Applied</th>
-                      <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Stage Status</th>
+                      <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Candidate</th>
+                      <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Position</th>
+                      <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Experience</th>
+                      <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Location</th>
+                      <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Applied</th>
+                      <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Stage Status</th>
                   </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-color)]">
-                  {candidates.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).map(candidate => (
-                      <tr key={candidate.id} className="hover:bg-[var(--bg-workspace)] transition-colors">
-                          <td className="px-4 py-3">
+                  {candidates.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).map((candidate, index) => (
+                      <tr key={candidate.id} className={`transition-colors ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}>
+                          <td className="px-3 py-1">
                               <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-full bg-[var(--text-main)] text-[var(--bg-workspace)] flex items-center justify-center font-bold text-xs shadow-sm">
                                       {candidate.name.charAt(0).toUpperCase()}
@@ -246,25 +246,25 @@ const ProcessPage = () => {
                                   </div>
                               </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-1">
                               <div className="font-bold text-[12px] text-[var(--text-main)] flex items-center gap-1.5">
                                   <Briefcase size={12} className="text-[var(--text-muted)]" /> {candidate.position}
                               </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-1">
                               <span className="inline-flex px-2 py-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-md text-[11px] font-bold text-[var(--text-main)] shadow-sm">
                                   {candidate.experience_type === 'FRESHER' ? 'Fresher' : `${candidate.total_years} yrs`}
                               </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-1">
                               <div className="text-[11px] font-semibold text-[var(--text-main)] flex items-center gap-1.5">
                                   <MapPin size={12} className="text-[var(--text-muted)]" /> {candidate.current_location}
                               </div>
                           </td>
-                          <td className="px-4 py-3 text-[11px] font-semibold text-[var(--text-main)]">
+                          <td className="px-3 py-1 text-[11px] font-semibold text-[var(--text-main)]">
                               {formatDistanceToNow(new Date(candidate.created_at), { addSuffix: true })}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-1">
                               <div className="relative inline-block">
                                   <select 
                                       value={candidate.status}
@@ -299,7 +299,7 @@ const ProcessPage = () => {
   );
 
   return (
-    <div className="max-w-[1600px] mx-auto pb-6 relative animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-80px)] flex flex-col px-4 md:px-8">
+    <div className="-mx-4 md:-mx-8 px-4 md:px-8 pb-6 relative animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-80px)] flex flex-col">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 mt-8 shrink-0">
         <div className="flex items-center gap-5">
           <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
@@ -352,7 +352,7 @@ const ProcessPage = () => {
                     onMouseLeave={handleCanvasMouseLeave}
                     onMouseUp={handleCanvasMouseUp}
                     onMouseMove={handleCanvasMouseMove}
-                    className={`flex gap-4 overflow-x-auto pb-6 pt-2 px-2 items-start flex-1 custom-scrollbar ${isDraggingCanvas ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+                    className={`flex gap-3 overflow-x-auto pb-6 pt-2 items-start flex-1 custom-scrollbar ${isDraggingCanvas ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
                 >
                     {stages.map(stage => {
                         const isCollapsed = collapsedStages.includes(stage);
@@ -362,7 +362,14 @@ const ProcessPage = () => {
                         
                         if (isCollapsed) {
                             return (
-                                <div key={stage} onClick={() => toggleStageCollapse(stage)} className="bg-[#ebecf0] dark:bg-[#1a1a1c] rounded-[10px] w-12 min-w-[48px] max-h-full shrink-0 flex flex-col items-center py-4 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors shadow-sm">
+                                <div 
+                                    key={stage} 
+                                    onClick={() => toggleStageCollapse(stage)} 
+                                    onDragOver={(e) => handleDragOver(e, stage)}
+                                    onDragLeave={(e) => handleDragLeave(e, stage)}
+                                    onDrop={(e) => handleDrop(e, stage)}
+                                    className={`rounded-[10px] w-12 min-w-[48px] max-h-full shrink-0 flex flex-col items-center py-4 cursor-pointer transition-all duration-300 shadow-sm ${dragOverStage === stage ? 'bg-black/10 dark:bg-white/10 ring-2 ring-blue-500 transform scale-110 shadow-lg z-10' : 'bg-[#ebecf0] dark:bg-[#1a1a1c] hover:bg-gray-200 dark:hover:bg-gray-800'}`}
+                                >
                                     <div className="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[11px] font-bold px-2 py-0.5 rounded-full mb-4">
                                         {stageCandidates.length}
                                     </div>
@@ -376,7 +383,7 @@ const ProcessPage = () => {
                         return (
                             <div 
                                 key={stage} 
-                                className="bg-[#ebecf0] dark:bg-[#1a1a1c] rounded-[10px] flex flex-col min-w-[300px] w-[300px] max-h-full snap-start shadow-sm shrink-0"
+                                className={`bg-[#ebecf0] dark:bg-[#1a1a1c] rounded-[10px] flex flex-col min-w-[260px] w-[260px] max-h-full snap-start shrink-0 transition-all duration-300 ${dragOverStage === stage ? 'transform scale-[1.02] ring-2 ring-blue-500 shadow-xl z-10' : 'shadow-sm'}`}
                                 onDragOver={(e) => handleDragOver(e, stage)}
                                 onDragLeave={(e) => handleDragLeave(e, stage)}
                                 onDrop={(e) => handleDrop(e, stage)}
@@ -395,7 +402,7 @@ const ProcessPage = () => {
                                     </div>
                                 </div>
                                 <div 
-                                  className={`p-2.5 flex-1 overflow-y-auto min-h-[150px] custom-scrollbar transition-colors ${dragOverStage === stage ? 'bg-black/5 dark:bg-white/5' : ''}`}
+                                  className={`p-2.5 flex-1 overflow-y-auto min-h-[150px] custom-scrollbar transition-colors ${dragOverStage === stage ? 'bg-black/5 dark:bg-white/5 rounded-b-[10px]' : ''}`}
                                 >
                                     {stageCandidates.length === 0 && dragOverStage !== stage && (
                                         <div className="h-full border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg flex items-center justify-center text-[12px] font-bold text-gray-400 dark:text-gray-600 opacity-50">

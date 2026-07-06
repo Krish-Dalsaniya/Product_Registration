@@ -123,12 +123,12 @@ const Claims = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[var(--border-color)] bg-[var(--bg-workspace)]">
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Date</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Employee</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Claim Type</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Amount</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] text-center">Status</th>
-                {canManage && <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] text-right">Actions</th>}
+                <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Date</th>
+                <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Employee</th>
+                <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Claim Type</th>
+                <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Amount</th>
+                <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] text-center">Status</th>
+                {canManage && <th className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-color)]">
@@ -137,16 +137,16 @@ const Claims = () => {
               ) : filteredClaims.length === 0 ? (
                 <tr><td colSpan="6" className="p-8 text-center text-sm font-bold text-[var(--text-muted)]">No claims found.</td></tr>
               ) : (
-                filteredClaims.map((claim) => (
-                  <tr key={claim.claim_id} className="hover:bg-[var(--bg-workspace)] transition-colors group">
-                    <td className="px-6 py-4 text-[12px] font-medium text-[var(--text-muted)]">
+                filteredClaims.map((claim, index) => (
+                  <tr key={claim.claim_id} className={`group transition-colors ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}>
+                    <td className="px-3 py-1 text-[12px] font-medium text-[var(--text-muted)]">
                       {new Date(claim.submitted_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-1">
                       <div className="text-[13px] font-bold text-[var(--text-main)]">{claim.employee_name}</div>
                       <div className="text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-wider">{claim.emp_code}</div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-1">
                       <div className="text-[12px] font-bold text-[var(--text-main)]">{claim.claim_type}</div>
                       {claim.receipt_url && (
                         <a href={claim.receipt_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[var(--accent)] hover:underline flex items-center gap-1 mt-1 font-bold">
@@ -154,14 +154,14 @@ const Claims = () => {
                         </a>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-[13px] font-black text-[var(--text-main)]">
+                    <td className="px-3 py-1 text-[13px] font-black text-[var(--text-main)]">
                       ₹{parseFloat(claim.amount).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-3 py-1 text-center">
                       <StatusBadge status={claim.status} />
                     </td>
                     {canManage && (
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-3 py-1 text-right">
                         {claim.status === 'Pending' ? (
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => updateClaimStatus(claim.claim_id, 'Approved')} className="p-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded transition-colors" title="Approve">

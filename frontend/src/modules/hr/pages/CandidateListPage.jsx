@@ -55,11 +55,18 @@ const CandidateListPage = () => {
   const [filterMonth, setFilterMonth] = useState('');
   const [filterYear, setFilterYear] = useState('');
   
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
+
   // Sort state for table
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
   // Sidebar controls
   const { setIsSidebarCollapsed } = useOutletContext() || {};
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterRoute, filterMonth, filterYear, sortConfig]);
 
   useEffect(() => {
     if (setIsSidebarCollapsed) {
@@ -149,12 +156,15 @@ const CandidateListPage = () => {
       return 0;
   });
 
+  const totalPages = Math.max(1, Math.ceil(sortedCandidates.length / pageSize));
+  const paginatedCandidates = sortedCandidates.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="flex h-[calc(100vh-80px)] relative overflow-hidden bg-[var(--bg-workspace)]">
         
         {/* Left Pane: Candidate List */}
         <div className={`flex flex-col transition-all duration-300 ease-in-out ${selectedCandidateId ? 'w-[40%]' : 'w-full'} p-6 overflow-hidden`}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-2">
                 <div className="flex items-center gap-5">
                     <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
                         <Users size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
@@ -250,28 +260,28 @@ const CandidateListPage = () => {
                         <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead className="sticky top-0 z-10">
                             <tr className="border-b-2 border-[var(--border-color)] bg-[var(--bg-workspace)]">
-                            <th onClick={() => handleSort('name')} className="cursor-pointer px-3 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Candidate {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
-                            <th onClick={() => handleSort('position')} className="cursor-pointer px-3 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Position {sortConfig.key === 'position' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
-                            <th onClick={() => handleSort('experience_type')} className="cursor-pointer px-3 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Experience {sortConfig.key === 'experience_type' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
-                            <th onClick={() => handleSort('current_location')} className="cursor-pointer px-3 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Location {sortConfig.key === 'current_location' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
-                            <th onClick={() => handleSort('status')} className="cursor-pointer px-3 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Status {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                            <th onClick={() => handleSort('name')} className="cursor-pointer px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Candidate {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                            <th onClick={() => handleSort('position')} className="cursor-pointer px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Position {sortConfig.key === 'position' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                            <th onClick={() => handleSort('experience_type')} className="cursor-pointer px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Experience {sortConfig.key === 'experience_type' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                            <th onClick={() => handleSort('current_location')} className="cursor-pointer px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Location {sortConfig.key === 'current_location' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
+                            <th onClick={() => handleSort('status')} className="cursor-pointer px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Status {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>
                             
                             {visibleCols.map(colId => {
                                 const col = OPTIONAL_COLUMNS.find(c => c.id === colId);
-                                return <th key={colId} className="px-3 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{col.label}</th>
+                                return <th key={colId} className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{col.label}</th>
                             })}
-                            <th className="px-3 py-3 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] text-right">Actions</th>
+                            <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--border-color)]">
-                            {sortedCandidates.map(candidate => (
+                            {paginatedCandidates.map((candidate, index) => (
                             <tr 
                                 key={candidate.id} 
                                 onClick={() => setSelectedCandidateId(candidate.id)}
-                                className={`transition-colors cursor-pointer ${selectedCandidateId === candidate.id ? 'bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10' : 'hover:bg-[var(--bg-workspace)]'}`}
+                                className={`transition-colors cursor-pointer ${selectedCandidateId === candidate.id ? 'bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10' : index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}
                             >
                                 {/* CORE COLUMNS */}
-                                <td className="px-3 py-3">
+                                <td className="px-3 py-1">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm ${selectedCandidateId === candidate.id ? 'bg-[var(--accent)] text-white' : 'bg-[var(--text-main)] text-[var(--bg-workspace)]'}`}>
                                     {candidate.name.charAt(0).toUpperCase()}
@@ -282,22 +292,22 @@ const CandidateListPage = () => {
                                     </div>
                                 </div>
                                 </td>
-                                <td className="px-3 py-3">
+                                <td className="px-3 py-1">
                                 <div className="font-bold text-[12px] text-[var(--text-main)] flex items-center gap-1.5 whitespace-nowrap">
                                     <Briefcase size={12} className="text-[var(--text-muted)] shrink-0" /> <span className="truncate max-w-[100px]">{candidate.position}</span>
                                 </div>
                                 </td>
-                                <td className="px-3 py-3 whitespace-nowrap">
+                                <td className="px-3 py-1 whitespace-nowrap">
                                 <span className="inline-flex px-2 py-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-md text-[11px] font-bold text-[var(--text-main)] shadow-sm">
                                     {candidate.experience_type === 'FRESHER' ? 'Fresher' : `${candidate.total_years} yrs`}
                                 </span>
                                 </td>
-                                <td className="px-3 py-3">
+                                <td className="px-3 py-1">
                                 <div className="text-[11px] font-semibold text-[var(--text-main)] flex items-center gap-1.5 whitespace-nowrap">
                                     <MapPin size={12} className="text-[var(--text-muted)] shrink-0" /> <span className="truncate max-w-[80px]">{candidate.current_location}</span>
                                 </div>
                                 </td>
-                                <td className="px-3 py-3">
+                                <td className="px-3 py-1">
                                 <span className={`inline-flex items-center px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-full border ${getStatusColor(candidate.status)}`}>
                                     {candidate.status}
                                 </span>
@@ -305,12 +315,12 @@ const CandidateListPage = () => {
 
                                 {/* OPTIONAL COLUMNS */}
                                 {visibleCols.includes('mobile') && (
-                                    <td className="px-3 py-3 text-[11px] font-semibold text-[var(--text-main)] whitespace-nowrap">
+                                    <td className="px-3 py-1 text-[11px] font-semibold text-[var(--text-main)] whitespace-nowrap">
                                         {candidate.whatsapp || candidate.mobile || '—'}
                                     </td>
                                 )}
                                 {visibleCols.includes('company') && (
-                                    <td className="px-3 py-3 text-[11px] font-semibold text-[var(--text-main)]">
+                                    <td className="px-3 py-1 text-[11px] font-semibold text-[var(--text-main)]">
                                         {candidate.experience_type === 'FRESHER' ? '—' : (
                                             <div>
                                                 <div className="font-bold">{candidate.current_company || '—'}</div>
@@ -320,28 +330,28 @@ const CandidateListPage = () => {
                                     </td>
                                 )}
                                 {visibleCols.includes('expected') && (
-                                    <td className="px-3 py-3 text-[11px] font-bold text-[var(--text-main)]">
+                                    <td className="px-3 py-1 text-[11px] font-bold text-[var(--text-main)]">
                                         {candidate.expected_monthly ? `₹${candidate.expected_monthly.toLocaleString()}` : '—'}
                                     </td>
                                 )}
                                 {visibleCols.includes('current') && (
-                                    <td className="px-3 py-3 text-[11px] font-bold text-[var(--text-main)]">
+                                    <td className="px-3 py-1 text-[11px] font-bold text-[var(--text-main)]">
                                         {candidate.experience_type === 'FRESHER' ? '—' : (candidate.monthly_taken_home ? `₹${candidate.monthly_taken_home.toLocaleString()}` : '—')}
                                     </td>
                                 )}
                                 {visibleCols.includes('relocate') && (
-                                    <td className="px-3 py-3 text-center">
+                                    <td className="px-3 py-1 text-center">
                                         {candidate.relocate ? <CheckCircle2 size={14} className="text-green-500 mx-auto" /> : <XCircle size={14} className="text-red-500 mx-auto" />}
                                     </td>
                                 )}
                                 {visibleCols.includes('documents') && (
-                                    <td className="px-3 py-3">
+                                    <td className="px-3 py-1">
                                         <div className="group relative inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-[var(--border-color)] text-[10px] font-bold text-[var(--text-main)] cursor-help">
                                             {getDocumentsCount(candidate.documents)} uploaded
                                         </div>
                                     </td>
                                 )}
-                                <td className="px-3 py-3 text-right">
+                                <td className="px-3 py-1 text-right">
                                     <div className="flex items-center justify-end gap-1">
                                         <button 
                                             onClick={(e) => handleDelete(e, candidate.id)} 
@@ -357,6 +367,32 @@ const CandidateListPage = () => {
                         </tbody>
                         </table>
                     </div>
+                    {totalPages > 1 && (
+                        <div className="flex justify-between items-center px-6 py-4 bg-[var(--bg-card)] border-t border-[var(--border-color)]">
+                            <span className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                Total Candidates: {sortedCandidates.length}
+                            </span>
+                            <div className="flex justify-center items-center gap-4">
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-[12px] font-bold text-[var(--text-muted)]">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

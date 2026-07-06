@@ -23,6 +23,10 @@ const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {},
         // Show CGPA on the degree/diploma semesters
         details.push({ key: 'CGPA', value: String(extractedInfo.college_cgpa) });
     }
+    if ((key.startsWith('deg_sem_') || key.startsWith('dip_sem_')) && extractedInfo?.college_sgpa) {
+        // Show SGPA on the degree/diploma semesters
+        details.push({ key: 'SGPA', value: String(extractedInfo.college_sgpa) });
+    }
 
     return details;
   };

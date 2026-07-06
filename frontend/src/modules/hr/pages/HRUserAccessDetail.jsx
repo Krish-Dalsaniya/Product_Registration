@@ -268,19 +268,19 @@ const HRUserAccessDetail = () => {
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-10 bg-[var(--bg-card)]">
                 <tr className="border-b border-[var(--border-color)]">
-                  <th className="p-4 w-[20%] text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)]">MODULE</th>
+                  <th className="px-3 py-1.5 w-[20%] text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)]">MODULE</th>
                   {DEFAULT_ACTIONS.map(action => (
-                    <th key={action.id} className="p-4 w-[20%] text-center text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)] last:border-0">{action.label}</th>
+                    <th key={action.id} className="px-3 py-1.5 w-[20%] text-center text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest border-r border-[var(--border-color)] last:border-0">{action.label}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {HR_MODULES.map((module) => {
+                {HR_MODULES.map((module, mIdx) => {
                   if (module.subsections) {
                     return (
                       <React.Fragment key={module.name}>
                         <tr className="bg-[var(--bg-workspace)]/40 border-b border-[var(--border-color)]">
-                          <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]" colSpan={5}>
+                          <td className="px-3 py-1 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]" colSpan={5}>
                             <div className="flex justify-between items-center">
                               <span>{module.name}</span>
                               {!isReadOnly && (
@@ -289,9 +289,9 @@ const HRUserAccessDetail = () => {
                             </div>
                           </td>
                         </tr>
-                        {module.subsections.map((sub) => (
-                          <tr key={`${module.name}-${sub.name}`} className={`border-b border-[var(--border-color)] hover:bg-[var(--accent)]/5 transition-colors`}>
-                            <td className="p-3 pl-8 text-[12px] font-medium text-[var(--text-dim)] border-r border-[var(--border-color)] flex items-center gap-2">
+                        {module.subsections.map((sub, index) => (
+                          <tr key={`${module.name}-${sub.name}`} className={`border-b border-[var(--border-color)] transition-colors ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}>
+                            <td className="px-3 py-1 pl-8 text-[12px] font-medium text-[var(--text-dim)] border-r border-[var(--border-color)] flex items-center gap-2">
                               <span className="text-[var(--text-muted)] opacity-50">↳</span> {sub.name}
                             </td>
                             {DEFAULT_ACTIONS.map(action => {
@@ -301,7 +301,7 @@ const HRUserAccessDetail = () => {
                               const exists = permissionsList?.some(p => p.permission_key === permKey);
 
                               return (
-                                <td key={action.id} className="p-3 border-r border-[var(--border-color)] last:border-0">
+                                <td key={action.id} className="px-3 py-1 border-r border-[var(--border-color)] last:border-0">
                                   {isAllowedAction && exists && (
                                     <div className="flex justify-center w-full">
                                       <input
@@ -323,8 +323,8 @@ const HRUserAccessDetail = () => {
                   }
 
                   return (
-                    <tr key={module.name} className="border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--accent)]/5 transition-colors">
-                      <td className="p-4 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]">
+                    <tr key={`${module.name}-main`} className={`border-b border-[var(--border-color)] transition-colors ${mIdx % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}>
+                      <td className="px-3 py-1 text-[13px] font-bold text-[var(--text-main)] border-r border-[var(--border-color)]">
                         <div className="flex justify-between items-center">
                           <span>{module.name}</span>
                           {!isReadOnly && (
@@ -339,7 +339,7 @@ const HRUserAccessDetail = () => {
                         const exists = permissionsList?.some(p => p.permission_key === permKey);
 
                         return (
-                          <td key={action.id} className="p-4 border-r border-[var(--border-color)] last:border-0">
+                          <td key={action.id} className="px-3 py-1 border-r border-[var(--border-color)] last:border-0">
                             {isAllowedAction && exists && (
                               <div className="flex justify-center w-full">
                                 <input

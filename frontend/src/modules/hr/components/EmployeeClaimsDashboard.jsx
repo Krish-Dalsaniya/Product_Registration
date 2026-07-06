@@ -87,25 +87,25 @@ const EmployeeClaimsDashboard = ({ claims, user }) => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[var(--bg-workspace)] border-b border-[var(--border-color)]">
-                  <th className="px-6 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-4 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Status</th>
+                  <th className="px-3 py-1.5 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Date</th>
+                  <th className="px-3 py-1.5 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Type</th>
+                  <th className="px-3 py-1.5 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Amount</th>
+                  <th className="px-3 py-1.5 text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-color)]">
-                {claims.map((claim) => (
-                  <tr key={claim.claim_id} className="hover:bg-[var(--bg-workspace)]/50 transition-colors">
-                    <td className="px-6 py-4 text-[13px] font-medium text-[var(--text-main)]">
+                {claims.map((claim, index) => (
+                  <tr key={claim.claim_id} className={`transition-colors ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}>
+                    <td className="px-3 py-1 text-[13px] font-medium text-[var(--text-main)]">
                       {new Date(claim.claim_date).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-[13px] font-medium text-[var(--text-secondary)]">
+                    <td className="px-3 py-1 text-[13px] font-medium text-[var(--text-secondary)]">
                       {claim.claim_type}
                     </td>
-                    <td className="px-6 py-4 text-[13px] font-bold text-[var(--text-main)]">
+                    <td className="px-3 py-1 text-[13px] font-bold text-[var(--text-main)]">
                       ₹{parseFloat(claim.amount).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-1">
                       <StatusBadge status={claim.status} />
                     </td>
                   </tr>

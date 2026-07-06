@@ -328,18 +328,18 @@ const LeaveManagement = () => {
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
                   <tr className="bg-[var(--bg-workspace)] border-b border-[var(--border-color)]">
-                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Employee</th>
-                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Leave Type</th>
-                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Duration</th>
-                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Status</th>
-                    <th className="p-4 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-right">Actions</th>
+                    <th className="px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Employee</th>
+                    <th className="px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Leave Type</th>
+                    <th className="px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Duration</th>
+                    <th className="px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Status</th>
+                    <th className="px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedRequests.length > 0 ? (
-                    paginatedRequests.map(req => (
-                      <tr key={req.id} className="border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-workspace)] transition-colors">
-                        <td className="p-4">
+                    paginatedRequests.map((req, index) => (
+                      <tr key={req.id} className={`border-b border-[var(--border-color)] last:border-0 transition-colors ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}>
+                        <td className="px-3 py-1">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shadow-inner">{req.employee_name.charAt(0)}</div>
                             <div>
@@ -348,17 +348,17 @@ const LeaveManagement = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="p-4">
+                        <td className="px-3 py-1">
                           <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-orange-50 text-orange-600 border border-orange-200">
                             {req.leave_type}
                           </span>
                         </td>
-                        <td className="p-4 text-[12px] text-[var(--text-main)]">
+                        <td className="px-3 py-1 text-[12px] text-[var(--text-main)]">
                           <span className="font-semibold">{new Date(req.start_date).toLocaleDateString()}</span>
                           <span className="text-[var(--text-muted)] mx-1">to</span>
                           <span className="font-semibold">{new Date(req.end_date).toLocaleDateString()}</span>
                         </td>
-                        <td className="p-4">
+                        <td className="px-3 py-1">
                           <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest ${
                             req.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
                             req.status === 'Rejected' ? 'bg-rose-50 text-rose-600 border border-rose-200' :
@@ -367,7 +367,7 @@ const LeaveManagement = () => {
                             {req.status}
                           </span>
                         </td>
-                        <td className="p-4 flex items-center justify-end gap-2 h-full">
+                        <td className="px-3 py-1 flex items-center justify-end gap-2 h-full">
                           {hasPermission('hr', 'edit', 'payrolls_leaves') && req.status === 'Pending' && (
                             <>
                               <button onClick={() => handleStatusUpdate(req.id, 'Approved')} className="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-md border border-emerald-200 transition-colors" title="Approve">
