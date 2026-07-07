@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   KanbanSquare, List, Plus, Search, Filter,
-  CheckCircle2, AlertCircle, Clock, LayoutDashboard, Loader2
+  CheckCircle2, AlertCircle, Clock, LayoutDashboard, Loader2, ListTodo
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getTasks, getTaskMetrics, updateTaskStatus, deleteTask } from '../../../api/pms';
@@ -105,21 +105,32 @@ const TaskManagement = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 h-[calc(100vh-100px)]">
-      {/* Header & KPI Cards */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">Task Management</h1>
-          <p className="text-sm text-[var(--text-secondary)] font-medium mt-1">Manage, track, and assign internal work</p>
+    <div className="flex flex-col gap-4 h-[calc(100vh-100px)] pt-4">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-2">
+        <div className="flex items-center gap-5">
+          <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <ListTodo size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+              Task Management
+            </h1>
+            <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">
+              Manage, track, and assign internal work
+            </p>
+          </div>
         </div>
         
-        <button 
-          onClick={() => openTaskModal()}
-          className="px-5 py-2.5 bg-[var(--accent)] text-white text-sm font-bold rounded-xl hover:bg-[var(--accent-hover)] transition-all shadow-lg shadow-[var(--accent)]/20 flex items-center gap-2"
-        >
-          <Plus size={18} strokeWidth={3} />
-          Create Task
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => openTaskModal()}
+            className="btn-primary shadow-lg px-6 py-2.5 group flex items-center gap-2 rounded-xl bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-all"
+          >
+            <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] font-black uppercase tracking-widest">Create Task</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -131,7 +142,7 @@ const TaskManagement = () => {
       </div>
 
       {/* Toolbar */}
-      <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] p-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 shadow-sm z-10 relative">
+      <div className="bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] p-2 md:p-2 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 shadow-sm z-10 relative">
         <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
           <div className="relative flex-1 min-w-[200px] xl:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] w-4 h-4" />
@@ -140,14 +151,14 @@ const TaskManagement = () => {
               placeholder="Search tasks..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm text-[var(--text-main)] focus:border-[var(--accent)] focus:outline-none transition-colors"
+              className="w-full pl-9 pr-3 py-1.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-xs text-[var(--text-main)] focus:border-[var(--accent)] focus:outline-none transition-colors"
             />
           </div>
           
           <select 
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-medium text-[var(--text-main)] focus:border-[var(--accent)] focus:outline-none transition-colors appearance-none cursor-pointer"
+            className="px-3 py-1.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-xs font-medium text-[var(--text-main)] focus:border-[var(--accent)] focus:outline-none transition-colors appearance-none cursor-pointer"
           >
             <option value="">All Statuses</option>
             <option value="Backlog">Backlog</option>
@@ -161,7 +172,7 @@ const TaskManagement = () => {
           <select 
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value)}
-            className="px-4 py-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-medium text-[var(--text-main)] focus:border-[var(--accent)] focus:outline-none transition-colors appearance-none cursor-pointer flex-1 min-w-[140px]"
+            className="px-3 py-1.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-xs font-medium text-[var(--text-main)] focus:border-[var(--accent)] focus:outline-none transition-colors appearance-none cursor-pointer flex-1 min-w-[120px]"
           >
             <option value="">All Priorities</option>
             <option value="Low">Low</option>
@@ -171,24 +182,24 @@ const TaskManagement = () => {
           </select>
         </div>
 
-        <div className="flex bg-[var(--bg-workspace)] p-1 rounded-xl border border-[var(--border-color)] self-start xl:self-auto shrink-0 overflow-x-auto w-full xl:w-auto">
+        <div className="flex bg-[var(--bg-card)] p-1 rounded-full border border-[var(--border-color)] shadow-sm self-start xl:self-auto shrink-0 overflow-x-auto w-full xl:w-auto">
           <button 
             onClick={() => setView('grooming')}
-            className={`px-4 py-1.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all whitespace-nowrap ${view === 'grooming' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+            className={`px-5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-2 transition-all whitespace-nowrap ${view === 'grooming' ? 'bg-[#333] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] bg-transparent'}`}
           >
             Grooming
           </button>
           <button 
             onClick={() => setView('kanban')}
-            className={`px-4 py-1.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all whitespace-nowrap ${view === 'kanban' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+            className={`px-5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-2 transition-all whitespace-nowrap ${view === 'kanban' ? 'bg-[#333] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] bg-transparent'}`}
           >
-            <KanbanSquare size={16} /> Board
+            <KanbanSquare size={16} strokeWidth={2.5} /> Board
           </button>
           <button 
             onClick={() => setView('list')}
-            className={`px-4 py-1.5 text-sm font-bold rounded-lg flex items-center gap-2 transition-all whitespace-nowrap ${view === 'list' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+            className={`px-5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-2 transition-all whitespace-nowrap ${view === 'list' ? 'bg-[#333] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] bg-transparent'}`}
           >
-            <List size={16} /> List
+            <List size={16} strokeWidth={2.5} /> List
           </button>
         </div>
       </div>
@@ -232,15 +243,15 @@ const TaskManagement = () => {
 };
 
 const KPICard = ({ title, value, icon: Icon, color }) => (
-  <div className="bg-[var(--bg-card)] rounded-2xl p-4 border border-[var(--border-color)] shadow-sm flex flex-col justify-between hover:-translate-y-1 transition-transform cursor-default">
-    <div className="flex justify-between items-start mb-2">
-      <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{title}</span>
-      <div className="p-2 rounded-lg" style={{ backgroundColor: `${color}15`, color }}>
-        <Icon size={16} strokeWidth={2.5} />
+  <div className="bg-[var(--bg-card)] rounded-xl p-3 border border-[var(--border-color)] shadow-sm flex items-center justify-between hover:-translate-y-0.5 transition-transform cursor-default">
+    <div>
+      <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">{title}</span>
+      <div className="text-lg font-black leading-none mt-1" style={{ color: 'var(--text-main)' }}>
+        {value}
       </div>
     </div>
-    <div className="text-2xl font-black" style={{ color: 'var(--text-main)' }}>
-      {value}
+    <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: `${color}15`, color }}>
+      <Icon size={14} strokeWidth={2.5} />
     </div>
   </div>
 );

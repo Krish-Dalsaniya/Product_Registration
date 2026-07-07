@@ -177,16 +177,16 @@ const Projects = () => {
           </div>
         </div>
         <div className="flex flex-col md:flex-row items-center gap-4">
-          <div className="flex bg-[var(--bg-workspace)] p-1 rounded-xl border border-[var(--border-color)] shadow-sm">
+          <div className="flex bg-[var(--bg-card)] p-1 rounded-full border border-[var(--border-color)] shadow-sm">
             <button 
               onClick={() => setActiveTab('list')}
-              className={`px-6 py-2 text-[12px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'list' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm border border-[var(--border-color)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] border border-transparent'}`}
+              className={`px-5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-2 transition-all ${activeTab === 'list' ? 'bg-[#333] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] bg-transparent'}`}
             >
               List View
             </button>
             <button 
               onClick={() => setActiveTab('portfolio')}
-              className={`px-6 py-2 text-[12px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === 'portfolio' ? 'bg-[var(--bg-card)] text-[var(--accent)] shadow-sm border border-[var(--border-color)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] border border-transparent'}`}
+              className={`px-5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-2 transition-all ${activeTab === 'portfolio' ? 'bg-[#333] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-main)] bg-transparent'}`}
             >
               Portfolio Dashboard
             </button>
@@ -247,7 +247,7 @@ const Projects = () => {
       {activeTab === 'list' ? (
         <>
           {/* Filters */}
-          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-sm mb-6 flex flex-wrap gap-4 items-center">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-2 shadow-sm mb-6 flex flex-wrap gap-4 items-center">
             <div className="relative flex-1 min-w-[200px]">
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]" />
               <input 

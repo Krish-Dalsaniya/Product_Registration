@@ -34,15 +34,17 @@ const TaskBoard = ({ tasks, onStatusChange, onTaskClick }) => {
             if ((status.id === 'Cancelled' || status.id === 'On Hold') && columnTasks.length === 0) return null;
 
             return (
-              <div key={status.id} className="flex flex-col h-full w-80 flex-shrink-0 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] overflow-hidden">
-                <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-workspace)]">
-                  <div className="flex items-center gap-2">
-                    <StatusIcon size={16} className={status.color} strokeWidth={3} />
-                    <h3 className="font-bold text-[var(--text-main)] text-sm tracking-wide uppercase">{status.label}</h3>
+              <div key={status.id} className="bg-[#ebecf0] dark:bg-[#1a1a1c] rounded-[10px] flex flex-col min-w-[260px] w-[260px] max-h-full shrink-0 shadow-sm transition-all duration-300 border border-transparent">
+                <div className="p-3 pb-2 border-transparent flex items-center justify-between sticky top-0 bg-[#ebecf0] dark:bg-[#1a1a1c] z-10 rounded-t-[10px]">
+                  <div className="flex items-center gap-2 cursor-pointer group">
+                    <StatusIcon size={14} className={status.color} strokeWidth={3} />
+                    <h3 className="font-bold text-[14px] text-gray-800 dark:text-gray-200 pl-1 group-hover:text-blue-600 transition-colors uppercase tracking-wide">{status.label}</h3>
                   </div>
-                  <span className="text-xs font-bold text-[var(--text-muted)] bg-[var(--bg-card)] px-2 py-0.5 rounded-full border border-[var(--border-color)]">
-                    {columnTasks.length}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                      {columnTasks.length}
+                    </span>
+                  </div>
                 </div>
                 
                 <Droppable droppableId={status.id}>
@@ -50,7 +52,7 @@ const TaskBoard = ({ tasks, onStatusChange, onTaskClick }) => {
                     <div 
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`flex-1 p-3 overflow-y-auto custom-scrollbar flex flex-col gap-3 transition-colors ${snapshot.isDraggingOver ? 'bg-[var(--nav-hover)]' : ''}`}
+                      className={`p-2.5 flex-1 overflow-y-auto min-h-[150px] custom-scrollbar flex flex-col transition-colors ${snapshot.isDraggingOver ? 'bg-black/5 dark:bg-white/5 rounded-b-[10px]' : ''}`}
                     >
                       {columnTasks.map((task, index) => (
                         <Draggable key={task.task_id} draggableId={task.task_id} index={index}>
@@ -90,7 +92,7 @@ const TaskCard = ({ task, provided, snapshot, onClick }) => {
       {...provided.draggableProps}
       {...provided.dragHandleProps}
       onClick={onClick}
-      className={`bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 cursor-pointer hover:border-[var(--accent)] transition-all shadow-sm group ${snapshot.isDragging ? 'shadow-2xl scale-[1.02] rotate-1 z-50 ring-2 ring-[var(--accent)]' : 'hover:shadow-md'}`}
+      className={`bg-white dark:bg-[#252528] rounded-[8px] p-3 mb-2 shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all active:cursor-grabbing group relative ${snapshot.isDragging ? 'shadow-2xl scale-[1.02] rotate-1 z-50 ring-2 ring-blue-500' : ''}`}
     >
       {/* Header Tags */}
       <div className="flex justify-between items-start mb-3">

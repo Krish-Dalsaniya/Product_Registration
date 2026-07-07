@@ -269,7 +269,7 @@ const TraineeList = () => {
     ];
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 mt-4">
                 <div className="flex items-center gap-5">
                     <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm">
@@ -335,7 +335,7 @@ const TraineeList = () => {
                 <DataTable striped={true} columns={columns} data={paginatedTrainees} loading={isLoading} totalCount={trainees.length} filteredCount={filteredTrainees.length} currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             ) : (
                 <div className="flex flex-col gap-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 mb-6">
                     {paginatedTrainees.length > 0 ? paginatedTrainees.map((trainee, index) => {
                         const defaultAvatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(trainee.first_name + ' ' + trainee.last_name)}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
                         const avatarUrl = trainee.image_url || defaultAvatarUrl;
