@@ -279,7 +279,7 @@ const TrainingModules = () => {
                         searchKeys={['title', 'category', 'training_type']}
                     />
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 pb-6">
                         {modules.map((module, index) => {
                             return (
                                 <motion.div 
@@ -287,10 +287,10 @@ const TrainingModules = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.05 }}
                                     key={module.module_id}
-                                    className="bg-[var(--bg-card)] rounded-[20px] shadow-sm overflow-hidden flex flex-col hover:shadow-xl hover:shadow-[var(--accent)]/10 transition-all duration-300 group border border-[var(--border-color)]/50 hover:border-[var(--accent)]/30"
+                                    className="bg-[var(--bg-card)] rounded-[16px] shadow-sm overflow-hidden flex flex-col hover:shadow-xl hover:shadow-[var(--accent)]/10 transition-all duration-300 group border border-[var(--border-color)]/50 hover:border-[var(--accent)]/30"
                                 >
                                     {/* Thumbnail Area */}
-                                    <div className="h-44 w-full relative bg-[var(--bg-workspace)] overflow-hidden flex items-center justify-center">
+                                    <div className="h-32 w-full relative bg-[var(--bg-workspace)] overflow-hidden flex items-center justify-center">
                                         <LMSThumbnail url={module.training_url} type={module.training_type} title={module.title} />
                                         <div className="absolute top-4 right-4">
                                             <span className={`px-3 py-1 text-[11px] uppercase tracking-widest font-black rounded-full shadow-lg backdrop-blur-md ${
@@ -308,25 +308,25 @@ const TrainingModules = () => {
                                     </div>
 
                                     {/* Content Area */}
-                                    <div className="p-6 flex-1 flex flex-col">
-                                        <div className="flex gap-2 mb-3 flex-wrap">
-                                            <span className="px-2.5 py-1 bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] uppercase tracking-wider font-bold rounded-full flex items-center gap-1">
+                                    <div className="p-4 flex-1 flex flex-col">
+                                        <div className="flex gap-1.5 mb-2 flex-wrap">
+                                            <span className="px-2 py-1 bg-[var(--accent)]/10 text-[var(--accent)] text-[9px] uppercase tracking-wider font-bold rounded-full flex items-center gap-1">
                                                 <MonitorPlay className="w-3 h-3" />
                                                 {module.training_type}
                                             </span>
-                                            <span className="px-2.5 py-1 bg-purple-500/10 text-purple-500 text-[10px] uppercase tracking-wider font-bold rounded-full flex items-center gap-1">
+                                            <span className="px-2 py-1 bg-purple-500/10 text-purple-500 text-[9px] uppercase tracking-wider font-bold rounded-full flex items-center gap-1">
                                                 <BarChart2 className="w-3 h-3" />
                                                 {module.difficulty_level}
                                             </span>
                                         </div>
-                                        <h3 className="text-xl font-black text-[var(--text-main)] mb-1.5 line-clamp-2 leading-tight tracking-tight">{module.title}</h3>
-                                        <p className="text-sm font-semibold text-[var(--text-muted)] mb-5 flex items-center gap-2">
-                                            <span className="text-[var(--text-dim)]">{module.department_name}</span> 
-                                            <span className="w-1 h-1 rounded-full bg-[var(--border-color)]"></span> 
-                                            <span className="text-[var(--text-dim)]">{module.category}</span>
+                                        <h3 className="text-base font-black text-[var(--text-main)] mb-1 line-clamp-2 leading-tight tracking-tight">{module.title}</h3>
+                                        <p className="text-xs font-semibold text-[var(--text-muted)] mb-4 flex items-center gap-1.5">
+                                            <span className="text-[var(--text-dim)] truncate">{module.department_name}</span> 
+                                            <span className="w-1 h-1 rounded-full bg-[var(--border-color)] shrink-0"></span> 
+                                            <span className="text-[var(--text-dim)] truncate">{module.category}</span>
                                         </p>
                                         
-                                        <div className="mt-auto flex items-center justify-between pt-5 border-t border-[var(--border-color)]/30">
+                                        <div className="mt-auto flex items-center justify-between pt-3 border-t border-[var(--border-color)]/30">
                                             <div className="flex gap-1.5">
                                                 <button onClick={() => setViewingModule(module)} className="p-2 bg-[var(--bg-workspace)] text-[var(--text-dim)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] rounded-xl transition-colors shadow-sm" title="View Details">
                                                     <Eye className="w-4 h-4" />

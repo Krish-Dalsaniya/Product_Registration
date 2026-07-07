@@ -131,7 +131,7 @@ const Projects = () => {
       label: 'Priority', 
       key: 'priority',
       render: (row) => (
-        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest ${
+        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest whitespace-nowrap inline-block ${
           row.priority === 'Critical' ? 'bg-red-50 text-red-600' :
           row.priority === 'High' ? 'bg-orange-50 text-orange-600' :
           row.priority === 'Medium' ? 'bg-blue-50 text-blue-600' :
@@ -145,7 +145,7 @@ const Projects = () => {
       label: 'Status', 
       key: 'status',
       render: (row) => (
-        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest border ${
+        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest border whitespace-nowrap inline-block ${
           row.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
           row.status === 'In Progress' ? 'bg-blue-50 text-blue-600 border-blue-200' :
           row.status === 'On Hold' ? 'bg-orange-50 text-orange-600 border-orange-200' :
@@ -315,80 +315,103 @@ const Projects = () => {
           isOpen={isViewModalOpen}
           onClose={() => setIsViewModalOpen(false)}
           title="Project Details"
-          maxWidth="max-w-3xl"
+          maxWidth="max-w-4xl"
         >
-          <div className="p-6">
-            <div className="flex justify-between items-start mb-6 border-b border-[var(--border-color)] pb-4">
+          <div className="flex flex-col gap-4">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-2">
               <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{selectedProject.project_code}</p>
-                <h2 className="text-2xl font-black text-[var(--text-main)] mt-1">{selectedProject.project_name}</h2>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <span className="px-3 py-1 text-[10px] font-black tracking-widest uppercase rounded-full bg-[var(--text-main)] text-[var(--bg-card)] shadow-sm">{selectedProject.project_code}</span>
+                  <span className={`px-3 py-1 text-[10px] font-black tracking-widest uppercase rounded-full shadow-sm ${
+                    selectedProject.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                    selectedProject.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                    selectedProject.status === 'Cancelled' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' :
+                    'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                  }`}>{selectedProject.status}</span>
+                  <span className={`px-3 py-1 text-[10px] font-black tracking-widest uppercase rounded-full shadow-sm ${
+                    selectedProject.priority === 'Critical' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' :
+                    selectedProject.priority === 'High' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
+                    selectedProject.priority === 'Medium' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                    'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                  }`}>{selectedProject.priority} Priority</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-black text-[var(--text-main)] tracking-tight leading-tight">{selectedProject.project_name}</h2>
               </div>
-              <div className="flex gap-2">
-                {hasPermission('hr', 'edit', 'pms_projects') && (
+              
+              {hasPermission('hr', 'edit', 'pms_projects') && (
                 <button
                   onClick={() => {
                     setIsViewModalOpen(false);
                     setIsAddModalOpen(true);
                   }}
-                  className="p-2 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+                  className="px-4 py-2 bg-[var(--accent)] text-white rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-opacity-90 transition-all shadow-md shadow-[var(--accent)]/20 shrink-0"
                 >
-                  <Edit2 size={16} />
+                  <Edit2 size={14} /> Edit Project
                 </button>
-                )}
-              </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-6 mb-6">
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Status</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedProject.status}</p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Priority</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedProject.priority}</p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Start Date</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedProject.start_date ? new Date(selectedProject.start_date).toLocaleDateString() : 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">End Date</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedProject.end_date ? new Date(selectedProject.end_date).toLocaleDateString() : 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Assigned Team</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedProject.team_name || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Team Lead</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedProject.team_lead_name || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Client Handler</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedProject.client_handler_name || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Product Registration</p>
-                <p className="text-[14px] font-medium text-[var(--text-main)]">{selectedProject.product_name || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Progress</p>
-                <div className="flex items-center gap-3 mt-1">
-                  <div className="w-full bg-[var(--border-color)] rounded-full h-2">
-                    <div className="bg-[var(--accent)] h-2 rounded-full" style={{ width: `${selectedProject.progress_percentage}%` }}></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Left Column - Main Details */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm">
+                  <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Project Overview</p>
+                  <p className="text-sm font-semibold text-[var(--text-main)] whitespace-pre-wrap leading-relaxed opacity-90">{selectedProject.description || 'No description provided.'}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm flex flex-col justify-center items-center text-center">
+                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Start Date</p>
+                    <p className="text-lg font-black text-[var(--text-main)]">{selectedProject.start_date ? new Date(selectedProject.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</p>
                   </div>
-                  <span className="text-[12px] font-bold text-[var(--text-main)]">{selectedProject.progress_percentage}%</span>
+                  <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm flex flex-col justify-center items-center text-center">
+                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">End Date</p>
+                    <p className="text-lg font-black text-[var(--text-main)]">{selectedProject.end_date ? new Date(selectedProject.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm">
+                  <div className="flex justify-between items-end mb-3">
+                    <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Progress Tracking</p>
+                    <span className="text-2xl font-black text-[var(--accent)]">{selectedProject.progress_percentage}%</span>
+                  </div>
+                  <div className="w-full bg-[var(--border-color)] rounded-full h-3 shadow-inner">
+                    <div className="bg-gradient-to-r from-[var(--accent)] to-blue-400 h-3 rounded-full transition-all duration-1000 shadow-md" style={{ width: `${selectedProject.progress_percentage}%` }}></div>
+                  </div>
                 </div>
               </div>
 
-            </div>
+              {/* Right Column - Team details */}
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-[var(--accent)]/5 border border-[var(--accent)]/10 shadow-sm">
+                  <p className="text-[11px] font-black text-[var(--accent)] uppercase tracking-widest mb-4 border-b border-[var(--accent)]/10 pb-2">
+                    Team & Execution
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Assigned Team</p>
+                      <p className="text-sm font-black text-[var(--text-main)]">{selectedProject.team_name || 'Unassigned'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Team Lead</p>
+                      <p className="text-sm font-black text-[var(--text-main)]">{selectedProject.team_lead_name || 'Unassigned'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Client Handler</p>
+                      <p className="text-sm font-black text-[var(--text-main)]">{selectedProject.client_handler_name || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
 
-            {selectedProject.description && (
-              <div className="mb-6">
-                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase mb-2">Description</p>
-                <p className="text-[13px] text-[var(--text-main)] bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)] whitespace-pre-wrap leading-relaxed">{selectedProject.description}</p>
+                <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm">
+                  <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3 border-b border-[var(--border-color)]/50 pb-2">Product Link</p>
+                  <div>
+                    <p className="text-sm font-black text-[var(--text-main)] line-clamp-2">{selectedProject.product_name || 'N/A'}</p>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </Modal>
       )}

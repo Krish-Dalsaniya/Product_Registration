@@ -372,7 +372,7 @@ const AssignedTrainings = () => {
                         searchKeys={['employee_name', 'emp_code', 'module_title', 'status']}
                     />
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 pb-6">
                         {assignments.map((assignment, index) => {
                             const canPlayInApp = assignment.training_type === 'YouTube Video' || assignment.training_type === 'PDF Document' || assignment.training_type === 'NAS / Local Video (MP4)' || assignment.training_type === 'NAS Video Playlist (JSON)';
                             return (
@@ -381,10 +381,10 @@ const AssignedTrainings = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.05 }}
                                     key={assignment.assignment_id}
-                                    className="bg-white/40 backdrop-blur-xl rounded-[20px] shadow-lg overflow-hidden flex flex-col hover:shadow-xl hover:shadow-[var(--accent)]/10 transition-all duration-300 group border border-white/50 hover:border-[var(--accent)]/30 hover:-translate-y-1"
+                                    className="bg-white/40 backdrop-blur-xl rounded-[16px] shadow-lg overflow-hidden flex flex-col hover:shadow-xl hover:shadow-[var(--accent)]/10 transition-all duration-300 group border border-white/50 hover:border-[var(--accent)]/30 hover:-translate-y-1"
                                 >
                                     {/* Thumbnail Area */}
-                                    <div className="h-44 w-full relative bg-white/50 overflow-hidden flex items-center justify-center">
+                                    <div className="h-32 w-full relative bg-white/50 overflow-hidden flex items-center justify-center">
                                         <LMSThumbnail url={assignment.training_url} type={assignment.training_type} title={assignment.module_title} />
                                         <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
                                             <span className={`px-3 py-1 text-[11px] uppercase tracking-widest font-black rounded-full shadow-lg backdrop-blur-md ${assignment.status === 'Completed' ? 'bg-emerald-500/90 text-white' :
@@ -406,25 +406,26 @@ const AssignedTrainings = () => {
                                     </div>
 
                                     {/* Content Area */}
-                                    <div className="p-6 flex-1 flex flex-col">
+                                    <div className="p-4 flex-1 flex flex-col">
                                         <div className="flex justify-between items-start mb-2">
-                                            <h3 className="text-xl font-black text-[var(--text-main)] line-clamp-2 leading-tight tracking-tight drop-shadow-sm group-hover:text-[var(--accent)] transition-colors">{assignment.module_title}</h3>
+                                            <h3 className="text-base font-black text-[var(--text-main)] line-clamp-2 leading-tight tracking-tight drop-shadow-sm group-hover:text-[var(--accent)] transition-colors">{assignment.module_title}</h3>
                                         </div>
-                                        <p className="text-sm font-bold text-[var(--text-muted)] mb-4">{assignment.employee_name} <span className="text-[var(--text-muted)] font-semibold opacity-70">({assignment.emp_code})</span></p>
+                                        <p className="text-xs font-bold text-[var(--text-muted)] mb-3">{assignment.employee_name} <span className="text-[var(--text-muted)] font-semibold opacity-70">({assignment.emp_code})</span></p>
 
-                                        <div className="flex items-center justify-between text-[12px] font-bold text-[var(--text-muted)] mb-5">
+                                        <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-muted)] mb-4">
                                             <span>Assigned: {new Date(assignment.assigned_date).toLocaleDateString()}</span>
                                             <span>Progress: <span className="text-[var(--text-main)]">{assignment.progress_percentage || 0}%</span></span>
                                         </div>
 
-                                        <div className="mt-auto flex items-center justify-between pt-5 border-t border-[var(--border-color)]">
+                                        <div className="mt-auto flex items-center justify-between pt-3 border-t border-[var(--border-color)]">
                                             <div className="flex gap-1.5">
                                                 {canPlayInApp ? (
                                                     <button
                                                         onClick={() => navigate(`/hr/lms/assignments/${assignment.assignment_id}/play`, { state: { assignment } })}
-                                                        className="px-4 py-2 bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 hover:bg-[var(--accent)] hover:text-white rounded-xl transition-all duration-300 font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                                                        className="p-2 text-[var(--accent)] bg-[var(--accent)]/10 hover:bg-[var(--accent)] hover:text-white rounded-xl transition-all duration-300 shadow-sm"
+                                                        title="Play Course"
                                                     >
-                                                        <Play className="w-4 h-4" /> Play Course
+                                                        <Play className="w-4 h-4" />
                                                     </button>
                                                 ) : (
                                                     <>
