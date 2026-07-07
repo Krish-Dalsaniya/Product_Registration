@@ -8,7 +8,9 @@ import { format } from 'date-fns';
 const ActiveSprint = ({ sprint, projectId, refreshSprints }) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [collapsedColumns, setCollapsedColumns] = useState([]);
+  const [collapsedColumns, setCollapsedColumns] = useState(() => {
+    return TASK_STATUSES.slice(1).map(s => s.id);
+  });
 
   // Native DND State
   const [draggedTask, setDraggedTask] = useState(null);
