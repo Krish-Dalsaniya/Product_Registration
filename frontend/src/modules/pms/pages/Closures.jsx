@@ -216,7 +216,7 @@ const Closures = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-sm mb-6 flex flex-wrap gap-4 items-center">
+      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-2 shadow-sm mb-6 flex flex-wrap gap-1 items-center">
         {isAdmin && (
           <div className="relative flex-1 min-w-[200px]">
             <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]" />

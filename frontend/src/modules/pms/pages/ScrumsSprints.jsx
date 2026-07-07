@@ -105,22 +105,28 @@ const ScrumsSprints = () => {
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] bg-[var(--bg-main)]">
       {/* Header */}
-      <div className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--bg-card)] border-b border-[var(--border-color)]">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-[var(--text-main)] flex items-center gap-3">
-            <KanbanSquare className="text-[var(--accent)]" size={32} strokeWidth={2.5} />
-            Scrums & Sprints
-          </h1>
-          <p className="text-[var(--text-muted)] mt-1 font-medium text-sm">Agile Sprint Planning & Execution</p>
+      <div className="px-8 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-[var(--bg-card)] border-b border-[var(--border-color)]">
+        <div className="flex items-center gap-5">
+          <div className="p-3 md:p-4 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
+            <KanbanSquare size={24} className="md:w-[28px] md:h-[28px] text-[var(--accent)] group-hover:scale-110 transition-transform duration-300" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-[var(--text-main)] tracking-tight leading-none">
+              Scrums & Sprints
+            </h1>
+            <p className="text-[13px] text-[var(--text-muted)] font-medium mt-2">
+              Agile Sprint Planning & Execution
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-3 py-1.5 focus-within:border-[var(--accent)] transition-colors shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-3 h-[42px] focus-within:border-[var(--accent)] transition-colors shadow-sm">
             <FolderTree size={16} className="text-[var(--text-muted)] mr-2" />
             <select 
               value={selectedProjectId} 
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="bg-transparent border-none outline-none text-sm font-black text-[var(--text-main)] py-1 pr-6 cursor-pointer"
+              className="bg-transparent border-none outline-none text-sm font-black text-[var(--text-main)] py-1 cursor-pointer w-[180px]"
             >
               <option value="" disabled>Select a Project</option>
               {projects.map(p => (
@@ -132,9 +138,10 @@ const ScrumsSprints = () => {
           <button 
             onClick={() => setIsCreatingSprint(true)}
             disabled={!selectedProjectId}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--accent)] text-white rounded-xl font-black text-sm hover:bg-[var(--accent-hover)] transition-all shadow-lg shadow-[var(--accent)]/20 hover:-translate-y-0.5 disabled:opacity-50"
+            className="btn-primary shadow-lg px-6 h-[42px] group flex items-center gap-2 rounded-xl bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-all disabled:opacity-50"
           >
-            <Plus size={18} strokeWidth={3} /> New Sprint
+            <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-[12px] font-black uppercase tracking-widest">New Sprint</span>
           </button>
         </div>
       </div>

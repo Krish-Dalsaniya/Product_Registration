@@ -79,11 +79,11 @@ const DataTable = ({
       )}
 
       <div className="overflow-x-auto custom-scrollbar flex-1">
-        <table className="w-full text-left border-separate border-spacing-0">
-          <thead>
-            <tr style={{ background: 'var(--grad-header)' }}>
+        <table className="w-full text-left border-collapse min-w-[800px]">
+          <thead className="sticky top-0 z-10">
+            <tr className="border-b-2 border-[var(--border-color)] bg-[var(--bg-workspace)]">
               {enableBulkSelection && (
-                <th className={`px-4 ${pyClass} w-[40px]`} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                <th className={`px-4 ${pyClass} w-[40px]`}>
                   <input 
                     type="checkbox" 
                     className="w-4 h-4 cursor-pointer accent-[var(--accent)]"
@@ -93,30 +93,28 @@ const DataTable = ({
                 </th>
               )}
               {columns.map((col) => (
-                <th key={col.key} className={`px-3 md:px-4 ${pyClass} ${headerTextClass} font-bold uppercase tracking-[0.07em] ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`} style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+                <th key={col.key} className={`px-3 md:px-4 ${pyClass} font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)] ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
                   {col.label}
                 </th>
               ))}
               {(onView || onEdit || onDelete || onRestock) && (
-                <th className={`px-4 ${pyClass} ${headerTextClass} font-bold uppercase tracking-[0.07em] text-right`} style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+                <th className={`px-4 ${pyClass} font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)] text-right`}>
                   Actions
                 </th>
               )}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[var(--border-color)]">
             {data.map((row, index) => {
               const rId = row[rowKey] || row.id || index;
               const isSelected = selectedRows.includes(rId);
               return (
                 <tr
                   key={rId}
-                  className={`transition-colors duration-200 group ${isSelected ? 'bg-[var(--accent)]/5' : ''} ${striped && !isSelected ? (index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60' : 'bg-transparent') : ''}`}
-                  onMouseEnter={e => { if(!isSelected) e.currentTarget.style.background = striped ? (index % 2 === 1 ? 'var(--nav-hover)' : 'var(--nav-hover)') : 'var(--nav-hover)'; }}
-                  onMouseLeave={e => { if(!isSelected) e.currentTarget.style.background = ''; }}
+                  className={`transition-colors duration-200 group ${isSelected ? 'bg-[var(--accent)]/5 hover:bg-[var(--accent)]/10' : (index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30')}`}
                 >
                   {enableBulkSelection && (
-                    <td className={`px-4 ${pyClass}`} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td className={`px-4 ${pyClass}`}>
                       <input 
                         type="checkbox" 
                         className="w-4 h-4 cursor-pointer accent-[var(--accent)]"
@@ -126,13 +124,13 @@ const DataTable = ({
                     </td>
                   )}
                   {columns.map((col) => (
-                    <td key={col.key} className={`px-3 md:px-4 ${pyClass} ${textClass} font-medium ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`} style={{ color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)' }}>
+                    <td key={col.key} className={`px-3 md:px-4 ${pyClass} ${textClass} font-medium ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}>
                       {col.render ? col.render(row) : row[col.key]}
                     </td>
                   ))}
 
                   {(onView || onEdit || onDelete || onRestock) && (
-                    <td className={`px-3 md:px-4 ${pyClass} text-right`} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td className={`px-3 md:px-4 ${pyClass} text-right`}>
                       <div className="flex items-center justify-end gap-2">
                         {onView && (
                           <button

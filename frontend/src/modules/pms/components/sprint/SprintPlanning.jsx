@@ -92,26 +92,42 @@ const SprintPlanning = ({ projectId, sprints, refreshSprints }) => {
             </span>
           </div>
           
-          <Droppable droppableId="backlog">
-            {(provided, snapshot) => (
-              <div 
-                {...provided.droppableProps} 
-                ref={provided.innerRef}
-                className={`flex-1 p-4 overflow-y-auto custom-scrollbar space-y-3 ${snapshot.isDraggingOver ? 'bg-[var(--accent)]/5' : ''}`}
-              >
-                {backlogTasks.length === 0 && !snapshot.isDraggingOver && (
-                  <div className="h-32 flex flex-col items-center justify-center text-[var(--text-muted)] border-2 border-dashed border-[var(--border-color)] rounded-xl">
-                    <AlertCircle size={24} className="mb-2 opacity-50" />
-                    <span className="text-sm font-semibold">Backlog is empty</span>
-                  </div>
+          <div className="flex-1 overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b-2 border-[var(--border-color)] bg-[var(--bg-workspace)]">
+                  <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)] w-[10px]"></th>
+                  <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Task</th>
+                  <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)]">Assignee</th>
+                  <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)] text-right">Points</th>
+                </tr>
+              </thead>
+              <Droppable droppableId="backlog">
+                {(provided, snapshot) => (
+                  <tbody 
+                    {...provided.droppableProps} 
+                    ref={provided.innerRef}
+                    className={`divide-y divide-[var(--border-color)] transition-colors ${snapshot.isDraggingOver ? 'bg-[var(--accent)]/5' : ''}`}
+                  >
+                    {backlogTasks.length === 0 && !snapshot.isDraggingOver && (
+                      <tr>
+                        <td colSpan="4" className="h-32 text-center text-[var(--text-muted)]">
+                          <div className="flex flex-col items-center justify-center border-2 border-dashed border-[var(--border-color)] rounded-xl m-4 h-24">
+                            <AlertCircle size={24} className="mb-2 opacity-50" />
+                            <span className="text-sm font-semibold">Backlog is empty</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {backlogTasks.map((task, index) => (
+                      <TaskItem key={task.task_id} task={task} index={index} />
+                    ))}
+                    {provided.placeholder}
+                  </tbody>
                 )}
-                {backlogTasks.map((task, index) => (
-                  <TaskItem key={task.task_id} task={task} index={index} />
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
+              </Droppable>
+            </table>
+          </div>
         </div>
 
         {/* Sprints Column */}
@@ -180,25 +196,41 @@ const SprintBox = ({ sprint, tasks, onStart, hasActiveSprint }) => {
       </div>
 
       {/* Sprint Tasks Dropzone */}
-      <Droppable droppableId={sprint.sprint_id} isDropDisabled={isCompleted}>
-        {(provided, snapshot) => (
-          <div 
-            {...provided.droppableProps} 
-            ref={provided.innerRef}
-            className={`p-4 space-y-3 min-h-[120px] transition-colors ${snapshot.isDraggingOver ? 'bg-[var(--accent)]/5' : ''}`}
-          >
-            {tasks.length === 0 && !snapshot.isDraggingOver && (
-              <div className="h-20 flex flex-col items-center justify-center text-[var(--text-muted)] border-2 border-dashed border-[var(--border-color)] rounded-xl">
-                <span className="text-sm font-semibold">Drag tasks here to plan this sprint</span>
-              </div>
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="w-full text-left border-collapse">
+          <thead className="sticky top-0 z-10 hidden">
+            <tr className="border-b-2 border-[var(--border-color)] bg-[var(--bg-workspace)]">
+              <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] w-[10px]"></th>
+              <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Task</th>
+              <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)]">Assignee</th>
+              <th className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wider text-[var(--text-muted)] text-right">Points</th>
+            </tr>
+          </thead>
+          <Droppable droppableId={sprint.sprint_id} isDropDisabled={isCompleted}>
+            {(provided, snapshot) => (
+              <tbody 
+                {...provided.droppableProps} 
+                ref={provided.innerRef}
+                className={`divide-y divide-[var(--border-color)] transition-colors min-h-[120px] ${snapshot.isDraggingOver ? 'bg-[var(--accent)]/5' : ''}`}
+              >
+                {tasks.length === 0 && !snapshot.isDraggingOver && (
+                  <tr>
+                    <td colSpan="4" className="h-24 text-center text-[var(--text-muted)]">
+                      <div className="flex flex-col items-center justify-center border-2 border-dashed border-[var(--border-color)] rounded-xl m-4 h-16">
+                        <span className="text-sm font-semibold">Drag tasks here to plan this sprint</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {tasks.map((task, index) => (
+                  <TaskItem key={task.task_id} task={task} index={index} isCompleted={isCompleted} />
+                ))}
+                {provided.placeholder}
+              </tbody>
             )}
-            {tasks.map((task, index) => (
-              <TaskItem key={task.task_id} task={task} index={index} isCompleted={isCompleted} />
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
+          </Droppable>
+        </table>
+      </div>
     </div>
   );
 };
@@ -207,41 +239,42 @@ const TaskItem = ({ task, index, isCompleted }) => {
   return (
     <Draggable draggableId={task.task_id} index={index} isDragDisabled={isCompleted}>
       {(provided, snapshot) => (
-        <div
+        <tr
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`group flex items-center gap-3 p-3 bg-[var(--bg-workspace)] border rounded-xl transition-all shadow-sm ${
-            snapshot.isDragging ? 'border-[var(--accent)] shadow-lg rotate-2 z-50' : 'border-[var(--border-color)] hover:border-[var(--text-muted)]'
+          className={`transition-colors duration-200 group ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'} ${
+            snapshot.isDragging ? 'shadow-lg z-50 bg-[var(--bg-card)]' : ''
           } ${isCompleted ? 'opacity-70 grayscale' : ''}`}
         >
-          <GripVertical size={16} className="text-[var(--text-muted)] opacity-50 group-hover:opacity-100 transition-opacity" />
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-sm font-bold text-[var(--text-main)] truncate">{task.task_title}</span>
-              <div className="flex items-center gap-3 shrink-0">
-                {task.status !== 'Backlog' && (
-                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase bg-[var(--bg-card)] px-2 py-0.5 rounded border border-[var(--border-color)]">
-                    {task.status}
-                  </span>
-                )}
-                {task.assignee_image ? (
-                  <img src={task.assignee_image.startsWith('http') ? task.assignee_image : `${import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:3000'}${task.assignee_image}`} alt={task.assignee_name} className="w-6 h-6 rounded-full object-cover border border-[var(--border-color)]" title={task.assignee_name} />
-                ) : (
-                  <div className="w-6 h-6 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center shrink-0" title={task.assignee_name || 'Unassigned'}>
-                    <span className="text-[9px] font-black text-[var(--accent)]">{task.assignee_name ? task.assignee_name.substring(0,2).toUpperCase() : '?'}</span>
-                  </div>
-                )}
-                <div className="w-8 text-center shrink-0">
-                  <span className="text-xs font-black text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-1 rounded-md border border-[var(--accent)]/20" title="Story Points">
-                    {task.story_points || 0}
-                  </span>
+          <td className="px-2 py-1 w-[20px]">
+            <GripVertical size={16} className="text-[var(--text-muted)] opacity-50 group-hover:opacity-100 transition-opacity" />
+          </td>
+          <td className="px-3 py-1">
+            <span className="text-xs font-bold text-[var(--text-main)] truncate max-w-[200px] block" title={task.task_title}>{task.task_title}</span>
+            {task.status !== 'Backlog' && (
+              <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1 inline-block bg-[var(--bg-card)] px-1.5 py-0.5 rounded border border-[var(--border-color)]">
+                {task.status}
+              </span>
+            )}
+          </td>
+          <td className="px-3 py-1">
+            <div className="flex items-center gap-2">
+              {task.assignee_image ? (
+                <img src={task.assignee_image.startsWith('http') ? task.assignee_image : `${import.meta.env.VITE_API_BASE_URL?.replace(/\/api$/, '') || 'http://localhost:3000'}${task.assignee_image}`} alt={task.assignee_name} className="w-6 h-6 rounded-full object-cover border border-[var(--border-color)] shadow-sm" title={task.assignee_name} />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center shrink-0 shadow-sm" title={task.assignee_name || 'Unassigned'}>
+                  <span className="text-[9px] font-black text-[var(--text-main)]">{task.assignee_name ? task.assignee_name.substring(0,2).toUpperCase() : '?'}</span>
                 </div>
-              </div>
+              )}
             </div>
-          </div>
-        </div>
+          </td>
+          <td className="px-3 py-1 text-right">
+            <span className="text-xs font-black text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-1 rounded-md border border-[var(--accent)]/20 shadow-sm" title="Story Points">
+              {task.story_points || 0}
+            </span>
+          </td>
+        </tr>
       )}
     </Draggable>
   );

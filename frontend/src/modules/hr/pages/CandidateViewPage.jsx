@@ -55,9 +55,9 @@ const CandidateViewPage = () => {
     const eduDetails = typeof candidate.education_details === 'string' ? JSON.parse(candidate.education_details || '{}') : (candidate.education_details || {});
 
     const renderField = (label, value) => (
-        <div className="flex flex-col gap-1.5 p-3 rounded-xl hover:bg-[var(--bg-workspace)]/50 transition-colors border border-transparent hover:border-[var(--border-color)]">
-            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
-            <span className="text-[14px] font-bold text-[var(--text-main)] leading-tight">{value || '—'}</span>
+        <div className="flex flex-col gap-1.5 p-3 rounded-xl hover:bg-[var(--bg-workspace)]/50 transition-colors border border-transparent hover:border-[var(--border-color)] min-w-0">
+            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider truncate">{label}</span>
+            <span className="text-[14px] font-bold text-[var(--text-main)] leading-tight truncate" title={value}>{value || '—'}</span>
         </div>
     );
 
@@ -83,9 +83,9 @@ const CandidateViewPage = () => {
                             );
                         }
                         return (
-                            <div key={key} className="flex flex-col gap-1.5 p-3 rounded-xl hover:bg-[var(--bg-workspace)]/50 transition-colors border border-transparent hover:border-[var(--border-color)]">
-                                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">{key.replace(/_/g, ' ')}</span>
-                                <span className="text-[14px] font-bold text-[var(--text-main)] leading-tight">{value?.toString() || '—'}</span>
+                            <div key={key} className="flex flex-col gap-1.5 p-3 rounded-xl hover:bg-[var(--bg-workspace)]/50 transition-colors border border-transparent hover:border-[var(--border-color)] min-w-0">
+                                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider truncate">{key.replace(/_/g, ' ')}</span>
+                                <span className="text-[14px] font-bold text-[var(--text-main)] leading-tight truncate" title={value?.toString()}>{value?.toString() || '—'}</span>
                             </div>
                         );
                     })}

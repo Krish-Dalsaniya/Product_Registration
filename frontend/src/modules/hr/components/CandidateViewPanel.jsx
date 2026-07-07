@@ -59,9 +59,9 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
             </h3>
             <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                 {fields.map((field, idx) => field.value && (
-                    <div key={idx} className="flex flex-col gap-1 group">
-                        <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider group-hover:text-[var(--accent)] transition-colors">{field.label}</span>
-                        <span className="text-[13px] font-bold text-[var(--text-main)] leading-tight">{field.value}</span>
+                    <div key={idx} className="flex flex-col gap-1 group min-w-0">
+                        <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-wider group-hover:text-[var(--accent)] transition-colors truncate">{field.label}</span>
+                        <span className="text-[13px] font-bold text-[var(--text-main)] leading-tight truncate" title={field.value}>{field.value}</span>
                     </div>
                 ))}
             </div>

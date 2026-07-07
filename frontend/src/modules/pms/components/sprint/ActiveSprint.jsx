@@ -169,12 +169,12 @@ const ActiveSprint = ({ sprint, projectId, refreshSprints }) => {
                 onDragOver={(e) => handleDragOver(e, column.id)}
                 onDragLeave={(e) => handleDragLeave(e, column.id)}
                 onDrop={(e) => handleDrop(e, column.id)}
-                className={`rounded-3xl w-14 min-w-[56px] min-h-[300px] shrink-0 flex flex-col items-center py-4 cursor-pointer transition-all duration-300 shadow-sm ${dragOverCol === column.id ? 'ring-2 ring-[var(--accent)] bg-[var(--accent)]/10 transform scale-105 z-10' : 'bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:bg-[var(--bg-workspace)]'}`}
+                className={`rounded-[10px] w-12 min-w-[48px] max-h-full shrink-0 flex flex-col items-center py-4 cursor-pointer transition-all duration-300 shadow-sm ${dragOverCol === column.id ? 'bg-black/10 dark:bg-white/10 ring-2 ring-blue-500 transform scale-110 shadow-lg z-10' : 'bg-[#ebecf0] dark:bg-[#1a1a1c] hover:bg-gray-200 dark:hover:bg-gray-800'}`}
               >
-                <div className="bg-[var(--bg-workspace)] text-[var(--text-muted)] text-[10px] font-black px-2 py-1 rounded-md border border-[var(--border-color)] mb-4 shrink-0">
+                <div className="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[11px] font-bold px-2 py-0.5 rounded-full mb-4 shrink-0">
                   {column.tasks.length}
                 </div>
-                <div className="font-black text-xs text-[var(--text-main)] [writing-mode:vertical-lr] rotate-180 flex-1 flex items-center justify-center tracking-wider uppercase">
+                <div className="font-bold text-[14px] text-gray-600 dark:text-gray-400 [writing-mode:vertical-lr] rotate-180 flex-1 flex items-center justify-center tracking-wider uppercase">
                   {column.label}
                 </div>
               </div>
@@ -184,25 +184,29 @@ const ActiveSprint = ({ sprint, projectId, refreshSprints }) => {
           return (
             <div 
               key={column.id} 
-              className={`min-w-[320px] max-w-[320px] flex flex-col bg-[var(--bg-card)] rounded-3xl border transition-all duration-300 shadow-sm max-h-full ${dragOverCol === column.id ? 'border-[var(--accent)] shadow-xl ring-2 ring-[var(--accent)]/50 z-10 scale-[1.02]' : 'border-[var(--border-color)]'}`}
+              className={`bg-[#ebecf0] dark:bg-[#1a1a1c] rounded-[10px] flex flex-col min-w-[260px] w-[260px] max-h-full shrink-0 shadow-sm transition-all duration-300 border border-transparent ${dragOverCol === column.id ? 'transform scale-[1.02] ring-2 ring-blue-500 shadow-xl z-10' : ''}`}
               onDragOver={(e) => handleDragOver(e, column.id)}
               onDragLeave={(e) => handleDragLeave(e, column.id)}
               onDrop={(e) => handleDrop(e, column.id)}
             >
               <div 
-                className="p-4 flex items-center justify-between border-b border-[var(--border-color)] cursor-pointer hover:bg-[var(--bg-workspace)] transition-colors rounded-t-3xl group"
+                className="p-3 pb-2 border-transparent flex items-center justify-between sticky top-0 bg-[#ebecf0] dark:bg-[#1a1a1c] z-10 rounded-t-[10px]"
                 onClick={() => toggleCollapse(column.id)}
               >
-                <h3 className="font-black tracking-tight text-[var(--text-main)] uppercase text-xs flex items-center gap-2 group-hover:text-[var(--accent)] transition-colors">
+                <div className="flex items-center gap-2 cursor-pointer group">
                   <div className={`w-3 h-3 rounded-full border-2 ${column.color}`} />
-                  {column.label}
-                </h3>
-                <span className="bg-[var(--bg-workspace)] text-[var(--text-muted)] text-[10px] font-black px-2 py-1 rounded-md border border-[var(--border-color)]">
-                  {column.tasks.length}
-                </span>
+                  <h3 className="font-bold text-[14px] text-gray-800 dark:text-gray-200 pl-1 group-hover:text-blue-600 transition-colors uppercase tracking-wide">
+                    {column.label}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                    {column.tasks.length}
+                  </span>
+                </div>
               </div>
               
-              <div className={`flex-1 p-4 overflow-y-auto custom-scrollbar space-y-4 min-h-[150px] transition-colors rounded-b-3xl ${dragOverCol === column.id ? 'bg-[var(--accent)]/5' : ''}`}>
+              <div className={`p-2.5 flex-1 overflow-y-auto min-h-[150px] custom-scrollbar flex flex-col transition-colors ${dragOverCol === column.id ? 'bg-black/5 dark:bg-white/5 rounded-b-[10px]' : ''}`}>
                 {column.tasks.map((task) => (
                   <SprintTaskCard 
                     key={task.task_id} 
@@ -236,7 +240,7 @@ const SprintTaskCard = ({ task, onDragStart, onDragEnd }) => {
       draggable
       onDragStart={(e) => onDragStart(e, task)}
       onDragEnd={onDragEnd}
-      className="bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-2xl p-4 cursor-grab active:cursor-grabbing hover:-translate-y-1 hover:shadow-xl hover:border-[var(--accent)] transition-all shadow-sm"
+      className="bg-white dark:bg-[#252528] rounded-[8px] p-3 mb-2 shadow-sm border border-gray-200 dark:border-gray-700 cursor-grab active:cursor-grabbing hover:border-blue-400 hover:shadow-md transition-all group relative"
     >
       <div className="flex justify-between items-start mb-3 pointer-events-none">
         <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)]" title={`Task Type: ${task.task_type || 'Task'}`}>
