@@ -912,18 +912,18 @@ const OrganizationChart = () => {
 
   const treeData = useMemo(() => buildTree(profiles), [profiles]);
   const selectedProfile = useMemo(() => profiles.find(p => p.designation_id === selectedProfileId), [profiles, selectedProfileId]);
-  const outletContext = useOutletContext();
+  const { setIsSidebarCollapsed } = useOutletContext() || {};
 
   useEffect(() => {
-    if (outletContext?.setIsSidebarCollapsed) {
-      outletContext.setIsSidebarCollapsed(!!selectedProfileId);
+    if (setIsSidebarCollapsed) {
+      setIsSidebarCollapsed(!!selectedProfileId);
     }
     return () => {
-      if (outletContext?.setIsSidebarCollapsed) {
-        outletContext.setIsSidebarCollapsed(false);
+      if (setIsSidebarCollapsed) {
+        setIsSidebarCollapsed(false);
       }
     };
-  }, [selectedProfileId, outletContext]);
+  }, [selectedProfileId, setIsSidebarCollapsed]);
 
   const handleRemove = async (designationId) => {
     if (!window.confirm('Are you sure you want to remove this profile? Child profiles will be reassigned to the parent.')) return;

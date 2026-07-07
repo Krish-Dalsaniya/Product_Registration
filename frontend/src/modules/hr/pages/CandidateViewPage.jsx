@@ -8,8 +8,17 @@ import CandidateTimeline from '../components/CandidateTimeline';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 
 const getFullUrl = (path) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://165.232.191.122:3000';
-    return `${backendUrl}${path}`;
+    if (!path) return '#';
+    if (path.startsWith('http')) return path;
+    
+    let backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:3000';
+    backendUrl = backendUrl.replace(/\/$/, ''); // Remove trailing slash
+    
+    // Normalize path to use forward slashes (fix Windows paths)
+    let cleanPath = path.replace(/\\/g, '/');
+    cleanPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    
+    return `${backendUrl}${cleanPath}`;
 };
 
 const CandidateViewPage = () => {
@@ -269,7 +278,7 @@ const CandidateViewPage = () => {
 
             {renderTechSection()}
 
-            <CandidateTimeline educationRoute={candidate.education_route} documents={docs} extractedInfo={extracted} />
+            <CandidateTimeline educationRoute={candidate.education_route} documents={docs} extractedInfo={extracted} eduDetails={eduDetails} />
         </div>
     );
 };

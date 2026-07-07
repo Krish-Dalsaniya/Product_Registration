@@ -5,15 +5,26 @@ import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 import CandidateTimeline from './CandidateTimeline';
 import { useNavigate } from 'react-router-dom';
+import Modal from '../../../components/shared/Modal';
 
 const getFullUrl = (path) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://165.232.191.122:3000';
-    return `${backendUrl}${path}`;
+    if (!path) return '#';
+    if (path.startsWith('http')) return path;
+    
+    let backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:3000';
+    backendUrl = backendUrl.replace(/\/$/, '');
+    
+    let cleanPath = path.replace(/\\/g, '/');
+    cleanPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    
+    return `${backendUrl}${cleanPath}`;
 };
 
 const CandidateViewPanel = ({ candidateId, onClose }) => {
     const [candidate, setCandidate] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [viewingDocUrl, setViewingDocUrl] = useState(null);
+    const [viewingDocName, setViewingDocName] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -51,6 +62,7 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
     const docs = typeof candidate.documents === 'string' ? JSON.parse(candidate.documents || '{}') : (candidate.documents || {});
     const tech = typeof candidate.technical_details === 'string' ? JSON.parse(candidate.technical_details || '{}') : (candidate.technical_details || {});
     const extracted = typeof candidate.extracted_info === 'string' ? JSON.parse(candidate.extracted_info || '{}') : (candidate.extracted_info || {});
+    const eduDetails = typeof candidate.education_details === 'string' ? JSON.parse(candidate.education_details || '{}') : (candidate.education_details || {});
 
     const renderBentoBox = (title, icon, fields) => (
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -138,11 +150,12 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
                             </h3>
                             <div className="flex flex-wrap gap-3">
                                 {Object.entries(docs).map(([key, path]) => (
-                                    <a 
+                                    <button 
                                         key={key} 
-                                        href={getFullUrl(path)} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
+                                        onClick={() => {
+                                            setViewingDocUrl(getFullUrl(path));
+                                            setViewingDocName(key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim());
+                                        }}
                                         className="flex items-center gap-3 py-2 px-3 pr-4 rounded-xl bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:shadow-md transition-all group shrink-0"
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-white border border-[var(--border-color)] flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:border-[var(--accent)] transition-colors">
@@ -152,9 +165,9 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
                                             <span className="text-[11px] font-bold text-[var(--text-main)] max-w-[120px] truncate">
                                                 {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/Marksheet/, '').trim()}
                                             </span>
-                                            <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">PDF Document</span>
+                                            <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Document</span>
                                         </div>
-                                    </a>
+                                    </button>
                                 ))}
                             </div>
                         </div>
@@ -169,11 +182,23 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
                     </div>
                     
                     <div className="pr-2">
-                        <CandidateTimeline educationRoute={candidate.education_route} documents={docs} extractedInfo={extracted} compact />
+                        <CandidateTimeline educationRoute={candidate.education_route} documents={docs} extractedInfo={extracted} eduDetails={eduDetails} compact />
                     </div>
                 </div>
 
             </div>
+
+            <Modal isOpen={!!viewingDocUrl} onClose={() => setViewingDocUrl(null)} title={viewingDocName} maxWidth="full">
+                <div className="h-[85vh] w-full bg-[#323639] rounded-lg overflow-hidden border border-[var(--border-color)] flex flex-col">
+                    {viewingDocUrl && (
+                        <iframe 
+                            src={viewingDocUrl} 
+                            className="w-full flex-1"
+                            title={viewingDocName}
+                        />
+                    )}
+                </div>
+            </Modal>
         </div>
     );
 };

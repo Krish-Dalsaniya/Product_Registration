@@ -16,3 +16,5 @@ export const verify2FaApi = (otp) => axiosInstance.post('/auth/2fa/verify', { ot
 export const disable2FaApi = () => axiosInstance.post('/auth/2fa/disable');
 export const login2FaApi = (tempToken, otp, rememberMe = false) => axiosInstance.post('/auth/login/2fa', { tempToken, otp, rememberMe });
 export const setupPasswordApi = (tempToken, newPassword) => axiosInstance.post('/auth/setup-password', { tempToken, newPassword });
+export const updateProfileApi = (full_name, email) => axiosInstance.put('/auth/profile', { full_name, email });
+export const changePasswordApi = (currentPassword, newPassword) => axiosInstance.put('/auth/change-password', { currentPassword, newPassword });

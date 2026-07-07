@@ -6,6 +6,7 @@ import axiosInstance from '../../../api/axiosInstance';
 import { getPositions, createPosition, updatePosition, deletePosition } from '../../../api/openPositionsApi';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
 import Swal from 'sweetalert2';
+import { format } from 'date-fns';
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 const OpenPositionsPage = () => {
@@ -220,8 +221,8 @@ const OpenPositionsPage = () => {
             <div className="flex justify-between items-start mb-3 relative z-10">
               <div>
                 <h3 className="text-lg font-black text-[var(--text-main)] mb-1 leading-tight">{pos.name}</h3>
-                <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] bg-[var(--bg-workspace)] border border-[var(--border-color)] px-2 py-0.5 rounded-md shadow-sm">
-                  Created {pos.date}
+                <span className="inline-block whitespace-nowrap text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] bg-[var(--bg-workspace)] border border-[var(--border-color)] px-2.5 py-1 rounded-md shadow-sm mt-1">
+                  Created {pos.created_at ? format(new Date(pos.created_at), 'MMM dd, yyyy') : pos.date}
                 </span>
               </div>
               <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">

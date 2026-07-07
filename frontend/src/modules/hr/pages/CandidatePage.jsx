@@ -887,11 +887,20 @@ const CandidatePage = () => {
                   {formData.educationRoute === 'DIPLOMA' && (
                     <div className="border-t border-[var(--border-color)] pt-6">
                       <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest mb-4">Diploma (6 Semesters)</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                         {[1, 2, 3, 4, 5, 6].map(sem => (
-                          <div key={`dip_sem_${sem}`}>
-                            <label className={labelClass}>Sem {sem} SGPA</label>
-                            <input type="number" step="0.01" value={formData.education_details[`diploma_sgpa_${sem}`]} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`diploma_sgpa_${sem}`]: e.target.value}}))} className={inputClass} />
+                          <div key={`dip_sem_${sem}`} className="flex flex-col gap-2 p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl">
+                            <label className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Sem {sem}</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 block">SGPA</label>
+                                <input type="number" step="0.01" value={formData.education_details[`diploma_sgpa_${sem}`] || ''} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`diploma_sgpa_${sem}`]: e.target.value}}))} className={inputClass} />
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 block">Pass Month</label>
+                                <input type="month" value={formData.education_details[`diploma_pass_date_${sem}`] || ''} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`diploma_pass_date_${sem}`]: e.target.value}}))} className={inputClass} />
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -911,11 +920,20 @@ const CandidatePage = () => {
                   {/* Bachelor Degree */}
                   <div className="border-t border-[var(--border-color)] pt-6">
                     <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest mb-4">Degree ({formData.educationRoute === 'REGULAR' ? '8' : '6'} Semesters)</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       {(formData.educationRoute === 'REGULAR' ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3, 4, 5, 6]).map(sem => (
-                        <div key={`deg_sem_${sem}`}>
-                          <label className={labelClass}>Sem {sem} SGPA</label>
-                          <input type="number" step="0.01" value={formData.education_details[`degree_sgpa_${sem}`]} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`degree_sgpa_${sem}`]: e.target.value}}))} className={inputClass} />
+                        <div key={`deg_sem_${sem}`} className="flex flex-col gap-2 p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl">
+                          <label className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Sem {sem}</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 block">SGPA</label>
+                              <input type="number" step="0.01" value={formData.education_details[`degree_sgpa_${sem}`] || ''} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`degree_sgpa_${sem}`]: e.target.value}}))} className={inputClass} />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 block">Pass Month</label>
+                              <input type="month" value={formData.education_details[`degree_pass_date_${sem}`] || ''} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`degree_pass_date_${sem}`]: e.target.value}}))} className={inputClass} />
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>

@@ -35,43 +35,56 @@ const AuditLogsPage = ({ isEmbedded = false }) => {
   const totalPages = data?.totalPages || 1;
 
   const renderActionBadge = (action) => {
-    const colors = {
-      LOGIN: 'bg-green-500/10 text-green-600 border-green-500/20',
-      LOGOUT: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
-      CREATE: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-      UPDATE: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
-      DELETE: 'bg-red-500/10 text-red-600 border-red-500/20'
-    };
-    
-    let colorClass = 'bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/20';
-    if (action.includes('LOGIN')) colorClass = colors.LOGIN;
-    else if (action.includes('LOGOUT')) colorClass = colors.LOGOUT;
-    else if (action.includes('CREATE')) colorClass = colors.CREATE;
-    else if (action.includes('UPDATE')) colorClass = colors.UPDATE;
-    else if (action.includes('DELETE')) colorClass = colors.DELETE;
+    let colorClass = 'bg-[var(--accent)]/10 text-[var(--accent)]';
+    if (action.includes('LOGIN')) colorClass = 'bg-green-500/10 text-green-700';
+    else if (action.includes('LOGOUT')) colorClass = 'bg-orange-500/10 text-orange-700';
+    else if (action.includes('CREATE')) colorClass = 'bg-blue-500/10 text-blue-700';
+    else if (action.includes('UPDATE')) colorClass = 'bg-yellow-500/10 text-yellow-700';
+    else if (action.includes('DELETE')) colorClass = 'bg-red-500/10 text-red-700';
 
     return (
-      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase border ${colorClass}`}>
+      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase ${colorClass}`}>
         {action}
       </span>
     );
   };
 
   const columns = [
-    { key: 'timestamp', label: 'Timestamp', render: (row) => format(new Date(row.created_at), 'MMM dd, yyyy HH:mm:ss') },
-    { key: 'user', label: 'User', render: (row) => row.user_name ? `${row.user_name} (${row.user_email})` : 'System / Unknown' },
+    { key: 'timestamp', label: 'Timestamp', render: (row) => (
+      <div className="flex flex-col">
+        <span className="text-[11px] md:text-[12px] font-bold text-[var(--text-main)] leading-tight">{format(new Date(row.created_at), 'MMM dd, yyyy')}</span>
+        <span className="text-[9px] md:text-[10px] text-[var(--text-muted)] mt-0.5">{format(new Date(row.created_at), 'HH:mm:ss')}</span>
+      </div>
+    )},
+    { key: 'user', label: 'User', render: (row) => (
+      row.user_name ? (
+        <div className="flex flex-col">
+          <span className="text-[11px] md:text-[12px] font-bold text-[var(--text-main)] leading-tight">{row.user_name}</span>
+          <span className="text-[9px] md:text-[10px] text-[var(--text-muted)] mt-0.5">{row.user_email}</span>
+        </div>
+      ) : <span className="text-[11px] md:text-[12px] font-bold text-[var(--text-muted)] italic">System</span>
+    )},
     { key: 'action', label: 'Action', render: (row) => renderActionBadge(row.action) },
-    { key: 'description', label: 'Description', render: (row) => <span className="text-[11px] text-[var(--text-secondary)]">{row.description || '-'}</span> },
-    { key: 'entity_type', label: 'Entity Type', render: (row) => row.entity_type },
+    { key: 'description', label: 'Description', render: (row) => (
+      <span className="text-[10px] md:text-[11px] text-[var(--text-secondary)] block max-w-[120px] md:max-w-[180px] truncate" title={row.description}>
+        {row.description || '-'}
+      </span>
+    )},
+    // { key: 'entity_type', label: 'Entity Type', render: (row) => <span className="text-[11px] md:text-[12px] font-bold">{row.entity_type}</span> },
     { key: 'entity_id', label: 'Entity ID', render: (row) => {
       if (row.entity_type === 'USER') {
-        if (row.entity_user_name) return `${row.entity_user_name} (${row.entity_user_email})`;
+        if (row.entity_user_name) return (
+          <div className="flex flex-col">
+            <span className="text-[11px] md:text-[12px] font-bold text-[var(--text-main)] leading-tight">{row.entity_user_name}</span>
+            <span className="text-[9px] md:text-[10px] text-[var(--text-muted)] mt-0.5">{row.entity_user_email}</span>
+          </div>
+        );
         if (row.action.includes('DELETE')) return <span className="text-[var(--text-muted)] italic text-[11px]">Deleted User</span>;
         return <span className="text-[var(--text-muted)] italic text-[11px]">Unknown User</span>;
       }
-      return <span className="font-mono text-[11px] text-[var(--text-muted)] truncate block max-w-[120px]">{row.entity_id}</span>;
+      return <span className="font-mono text-[10px] md:text-[11px] text-[var(--text-muted)] truncate block max-w-[120px]" title={row.entity_id}>{row.entity_id}</span>;
     }},
-    { key: 'ip_address', label: 'IP Address', render: (row) => row.ip_address }
+    { key: 'ip_address', label: 'IP Address', render: (row) => <span className="text-[10px] md:text-[11px] font-mono text-[var(--text-muted)]">{row.ip_address}</span> }
   ];
 
   return (
@@ -92,13 +105,13 @@ const AuditLogsPage = ({ isEmbedded = false }) => {
       )}
 
       {/* Filters */}
-      <div className={`grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 ${isEmbedded ? 'pt-4 px-4' : ''}`}>
+      <div className={`flex flex-wrap items-center gap-4 mb-6 ${isEmbedded ? 'pt-2 px-2' : ''}`}>
         <div className="relative">
           <select
             name="action"
             value={filters.action}
             onChange={handleFilterChange}
-            className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-4 py-2.5 font-bold outline-none focus:border-[var(--accent)] transition-all appearance-none"
+            className="min-w-[180px] bg-white border border-gray-200 text-gray-800 rounded-full px-5 py-2.5 text-[13px] font-black outline-none focus:border-gray-400 transition-all appearance-none shadow-sm cursor-pointer"
           >
             <option value="">All Actions</option>
             <option value="LOGIN">LOGIN</option>
@@ -118,7 +131,7 @@ const AuditLogsPage = ({ isEmbedded = false }) => {
             name="entityType"
             value={filters.entityType}
             onChange={handleFilterChange}
-            className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-4 py-2.5 font-bold outline-none focus:border-[var(--accent)] transition-all appearance-none"
+            className="min-w-[180px] bg-white border border-gray-200 text-gray-800 rounded-full px-5 py-2.5 text-[13px] font-black outline-none focus:border-gray-400 transition-all appearance-none shadow-sm cursor-pointer"
           >
             <option value="">All Entity Types</option>
             <option value="USER">USER</option>
@@ -127,7 +140,7 @@ const AuditLogsPage = ({ isEmbedded = false }) => {
         </div>
 
         <div className="relative">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-[var(--text-muted)]">
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
             <Calendar size={16} />
           </div>
           <input
@@ -135,12 +148,12 @@ const AuditLogsPage = ({ isEmbedded = false }) => {
             name="startDate"
             value={filters.startDate}
             onChange={handleFilterChange}
-            className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl pl-10 pr-4 py-2.5 font-bold outline-none focus:border-[var(--accent)] transition-all"
+            className="min-w-[160px] bg-white border border-gray-200 text-gray-800 rounded-full pl-5 pr-10 py-2.5 text-[13px] font-black outline-none focus:border-gray-400 transition-all shadow-sm cursor-pointer"
           />
         </div>
 
         <div className="relative">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-[var(--text-muted)]">
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
             <Calendar size={16} />
           </div>
           <input
@@ -148,7 +161,7 @@ const AuditLogsPage = ({ isEmbedded = false }) => {
             name="endDate"
             value={filters.endDate}
             onChange={handleFilterChange}
-            className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl pl-10 pr-4 py-2.5 font-bold outline-none focus:border-[var(--accent)] transition-all"
+            className="min-w-[160px] bg-white border border-gray-200 text-gray-800 rounded-full pl-5 pr-10 py-2.5 text-[13px] font-black outline-none focus:border-gray-400 transition-all shadow-sm cursor-pointer"
           />
         </div>
       </div>
@@ -163,6 +176,7 @@ const AuditLogsPage = ({ isEmbedded = false }) => {
             onView={(row) => setSelectedLog(row)}
             rowKey="log_id"
             emptyMessage="No audit logs found for the selected filters."
+            striped={true}
           />
         </div>
 
@@ -176,14 +190,14 @@ const AuditLogsPage = ({ isEmbedded = false }) => {
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="p-2 border border-[var(--border-color)] rounded-lg hover:bg-[var(--nav-hover)] disabled:opacity-50 text-[var(--text-main)] transition-colors"
+                className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-full hover:bg-gray-50 disabled:opacity-50 text-gray-600 transition-colors shadow-sm"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="p-2 border border-[var(--border-color)] rounded-lg hover:bg-[var(--nav-hover)] disabled:opacity-50 text-[var(--text-main)] transition-colors"
+                className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-full hover:bg-gray-50 disabled:opacity-50 text-gray-600 transition-colors shadow-sm"
               >
                 <ChevronRight size={16} />
               </button>

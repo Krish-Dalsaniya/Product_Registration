@@ -87,7 +87,17 @@ async function extractCandidateInfo(documents, rootDir) {
                         "tenth_percentage": "string or number (e.g. 85.5 or '85.5%')",
                         "twelfth_percentage": "string or number",
                         "college_cgpa": "string or number",
-                        "college_sgpa": "string or number (Semester Grade Point Average, also known as SGPA, SPI, etc.)"
+                        "college_sgpa": "string or number (Semester Grade Point Average, also known as SGPA, SPI, etc.)",
+                        "semester_details": {
+                            "1": { "sgpa": "number", "passing_date": "YYYY-MM" },
+                            "2": { "sgpa": "number", "passing_date": "YYYY-MM" },
+                            "3": { "sgpa": "number", "passing_date": "YYYY-MM" },
+                            "4": { "sgpa": "number", "passing_date": "YYYY-MM" },
+                            "5": { "sgpa": "number", "passing_date": "YYYY-MM" },
+                            "6": { "sgpa": "number", "passing_date": "YYYY-MM" },
+                            "7": { "sgpa": "number", "passing_date": "YYYY-MM" },
+                            "8": { "sgpa": "number", "passing_date": "YYYY-MM" }
+                        }
                     }`
                 },
                 {
