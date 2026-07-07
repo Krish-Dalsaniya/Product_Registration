@@ -100,8 +100,8 @@ const AttendanceManagement = () => {
     }
   };
 
-  const filteredRecords = records.filter(r => 
-    r.full_name?.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredRecords = records.filter(r =>
+    r.full_name?.toLowerCase().includes(search.toLowerCase()) ||
     r.emp_code?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -144,7 +144,7 @@ const AttendanceManagement = () => {
 
     try {
       setIsSubmitting(true);
-      
+
       const payload = {
         ...formData,
         clock_in: formData.clock_in ? new Date(formData.clock_in).toISOString() : null,
@@ -183,20 +183,20 @@ const AttendanceManagement = () => {
       toast.error('You are not associated with an employee profile.');
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
       const res = await generateVerificationTokenApi({
         employee_id: targetEmployeeId,
         action_type
       });
-      
+
       if (res.data?.success) {
         setQrToken(res.data.data.token);
         setQrAction(action_type);
         setQrCountdown(60);
         setIsQrModalOpen(true);
-        
+
         if (timerRef.current) clearInterval(timerRef.current);
         timerRef.current = setInterval(() => {
           setQrCountdown((prev) => {
@@ -264,39 +264,43 @@ const AttendanceManagement = () => {
 
   const columns = [
     { key: 'emp_code', label: 'Emp Code', render: (row) => <span className="font-bold text-[var(--text-secondary)]">{row.emp_code}</span> },
-    { key: 'full_name', label: 'Employee', render: (row) => (
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-[var(--bg-workspace)] border border-[var(--border-color)]">
-          {row.image_url ? (
-            <img src={getImageUrl(row.image_url)} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-[var(--text-muted)]">
-              {row.full_name?.substring(0, 2).toUpperCase()}
-            </div>
-          )}
+    {
+      key: 'full_name', label: 'Employee', render: (row) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-[var(--bg-workspace)] border border-[var(--border-color)]">
+            {row.image_url ? (
+              <img src={getImageUrl(row.image_url)} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-[var(--text-muted)]">
+                {row.full_name?.substring(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div>
+            <p className="font-bold text-[var(--text-main)]">{row.full_name}</p>
+            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{row.department_name}</p>
+          </div>
         </div>
-        <div>
-          <p className="font-bold text-[var(--text-main)]">{row.full_name}</p>
-          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{row.department_name}</p>
-        </div>
-      </div>
-    ) },
+      )
+    },
     { key: 'status', label: 'Status', render: (row) => getStatusBadge(row.status) },
     { key: 'clock_in', label: 'Clock In', render: (row) => formatTime(row.clock_in) },
     { key: 'clock_out', label: 'Clock Out', render: (row) => formatTime(row.clock_out) },
-    { key: 'work_hours', label: 'Work Hrs', render: (row) => {
-      if (!row.clock_in || !row.clock_out) return <span className="font-semibold text-[var(--text-main)]">--</span>;
-      const diffMs = new Date(row.clock_out) - new Date(row.clock_in);
-      if (diffMs <= 0) return <span className="font-semibold text-[var(--text-main)]">--</span>;
-      const hours = Math.floor(diffMs / (1000 * 60 * 60));
-      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-      return (
-        <span className="font-semibold text-[var(--text-main)]">
-          {hours}h {minutes}m {seconds}s
-        </span>
-      );
-    } },
+    {
+      key: 'work_hours', label: 'Work Hrs', render: (row) => {
+        if (!row.clock_in || !row.clock_out) return <span className="font-semibold text-[var(--text-main)]">--</span>;
+        const diffMs = new Date(row.clock_out) - new Date(row.clock_in);
+        if (diffMs <= 0) return <span className="font-semibold text-[var(--text-main)]">--</span>;
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+        return (
+          <span className="font-semibold text-[var(--text-main)]">
+            {hours}h {minutes}m {seconds}s
+          </span>
+        );
+      }
+    },
     { key: 'late_coming', label: 'Late', render: (row) => <span className={`font-semibold ${row.late_coming && row.late_coming !== '00:00' ? 'text-amber-500' : 'text-[var(--text-main)]'}`}>{row.late_coming || '00:00'}</span> },
     { key: 'early_going', label: 'Early', render: (row) => <span className={`font-semibold ${row.early_going && row.early_going !== '00:00' ? 'text-rose-500' : 'text-[var(--text-main)]'}`}>{row.early_going || '00:00'}</span> },
     { key: 'break_hours', label: 'Break', render: (row) => <span className="font-semibold text-[var(--text-main)]">{row.break_hours || '00:00'}</span> },
@@ -341,7 +345,7 @@ const AttendanceManagement = () => {
         <div className="flex flex-wrap items-center gap-3">
           {user?.employee_id && (
             <>
-              <button 
+              <button
                 onClick={() => openQrModal('Punch In')}
                 disabled={isSubmitting}
                 className="btn-primary shadow-lg px-5 py-2.5 group flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
@@ -349,7 +353,7 @@ const AttendanceManagement = () => {
                 <QrCode size={18} />
                 <span className="text-[12px] md:text-[14px] font-bold">Punch In</span>
               </button>
-              <button 
+              <button
                 onClick={() => openQrModal('Punch Out')}
                 disabled={isSubmitting}
                 className="btn-primary shadow-lg px-5 py-2.5 group flex items-center gap-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50"
@@ -361,13 +365,13 @@ const AttendanceManagement = () => {
           )}
 
           {hasPermission('hr', 'create', 'payrolls_attendance') && (
-          <button 
-            onClick={() => openModal()}
-            className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--bg-workspace)] shadow-sm px-5 py-2.5 group flex items-center gap-2 rounded-xl transition-all"
-          >
-            <Plus size={18} />
-            <span className="text-[12px] md:text-[14px] font-bold">Log Manually</span>
-          </button>
+            <button
+              onClick={() => openModal()}
+              className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--bg-workspace)] shadow-sm px-5 py-2.5 group flex items-center gap-2 rounded-xl transition-all"
+            >
+              <Plus size={18} />
+              <span className="text-[12px] md:text-[14px] font-bold">Log Manually</span>
+            </button>
           )}
         </div>
       </div>
@@ -377,109 +381,109 @@ const AttendanceManagement = () => {
       ) : (
         <>
 
-      {/* Metrics Dashboard */}
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50">
-            <Users size={20} className="text-blue-500" />
-          </div>
-          <div>
-            <h3 className="text-xl font-black text-[var(--text-main)] leading-tight">{metrics?.total_records || 0}</h3>
-            <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">Total Logs Today</p>
-          </div>
-        </div>
-        
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-50">
-            <UserCheck size={20} className="text-emerald-500" />
-          </div>
-          <div>
-            <h3 className="text-xl font-black text-[var(--text-main)] leading-tight">{metrics?.present_count || 0}</h3>
-            <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">Present</p>
-          </div>
-        </div>
+          {/* Metrics Dashboard */}
+          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50">
+                <Users size={20} className="text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-[var(--text-main)] leading-tight">{metrics?.total_records || 0}</h3>
+                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">Total Logs Today</p>
+              </div>
+            </div>
 
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-50">
-            <AlertCircle size={20} className="text-amber-500" />
-          </div>
-          <div>
-            <h3 className="text-xl font-black text-[var(--text-main)] leading-tight">{metrics?.late_count || 0}</h3>
-            <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">Late Arrivals</p>
-          </div>
-        </div>
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-50">
+                <UserCheck size={20} className="text-emerald-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-[var(--text-main)] leading-tight">{metrics?.present_count || 0}</h3>
+                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">Present</p>
+              </div>
+            </div>
 
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-rose-50">
-            <UserX size={20} className="text-rose-500" />
-          </div>
-          <div>
-            <h3 className="text-xl font-black text-[var(--text-main)] leading-tight">{metrics?.absent_count || 0}</h3>
-            <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">Absent</p>
-          </div>
-        </div>
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-50">
+                <AlertCircle size={20} className="text-amber-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-[var(--text-main)] leading-tight">{metrics?.late_count || 0}</h3>
+                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">Late Arrivals</p>
+              </div>
+            </div>
 
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50">
-            <CalendarIcon size={20} className="text-blue-500" />
-          </div>
-          <div>
-            <h3 className="text-xl font-black text-[var(--text-main)] leading-tight">{metrics?.on_leave_count || 0}</h3>
-            <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">On Leave</p>
-          </div>
-        </div>
-      </div>
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-rose-50">
+                <UserX size={20} className="text-rose-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-[var(--text-main)] leading-tight">{metrics?.absent_count || 0}</h3>
+                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">Absent</p>
+              </div>
+            </div>
 
-      {/* Filters */}
-      <div className="workspace-card p-3.5 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] mb-6">
-        <div className="relative flex-1 group w-full">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
-          <input
-            type="text"
-            placeholder="Search by name or code..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-12 pr-4 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-50">
+                <CalendarIcon size={20} className="text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-[var(--text-main)] leading-tight">{metrics?.on_leave_count || 0}</h3>
+                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">On Leave</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="workspace-card p-2 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] mb-6">
+            <div className="relative flex-1 group w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
+              <input
+                type="text"
+                placeholder="Search by name or code..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-12 pr-4 outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--border-glow)] transition-all text-[14px] text-[var(--text-main)] placeholder:text-[var(--text-dim)] font-medium"
+              />
+            </div>
+
+            <div className="relative min-w-[160px] md:w-auto w-full">
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full appearance-none bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 px-4 outline-none focus:border-[var(--accent)] transition-all text-[12px] font-black tracking-wider text-[var(--text-main)] shadow-sm hover:border-[var(--accent)] uppercase"
+              />
+            </div>
+
+            <div className="relative min-w-[160px] md:w-auto w-full">
+              <select
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                className="w-full appearance-none bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-4 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black tracking-wider text-[var(--text-main)] uppercase cursor-pointer shadow-sm hover:border-[var(--accent)]"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238888aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundSize: '1.2em', backgroundPosition: 'right 0.6rem center', backgroundRepeat: 'no-repeat',
+                }}
+              >
+                <option value="">ALL DEPARTMENTS</option>
+                {metadata.departments?.map(d => <option key={d.department_id} value={d.department_id}>{d.name.toUpperCase()}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <DataTable
+            columns={columns}
+            data={filteredRecords}
+            loading={isLoading}
+            onEdit={hasPermission('hr', 'edit', 'payrolls_attendance') ? (row) => openModal(row) : undefined}
+            totalCount={records.length}
+            filteredCount={filteredRecords.length}
+            currentPage={1}
+            totalPages={1}
           />
-        </div>
 
-        <div className="relative min-w-[160px] md:w-auto w-full">
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="w-full appearance-none bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 px-4 outline-none focus:border-[var(--accent)] transition-all text-[12px] font-black tracking-wider text-[var(--text-main)] shadow-sm hover:border-[var(--accent)] uppercase"
-          />
-        </div>
-
-        <div className="relative min-w-[160px] md:w-auto w-full">
-          <select
-            value={departmentFilter}
-            onChange={(e) => setDepartmentFilter(e.target.value)}
-            className="w-full appearance-none bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-2 pl-4 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black tracking-wider text-[var(--text-main)] uppercase cursor-pointer shadow-sm hover:border-[var(--accent)]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238888aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-              backgroundSize: '1.2em', backgroundPosition: 'right 0.6rem center', backgroundRepeat: 'no-repeat',
-            }}
-          >
-            <option value="">ALL DEPARTMENTS</option>
-            {metadata.departments?.map(d => <option key={d.department_id} value={d.department_id}>{d.name.toUpperCase()}</option>)}
-          </select>
-        </div>
-      </div>
-
-      <DataTable
-        columns={columns}
-        data={filteredRecords}
-        loading={isLoading}
-        onEdit={hasPermission('hr', 'edit', 'payrolls_attendance') ? (row) => openModal(row) : undefined}
-        totalCount={records.length}
-        filteredCount={filteredRecords.length}
-        currentPage={1}
-        totalPages={1}
-      />
-
-      </>
+        </>
       )}
 
       {/* Edit/Add Modal */}
@@ -495,7 +499,7 @@ const AttendanceManagement = () => {
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-5 space-y-4">
               {!editingRecord && (
                 <div>
@@ -503,7 +507,7 @@ const AttendanceManagement = () => {
                   {isAdmin ? (
                     <select
                       value={formData.employee_id}
-                      onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
                       className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--accent)] text-[14px] text-[var(--text-main)] font-medium"
                     >
                       <option value="">Select Employee...</option>
@@ -527,7 +531,7 @@ const AttendanceManagement = () => {
                 <input
                   type="date"
                   value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   disabled={!!editingRecord}
                   className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--accent)] text-[14px] text-[var(--text-main)] font-medium disabled:opacity-50"
                 />
@@ -539,7 +543,7 @@ const AttendanceManagement = () => {
                   <input
                     type="datetime-local"
                     value={formData.clock_in}
-                    onChange={(e) => setFormData({...formData, clock_in: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, clock_in: e.target.value })}
                     className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--accent)] text-[13px] text-[var(--text-main)] font-medium"
                   />
                 </div>
@@ -548,7 +552,7 @@ const AttendanceManagement = () => {
                   <input
                     type="datetime-local"
                     value={formData.clock_out}
-                    onChange={(e) => setFormData({...formData, clock_out: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, clock_out: e.target.value })}
                     className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--accent)] text-[13px] text-[var(--text-main)] font-medium"
                   />
                 </div>
@@ -558,7 +562,7 @@ const AttendanceManagement = () => {
                 <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1.5">Status</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--accent)] text-[14px] text-[var(--text-main)] font-medium"
                 >
                   <option value="Present">Present</option>
@@ -573,7 +577,7 @@ const AttendanceManagement = () => {
                 <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1.5">Notes</label>
                 <textarea
                   value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Optional remarks..."
                   rows={2}
                   className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 outline-none focus:border-[var(--accent)] text-[14px] text-[var(--text-main)] font-medium resize-none"
@@ -582,13 +586,13 @@ const AttendanceManagement = () => {
             </div>
 
             <div className="p-5 border-t border-[var(--border-color)] bg-[var(--bg-workspace)] flex justify-end gap-3">
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="px-5 py-2.5 rounded-xl font-bold text-[13px] text-[var(--text-main)] hover:bg-[var(--bg-card)] border border-transparent hover:border-[var(--border-color)] transition-all"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleSave}
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2.5 flex items-center gap-2"
@@ -611,7 +615,7 @@ const AttendanceManagement = () => {
               <p className="text-[13px] font-medium text-gray-500 mb-8 text-center leading-relaxed">
                 Scan this QR code with your mobile device to complete the liveness check and record your attendance.
               </p>
-              
+
               <div className="bg-white p-4 rounded-2xl shadow-inner border border-gray-100 relative">
                 {qrCountdown === 0 && (
                   <div className="absolute inset-0 bg-white/90 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center z-10">
@@ -622,8 +626,8 @@ const AttendanceManagement = () => {
                     </button>
                   </div>
                 )}
-                <QRCodeSVG 
-                  value={`${window.location.origin}/attendance/verify/${qrToken}`} 
+                <QRCodeSVG
+                  value={`${window.location.origin}/attendance/verify/${qrToken}`}
                   size={200}
                   level="H"
                   fgColor="#111827"
@@ -638,7 +642,7 @@ const AttendanceManagement = () => {
               </div>
             </div>
             <div className="p-4 bg-gray-50 border-t border-gray-100">
-              <button 
+              <button
                 onClick={closeQrModal}
                 className="w-full py-3 rounded-xl font-bold text-[13px] text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 transition-colors"
               >
