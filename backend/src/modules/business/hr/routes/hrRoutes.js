@@ -39,6 +39,20 @@ const cefStorage = multer.diskStorage({
 });
 const uploadCef = multer({ storage: cefStorage });
 
+const positionsStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = path.join(__dirname, '../../../../../uploads/positions');
+    if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'));
+  }
+});
+const uploadPositions = multer({ storage: positionsStorage });
+
 // Public route for email downloads (secured by unguessable UUID)
 router.get('/payrolls/download/:payroll_id', payrollController.downloadPayslip);
 
@@ -126,9 +140,9 @@ router.post('/cef-forms', uploadCef.single('file'), cefController.uploadForm);
 router.put('/cef-forms/:id', uploadCef.single('file'), cefController.updateForm);
 router.delete('/cef-forms/:id', cefController.deleteForm);
 
-// Open Positions routes (auth required)
-router.post('/open-positions', openPositionsController.createPosition);
-router.put('/open-positions/:id', openPositionsController.updatePosition);
+// Open positions routes
+router.post('/open-positions', uploadPositions.any(), openPositionsController.createPosition);
+router.put('/open-positions/:id', uploadPositions.any(), openPositionsController.updatePosition);
 router.delete('/open-positions/:id', openPositionsController.deletePosition);
 
 const offboardingRoutes = require('./offboardingRoutes');

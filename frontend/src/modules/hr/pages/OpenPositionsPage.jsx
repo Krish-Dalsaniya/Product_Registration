@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Plus, Save, Pencil, Trash2, ChevronDown, CheckCircle2, Eye, Download } from 'lucide-react';
+import { Briefcase, Plus, Save, Pencil, Trash2, ChevronDown, CheckCircle2, Eye, Download, UploadCloud, FileText, X } from 'lucide-react';
 import Modal from '../../../components/shared/Modal';
 import { getForms } from '../../../api/cefApi';
 import axiosInstance from '../../../api/axiosInstance';
 import { getPositions, createPosition, updatePosition, deletePosition } from '../../../api/openPositionsApi';
+import { getAllModulesApi } from '../../../api/lms';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
 import Swal from 'sweetalert2';
 import { format } from 'date-fns';
@@ -20,6 +21,8 @@ const OpenPositionsPage = () => {
   
   const [viewingForm, setViewingForm] = useState(null);
   const [viewingFormTitle, setViewingFormTitle] = useState('');
+  const [viewingDocument, setViewingDocument] = useState(null);
+  const [viewingDocumentTitle, setViewingDocumentTitle] = useState('');
 
   const getFormById = (id) => {
     if (!id) return null;
@@ -30,13 +33,25 @@ const OpenPositionsPage = () => {
     return null;
   };
 
+  const [lmsModules, setLmsModules] = useState([]);
+
   const [formData, setFormData] = useState({
     name: '',
     skills_form_id: '',
     knowledge_form_id: '',
     traits_form_id: '',
     self_image_form_id: '',
-    motive_form_id: ''
+    motive_form_id: '',
+    lms_training_ids: []
+  });
+
+  const [files, setFiles] = useState({
+    rcd_doc: null,
+    prerequisite_doc: null,
+    training_doc: null,
+    eligibility_doc: null,
+    kpi_doc: null,
+    kra_doc: null
   });
 
   useEffect(() => {
@@ -46,12 +61,18 @@ const OpenPositionsPage = () => {
   const fetchInitialData = async () => {
     try {
       setIsLoading(true);
-      const [posRes, formsRes] = await Promise.all([
+      const [posRes, formsRes, lmsRes] = await Promise.all([
         getPositions(),
-        getForms()
+        getForms(),
+        getAllModulesApi().catch(e => ({ success: false, data: [] }))
       ]);
       if (posRes.success) setPositions(posRes.data);
       if (formsRes.success) setFormsByCategory(formsRes.data);
+      if (lmsRes && lmsRes.data && lmsRes.data.success) {
+        setLmsModules(lmsRes.data.data);
+      } else if (lmsRes && lmsRes.data) {
+        setLmsModules(lmsRes.data);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -62,13 +83,30 @@ const OpenPositionsPage = () => {
   const handleOpenModal = (pos = null) => {
     if (pos) {
       setEditingPosId(pos.id);
+      
+      let parsedTrainings = [];
+      if (pos.lms_training_ids) {
+        if (typeof pos.lms_training_ids === 'string') {
+          try {
+            parsedTrainings = JSON.parse(pos.lms_training_ids);
+          } catch(e) {}
+        } else if (Array.isArray(pos.lms_training_ids)) {
+          parsedTrainings = pos.lms_training_ids;
+        }
+      }
+
       setFormData({
         name: pos.name,
         skills_form_id: pos.skills_form_id || '',
         knowledge_form_id: pos.knowledge_form_id || '',
         traits_form_id: pos.traits_form_id || '',
         self_image_form_id: pos.self_image_form_id || '',
-        motive_form_id: pos.motive_form_id || ''
+        motive_form_id: pos.motive_form_id || '',
+        lms_training_ids: parsedTrainings
+      });
+      setFiles({
+        rcd_doc: null, prerequisite_doc: null, training_doc: null, 
+        eligibility_doc: null, kpi_doc: null, kra_doc: null
       });
     } else {
       setEditingPosId(null);
@@ -78,7 +116,12 @@ const OpenPositionsPage = () => {
         knowledge_form_id: '',
         traits_form_id: '',
         self_image_form_id: '',
-        motive_form_id: ''
+        motive_form_id: '',
+        lms_training_ids: []
+      });
+      setFiles({
+        rcd_doc: null, prerequisite_doc: null, training_doc: null, 
+        eligibility_doc: null, kpi_doc: null, kra_doc: null
       });
     }
     setIsModalOpen(true);
@@ -95,17 +138,27 @@ const OpenPositionsPage = () => {
 
     try {
       setIsSubmitting(true);
-      const payload = { ...formData };
-      
-      // Convert empty strings to null for DB insertion
-      Object.keys(payload).forEach(key => {
-        if (payload[key] === '') payload[key] = null;
+      const formDataToSend = new FormData();
+      Object.keys(formData).forEach(key => {
+        if (key === 'lms_training_ids') {
+          formDataToSend.append(key, JSON.stringify(formData[key]));
+        } else if (formData[key] !== '') {
+          formDataToSend.append(key, formData[key]);
+        } else {
+          formDataToSend.append(key, '');
+        }
+      });
+
+      Object.keys(files).forEach(key => {
+        if (files[key]) {
+          formDataToSend.append(key, files[key]);
+        }
       });
 
       if (editingPosId) {
-        await updatePosition(editingPosId, payload);
+        await updatePosition(editingPosId, formDataToSend);
       } else {
-        await createPosition(payload);
+        await createPosition(formDataToSend);
       }
       
       await fetchInitialData();
@@ -218,31 +271,30 @@ const OpenPositionsPage = () => {
           <div key={pos.id} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-[var(--accent)] transition-all group relative">
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[var(--accent)]/10 to-transparent rounded-bl-full pointer-events-none" />
             
-            <div className="flex justify-between items-start mb-3 relative z-10">
-              <div>
-                <h3 className="text-lg font-black text-[var(--text-main)] mb-1 leading-tight">{pos.name}</h3>
-                <span className="inline-block whitespace-nowrap text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] bg-[var(--bg-workspace)] border border-[var(--border-color)] px-2.5 py-1 rounded-md shadow-sm mt-1">
-                  Created {pos.created_at ? format(new Date(pos.created_at), 'MMM dd, yyyy') : pos.date}
-                </span>
-              </div>
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+            <div className="relative mb-3 z-10 pr-24 min-h-[40px]">
+              <h3 className="text-lg font-black text-[var(--text-main)] mb-1 leading-tight break-words">{pos.name}</h3>
+              <span className="inline-block whitespace-nowrap text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] bg-[var(--bg-workspace)] border border-[var(--border-color)] px-2.5 py-1 rounded-full shadow-sm mt-1">
+                Created {pos.created_at ? format(new Date(pos.created_at), 'MMM dd, yyyy') : pos.date}
+              </span>
+              
+              <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                 <button 
                   onClick={() => setViewingPositionOverview(pos)}
-                  className="p-2 rounded-lg bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--text-dim)] shadow-sm transition-all"
+                  className="p-2 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--text-dim)] shadow-sm transition-all"
                   title="View Position Overview"
                 >
                   <Eye size={14} strokeWidth={2.5} />
                 </button>
                 <button 
                   onClick={() => handleOpenModal(pos)}
-                  className="p-2 rounded-lg bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--text-dim)] shadow-sm transition-all"
+                  className="p-2 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--text-dim)] shadow-sm transition-all"
                   title="Edit Position"
                 >
                   <Pencil size={14} strokeWidth={2.5} />
                 </button>
                 <button 
                   onClick={() => handleDelete(pos.id)}
-                  className="p-2 rounded-lg bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-red-400 hover:text-red-500 text-[var(--text-dim)] shadow-sm transition-all"
+                  className="p-2 rounded-full bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-red-400 hover:text-red-500 text-[var(--text-dim)] shadow-sm transition-all"
                   title="Delete Position"
                 >
                   <Trash2 size={14} strokeWidth={2.5} />
@@ -323,6 +375,117 @@ const OpenPositionsPage = () => {
               * Note: You can select forms that were uploaded in the Candidate Evaluation Forms (CEF) section. Forms are grouped by their respective categories.
             </p>
           </div>
+
+          <div className="bg-[var(--bg-workspace)]/50 p-5 rounded-xl border border-[var(--border-color)]">
+            <h4 className="text-[11px] font-black text-[var(--text-main)] uppercase tracking-[0.15em] mb-4 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+              Link LMS Trainings
+            </h4>
+            <div className="max-h-40 overflow-y-auto pr-2 space-y-2">
+              {console.log('Rendering LMS Modules:', lmsModules)}
+              {lmsModules && lmsModules.length > 0 ? lmsModules.map(module => {
+                const currentIds = Array.isArray(formData.lms_training_ids) ? formData.lms_training_ids : [];
+                console.log(`Module: ${module.title}, ID: ${module.module_id}, currentIds:`, currentIds);
+                return (
+                  <label key={module.module_id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--bg-card)] border border-transparent hover:border-[var(--border-color)] cursor-pointer transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={currentIds.includes(module.module_id) || currentIds.includes(String(module.module_id))}
+                      onChange={(e) => {
+                        const newIds = e.target.checked 
+                          ? [...currentIds, module.module_id]
+                          : currentIds.filter(id => id !== module.module_id && id !== String(module.module_id));
+                        setFormData({...formData, lms_training_ids: newIds});
+                      }}
+                      className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)] cursor-pointer"
+                    />
+                    <span className="text-sm font-semibold text-[var(--text-main)]">{module.title}</span>
+                  </label>
+                );
+              }) : (
+                <p className="text-xs text-[var(--text-muted)] italic">No LMS Modules available.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-[var(--bg-workspace)]/50 p-5 rounded-xl border border-[var(--border-color)]">
+            <h4 className="text-[11px] font-black text-[var(--text-main)] uppercase tracking-[0.15em] mb-4 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+              Upload Documents (PDF)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {[
+                { label: 'RCD Document', key: 'rcd_doc' },
+                { label: 'Pre-requisite Document', key: 'prerequisite_doc' },
+                { label: 'Training Document', key: 'training_doc' },
+                { label: 'Eligibility Document', key: 'eligibility_doc' },
+                { label: 'KPI Document', key: 'kpi_doc' },
+                { label: 'KRA Document', key: 'kra_doc' }
+              ].map((field) => (
+                <div key={field.key} className="flex flex-col space-y-1.5">
+                  <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{field.label}</label>
+                  
+                  <div className="relative group">
+                    <input 
+                      type="file" 
+                      accept=".pdf"
+                      id={`file-${field.key}`}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setFiles({...files, [field.key]: e.target.files[0]});
+                        }
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    
+                    <div className={`w-full p-3 rounded-xl border-2 border-dashed flex items-center justify-between transition-all ${
+                      files[field.key] ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-[var(--border-color)] bg-[var(--bg-card)] group-hover:border-[var(--accent)]/50 group-hover:bg-[var(--bg-workspace)]'
+                    }`}>
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className={`p-2 rounded-lg ${files[field.key] ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-workspace)] text-[var(--text-dim)] group-hover:text-[var(--accent)]'}`}>
+                          {files[field.key] ? <FileText size={16} /> : <UploadCloud size={16} />}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className={`text-[12px] font-bold truncate ${files[field.key] ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)]'}`}>
+                            {files[field.key] ? files[field.key].name : 'Choose PDF to upload...'}
+                          </span>
+                          {!files[field.key] && editingPosId && positions.find(p => p.id === editingPosId)?.[field.key] && (
+                            <span className="text-[10px] text-[var(--text-dim)] flex items-center gap-1 mt-0.5">
+                              <CheckCircle2 size={10} className="text-green-500" /> Existing file attached
+                            </span>
+                          )}
+                          {files[field.key] && (
+                            <span className="text-[10px] text-[var(--text-dim)] font-medium">
+                              {(files[field.key].size / 1024 / 1024).toFixed(2)} MB
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {files[field.key] && (
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const newFiles = { ...files };
+                            newFiles[field.key] = null;
+                            setFiles(newFiles);
+                            // Also clear the actual input value
+                            const input = document.getElementById(`file-${field.key}`);
+                            if (input) input.value = '';
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-white text-[var(--text-dim)] hover:text-red-500 z-20 relative transition-colors border border-transparent hover:border-red-200"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
           
           <div className="flex justify-end pt-2 border-t border-[var(--border-color)] mt-2">
             <button 
@@ -363,17 +526,17 @@ const OpenPositionsPage = () => {
               ].map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)]/50 rounded-lg border border-[var(--border-color)]">
                   <div className="flex items-center gap-3">
-                    <span className="w-20 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{item.label}</span>
-                    {item.value ? (
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle2 size={14} className="text-green-500" />
-                        <span className="text-sm font-semibold text-[var(--text-main)] truncate max-w-[200px]" title={item.value}>{item.value}</span>
-                      </div>
-                    ) : (
-                      <span className="text-sm font-medium text-[var(--text-dim)] italic flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-400/50" /> Not Set
-                      </span>
-                    )}
+                     <span className="w-20 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{item.label}</span>
+                     {item.value ? (
+                       <div className="flex items-center gap-1.5">
+                         <CheckCircle2 size={14} className="text-green-500" />
+                         <span className="text-sm font-semibold text-[var(--text-main)] truncate max-w-[200px]" title={item.value}>{item.value}</span>
+                       </div>
+                     ) : (
+                       <span className="text-sm font-medium text-[var(--text-dim)] italic flex items-center gap-1.5">
+                         <span className="w-1.5 h-1.5 rounded-full bg-red-400/50" /> Not Set
+                       </span>
+                     )}
                   </div>
                   
                   {item.value && (
@@ -389,20 +552,61 @@ const OpenPositionsPage = () => {
                       >
                         <Eye size={14} />
                       </button>
-                      <button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleDownload(item.id, item.value);
-                        }}
-                        className="p-1.5 rounded-md bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--text-dim)] shadow-sm transition-all flex items-center justify-center"
-                        title="Download Form"
-                      >
-                        <Download size={14} />
-                      </button>
                     </div>
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--text-dim)] border-b border-[var(--border-color)] pb-2">Position Documents</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {[
+                { label: 'RCD Document', key: 'rcd_doc' },
+                { label: 'Pre-requisite Document', key: 'prerequisite_doc' },
+                { label: 'Training Document', key: 'training_doc' },
+                { label: 'Eligibility Document', key: 'eligibility_doc' },
+                { label: 'KPI Document', key: 'kpi_doc' },
+                { label: 'KRA Document', key: 'kra_doc' }
+              ].map((doc, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-workspace)]/50 rounded-lg border border-[var(--border-color)]">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">{doc.label}</span>
+                  {viewingPositionOverview?.[doc.key] ? (
+                    <button 
+                      onClick={() => {
+                        setViewingDocument(viewingPositionOverview[doc.key]);
+                        setViewingDocumentTitle(`${viewingPositionOverview.name} - ${doc.label}`);
+                      }}
+                      className="p-1.5 rounded-md bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--text-dim)] shadow-sm transition-all"
+                      title="View Document"
+                    >
+                      <Eye size={14} />
+                    </button>
+                  ) : (
+                    <span className="text-xs font-medium text-[var(--text-dim)] italic">None</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--text-dim)] border-b border-[var(--border-color)] pb-2">Linked LMS Trainings</h4>
+            <div className="flex flex-col gap-2">
+              {viewingPositionOverview?.lms_training_ids?.length > 0 ? viewingPositionOverview.lms_training_ids.map((id, idx) => {
+                const module = lmsModules.find(m => m.module_id === id || String(m.module_id) === String(id));
+                return (
+                  <div key={idx} className="flex items-center gap-2 p-3 bg-[var(--bg-workspace)]/50 rounded-lg border border-[var(--border-color)]">
+                    <CheckCircle2 size={14} className="text-[var(--accent)]" />
+                    <span className="text-sm font-semibold text-[var(--text-main)]">{module ? module.title : `Module #${id}`}</span>
+                  </div>
+                );
+              }) : (
+                <div className="p-3 bg-[var(--bg-workspace)]/50 rounded-lg border border-[var(--border-color)]">
+                  <span className="text-xs font-medium text-[var(--text-dim)] italic">No trainings linked.</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -428,6 +632,27 @@ const OpenPositionsPage = () => {
               title="Form Preview"
             />
           ) : null}
+        </div>
+      </Modal>
+
+      {/* View Document Modal */}
+      <Modal 
+        isOpen={!!viewingDocument} 
+        onClose={() => {
+          setViewingDocument(null);
+          setViewingDocumentTitle('');
+        }} 
+        title={viewingDocumentTitle || 'View Document'}
+        maxWidth="max-w-7xl"
+      >
+        <div className="w-full h-[85vh] bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-[var(--border-color)]">
+          {viewingDocument && (
+            <iframe 
+              src={viewingDocument}
+              className="w-full h-full border-0"
+              title="Document Preview"
+            />
+          )}
         </div>
       </Modal>
     </div>

@@ -1,4 +1,6 @@
 const db = require('../../../../config/db');
+const cloudinary = require('../../../../config/cloudinary');
+const fs = require('fs');
 
 /**
  * Get all open positions
@@ -9,6 +11,7 @@ const getPositions = async (req, res) => {
       SELECT 
         op.id, op.name, 
         op.skills_form_id, op.knowledge_form_id, op.traits_form_id, op.self_image_form_id, op.motive_form_id,
+        op.rcd_doc, op.prerequisite_doc, op.training_doc, op.eligibility_doc, op.kpi_doc, op.kra_doc, op.lms_training_ids,
         sf.label as skills_form_label,
         kf.label as knowledge_form_label,
         tf.label as traits_form_label,
@@ -48,17 +51,54 @@ const createPosition = async (req, res) => {
       knowledge_form_id, 
       traits_form_id, 
       self_image_form_id, 
-      motive_form_id 
+      motive_form_id,
+      lms_training_ids
     } = req.body;
     
     if (!name) {
       return res.status(400).json({ success: false, message: 'Position name is required' });
     }
 
+    let parsedTrainingIds = [];
+    if (lms_training_ids) {
+      try {
+        parsedTrainingIds = typeof lms_training_ids === 'string' ? JSON.parse(lms_training_ids) : lms_training_ids;
+      } catch (e) {
+        console.error("Error parsing lms_training_ids:", e);
+      }
+    }
+
+    const uploadedDocs = {
+      rcd_doc: null,
+      prerequisite_doc: null,
+      training_doc: null,
+      eligibility_doc: null,
+      kpi_doc: null,
+      kra_doc: null
+    };
+
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        if (Object.keys(uploadedDocs).includes(file.fieldname)) {
+          try {
+            const result = await cloudinary.uploader.upload(file.path, {
+              resource_type: 'auto',
+              folder: 'open_positions'
+            });
+            uploadedDocs[file.fieldname] = result.secure_url;
+            
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+          } catch (e) {
+            console.error("Cloudinary upload error:", e);
+          }
+        }
+      }
+    }
+
     const result = await db.query(
       `INSERT INTO open_positions 
-       (name, skills_form_id, knowledge_form_id, traits_form_id, self_image_form_id, motive_form_id, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       (name, skills_form_id, knowledge_form_id, traits_form_id, self_image_form_id, motive_form_id, created_by, rcd_doc, prerequisite_doc, training_doc, eligibility_doc, kpi_doc, kra_doc, lms_training_ids)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
         name, 
@@ -67,7 +107,14 @@ const createPosition = async (req, res) => {
         traits_form_id || null, 
         self_image_form_id || null, 
         motive_form_id || null, 
-        req.user?.id || null
+        req.user?.id || null,
+        uploadedDocs.rcd_doc,
+        uploadedDocs.prerequisite_doc,
+        uploadedDocs.training_doc,
+        uploadedDocs.eligibility_doc,
+        uploadedDocs.kpi_doc,
+        uploadedDocs.kra_doc,
+        JSON.stringify(parsedTrainingIds)
       ]
     );
 
@@ -90,7 +137,8 @@ const updatePosition = async (req, res) => {
       knowledge_form_id, 
       traits_form_id, 
       self_image_form_id, 
-      motive_form_id 
+      motive_form_id,
+      lms_training_ids
     } = req.body;
     
     if (!name) {
@@ -102,10 +150,50 @@ const updatePosition = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Position not found' });
     }
 
+    const existingRow = existing.rows[0];
+
+    let parsedTrainingIds = existingRow.lms_training_ids || [];
+    if (lms_training_ids !== undefined) {
+      try {
+        parsedTrainingIds = typeof lms_training_ids === 'string' ? JSON.parse(lms_training_ids) : lms_training_ids;
+      } catch (e) {
+        console.error("Error parsing lms_training_ids:", e);
+      }
+    }
+
+    const uploadedDocs = {
+      rcd_doc: existingRow.rcd_doc,
+      prerequisite_doc: existingRow.prerequisite_doc,
+      training_doc: existingRow.training_doc,
+      eligibility_doc: existingRow.eligibility_doc,
+      kpi_doc: existingRow.kpi_doc,
+      kra_doc: existingRow.kra_doc
+    };
+
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        if (Object.keys(uploadedDocs).includes(file.fieldname)) {
+          try {
+            const result = await cloudinary.uploader.upload(file.path, {
+              resource_type: 'auto',
+              folder: 'open_positions'
+            });
+            uploadedDocs[file.fieldname] = result.secure_url;
+            
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+          } catch (e) {
+            console.error("Cloudinary upload error:", e);
+          }
+        }
+      }
+    }
+
     const result = await db.query(
       `UPDATE open_positions
-       SET name = $1, skills_form_id = $2, knowledge_form_id = $3, traits_form_id = $4, self_image_form_id = $5, motive_form_id = $6, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
+       SET name = $1, skills_form_id = $2, knowledge_form_id = $3, traits_form_id = $4, self_image_form_id = $5, motive_form_id = $6, 
+           rcd_doc = $7, prerequisite_doc = $8, training_doc = $9, eligibility_doc = $10, kpi_doc = $11, kra_doc = $12, lms_training_ids = $13,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $14
        RETURNING *`,
       [
         name, 
@@ -114,6 +202,13 @@ const updatePosition = async (req, res) => {
         traits_form_id || null, 
         self_image_form_id || null, 
         motive_form_id || null, 
+        uploadedDocs.rcd_doc,
+        uploadedDocs.prerequisite_doc,
+        uploadedDocs.training_doc,
+        uploadedDocs.eligibility_doc,
+        uploadedDocs.kpi_doc,
+        uploadedDocs.kra_doc,
+        JSON.stringify(parsedTrainingIds),
         id
       ]
     );
