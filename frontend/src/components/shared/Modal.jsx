@@ -23,7 +23,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', header
     <div className="fixed inset-0 z-[1050] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/10 animate-in fade-in duration-300"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
         onClick={onClose}
       />
 
@@ -31,18 +31,11 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', header
       <Draggable nodeRef={nodeRef} handle=".modal-header" bounds="parent">
         <div ref={nodeRef} className="w-full" style={{ maxWidth: maxWidth === 'max-w-sm' ? '24rem' : maxWidth === 'max-w-md' ? '28rem' : maxWidth === 'max-w-lg' ? '32rem' : maxWidth === 'max-w-xl' ? '36rem' : maxWidth === 'max-w-2xl' ? '42rem' : maxWidth === 'max-w-4xl' ? '56rem' : maxWidth === 'max-w-6xl' ? '72rem' : '100%' }}>
           <div
-            className={`relative w-full rounded-2xl shadow-2xl p-0 overflow-hidden animate-scale-in flex flex-col max-h-[90vh] bg-[var(--bg-card)]`}
-            style={{
-              border: '1px solid var(--border-color)',
-            }}
+            className={`relative w-full rounded-2xl shadow-2xl p-0 overflow-hidden animate-scale-in flex flex-col max-h-[90vh] bg-[var(--bg-card)] backdrop-blur-xl border border-[var(--border-color)]`}
           >
           {/* Header */}
           <div
-            className="modal-header px-6 py-4 flex items-center justify-between flex-shrink-0 cursor-move"
-          style={{
-            background: 'var(--grad-header)',
-            borderBottom: '1px solid var(--border-color)',
-          }}
+            className="modal-header px-6 py-4 flex items-center justify-between flex-shrink-0 cursor-move border-b border-[var(--border-color)] bg-gradient-to-r from-[var(--bg-workspace)] to-[var(--bg-card)]"
         >
           <h3
             className="text-sm font-black uppercase tracking-widest"
@@ -67,7 +60,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg', header
 
         {/* Body */}
         <div
-          className="p-4 md:p-8 overflow-y-auto custom-scrollbar"
+          className="p-4 md:p-5 overflow-y-auto custom-scrollbar"
           style={{ color: 'var(--text-main)', background: 'transparent' }}
         >
           {children}

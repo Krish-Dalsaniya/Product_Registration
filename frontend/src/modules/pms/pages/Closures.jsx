@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Clock, Users, Calendar as CalendarIcon, CheckCircle, FileText, Loader2, X, Trash2, Edit2, Search, CheckSquare, Download } from 'lucide-react';
-import { getClosures, createClosure, updateClosure, deleteClosure, getClosureMetrics, getProjects, getTasks } from '../../../api/pms';
+import { getClosures, getClosureById, createClosure, updateClosure, deleteClosure, getClosureMetrics, getProjects, getTasks } from '../../../api/pms';
 import DataTable from '../../../components/shared/DataTable';
 import Modal from '../../../components/shared/Modal';
 import toast from 'react-hot-toast';
@@ -79,9 +79,20 @@ const Closures = () => {
     }
   };
 
-  const handleView = (row) => {
-    setSelectedClosure(row);
-    setIsViewModalOpen(true);
+  const handleView = async (row) => {
+    try {
+      setIsLoading(true);
+      const res = await getClosureById(row.closure_id);
+      if (res.data?.success) {
+        setSelectedClosure(res.data.data);
+        setIsViewModalOpen(true);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to load closure details');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEditStatus = async (id, status) => {
