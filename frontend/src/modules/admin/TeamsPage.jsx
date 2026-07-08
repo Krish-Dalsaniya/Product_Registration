@@ -26,14 +26,14 @@ const TeamsPage = () => {
   const activeModule = isHRModule ? 'HR' : 'Admin';
 
   const { data: teamsRes, isLoading: teamsLoading } = useTeams({ module: activeModule });
-  
+
   const { data: usersRes, isLoading: adminUsersLoading } = useUsers({ limit: 500 }, { enabled: !isHRModule });
-  
+
   const { data: employeesRes, isLoading: hrEmployeesLoading } = useQuery({
     queryKey: ['hrEmployees'],
     queryFn: async () => {
       const res = await axiosInstance.get('/hr/employees');
-      return { 
+      return {
         data: res.data.data.map(emp => ({
           ...emp,
           role_name: emp.department_name || 'Unassigned Department'
@@ -60,7 +60,7 @@ const TeamsPage = () => {
   const data = teamsRes?.data || [];
   const rawUsers = isHRModule ? (employeesRes?.data || []) : (usersRes?.data || []);
   const usersLoading = isHRModule ? hrEmployeesLoading : adminUsersLoading;
-  
+
   const dedup = (arr) => {
     const seen = new Set();
     return arr.filter(u => {
@@ -71,16 +71,16 @@ const TeamsPage = () => {
   };
   const allUsers = dedup(rawUsers);
   const uniqueRoles = Array.from(new Set(allUsers.map(u => u.role_name).filter(Boolean)));
-  
+
   const availableItems = productsRes?.data || [];
   const loading = teamsLoading || usersLoading || productsLoading || projectsLoading;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('create'); 
+  const [modalMode, setModalMode] = useState('create');
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [selectedProjects, setSelectedProjects] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -92,7 +92,7 @@ const TeamsPage = () => {
   const selectedRole = watch('role_name') || defaultRole;
 
   const dropdownRef = useRef(null);
-  
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -108,14 +108,14 @@ const TeamsPage = () => {
 
   const formId = React.useMemo(() => {
     if (!isModalOpen || modalMode === 'view') return null;
-    return modalMode === 'create' 
-      ? `team_create` 
+    return modalMode === 'create'
+      ? `team_create`
       : `team_edit_${selectedTeam?.team_id || 'unknown'}`;
   }, [isModalOpen, modalMode, selectedTeam]);
 
   useEffect(() => {
     if (!formId || !isModalOpen) return;
-    
+
     const subscription = watch((value) => {
       if (value && Object.keys(value).length > 0) {
         dispatch(saveDraft({ formId, data: value }));
@@ -179,31 +179,31 @@ const TeamsPage = () => {
     setSelectedItems([]);
     setIsDropdownOpen(false);
     setUserSearch('');
-    
+
     const draftId = 'team_create';
     const draft = store.getState().drafts[draftId];
     if (draft && draft.data && Object.keys(draft.data).length > 0) {
       reset(draft.data);
     } else {
-      reset({ 
-        team_name: '', 
+      reset({
+        team_name: '',
         role_name: '',
-        description: '', 
-        product_name: '', 
-        product_description: '', 
-        team_lead_id: '', 
-        client_handler_id: '' 
+        description: '',
+        product_name: '',
+        product_description: '',
+        team_lead_id: '',
+        client_handler_id: ''
       });
     }
-    
+
     setIsModalOpen(true);
   };
 
   const handleView = (team) => {
     setModalMode('view');
     setSelectedTeam(team);
-    reset({ 
-      team_name: team.team_name, 
+    reset({
+      team_name: team.team_name,
       role_name: team.role_name || '',
       description: team.description || '',
       product_name: team.product_name || '',
@@ -211,7 +211,7 @@ const TeamsPage = () => {
       team_lead_id: team.team_lead_id || '',
       client_handler_id: team.client_handler_id || ''
     });
-    setSelectedMembers(team.member_ids || []); 
+    setSelectedMembers(team.member_ids || []);
     setSelectedProjects(team.project_ids || []);
     setSelectedItems([]);
     setIsDropdownOpen(false);
@@ -222,8 +222,8 @@ const TeamsPage = () => {
   const handleEdit = (team) => {
     setModalMode('edit');
     setSelectedTeam(team);
-    const resetData = { 
-      team_name: team.team_name, 
+    const resetData = {
+      team_name: team.team_name,
       role_name: team.role_name || '',
       description: team.description || '',
       product_name: team.product_name || '',
@@ -238,8 +238,8 @@ const TeamsPage = () => {
     } else {
       reset(resetData);
     }
-    
-    setSelectedMembers(team.member_ids || []); 
+
+    setSelectedMembers(team.member_ids || []);
     setSelectedProjects(team.project_ids || []);
     setSelectedItems([]);
     setIsDropdownOpen(false);
@@ -273,8 +273,8 @@ const TeamsPage = () => {
 
   const columns = [
     { key: 'team_name', label: 'Project Name' },
-    { 
-      key: 'member_names', 
+    {
+      key: 'member_names',
       label: 'Personnel Crew',
       render: (row) => (
         <div className="flex flex-wrap gap-1.5">
@@ -311,7 +311,7 @@ const TeamsPage = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto">
-      
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-entrance-down">
         <div className="flex items-center gap-5">
           <div className="p-3 md:p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm group animate-float">
@@ -325,8 +325,8 @@ const TeamsPage = () => {
         </div>
 
         {hasPermission('teams', 'create') && (
-          <button 
-            onClick={handleOpenCreate} 
+          <button
+            onClick={handleOpenCreate}
             className="btn-primary shadow-lg px-8 py-3 group"
             style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
           >
@@ -336,7 +336,7 @@ const TeamsPage = () => {
         )}
       </div>
 
-      <div className="workspace-card p-3.5 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)]">
+      <div className="workspace-card p-2 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)]">
         <div className="relative flex-1 group w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
           <input
@@ -374,69 +374,69 @@ const TeamsPage = () => {
         <div className="space-y-6">
           {modalMode === 'view' ? (
             <div className="space-y-6 animate-in fade-in duration-500 py-2">
-               <div className="grid grid-cols-1 gap-6">
-                  {/* Clean text-based layout without boxes */}
-                  <div className="space-y-5">
-                    <div className="border-b border-[var(--border-color)] pb-4">
-                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Project Name</label>
-                      <div className="text-[var(--text-main)] font-black text-xl uppercase tracking-tight">
-                        {selectedTeam?.team_name}
-                      </div>
-                    </div>
-
-                    <div className="border-b border-[var(--border-color)] pb-4">
-                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Associated Product</label>
-                      <div className="text-[var(--text-main)] font-bold text-base">
-                        {selectedTeam?.product_name || 'No Product Linked'}
-                      </div>
-                    </div>
-
-                    <div className="border-b border-[var(--border-color)] pb-4">
-                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Team Lead</label>
-                      <div className="text-[var(--text-main)] font-bold text-[14px]">
-                        {allUsers.find(u => u.user_id === selectedTeam?.team_lead_id)?.full_name || 'Not Assigned'}
-                      </div>
-                    </div>
-
-                    <div className="border-b border-[var(--border-color)] pb-4">
-                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Client Handler</label>
-                      <div className="text-[var(--text-main)] font-bold text-[14px]">
-                        {allUsers.find(u => u.user_id === selectedTeam?.client_handler_id)?.full_name || 'Not Assigned'}
-                      </div>
-                    </div>
-
-                    <div className="border-b border-[var(--border-color)] pb-4">
-                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Product Description</label>
-                      <div className="text-[var(--text-main)] text-[14px] leading-relaxed rich-text-content mt-2 ql-snow">
-                        <div className="ql-editor !p-0" dangerouslySetInnerHTML={{ __html: selectedTeam?.product_description || '<span class="italic opacity-50">No description provided</span>' }} />
-                      </div>
-                    </div>
-
-                    <div className="border-b border-[var(--border-color)] pb-4">
-                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Team Directives</label>
-                      <div className="text-[var(--text-main)] text-[14px] leading-relaxed rich-text-content mt-2 ql-snow">
-                        <div className="ql-editor !p-0" dangerouslySetInnerHTML={{ __html: selectedTeam?.description || '<span class="italic opacity-50">No directives provided</span>' }} />
-                      </div>
-                    </div>
-
-                    <div>
-                       <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 flex items-center gap-2"><Users size={12} /> Active Personnel</label>
-                       <div className="flex flex-wrap gap-2">
-                         {selectedTeam?.member_ids?.map(id => {
-                            const user = allUsers.find(u => u.user_id === id);
-                            return user ? (
-                              <span key={id} className="px-3 py-1.5 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-lg text-[11px] font-black uppercase tracking-tight text-[var(--accent)]">
-                                {user.full_name}
-                              </span>
-                            ) : null;
-                         })}
-                         {(!selectedTeam?.member_ids || selectedTeam.member_ids.length === 0) && (
-                            <span className="text-[11px] text-[var(--text-dim)] italic">No personnel assigned to this team.</span>
-                         )}
-                       </div>
+              <div className="grid grid-cols-1 gap-6">
+                {/* Clean text-based layout without boxes */}
+                <div className="space-y-5">
+                  <div className="border-b border-[var(--border-color)] pb-4">
+                    <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Project Name</label>
+                    <div className="text-[var(--text-main)] font-black text-xl uppercase tracking-tight">
+                      {selectedTeam?.team_name}
                     </div>
                   </div>
-               </div>
+
+                  <div className="border-b border-[var(--border-color)] pb-4">
+                    <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Associated Product</label>
+                    <div className="text-[var(--text-main)] font-bold text-base">
+                      {selectedTeam?.product_name || 'No Product Linked'}
+                    </div>
+                  </div>
+
+                  <div className="border-b border-[var(--border-color)] pb-4">
+                    <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Team Lead</label>
+                    <div className="text-[var(--text-main)] font-bold text-[14px]">
+                      {allUsers.find(u => u.user_id === selectedTeam?.team_lead_id)?.full_name || 'Not Assigned'}
+                    </div>
+                  </div>
+
+                  <div className="border-b border-[var(--border-color)] pb-4">
+                    <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Client Handler</label>
+                    <div className="text-[var(--text-main)] font-bold text-[14px]">
+                      {allUsers.find(u => u.user_id === selectedTeam?.client_handler_id)?.full_name || 'Not Assigned'}
+                    </div>
+                  </div>
+
+                  <div className="border-b border-[var(--border-color)] pb-4">
+                    <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Product Description</label>
+                    <div className="text-[var(--text-main)] text-[14px] leading-relaxed rich-text-content mt-2 ql-snow">
+                      <div className="ql-editor !p-0" dangerouslySetInnerHTML={{ __html: selectedTeam?.product_description || '<span class="italic opacity-50">No description provided</span>' }} />
+                    </div>
+                  </div>
+
+                  <div className="border-b border-[var(--border-color)] pb-4">
+                    <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-1">Team Directives</label>
+                    <div className="text-[var(--text-main)] text-[14px] leading-relaxed rich-text-content mt-2 ql-snow">
+                      <div className="ql-editor !p-0" dangerouslySetInnerHTML={{ __html: selectedTeam?.description || '<span class="italic opacity-50">No directives provided</span>' }} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 flex items-center gap-2"><Users size={12} /> Active Personnel</label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTeam?.member_ids?.map(id => {
+                        const user = allUsers.find(u => u.user_id === id);
+                        return user ? (
+                          <span key={id} className="px-3 py-1.5 bg-[var(--nav-hover)] border border-[var(--border-color)] rounded-lg text-[11px] font-black uppercase tracking-tight text-[var(--accent)]">
+                            {user.full_name}
+                          </span>
+                        ) : null;
+                      })}
+                      {(!selectedTeam?.member_ids || selectedTeam.member_ids.length === 0) && (
+                        <span className="text-[11px] text-[var(--text-dim)] italic">No personnel assigned to this team.</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <form id="team-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -445,12 +445,12 @@ const TeamsPage = () => {
                   <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Project Name</label>
                   <input {...register('team_name', { required: 'Team name is required' })} className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-lg px-4 py-2.5 outline-none focus:border-[var(--accent)] transition-all text-[13px] text-[var(--text-main)]" placeholder="e.g. Unit Alpha" />
                 </div>
-                
+
                 {/* Popover UI for Team Type and Personnel */}
                 <div className="relative">
                   <label className="block text-[11px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-2.5 ml-1">Team Members</label>
                   <div className="relative" ref={dropdownRef}>
-                    <div 
+                    <div
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                       className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition-all hover:border-[var(--accent)] hover:shadow-[0_0_15px_rgba(var(--accent-rgb),0.1)] min-h-[42px]"
                     >
@@ -463,11 +463,11 @@ const TeamsPage = () => {
                               return (
                                 <div key={id} className="w-6 h-6 rounded-full border border-[var(--bg-card)] bg-[var(--bg-workspace)] overflow-hidden shrink-0 shadow-sm" style={{ zIndex: 10 - idx }}>
                                   {user.image_url ? (
-                                     <img src={user.image_url} alt="" className="w-full h-full object-cover" />
+                                    <img src={user.image_url} alt="" className="w-full h-full object-cover" />
                                   ) : (
-                                     <div className="w-full h-full flex items-center justify-center text-[9px] font-black text-[var(--text-muted)] bg-[var(--nav-hover)]">
-                                       {user.full_name.charAt(0)}
-                                     </div>
+                                    <div className="w-full h-full flex items-center justify-center text-[9px] font-black text-[var(--text-muted)] bg-[var(--nav-hover)]">
+                                      {user.full_name.charAt(0)}
+                                    </div>
                                   )}
                                 </div>
                               );
@@ -491,13 +491,13 @@ const TeamsPage = () => {
                     {/* Popup Dropdown */}
                     {isDropdownOpen && (
                       <div className="absolute z-[100] top-[calc(100%+8px)] left-0 right-0 bg-[var(--bg-card)]/95 backdrop-blur-xl border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 flex flex-col">
-                        
+
                         {/* Header with Title and Close Icon */}
                         <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-[var(--border-color)] bg-[var(--bg-workspace)]/50">
                           <span className="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">Select Personnel</span>
-                          <button 
-                            type="button" 
-                            onClick={() => setIsDropdownOpen(false)} 
+                          <button
+                            type="button"
+                            onClick={() => setIsDropdownOpen(false)}
                             className="text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 p-1 rounded-md transition-colors"
                           >
                             <X size={14} />
@@ -505,32 +505,32 @@ const TeamsPage = () => {
                         </div>
 
                         <div className="p-3.5 border-b border-[var(--border-color)] space-y-3">
-                           {/* Role Dropdown Filter */}
-                           <div className="relative">
-                             <select 
-                               {...register('role_name', { required: true })} 
-                               defaultValue=""
-                               className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-xl px-3 py-2 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black uppercase tracking-widest text-[var(--text-main)] appearance-none cursor-pointer" 
-                               style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1em', backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat' }}
-                             >
-                               <option value="" disabled>{isHRModule ? 'Select Department' : 'Select Role'}</option>
-                               {uniqueRoles.map((role) => (
-                                 <option key={role} value={role}>{role}</option>
-                               ))}
-                             </select>
-                           </div>
-                           
-                           {/* Search Input */}
-                           <div className="relative group">
-                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors" />
-                             <input 
-                               type="text" 
-                               placeholder={`Search personnel...`} 
-                               value={userSearch} 
-                               onChange={(e) => setUserSearch(e.target.value)} 
-                               className="w-full bg-[var(--bg-workspace)] border-[0.5px] border-[var(--border-color)] rounded-xl py-2 pl-9 pr-3 outline-none focus:border-[var(--accent)] text-xs text-[var(--text-main)] placeholder-[var(--text-muted)] placeholder-opacity-50 transition-all" 
-                             />
-                           </div>
+                          {/* Role Dropdown Filter */}
+                          <div className="relative">
+                            <select
+                              {...register('role_name', { required: true })}
+                              defaultValue=""
+                              className="w-full bg-[var(--input-bg)] border-[0.5px] border-[var(--border-color)] rounded-xl px-3 py-2 outline-none focus:border-[var(--accent)] transition-all text-[11px] font-black uppercase tracking-widest text-[var(--text-main)] appearance-none cursor-pointer"
+                              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1em', backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat' }}
+                            >
+                              <option value="" disabled>{isHRModule ? 'Select Department' : 'Select Role'}</option>
+                              {uniqueRoles.map((role) => (
+                                <option key={role} value={role}>{role}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Search Input */}
+                          <div className="relative group">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors" />
+                            <input
+                              type="text"
+                              placeholder={`Search personnel...`}
+                              value={userSearch}
+                              onChange={(e) => setUserSearch(e.target.value)}
+                              className="w-full bg-[var(--bg-workspace)] border-[0.5px] border-[var(--border-color)] rounded-xl py-2 pl-9 pr-3 outline-none focus:border-[var(--accent)] text-xs text-[var(--text-main)] placeholder-[var(--text-muted)] placeholder-opacity-50 transition-all"
+                            />
+                          </div>
                         </div>
                         <div className="max-h-[350px] overflow-y-auto custom-scrollbar bg-[var(--bg-card)]/50 divide-y divide-[var(--border-color)]/30">
                           {allUsers
@@ -576,12 +576,12 @@ const TeamsPage = () => {
                             .filter(u => u.role_name === selectedRole)
                             .filter(u => u.full_name.toLowerCase().includes(userSearch.toLowerCase()))
                             .length === 0 && (
-                            <div className="px-4 py-6 text-center text-xs font-medium text-[var(--text-muted)] opacity-60">
-                              No personnel found
-                            </div>
-                          )}
+                              <div className="px-4 py-6 text-center text-xs font-medium text-[var(--text-muted)] opacity-60">
+                                No personnel found
+                              </div>
+                            )}
                         </div>
-                        
+
                         {/* Footer with Save Button */}
                         <div className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-workspace)]/80 flex justify-end">
                           <button
@@ -638,7 +638,7 @@ const TeamsPage = () => {
                     name="product_description"
                     control={control}
                     render={({ field }) => (
-                      <ReactQuill 
+                      <ReactQuill
                         theme="snow"
                         value={field.value || ''}
                         onChange={field.onChange}
@@ -654,7 +654,7 @@ const TeamsPage = () => {
                     name="description"
                     control={control}
                     render={({ field }) => (
-                      <ReactQuill 
+                      <ReactQuill
                         theme="snow"
                         value={field.value || ''}
                         onChange={field.onChange}
@@ -668,7 +668,7 @@ const TeamsPage = () => {
 
 
 
-                             {/* Submit button moved to modal header */}
+              {/* Submit button moved to modal header */}
             </form>
           )}
         </div>

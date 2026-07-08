@@ -49,8 +49,8 @@ const AttendanceMuster = () => {
     }
   };
 
-  const filteredRecords = records.filter(r => 
-    r.full_name?.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredRecords = records.filter(r =>
+    r.full_name?.toLowerCase().includes(search.toLowerCase()) ||
     r.emp_code?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -90,13 +90,13 @@ const AttendanceMuster = () => {
 
   const handleExportCSV = () => {
     if (filteredRecords.length === 0) return;
-    
+
     const headers = [
       'Emp Code', 'Employee Name', 'Department',
       ...daysArray.map(d => `${d} ${getDayOfWeek(d)}`),
       'P', 'A', 'L', 'LT', 'HD', 'H', 'OFF'
     ];
-    
+
     const rows = filteredRecords.map(emp => {
       const dayData = daysArray.map(d => getShortStatus(emp.days[d]));
       return [
@@ -113,12 +113,12 @@ const AttendanceMuster = () => {
         emp.summary.OFF
       ];
     });
-    
+
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -132,7 +132,7 @@ const AttendanceMuster = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 w-full min-w-0 max-w-full overflow-hidden">
       {/* Filters */}
-      <div className="workspace-card p-4 flex flex-wrap gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl">
+      <div className="workspace-card p-2 flex flex-wrap gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl">
         <div className="relative flex-1 min-w-[250px] group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
           <input
@@ -182,7 +182,7 @@ const AttendanceMuster = () => {
             </select>
           </div>
 
-          <button 
+          <button
             onClick={handleExportCSV}
             className="px-4 py-2 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] transition-colors flex items-center gap-2 group shadow-sm bg-white"
           >
@@ -196,75 +196,75 @@ const AttendanceMuster = () => {
       <div className="grid grid-cols-1">
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm overflow-hidden flex flex-col min-w-0">
           {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="animate-spin text-[var(--accent)] w-8 h-8" />
-          </div>
-        ) : filteredRecords.length === 0 ? (
-          <div className="flex flex-col justify-center items-center h-64 text-[var(--text-muted)]">
-            <Calendar size={48} className="opacity-20 mb-4" />
-            <p className="font-bold">No attendance records found for this month.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse whitespace-nowrap">
-              <thead>
-                <tr>
-                  <th className="sticky left-0 z-20 bg-[var(--bg-workspace)] border-b border-r border-[var(--border-color)] px-3 py-1.5 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[160px] min-w-[160px] max-w-[160px]">
-                    <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Employee</span>
-                  </th>
-                  {daysArray.map(day => (
-                    <th key={day} className="border-b border-r border-[var(--border-color)] px-1 py-2 text-center min-w-[30px] bg-[#f8fafc]">
-                      <div className="flex flex-col items-center">
-                        <span className="text-[11px] font-black text-[var(--text-main)]">{day}</span>
-                        <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase">{getDayOfWeek(day).charAt(0)}</span>
-                      </div>
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="animate-spin text-[var(--accent)] w-8 h-8" />
+            </div>
+          ) : filteredRecords.length === 0 ? (
+            <div className="flex flex-col justify-center items-center h-64 text-[var(--text-muted)]">
+              <Calendar size={48} className="opacity-20 mb-4" />
+              <p className="font-bold">No attendance records found for this month.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse whitespace-nowrap">
+                <thead>
+                  <tr>
+                    <th className="sticky left-0 z-20 bg-[var(--bg-workspace)] border-b border-r border-[var(--border-color)] px-3 py-1.5 shadow-[2px_0_5px_rgba(0,0,0,0.05)] w-[160px] min-w-[160px] max-w-[160px]">
+                      <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-wider">Employee</span>
                     </th>
-                  ))}
-                  <th className="bg-emerald-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-emerald-700">P</span></th>
-                  <th className="bg-rose-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-rose-700">A</span></th>
-                  <th className="bg-blue-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-blue-700">L</span></th>
-                  <th className="bg-amber-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-amber-700">LT</span></th>
-                  <th className="bg-purple-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-purple-700">HD</span></th>
-                  <th className="bg-orange-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-orange-700">H</span></th>
-                  <th className="bg-gray-50 border-b border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-gray-500">OFF</span></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-color)] text-[11px]">
-                {filteredRecords.map((emp, index) => (
-                  <tr key={emp.employee_id} className={`group transition-colors ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}>
-                    <td className={`sticky left-0 z-10 border-r border-[var(--border-color)] px-3 py-1 shadow-[2px_0_5px_rgba(0,0,0,0.02)] transition-colors w-[160px] min-w-[160px] max-w-[160px] ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 group-hover:bg-gray-200 dark:group-hover:bg-gray-700/50' : 'bg-white group-hover:bg-gray-50 dark:bg-[var(--bg-card)] dark:group-hover:bg-gray-800/30'}`}>
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="font-bold text-[12px] text-[var(--text-main)] truncate" title={emp.full_name}>{emp.full_name}</span>
-                        <span className="text-[9px] text-[var(--text-muted)] font-semibold truncate" title={`${emp.emp_code} • ${emp.department_name || 'N/A'}`}>{emp.emp_code}</span>
-                      </div>
-                    </td>
-                    {daysArray.map(day => {
-                      const status = emp.days[day];
-                      const shortStatus = getShortStatus(status);
-                      const style = getCellStyles(status);
-                      
-                      return (
-                        <td key={day} className={`border-r border-[var(--border-color)] p-0 text-center relative`}>
-                          <div className={`w-full h-full min-h-[36px] flex items-center justify-center ${style}`}>
-                            {shortStatus}
-                          </div>
-                        </td>
-                      );
-                    })}
-                    <td className="text-center font-black text-emerald-600 border-r border-[var(--border-color)]">{emp.summary.P}</td>
-                    <td className="text-center font-black text-rose-600 border-r border-[var(--border-color)]">{emp.summary.A}</td>
-                    <td className="text-center font-black text-blue-600 border-r border-[var(--border-color)]">{emp.summary.L}</td>
-                    <td className="text-center font-black text-amber-600 border-r border-[var(--border-color)]">{emp.summary.Late}</td>
-                    <td className="text-center font-black text-purple-600 border-r border-[var(--border-color)]">{emp.summary.HD}</td>
-                    <td className="text-center font-black text-orange-600 border-r border-[var(--border-color)]">{emp.summary.H}</td>
-                    <td className="text-center font-black text-gray-500">{emp.summary.OFF}</td>
+                    {daysArray.map(day => (
+                      <th key={day} className="border-b border-r border-[var(--border-color)] px-1 py-2 text-center min-w-[30px] bg-[#f8fafc]">
+                        <div className="flex flex-col items-center">
+                          <span className="text-[11px] font-black text-[var(--text-main)]">{day}</span>
+                          <span className="text-[8px] font-bold text-[var(--text-muted)] uppercase">{getDayOfWeek(day).charAt(0)}</span>
+                        </div>
+                      </th>
+                    ))}
+                    <th className="bg-emerald-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-emerald-700">P</span></th>
+                    <th className="bg-rose-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-rose-700">A</span></th>
+                    <th className="bg-blue-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-blue-700">L</span></th>
+                    <th className="bg-amber-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-amber-700">LT</span></th>
+                    <th className="bg-purple-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-purple-700">HD</span></th>
+                    <th className="bg-orange-50 border-b border-r border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-orange-700">H</span></th>
+                    <th className="bg-gray-50 border-b border-[var(--border-color)] px-2 py-2 text-center"><span className="text-[10px] font-black text-gray-500">OFF</span></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-color)] text-[11px]">
+                  {filteredRecords.map((emp, index) => (
+                    <tr key={emp.employee_id} className={`group transition-colors ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 hover:bg-gray-200 dark:hover:bg-gray-700/50' : 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/30'}`}>
+                      <td className={`sticky left-0 z-10 border-r border-[var(--border-color)] px-3 py-1 shadow-[2px_0_5px_rgba(0,0,0,0.02)] transition-colors w-[160px] min-w-[160px] max-w-[160px] ${index % 2 === 1 ? 'bg-gray-100 dark:bg-gray-800/60 group-hover:bg-gray-200 dark:group-hover:bg-gray-700/50' : 'bg-white group-hover:bg-gray-50 dark:bg-[var(--bg-card)] dark:group-hover:bg-gray-800/30'}`}>
+                        <div className="flex flex-col overflow-hidden">
+                          <span className="font-bold text-[12px] text-[var(--text-main)] truncate" title={emp.full_name}>{emp.full_name}</span>
+                          <span className="text-[9px] text-[var(--text-muted)] font-semibold truncate" title={`${emp.emp_code} • ${emp.department_name || 'N/A'}`}>{emp.emp_code}</span>
+                        </div>
+                      </td>
+                      {daysArray.map(day => {
+                        const status = emp.days[day];
+                        const shortStatus = getShortStatus(status);
+                        const style = getCellStyles(status);
+
+                        return (
+                          <td key={day} className={`border-r border-[var(--border-color)] p-0 text-center relative`}>
+                            <div className={`w-full h-full min-h-[36px] flex items-center justify-center ${style}`}>
+                              {shortStatus}
+                            </div>
+                          </td>
+                        );
+                      })}
+                      <td className="text-center font-black text-emerald-600 border-r border-[var(--border-color)]">{emp.summary.P}</td>
+                      <td className="text-center font-black text-rose-600 border-r border-[var(--border-color)]">{emp.summary.A}</td>
+                      <td className="text-center font-black text-blue-600 border-r border-[var(--border-color)]">{emp.summary.L}</td>
+                      <td className="text-center font-black text-amber-600 border-r border-[var(--border-color)]">{emp.summary.Late}</td>
+                      <td className="text-center font-black text-purple-600 border-r border-[var(--border-color)]">{emp.summary.HD}</td>
+                      <td className="text-center font-black text-orange-600 border-r border-[var(--border-color)]">{emp.summary.H}</td>
+                      <td className="text-center font-black text-gray-500">{emp.summary.OFF}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Legend */}

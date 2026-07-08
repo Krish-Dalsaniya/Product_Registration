@@ -7,7 +7,7 @@ import { fetchPendingRegistrationsApi, approveRegistrationApi, rejectRegistratio
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import Modal from './Modal';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 const IconMap = {
@@ -32,6 +32,7 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
   const notificationsRef = useRef(null);
   const { user, logout, hasPermission } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   
   const handleLogout = () => {
@@ -58,7 +59,7 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
   const hasInventoryAccess = hasPermission('inventory', 'view');
   const hasTicketsAccess = hasPermission('support_tickets', 'view');
   const hasHRAccess = hasPermission('hr', 'view', 'employees');
-  const hasNotificationsAccess = hasInventoryAccess || hasTicketsAccess || hasHRAccess;
+  const hasNotificationsAccess = !!user; // Always show bell if logged in for demo
 
   const [quickAddModal, setQuickAddModal] = useState({ isOpen: false, item: null, quantityToAdd: '' });
 
@@ -79,7 +80,43 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
   const alerts = notificationsRes?.inventoryAlerts || [];
   const tickets = notificationsRes?.supportTickets || [];
   const pendingRegistrations = pendingRegRes || [];
-  const totalNotifications = alerts.length + tickets.length + pendingRegistrations.length;
+
+  // --- MOCK DATA FOR HR VISUAL DEMONSTRATION ---
+  const mockLeaveRequests = [
+    { id: 1, employee: 'Sarah Jenkins', type: 'Sick Leave', duration: '2 Days', date: 'Oct 12 - Oct 13' },
+    { id: 2, employee: 'David Chen', type: 'Annual Leave', duration: '5 Days', date: 'Nov 1 - Nov 5' }
+  ];
+  
+  const mockAttendanceAnomalies = [
+    { id: 1, employee: 'Michael Scott', issue: 'Missed Punch Out', date: 'Yesterday' },
+    { id: 2, employee: 'Pam Beesly', issue: 'Late Arrival (45m)', date: 'Today' }
+  ];
+  // ---------------------------------------------
+
+  // Determine active module based on route
+  const isHRModule = location.pathname.includes('/hr');
+  const isInventoryModule = location.pathname.includes('/inventory') || location.pathname.includes('/sales');
+  const isPMSModule = location.pathname.includes('/pms');
+
+  // Calculate context-aware total notifications
+  let activeNotifications = 0;
+  if (isHRModule) {
+    activeNotifications = pendingRegistrations.length + mockLeaveRequests.length + mockAttendanceAnomalies.length;
+  } else if (isInventoryModule) {
+    activeNotifications = alerts.length;
+  } else if (isPMSModule) {
+    activeNotifications = tickets.length;
+  } else {
+    // Admin dashboard / global view
+    activeNotifications = alerts.length + tickets.length + pendingRegistrations.length + mockLeaveRequests.length + mockAttendanceAnomalies.length;
+  }
+
+  const getNotificationTitle = () => {
+    if (isHRModule) return 'HR Notifications';
+    if (isInventoryModule) return 'Inventory Alerts';
+    if (isPMSModule) return 'PMS Notifications';
+    return 'All Notifications';
+  };
 
   const addStockMutation = useMutation({
     mutationFn: async ({ category, id, quantity }) => {
@@ -280,17 +317,16 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
         </div>
         
         <div className="flex items-center gap-4 md:gap-6 flex-shrink-0">
-          {hasNotificationsAccess && (
-            <div className="relative flex items-center" ref={notificationsRef}>
+          <div className="relative flex items-center" ref={notificationsRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 title="Notifications"
                 className={`z-10 relative p-1.5 h-[32px] w-[32px] flex-shrink-0 flex items-center justify-center border rounded-lg shadow-sm transition-all ${showNotifications ? 'bg-[var(--accent)] border-[var(--accent)] text-white' : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--accent)] hover:border-[var(--accent)]'}`}
               >
                 <Bell size={16} strokeWidth={showNotifications ? 3 : 2} />
-                {totalNotifications > 0 && (
+                {activeNotifications > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-[var(--bg-card)]">
-                    {totalNotifications}
+                    {activeNotifications}
                   </span>
                 )}
               </button>
@@ -300,18 +336,18 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
                   <div className="px-4 py-3 border-b border-[var(--border-color)] bg-[var(--bg-workspace)] flex items-center justify-between">
                     <h3 className="text-[12px] font-black uppercase tracking-widest text-[var(--text-main)] flex items-center gap-2">
                       <Bell size={14} className="text-amber-500" />
-                      Notifications
+                      {getNotificationTitle()}
                     </h3>
-                    <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">{totalNotifications} new</span>
+                    <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">{activeNotifications} new</span>
                   </div>
                   <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
-                    {totalNotifications === 0 ? (
+                    {activeNotifications === 0 ? (
                       <div className="p-6 text-center text-[12px] text-[var(--text-muted)]">
-                        You have no new notifications.
+                        You have no new notifications for this module.
                       </div>
                     ) : (
                       <div className="divide-y divide-[var(--border-color)]/50">
-                        {pendingRegistrations.length > 0 && (
+                        {pendingRegistrations.length > 0 && (!isPMSModule && !isInventoryModule) && (
                           <div className="py-2">
                             <h4 className="px-4 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Pending Registrations</h4>
                             {pendingRegistrations.map((reg) => (
@@ -338,7 +374,39 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
                             ))}
                           </div>
                         )}
-                        {tickets.length > 0 && (
+                        {mockLeaveRequests.length > 0 && (!isPMSModule && !isInventoryModule) && (
+                          <div className="py-2">
+                            <h4 className="px-4 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Leave Requests</h4>
+                            {mockLeaveRequests.map((leave) => (
+                              <div key={`leave-${leave.id}`} className="px-4 py-3 hover:bg-[var(--nav-hover)] transition-colors group border-b border-[var(--border-color)]/30 last:border-0 cursor-pointer">
+                                <div className="flex justify-between items-start mb-1">
+                                  <p className="text-[12px] font-bold text-[var(--text-main)] truncate">{leave.employee}</p>
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">{leave.duration}</span>
+                                </div>
+                                <p className="text-[10px] font-bold text-[var(--text-muted)]">{leave.type} • {leave.date}</p>
+                                <div className="flex gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button className="flex-1 py-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded text-[9px] font-bold transition-colors uppercase tracking-wider">Approve</button>
+                                  <button className="flex-1 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded text-[9px] font-bold transition-colors uppercase tracking-wider">Reject</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {mockAttendanceAnomalies.length > 0 && (!isPMSModule && !isInventoryModule) && (
+                          <div className="py-2">
+                            <h4 className="px-4 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Attendance Alerts</h4>
+                            {mockAttendanceAnomalies.map((alert) => (
+                              <div key={`att-${alert.id}`} className="px-4 py-3 hover:bg-[var(--nav-hover)] transition-colors flex items-center justify-between cursor-pointer border-b border-[var(--border-color)]/30 last:border-0">
+                                <div className="flex-1 min-w-0 pr-4">
+                                  <p className="text-[12px] font-bold text-[var(--text-main)] truncate">{alert.employee}</p>
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 mt-1">{alert.issue} • {alert.date}</p>
+                                </div>
+                                <AlertTriangle size={14} className="text-rose-500" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {tickets.length > 0 && (!isHRModule && !isInventoryModule) && (
                           <div className="py-2">
                             <h4 className="px-4 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Support Tickets</h4>
                             {tickets.map((ticket, idx) => (
@@ -355,7 +423,7 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
                             ))}
                           </div>
                         )}
-                        {alerts.length > 0 && (
+                        {alerts.length > 0 && (!isHRModule && !isPMSModule) && (
                           <div className="py-2">
                             <h4 className="px-4 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Low Stock Alerts</h4>
                             {alerts.map((alert, idx) => (
@@ -387,8 +455,6 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
                 </div>
               )}
             </div>
-          )}
-          {/* Logout Button */}
           <button
             onClick={handleLogout}
             title="Log out"

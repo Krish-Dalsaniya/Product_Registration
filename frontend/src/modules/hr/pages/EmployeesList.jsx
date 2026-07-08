@@ -18,7 +18,7 @@ const EmployeesList = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [designationFilter, setDesignationFilter] = useState('');
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 12;
 
@@ -61,41 +61,41 @@ const EmployeesList = () => {
   };
 
   const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          emp.emp_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          emp.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.emp_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDept = departmentFilter ? String(emp.department_id) === String(departmentFilter) : true;
     const matchesDesig = designationFilter ? String(emp.designation_id) === String(designationFilter) : true;
     const notTrainee = emp.employment_status !== 'Trainee' && emp.employment_status !== 'Intern';
-    
+
     return matchesSearch && matchesDept && matchesDesig && notTrainee;
   });
 
   const handleExportCSV = () => {
     if (employees.length === 0) return;
-    
+
     const headers = [
       'Emp Code', 'Full Name', 'Email', 'Department', 'Designation', 'Status', 'Date of Joining', 'Work Location',
       'Gender', 'Date of Birth', 'Marital Status',
-      'Current City', 'Permanent City', 
+      'Current City', 'Permanent City',
       'Base Salary', 'Payment Type', 'Bank Name', 'Account No', 'IFSC Code',
       'PAN Number', 'Aadhaar Number',
       'PF Covered', 'UAN', 'ESI Covered',
       'Emergency Contact Name', 'Emergency Contact Phone'
     ];
-    
+
     const rows = filteredEmployees.map(emp => {
       const pInfo = typeof emp.personal_info === 'string' ? JSON.parse(emp.personal_info) : (emp.personal_info || {});
       const aInfo = typeof emp.address_info === 'string' ? JSON.parse(emp.address_info) : (emp.address_info || {});
       const payInfo = typeof emp.pay_info === 'string' ? JSON.parse(emp.pay_info) : (emp.pay_info || {});
       const iInfo = typeof emp.identities_info === 'string' ? JSON.parse(emp.identities_info) : (emp.identities_info || {});
       const sInfo = typeof emp.statutory_info === 'string' ? JSON.parse(emp.statutory_info) : (emp.statutory_info || {});
-      
+
       let eContact = {};
       try {
         const eContacts = typeof emp.emergency_contacts === 'string' ? JSON.parse(emp.emergency_contacts) : (emp.emergency_contacts || []);
         if (eContacts.length > 0) eContact = eContacts[0];
-      } catch(e) {}
+      } catch (e) { }
 
       return [
         emp.emp_code || '',
@@ -106,37 +106,37 @@ const EmployeesList = () => {
         emp.employment_status || '',
         emp.date_of_joining ? new Date(emp.date_of_joining).toLocaleDateString() : 'N/A',
         emp.work_location || 'N/A',
-        
+
         pInfo.gender || '',
         pInfo.dob || '',
         pInfo.marital_status || '',
-        
+
         aInfo.current_city || '',
         aInfo.permanent_city || '',
-        
+
         emp.base_salary || '',
         payInfo.payment_type || '',
         payInfo.bank_name || '',
         payInfo.bank_account_no || '',
         payInfo.ifsc_code || '',
-        
+
         iInfo.pan_doc_no || '',
         iInfo.aadhaar_doc_no || '',
-        
+
         sInfo.pf_covered || 'No',
         sInfo.uan || '',
         sInfo.esi_covered || 'No',
-        
+
         eContact.name || '',
         eContact.phone || ''
       ];
     });
-    
+
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     ].join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -164,13 +164,14 @@ const EmployeesList = () => {
     { key: 'email', label: 'Email Address' },
     { key: 'department_name', label: 'Department', render: (row) => row.department_name || <span className="text-[11px] text-[var(--text-muted)] italic">N/A</span> },
     { key: 'designation_name', label: 'Designation', render: (row) => row.designation_name || <span className="text-[11px] text-[var(--text-muted)] italic">N/A</span> },
-    { key: 'employment_status', label: 'Status', render: (row) => (
-      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-        row.employment_status === 'Full-Time' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-      }`}>
-        {row.employment_status || 'Full-Time'}
-      </span>
-    ) }
+    {
+      key: 'employment_status', label: 'Status', render: (row) => (
+        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${row.employment_status === 'Full-Time' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+          }`}>
+          {row.employment_status || 'Full-Time'}
+        </span>
+      )
+    }
   ];
 
   const handleDelete = async (id) => {
@@ -213,23 +214,23 @@ const EmployeesList = () => {
         </div>
 
         <div className="flex items-center gap-3">
-            <button 
-              onClick={handleExportCSV}
-              className="px-6 py-3 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] transition-colors flex items-center gap-2 group shadow-sm bg-[var(--bg-card)]"
-            >
-              <Download size={18} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
-              <span className="text-[12px] md:text-[14px] font-bold text-[var(--text-main)]">Export CSV</span>
-            </button>
-          
-          {hasPermission('hr', 'create', 'employees') && (
-          <button 
-            onClick={() => navigate('/hr/employees/new')}
-            className="btn-primary shadow-lg px-8 py-3 group flex items-center gap-2"
-            style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+          <button
+            onClick={handleExportCSV}
+            className="px-6 py-3 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-workspace)] transition-colors flex items-center gap-2 group shadow-sm bg-[var(--bg-card)]"
           >
-            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
-            <span className="text-[12px] md:text-[14px] font-bold">Add Employee</span>
+            <Download size={18} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
+            <span className="text-[12px] md:text-[14px] font-bold text-[var(--text-main)]">Export CSV</span>
           </button>
+
+          {hasPermission('hr', 'create', 'employees') && (
+            <button
+              onClick={() => navigate('/hr/employees/new')}
+              className="btn-primary shadow-lg px-8 py-3 group flex items-center gap-2"
+              style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+            >
+              <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+              <span className="text-[12px] md:text-[14px] font-bold">Add Employee</span>
+            </button>
           )}
         </div>
       </div>
@@ -245,7 +246,7 @@ const EmployeesList = () => {
             <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">Total Headcount</p>
           </div>
         </div>
-        
+
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-50">
             <CheckCircle size={20} className="text-emerald-500" />
@@ -277,7 +278,7 @@ const EmployeesList = () => {
         </div>
       </div>
 
-      <div className="workspace-card p-3.5 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] mb-6">
+      <div className="workspace-card p-2 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)] mb-6">
         <div className="relative flex-1 group w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
           <input
@@ -347,105 +348,105 @@ const EmployeesList = () => {
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
             {paginatedEmployees.length > 0 ? paginatedEmployees.map((emp, index) => {
-            const defaultAvatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(emp.full_name || 'User')}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
-            const avatarUrl = emp.image_url ? getImageUrl(emp.image_url) : defaultAvatarUrl;
-            
-            return (
-            <div 
-              key={emp.employee_id} 
-              className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl animate-entrance-up"
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <div onClick={() => navigate(`/hr/employees/${emp.employee_id}`)} className="relative py-6 w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] flex flex-col items-center justify-center cursor-pointer group/img">
-                <div className="w-24 h-24 rounded-full border-4 border-[var(--bg-card)] shadow-md overflow-hidden group-hover/img:scale-110 transition-transform duration-500">
-                  <img 
-                    src={avatarUrl} 
-                    alt={emp.full_name} 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+              const defaultAvatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(emp.full_name || 'User')}&backgroundColor=3d6a7d,0f172a&textColor=ffffff`;
+              const avatarUrl = emp.image_url ? getImageUrl(emp.image_url) : defaultAvatarUrl;
 
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); navigate(`/hr/employees/${emp.employee_id}`); }} 
-                    className="w-12 h-12 bg-[var(--accent)] rounded-2xl shadow-xl flex items-center justify-center text-white hover:scale-110 transition-all transform translate-y-4 group-hover:translate-y-0" 
-                    title="View Profile"
-                  >
-                    <Eye size={22} />
-                  </button>
+              return (
+                <div
+                  key={emp.employee_id}
+                  className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl animate-entrance-up"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <div onClick={() => navigate(`/hr/employees/${emp.employee_id}`)} className="relative py-6 w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] flex flex-col items-center justify-center cursor-pointer group/img">
+                    <div className="w-24 h-24 rounded-full border-4 border-[var(--bg-card)] shadow-md overflow-hidden group-hover/img:scale-110 transition-transform duration-500">
+                      <img
+                        src={avatarUrl}
+                        alt={emp.full_name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigate(`/hr/employees/${emp.employee_id}`); }}
+                        className="w-12 h-12 bg-[var(--accent)] rounded-2xl shadow-xl flex items-center justify-center text-white hover:scale-110 transition-all transform translate-y-4 group-hover:translate-y-0"
+                        title="View Profile"
+                      >
+                        <Eye size={22} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-4 flex-1 flex flex-col">
+                    <div className="flex-1 space-y-2">
+                      <h3 className="text-[15px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300 text-center truncate">
+                        {emp.full_name}
+                      </h3>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
+                        <Mail size={12} className="shrink-0" />
+                        <span className="truncate">{emp.email}</span>
+                      </div>
+                      {(emp.personal_info?.mobile_number || emp.phone_number) && (
+                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
+                          <Phone size={12} className="shrink-0" />
+                          <span className="truncate">{emp.personal_info?.mobile_number || emp.phone_number}</span>
+                        </div>
+                      )}
+                      {emp.department_name && (
+                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
+                          <Building size={12} className="shrink-0" />
+                          <span className="truncate">{emp.department_name}</span>
+                        </div>
+                      )}
+                      {emp.designation_name && (
+                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
+                          <Briefcase size={12} className="shrink-0" />
+                          <span className="truncate">{emp.designation_name}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
+                      <div className="flex items-center">
+                        <span className="px-2.5 py-1 rounded-md text-[9px] font-black tracking-widest uppercase border border-[var(--border-color)] bg-[var(--bg-workspace)] text-[var(--text-secondary)]">
+                          {emp.department_name || 'EMPLOYEE'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {hasPermission('hr', 'edit', 'employees') && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/hr/employees/${emp.employee_id}?edit=true`); }}
+                            className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all"
+                            title="Edit Employee"
+                          >
+                            <Edit size={14} />
+                          </button>
+                        )}
+                        {hasPermission('hr', 'delete', 'employees') && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(emp.employee_id); }}
+                            className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all"
+                            title="Delete Employee"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              );
+            }) : (
+              <div className="col-span-full py-16 text-center bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl border-dashed">
+                <Users size={48} className="mx-auto text-[var(--border-color)] mb-4" />
+                <h3 className="text-lg font-bold text-[var(--text-main)]">No employees found</h3>
+                <p className="text-sm font-medium text-[var(--text-muted)] mt-1">Add an employee to get started.</p>
               </div>
-
-              <div className="p-4 flex-1 flex flex-col">
-                <div className="flex-1 space-y-2">
-                  <h3 className="text-[15px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300 text-center truncate">
-                    {emp.full_name}
-                  </h3>
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
-                    <Mail size={12} className="shrink-0" />
-                    <span className="truncate">{emp.email}</span>
-                  </div>
-                  {(emp.personal_info?.mobile_number || emp.phone_number) && (
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
-                      <Phone size={12} className="shrink-0" />
-                      <span className="truncate">{emp.personal_info?.mobile_number || emp.phone_number}</span>
-                    </div>
-                  )}
-                  {emp.department_name && (
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
-                      <Building size={12} className="shrink-0" />
-                      <span className="truncate">{emp.department_name}</span>
-                    </div>
-                  )}
-                  {emp.designation_name && (
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] justify-center truncate">
-                      <Briefcase size={12} className="shrink-0" />
-                      <span className="truncate">{emp.designation_name}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-color)]">
-                  <div className="flex items-center">
-                    <span className="px-2.5 py-1 rounded-md text-[9px] font-black tracking-widest uppercase border border-[var(--border-color)] bg-[var(--bg-workspace)] text-[var(--text-secondary)]">
-                      {emp.department_name || 'EMPLOYEE'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {hasPermission('hr', 'edit', 'employees') && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); navigate(`/hr/employees/${emp.employee_id}?edit=true`); }} 
-                      className="p-2 text-[var(--text-dim)] hover:text-[var(--accent)] rounded-lg transition-all" 
-                      title="Edit Employee"
-                    >
-                      <Edit size={14} />
-                    </button>
-                    )}
-                    {hasPermission('hr', 'delete', 'employees') && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleDelete(emp.employee_id); }} 
-                      className="p-2 text-rose-500/40 hover:text-rose-500 rounded-lg transition-all" 
-                      title="Delete Employee"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            );
-          }) : (
-            <div className="col-span-full py-16 text-center bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl border-dashed">
-              <Users size={48} className="mx-auto text-[var(--border-color)] mb-4" />
-              <h3 className="text-lg font-bold text-[var(--text-main)]">No employees found</h3>
-              <p className="text-sm font-medium text-[var(--text-muted)] mt-1">Add an employee to get started.</p>
-            </div>
-          )}
+            )}
           </div>
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-4 mt-4">
-              <button 
+              <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
                 className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -455,7 +456,7 @@ const EmployeesList = () => {
               <span className="text-[12px] font-bold text-[var(--text-muted)]">
                 Page {currentPage} of {totalPages}
               </span>
-              <button 
+              <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg hover:bg-[var(--nav-hover)] hover:text-[var(--accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

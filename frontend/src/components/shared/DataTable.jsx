@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, Trash2, Maximize2, Minimize2, CheckSquare } from 'lucide-react';
+import Skeleton from './Skeleton';
+import EmptyState from './EmptyState';
 
 const DataTable = ({ 
   columns, data, loading, totalCount, filteredCount, currentPage = 1, totalPages = 1, 
@@ -52,8 +54,25 @@ const DataTable = ({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8" style={{ borderBottom: '2px solid var(--accent)' }}></div>
+      <div className="w-full overflow-hidden rounded-2xl flex flex-col" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--card-shadow)' }}>
+        <div className="overflow-x-auto p-4 md:p-6 flex-1 space-y-4">
+          {/* Header Skeleton */}
+          <div className="flex gap-4 pb-4 border-b border-[var(--border-color)]">
+            {columns.map((_, i) => (
+              <Skeleton key={`h-${i}`} className="h-4 w-full opacity-60" />
+            ))}
+            {(onView || onEdit || onDelete || onRestock) && <Skeleton className="h-4 w-24 opacity-60 ml-auto" />}
+          </div>
+          {/* Rows Skeleton */}
+          {[...Array(isComfortable ? 5 : 8)].map((_, i) => (
+            <div key={`r-${i}`} className="flex gap-4 py-2">
+              {columns.map((_, j) => (
+                <Skeleton key={`c-${i}-${j}`} className="h-8 w-full opacity-30" />
+              ))}
+              {(onView || onEdit || onDelete || onRestock) && <Skeleton className="h-8 w-24 opacity-30 ml-auto" />}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -193,13 +212,11 @@ const DataTable = ({
         </table>
       </div>
 
-      {data.length === 0 && (
-        <div className="p-16 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: 'var(--nav-hover)' }}>
-            <Trash2 style={{ color: 'var(--accent)', opacity: 0.3 }} size={32} />
-          </div>
-          <p className="text-[14px] font-medium" style={{ color: 'var(--text-muted)' }}>No records found in the current view.</p>
-        </div>
+      {!loading && data.length === 0 && (
+        <EmptyState 
+          title="No Records Found" 
+          message="There is no data to display in the current view. Try adjusting your filters or adding a new record." 
+        />
       )}
 
       {/* Footer */}
