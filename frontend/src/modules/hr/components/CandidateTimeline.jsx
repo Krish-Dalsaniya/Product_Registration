@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { User, School, Award, ChevronDown } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
-const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {}, compact = false }) => {
+const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {}, eduDetails = {}, compact = false }) => {
   const [selectedNode, setSelectedNode] = useState(null);
 
   // Helper to determine if a document exists
@@ -58,6 +59,16 @@ const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {},
     details: generateDetails('marksheet_10th', '10th')
   });
 
+  const formatPassDate = (dateStr) => {
+    if (!dateStr) return null;
+    try {
+        // dateStr is 'YYYY-MM'
+        return format(parseISO(`${dateStr}-01`), 'MMM yyyy');
+    } catch(e) {
+        return dateStr;
+    }
+  };
+
   // 12th or Diploma based on route
   if (educationRoute === 'REGULAR') {
     timelineNodes.push({
@@ -71,25 +82,41 @@ const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {},
 
     // Semesters 1 to 8
     for (let i = 1; i <= 8; i++) {
+      const sgpa = eduDetails[`degree_sgpa_${i}`] || extractedInfo?.semester_details?.[i]?.sgpa;
+      const rawDate = eduDetails[`degree_pass_date_${i}`] || extractedInfo?.semester_details?.[i]?.passing_date;
+      const passingDate = formatPassDate(rawDate);
+      
+      const details = generateDetails(`deg_sem_${i}`, `Semester ${i}`);
+      if (sgpa) details.push({ key: 'SGPA', value: String(sgpa) });
+      if (passingDate) details.push({ key: 'Passed', value: passingDate });
+
       timelineNodes.push({
         id: `deg_sem_${i}`,
         label: `Sem ${i}`,
-        year: 'Degree',
+        year: passingDate || 'Degree',
         type: 'degree',
-        filled: isFilled(`deg_sem_${i}`),
-        details: generateDetails(`deg_sem_${i}`, `Semester ${i}`)
+        filled: isFilled(`deg_sem_${i}`) || !!sgpa || !!rawDate,
+        details
       });
     }
   } else {
     // Diploma Route
     for (let i = 1; i <= 6; i++) {
+      const sgpa = eduDetails[`diploma_sgpa_${i}`] || extractedInfo?.semester_details?.[i]?.sgpa;
+      const rawDate = eduDetails[`diploma_pass_date_${i}`] || extractedInfo?.semester_details?.[i]?.passing_date;
+      const passingDate = formatPassDate(rawDate);
+      
+      const details = generateDetails(`dip_sem_${i}`, `Diploma Semester ${i}`);
+      if (sgpa) details.push({ key: 'SGPA', value: String(sgpa) });
+      if (passingDate) details.push({ key: 'Passed', value: passingDate });
+
       timelineNodes.push({
         id: `dip_sem_${i}`,
         label: `Dip Sem ${i}`,
-        year: 'Diploma',
+        year: passingDate || 'Diploma',
         type: 'degree',
-        filled: isFilled(`dip_sem_${i}`),
-        details: generateDetails(`dip_sem_${i}`, `Diploma Semester ${i}`)
+        filled: isFilled(`dip_sem_${i}`) || !!sgpa || !!rawDate,
+        details
       });
     }
   }

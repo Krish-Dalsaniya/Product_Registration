@@ -258,37 +258,44 @@ const downloadForm = async (req, res) => {
       const schema = typeof form.form_schema === 'string' ? JSON.parse(form.form_schema) : form.form_schema;
       
       if (schema && Array.isArray(schema)) {
+        const startX = doc.page.margins.left;
         schema.forEach((q, index) => {
+          doc.x = startX;
           doc.fontSize(12).font('Helvetica-Bold').text(`${index + 1}. ${q.label}${q.required ? ' *' : ''}`);
           doc.moveDown(0.5);
           
           doc.fontSize(10).font('Helvetica');
+          const currentY = doc.y;
+          
           if (q.type === 'short_text') {
-            doc.rect(doc.x, doc.y, 400, 20).stroke();
-            doc.moveDown(2);
+            doc.rect(startX, currentY, 400, 20).stroke();
+            doc.y = currentY + 30;
           } else if (q.type === 'long_text') {
-            doc.rect(doc.x, doc.y, 400, 60).stroke();
-            doc.moveDown(4.5);
+            doc.rect(startX, currentY, 400, 60).stroke();
+            doc.y = currentY + 70;
           } else if (q.type === 'number') {
-            doc.rect(doc.x, doc.y, 200, 20).stroke();
-            doc.moveDown(2);
+            doc.rect(startX, currentY, 200, 20).stroke();
+            doc.y = currentY + 30;
           } else if (q.type === 'dropdown') {
-            doc.rect(doc.x, doc.y, 200, 20).stroke();
-            doc.text('Select an option...', doc.x + 5, doc.y - 15);
-            doc.moveDown(2);
+            doc.rect(startX, currentY, 200, 20).stroke();
+            doc.text('Select an option...', startX + 5, currentY + 6);
+            doc.y = currentY + 30;
+            doc.x = startX;
           } else if (q.type === 'radio' || q.type === 'checkbox') {
             if (q.options && Array.isArray(q.options)) {
               q.options.forEach(opt => {
+                const optY = doc.y;
                 if (q.type === 'radio') {
-                  doc.circle(doc.x + 5, doc.y + 5, 5).stroke();
+                  doc.circle(startX + 5, optY + 5, 5).stroke();
                 } else {
-                  doc.rect(doc.x, doc.y, 10, 10).stroke();
+                  doc.rect(startX, optY + 2, 10, 10).stroke();
                 }
-                doc.text(opt, doc.x + 15, doc.y);
-                doc.moveDown(0.5);
+                doc.text(opt, startX + 20, optY + 2);
+                doc.x = startX;
+                doc.moveDown(0.2);
               });
             }
-            doc.moveDown(1);
+            doc.moveDown(0.5);
           } else {
             doc.moveDown(1);
           }

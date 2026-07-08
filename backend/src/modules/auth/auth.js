@@ -22,6 +22,24 @@ router.post('/logout', authController.logout);
 
 router.post('/profile/image', verifyToken, upload.single('image'), authController.updateProfileImage);
 router.delete('/profile/image', verifyToken, authController.removeProfileImage);
+router.put(
+  '/profile',
+  verifyToken,
+  [
+    body('full_name').notEmpty().withMessage('Full name is required'),
+    body('email').isEmail().withMessage('Enter a valid email')
+  ],
+  authController.updateProfile
+);
+router.put(
+  '/change-password',
+  verifyToken,
+  [
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword').notEmpty().withMessage('New password is required')
+  ],
+  authController.changePassword
+);
 router.get('/me', verifyToken, authController.getMe);
 
 router.post(

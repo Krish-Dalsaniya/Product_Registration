@@ -767,12 +767,86 @@ const setupPassword = async (req, res, next) => {
   }
 };
 
+const updateProfile = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return sendError(res, 'BAD_REQUEST', errors.array()[0].msg, 400);
+  }
+
+  const { full_name, email } = req.body;
+  const userId = req.user.user_id;
+
+  try {
+    const existing = await db.query('SELECT user_id FROM users WHERE LOWER(email) = LOWER($1) AND user_id != $2', [email, userId]);
+    if (existing.rows.length > 0) {
+      return sendError(res, 'BAD_REQUEST', 'Email is already in use', 400);
+    }
+
+    await db.query(
+      'UPDATE users SET full_name = $1, email = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $3',
+      [full_name, email, userId]
+    );
+    
+    const result = await db.query(
+      `SELECT u.user_id, u.full_name, u.email, u.image_url, r.role_name
+       FROM users u
+       JOIN roles r ON r.role_id = u.role_id
+       WHERE u.user_id = $1`,
+      [userId]
+    );
+
+    await logAudit(req, 'UPDATE_USER_PROFILE', `User updated their profile`, 'USER', userId, null, { full_name, email });
+
+    return sendSuccess(res, result.rows[0], 'Profile updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+const changePassword = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return sendError(res, 'BAD_REQUEST', errors.array()[0].msg, 400);
+  }
+
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.user_id;
+
+  try {
+    const result = await db.query('SELECT password_hash FROM users WHERE user_id = $1', [userId]);
+    if (result.rows.length === 0) return sendError(res, 'UNAUTHORIZED', 'User not found', 401);
+
+    const user = result.rows[0];
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    
+    if (!isPasswordValid) {
+      return sendError(res, 'BAD_REQUEST', 'Incorrect current password', 400);
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+    await db.query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2',
+      [newPasswordHash, userId]
+    );
+
+    await logAudit(req, 'UPDATE_USER_PASSWORD', `User changed their password`, 'USER', userId);
+
+    return sendSuccess(res, null, 'Password updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   login,
   refresh,
   logout,
   updateProfileImage,
   removeProfileImage,
+  updateProfile,
+  changePassword,
   getMe,
   forgotPassword,
   resetPassword,

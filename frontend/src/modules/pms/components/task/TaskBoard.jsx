@@ -5,6 +5,17 @@ import { TASK_STATUSES, getPriorityConfig, getTypeConfig, getStatusConfig } from
 import { format } from 'date-fns';
 
 const TaskBoard = ({ tasks, onStatusChange, onTaskClick }) => {
+  const [collapsedStatuses, setCollapsedStatuses] = React.useState(() => {
+    return TASK_STATUSES.slice(1).map(s => s.id);
+  });
+
+  const toggleStatusCollapse = (statusId) => {
+    setCollapsedStatuses(prev => 
+      prev.includes(statusId) 
+        ? prev.filter(id => id !== statusId) 
+        : [...prev, statusId]
+    );
+  };
   
   // Group tasks by status
   const columns = TASK_STATUSES.reduce((acc, status) => {
@@ -33,10 +44,35 @@ const TaskBoard = ({ tasks, onStatusChange, onTaskClick }) => {
             // Let's hide Cancelled by default unless there are tasks, to save space
             if ((status.id === 'Cancelled' || status.id === 'On Hold') && columnTasks.length === 0) return null;
 
+            const isCollapsed = collapsedStatuses.includes(status.id);
+
+            if (isCollapsed) {
+              return (
+                <div 
+                  key={status.id} 
+                  onClick={() => toggleStatusCollapse(status.id)} 
+                  className="rounded-[10px] w-12 min-w-[48px] max-h-full shrink-0 flex flex-col items-center py-4 cursor-pointer transition-all duration-300 shadow-sm bg-[#ebecf0] dark:bg-[#1a1a1c] hover:bg-gray-200 dark:hover:bg-gray-800"
+                >
+                  <div className="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[11px] font-bold px-2 py-0.5 rounded-full mb-4">
+                    {columnTasks.length}
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <StatusIcon size={14} className={status.color} strokeWidth={3} />
+                  </div>
+                  <div className="font-bold text-[14px] text-gray-600 dark:text-gray-400 [writing-mode:vertical-lr] rotate-180 flex-1 flex items-center justify-center tracking-wider uppercase">
+                    {status.label}
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <div key={status.id} className="bg-[#ebecf0] dark:bg-[#1a1a1c] rounded-[10px] flex flex-col min-w-[260px] w-[260px] max-h-full shrink-0 shadow-sm transition-all duration-300 border border-transparent">
-                <div className="p-3 pb-2 border-transparent flex items-center justify-between sticky top-0 bg-[#ebecf0] dark:bg-[#1a1a1c] z-10 rounded-t-[10px]">
-                  <div className="flex items-center gap-2 cursor-pointer group">
+                <div 
+                  className="p-3 pb-2 border-transparent flex items-center justify-between sticky top-0 bg-[#ebecf0] dark:bg-[#1a1a1c] z-10 rounded-t-[10px] cursor-pointer group"
+                  onClick={() => toggleStatusCollapse(status.id)}
+                >
+                  <div className="flex items-center gap-2">
                     <StatusIcon size={14} className={status.color} strokeWidth={3} />
                     <h3 className="font-bold text-[14px] text-gray-800 dark:text-gray-200 pl-1 group-hover:text-blue-600 transition-colors uppercase tracking-wide">{status.label}</h3>
                   </div>
