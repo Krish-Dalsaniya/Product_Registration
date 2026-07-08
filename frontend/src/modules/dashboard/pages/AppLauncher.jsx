@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { Search, Bell, User, LogOut } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import ThreeBackground from '../components/ThreeBackground';
+import LoginBackground from '../../../components/shared/LoginBackground';
 
 const MotionCard = ({ mod, onClick }) => {
   const x = useMotionValue(0);
@@ -61,7 +61,7 @@ const MotionCard = ({ mod, onClick }) => {
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-        className={`w-full h-full text-left flex items-center p-6 rounded-[24px] border-[1.5px] border-white/60 backdrop-blur-xl shadow-[0_10px_30px_rgb(0,0,0,0.05),inset_0_2px_10px_rgb(255,255,255,0.8),inset_0_-2px_10px_rgb(255,255,255,0.2)] hover:shadow-[0_40px_80px_rgb(0,0,0,0.12),inset_0_2px_15px_rgb(255,255,255,1)] relative overflow-hidden group bg-white/40 transition-colors duration-300`}
+        className={`w-full h-full text-left flex items-center p-6 rounded-[24px] border-[1.5px] border-white/80 backdrop-blur-2xl shadow-[0_10px_30px_rgb(0,0,0,0.05),inset_0_2px_10px_rgb(255,255,255,0.9),inset_0_-2px_10px_rgb(255,255,255,0.4)] hover:shadow-[0_40px_80px_rgb(0,0,0,0.12),inset_0_2px_15px_rgb(255,255,255,1)] relative overflow-hidden group bg-white/85 transition-colors duration-300`}
       >
         {/* Dynamic Glare */}
         <motion.div
@@ -99,8 +99,8 @@ const MotionCard = ({ mod, onClick }) => {
 
           {/* Floating Text */}
           <div>
-            <h3 className="font-extrabold text-slate-800 text-[19px] tracking-tight mb-1">{mod.name}</h3>
-            <p className="text-slate-500 text-[14px] font-semibold leading-relaxed">{mod.description}</p>
+            <h3 className="font-extrabold text-black text-[19px] tracking-tight mb-1">{mod.name}</h3>
+            <p className="text-slate-800 text-[14px] font-semibold leading-relaxed">{mod.description}</p>
           </div>
         </motion.div>
       </motion.a>
@@ -204,9 +204,9 @@ const AppLauncher = () => {
   });
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#faf8f3] text-slate-800 font-sans p-6 md:p-10 perspective-[1000px]">
-      {/* 3D Interactive Background */}
-      <ThreeBackground />
+    <div className="min-h-screen relative overflow-hidden bg-[#ecdcd0] text-slate-800 font-sans p-6 md:p-10 perspective-[1000px]">
+      {/* 2D Canvas Background (Matching Login) */}
+      <LoginBackground />
 
       {/* Content Container */}
       <div className="relative z-10 max-w-[1200px] mx-auto animate-in fade-in duration-700">
@@ -215,9 +215,9 @@ const AppLauncher = () => {
         <div className="flex justify-between items-center mb-12">
           {/* Left: Logo */}
           <div className="flex items-center gap-3">
-            <img 
-              src="/logo.png" 
-              alt="Crudex Logo" 
+            <img
+              src="/logo.png"
+              alt="Crudex Logo"
               className="h-[64px] md:h-[72px] mix-blend-multiply object-contain transition-transform hover:scale-105 duration-300"
             />
           </div>
