@@ -52,6 +52,10 @@ const CandidateListPage = () => {
   const [filterRoute, setFilterRoute] = useState('ALL');
   const [filterMonth, setFilterMonth] = useState('');
   const [filterYear, setFilterYear] = useState('');
+  const [filterPosition, setFilterPosition] = useState('');
+  const [filterExperience, setFilterExperience] = useState('ALL');
+  const [filterLocation, setFilterLocation] = useState('');
+  const [filterStatus, setFilterStatus] = useState('ALL');
   
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
@@ -64,7 +68,7 @@ const CandidateListPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterRoute, filterMonth, filterYear, sortConfig]);
+  }, [filterRoute, filterMonth, filterYear, filterPosition, filterExperience, filterLocation, filterStatus, sortConfig]);
 
   useEffect(() => {
     if (setIsSidebarCollapsed) {
@@ -137,7 +141,13 @@ const CandidateListPage = () => {
       const date = new Date(c.created_at);
       const matchMonth = filterMonth ? format(date, 'yyyy-MM') === filterMonth : true;
       const matchYear = filterYear ? format(date, 'yyyy') === filterYear : true;
-      return matchRoute && matchMonth && matchYear;
+      
+      const matchPosition = filterPosition ? (c.position || '').toLowerCase().includes(filterPosition.toLowerCase()) : true;
+      const matchExperience = filterExperience === 'ALL' || c.experience_type === filterExperience;
+      const matchLocation = filterLocation ? (c.current_location || '').toLowerCase().includes(filterLocation.toLowerCase()) : true;
+      const matchStatus = filterStatus === 'ALL' || c.status === filterStatus;
+
+      return matchRoute && matchMonth && matchYear && matchPosition && matchExperience && matchLocation && matchStatus;
   });
   
   const sortedCandidates = [...filteredCandidates].sort((a, b) => {
@@ -183,46 +193,79 @@ const CandidateListPage = () => {
                 </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <div className="flex flex-wrap items-center gap-3">
-                    <select 
-                        value={filterRoute} 
-                        onChange={(e) => setFilterRoute(e.target.value)}
-                        className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)]"
-                    >
-                        <option value="ALL">All Education</option>
-                        <option value="REGULAR">12th + Degree</option>
-                        <option value="DIPLOMA">Diploma + Degree</option>
-                    </select>
+            <div className="flex flex-wrap items-center gap-3 mb-4 bg-[var(--bg-card)] border border-[var(--border-color)] p-3 rounded-2xl shadow-sm">
+                <input 
+                    type="text" 
+                    placeholder="Search Position..."
+                    value={filterPosition}
+                    onChange={(e) => setFilterPosition(e.target.value)}
+                    className="bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)] min-w-[130px] flex-1"
+                />
 
-                    <input 
-                        type="month"
-                        value={filterMonth}
-                        onChange={(e) => {
-                            setFilterMonth(e.target.value);
-                            if (e.target.value) setFilterYear('');
-                        }}
-                        className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)]"
-                        title="Filter by Month"
-                    />
+                <input 
+                    type="text" 
+                    placeholder="Search Location..."
+                    value={filterLocation}
+                    onChange={(e) => setFilterLocation(e.target.value)}
+                    className="bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)] min-w-[130px] flex-1"
+                />
 
-                    <select
-                        value={filterYear}
-                        onChange={(e) => {
-                            setFilterYear(e.target.value);
-                            if (e.target.value) setFilterMonth('');
-                        }}
-                        className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)]"
-                    >
-                        <option value="">All Years</option>
-                        {Array.from({ length: 5 }).map((_, i) => {
-                            const year = new Date().getFullYear() - i;
-                            return <option key={year} value={year}>{year}</option>;
-                        })}
-                    </select>
-                </div>
+                <select 
+                    value={filterExperience} 
+                    onChange={(e) => setFilterExperience(e.target.value)}
+                    className="bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)]"
+                >
+                    <option value="ALL">All Experience</option>
+                    <option value="FRESHER">Fresher</option>
+                    <option value="EXPERIENCED">Experienced</option>
+                </select>
 
-                {/* Columns button removed per user request */}
+                <select 
+                    value={filterStatus} 
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)]"
+                >
+                    <option value="ALL">All Statuses</option>
+                    {['Applied', 'Screened', 'Primary Call', 'HR Round', 'Tech Round', 'Offered', 'Accepted'].map(s => (
+                        <option key={s} value={s}>{s}</option>
+                    ))}
+                </select>
+
+                <select 
+                    value={filterRoute} 
+                    onChange={(e) => setFilterRoute(e.target.value)}
+                    className="bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)]"
+                >
+                    <option value="ALL">All Education</option>
+                    <option value="REGULAR">12th + Degree</option>
+                    <option value="DIPLOMA">Diploma + Degree</option>
+                </select>
+
+                <input 
+                    type="month"
+                    value={filterMonth}
+                    onChange={(e) => {
+                        setFilterMonth(e.target.value);
+                        if (e.target.value) setFilterYear('');
+                    }}
+                    className="bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)]"
+                    title="Filter by Month"
+                />
+
+                <select
+                    value={filterYear}
+                    onChange={(e) => {
+                        setFilterYear(e.target.value);
+                        if (e.target.value) setFilterMonth('');
+                    }}
+                    className="bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)]"
+                >
+                    <option value="">All Years</option>
+                    {Array.from({ length: 5 }).map((_, i) => {
+                        const year = new Date().getFullYear() - i;
+                        return <option key={year} value={year}>{year}</option>;
+                    })}
+                </select>
             </div>
 
             {loading ? (

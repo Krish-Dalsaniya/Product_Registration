@@ -5,10 +5,21 @@ import toast from 'react-hot-toast';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import CandidateTimeline from './CandidateTimeline';
 import { useNavigate } from 'react-router-dom';
+import Modal from '../../../components/shared/Modal';
 
 const getFullUrl = (path) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://165.232.191.122:3000';
-    return `${backendUrl}${path}`;
+    if (!path) return '#';
+    if (typeof path !== 'string') return '#';
+    if (path.startsWith('http')) return path;
+    
+    let backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:3000';
+    backendUrl = backendUrl.replace(/\/$/, ''); // Remove trailing slash
+    
+    // Normalize path to use forward slashes (fix Windows paths)
+    let cleanPath = path.replace(/\\/g, '/');
+    cleanPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    
+    return `${backendUrl}${cleanPath}`;
 };
 
 const CandidateViewPanel = ({ candidateId, onClose }) => {
@@ -26,6 +37,7 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
     const [newChecklistItem, setNewChecklistItem] = useState('');
     const [editingLabel, setEditingLabel] = useState(null);
     const [editingLabelText, setEditingLabelText] = useState('');
+    const [viewingDocument, setViewingDocument] = useState(null);
     const popoverRef = useRef(null);
     const navigate = useNavigate();
 
@@ -403,23 +415,23 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
                                 <div className="flex flex-col gap-3">
                                     {Object.entries(docs).map(([key, path]) => (
                                         <div key={key} className="flex items-center gap-4 group hover:bg-gray-200/80 p-2 -ml-2 rounded transition-colors">
-                                            <a href={getFullUrl(path)} target="_blank" rel="noopener noreferrer" className="w-[112px] h-[80px] bg-gray-200 rounded flex items-center justify-center shrink-0 overflow-hidden relative border border-gray-300">
+                                            <button onClick={() => setViewingDocument({ name: key, path })} className="w-[112px] h-[80px] bg-gray-200 rounded flex items-center justify-center shrink-0 overflow-hidden relative border border-gray-300">
                                                 <span className="text-[14px] font-bold text-gray-500 uppercase">PDF</span>
                                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <ExternalLink size={24} className="text-white" />
+                                                    <Eye size={24} className="text-white" />
                                                 </div>
-                                            </a>
+                                            </button>
                                             <div className="flex flex-col flex-1">
-                                                <span className="text-[14px] font-bold text-gray-900 group-hover:underline cursor-pointer">
+                                                <span 
+                                                    className="text-[14px] font-bold text-gray-900 group-hover:underline cursor-pointer"
+                                                    onClick={() => setViewingDocument({ name: key, path })}
+                                                >
                                                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/Marksheet/, '').trim()}
                                                 </span>
                                                 <span className="text-[13px] text-gray-600 mt-1 mb-2">
                                                     Added {formatDistanceToNow(new Date(candidate.created_at), { addSuffix: true })}
                                                 </span>
                                                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <a href={getFullUrl(path)} download className="flex items-center gap-1.5 px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-[12px] font-semibold text-gray-700 transition-colors">
-                                                        <Download size={14} /> Download
-                                                    </a>
                                                     <button className="flex items-center gap-1.5 px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-[12px] font-semibold text-gray-700 transition-colors">
                                                         <MoreHorizontal size={14} /> Actions
                                                     </button>
@@ -625,6 +637,23 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
                 </div>
 
             </div>
+
+            <Modal 
+                isOpen={!!viewingDocument} 
+                onClose={() => setViewingDocument(null)} 
+                title={viewingDocument?.name?.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/Marksheet/, '').trim() || 'View Document'}
+                maxWidth="max-w-6xl"
+            >
+                <div className="w-full h-[85vh] bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-[var(--border-color)]">
+                    {viewingDocument && (
+                        <iframe 
+                            src={getFullUrl(viewingDocument.path)} 
+                            className="w-full h-full border-0"
+                            title="Document Preview"
+                        />
+                    )}
+                </div>
+            </Modal>
         </div>
     );
 };
