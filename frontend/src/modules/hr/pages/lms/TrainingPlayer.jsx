@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import YouTube from 'react-youtube';
-import { ArrowLeft, CheckCircle, Clock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, Award } from 'lucide-react';
 import { updateAssignmentProgressApi, getYoutubeTitleApi } from '../../../../api/lms';
 import toast from 'react-hot-toast';
+import CertificateModal from '../../components/lms/CertificateModal';
 
 const TrainingPlayer = () => {
     const { id } = useParams();
@@ -17,6 +18,7 @@ const TrainingPlayer = () => {
     const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
     const [videoTitles, setVideoTitles] = useState({});
     const [nasPlaylistData, setNasPlaylistData] = useState([]);
+    const [isCertModalOpen, setIsCertModalOpen] = useState(false);
     
     const playerRef = useRef(null);
     const nasPlayerRef = useRef(null);
@@ -335,9 +337,20 @@ const TrainingPlayer = () => {
                     </div>
                 </div>
                 
-                <div className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 px-5 py-2.5 rounded-full">
-                    <Clock className="w-5 h-5 text-white/60" />
-                    <span className="text-base font-bold text-white">{progress}% Completed</span>
+                <div className="flex items-center gap-4">
+                    {progress === 100 && (
+                        <button
+                            onClick={() => setIsCertModalOpen(true)}
+                            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-5 py-2.5 rounded-full font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                        >
+                            <Award className="w-5 h-5" />
+                            Claim Certificate
+                        </button>
+                    )}
+                    <div className="flex items-center gap-3 bg-white/5 backdrop-blur-md border border-white/10 px-5 py-2.5 rounded-full">
+                        <Clock className="w-5 h-5 text-white/60" />
+                        <span className="text-base font-bold text-white">{progress}% Completed</span>
+                    </div>
                 </div>
             </div>
 
@@ -600,6 +613,12 @@ const TrainingPlayer = () => {
                     </div>
                 )}
             </div>
+
+            <CertificateModal 
+                isOpen={isCertModalOpen} 
+                onClose={() => setIsCertModalOpen(false)} 
+                assignment={assignment} 
+            />
         </div>
     );
 };

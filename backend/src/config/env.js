@@ -25,7 +25,8 @@ const env = {
   SMTP_PORT: process.env.SMTP_PORT,
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
-  FROM_EMAIL: process.env.FROM_EMAIL
+  FROM_EMAIL: process.env.FROM_EMAIL,
+  ENABLE_2FA: process.env.ENABLE_2FA === 'true'
 };
 
 // Simple validation
