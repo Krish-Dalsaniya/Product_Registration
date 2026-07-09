@@ -16,7 +16,7 @@ const getStatusColor = (status) => {
         case 'Tech Round': return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
         case 'Rejected By Company': return 'bg-red-500/10 text-red-500 border-red-500/20';
         case 'Offered': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-        case 'Offer Rejected': return 'bg-red-500/10 text-red-500 border-red-500/20';
+        case 'Offer Rejected by the Candidate': return 'bg-red-500/10 text-red-500 border-red-500/20';
         case 'Offer Accepted': return 'bg-green-500/10 text-green-500 border-green-500/20';
         default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
     }
@@ -90,6 +90,7 @@ const CandidateListPage = () => {
         const data = res.data.data.map(c => {
             let st = c.status === 'Pending' || !c.status ? 'Applied' : c.status;
             if (st === 'Accepted') st = 'Offer Accepted';
+            if (st === 'Offer Rejected') st = 'Offer Rejected by the Candidate';
             return { ...c, status: st };
         });
         setCandidates(data);
@@ -232,7 +233,7 @@ const CandidateListPage = () => {
                     className="bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)]"
                 >
                     <option value="ALL">All Statuses</option>
-                    {['Applied', 'Screened', 'Primary Call', 'HR Round', 'Tech Round', 'Rejected By Company', 'Offered', 'Offer Rejected', 'Offer Accepted'].map(s => (
+                    {['Applied', 'Screened', 'Primary Call', 'HR Round', 'Tech Round', 'Rejected By Company', 'Offered', 'Offer Rejected by the Candidate', 'Offer Accepted'].map(s => (
                         <option key={s} value={s}>{s}</option>
                     ))}
                 </select>
