@@ -64,41 +64,43 @@ const login = async (req, res, next) => {
       });
     }
 
-    if (user.is_two_factor_enabled) {
-      const tempToken = jwt.sign(
-        { user_id: user.user_id, email: user.email },
-        env.JWT_SECRET,
-        { expiresIn: '5m' }
-      );
-      return sendSuccess(res, {
-        require2FA: true,
-        tempToken: tempToken
-      });
-    } else {
-      const secret = speakeasy.generateSecret({
-        name: `ProductRegistration (${user.email})`
-      });
-      
-      await db.query(`
-        INSERT INTO user_two_factor (user_id, two_factor_secret, is_two_factor_enabled)
-        VALUES ($1, $2, false)
-        ON CONFLICT (user_id) DO UPDATE SET two_factor_secret = EXCLUDED.two_factor_secret, is_two_factor_enabled = false
-      `, [user.user_id, secret.base32]);
-      
-      const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
-      
-      const tempToken = jwt.sign(
-        { user_id: user.user_id, email: user.email },
-        env.JWT_SECRET,
-        { expiresIn: '15m' }
-      );
-      
-      return sendSuccess(res, {
-        require2FASetup: true,
-        tempToken: tempToken,
-        qrCodeUrl: qrCodeUrl,
-        secret: secret.base32
-      });
+    if (env.ENABLE_2FA) {
+      if (user.is_two_factor_enabled) {
+        const tempToken = jwt.sign(
+          { user_id: user.user_id, email: user.email },
+          env.JWT_SECRET,
+          { expiresIn: '5m' }
+        );
+        return sendSuccess(res, {
+          require2FA: true,
+          tempToken: tempToken
+        });
+      } else {
+        const secret = speakeasy.generateSecret({
+          name: `ProductRegistration (${user.email})`
+        });
+        
+        await db.query(`
+          INSERT INTO user_two_factor (user_id, two_factor_secret, is_two_factor_enabled)
+          VALUES ($1, $2, false)
+          ON CONFLICT (user_id) DO UPDATE SET two_factor_secret = EXCLUDED.two_factor_secret, is_two_factor_enabled = false
+        `, [user.user_id, secret.base32]);
+        
+        const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
+        
+        const tempToken = jwt.sign(
+          { user_id: user.user_id, email: user.email },
+          env.JWT_SECRET,
+          { expiresIn: '15m' }
+        );
+        
+        return sendSuccess(res, {
+          require2FASetup: true,
+          tempToken: tempToken,
+          qrCodeUrl: qrCodeUrl,
+          secret: secret.base32
+        });
+      }
     }
 
     const accessToken = jwt.sign(
@@ -738,28 +740,32 @@ const setupPassword = async (req, res, next) => {
     await db.query('UPDATE user_password_reset SET requires_password_change = false WHERE user_id = $1', [decoded.user_id]);
 
     // Now check 2FA status to continue the flow seamlessly
-    const result = await db.query(
-      `SELECT u.*, COALESCE(u2f.is_two_factor_enabled, false) as is_two_factor_enabled
-       FROM users u 
-       LEFT JOIN user_two_factor u2f ON u.user_id = u2f.user_id
-       WHERE u.user_id = $1 AND u.is_active = true`,
-      [decoded.user_id]
-    );
-    const user = result.rows[0];
+    if (env.ENABLE_2FA) {
+      const result = await db.query(
+        `SELECT u.*, COALESCE(u2f.is_two_factor_enabled, false) as is_two_factor_enabled
+         FROM users u 
+         LEFT JOIN user_two_factor u2f ON u.user_id = u2f.user_id
+         WHERE u.user_id = $1 AND u.is_active = true`,
+        [decoded.user_id]
+      );
+      const user = result.rows[0];
 
-    if (user.is_two_factor_enabled) {
-      const newToken = jwt.sign({ user_id: user.user_id, email: user.email }, env.JWT_SECRET, { expiresIn: '5m' });
-      return sendSuccess(res, { require2FA: true, tempToken: newToken }, 'Password updated.');
+      if (user.is_two_factor_enabled) {
+        const newToken = jwt.sign({ user_id: user.user_id, email: user.email }, env.JWT_SECRET, { expiresIn: '5m' });
+        return sendSuccess(res, { require2FA: true, tempToken: newToken }, 'Password updated.');
+      } else {
+        const secret = speakeasy.generateSecret({ name: `ProductRegistration (${user.email})` });
+        await db.query(`
+          INSERT INTO user_two_factor (user_id, two_factor_secret, is_two_factor_enabled)
+          VALUES ($1, $2, false)
+          ON CONFLICT (user_id) DO UPDATE SET two_factor_secret = EXCLUDED.two_factor_secret, is_two_factor_enabled = false
+        `, [user.user_id, secret.base32]);
+        const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
+        const newToken = jwt.sign({ user_id: user.user_id, email: user.email }, env.JWT_SECRET, { expiresIn: '15m' });
+        return sendSuccess(res, { require2FASetup: true, tempToken: newToken, qrCodeUrl: qrCodeUrl, secret: secret.base32 }, 'Password updated.');
+      }
     } else {
-      const secret = speakeasy.generateSecret({ name: `ProductRegistration (${user.email})` });
-      await db.query(`
-        INSERT INTO user_two_factor (user_id, two_factor_secret, is_two_factor_enabled)
-        VALUES ($1, $2, false)
-        ON CONFLICT (user_id) DO UPDATE SET two_factor_secret = EXCLUDED.two_factor_secret, is_two_factor_enabled = false
-      `, [user.user_id, secret.base32]);
-      const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
-      const newToken = jwt.sign({ user_id: user.user_id, email: user.email }, env.JWT_SECRET, { expiresIn: '15m' });
-      return sendSuccess(res, { require2FASetup: true, tempToken: newToken, qrCodeUrl: qrCodeUrl, secret: secret.base32 }, 'Password updated.');
+      return sendSuccess(res, {}, 'Password updated successfully. Please log in.');
     }
   } catch (error) {
     if (error.name === 'TokenExpiredError') return sendError(res, 'UNAUTHORIZED', 'Session expired, please login again', 401);

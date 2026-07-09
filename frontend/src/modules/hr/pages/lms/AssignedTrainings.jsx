@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, CheckCircle, ExternalLink, Download, FileText, TrendingUp, Play, LayoutGrid, List, Trash2, Briefcase } from 'lucide-react';
+import { Plus, CheckCircle, ExternalLink, Download, FileText, TrendingUp, Play, LayoutGrid, List, Trash2, Briefcase, Award } from 'lucide-react';
 import DataTable from '../../../../components/shared/DataTable';
 import Modal from '../../../../components/shared/Modal';
 import ViewToggle from '../../../../components/shared/ViewToggle';
+import CertificateModal from '../../components/lms/CertificateModal';
 import { getAllAssignmentsApi, assignTrainingApi, updateAssignmentStatusApi, updateAssignmentProgressApi, getAllModulesApi, deleteAssignmentApi } from '../../../../api/lms';
 import { fetchHREmployeesApi, fetchTraineesApi, assignTrainingToTraineeApi } from '../../../../api/hr';
 import { useOutletContext, useNavigate } from 'react-router-dom';
@@ -51,6 +52,7 @@ const AssignedTrainings = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState('grid'); // 'list' or 'grid'
+    const [certificateModal, setCertificateModal] = useState({ isOpen: false, assignment: null });
 
     const [formData, setFormData] = useState({
         assignee: '',
@@ -298,6 +300,15 @@ const AssignedTrainings = () => {
                                 )}
                             </>
                         )}
+                        {row.status === 'Completed' && (
+                            <button
+                                onClick={() => setCertificateModal({ isOpen: true, assignment: row })}
+                                className="p-1.5 text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors ml-1"
+                                title="View Certificate"
+                            >
+                                <Award className="w-4 h-4" />
+                            </button>
+                        )}
                         {row.status !== 'Completed' && hasPermission('hr', 'edit', 'lms') && (
                             <>
                                 <button
@@ -440,6 +451,15 @@ const AssignedTrainings = () => {
                                                             </a>
                                                         )}
                                                     </>
+                                                )}
+                                                {assignment.status === 'Completed' && (
+                                                    <button
+                                                        onClick={() => setCertificateModal({ isOpen: true, assignment })}
+                                                        className="p-2 text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white rounded-xl transition-all duration-300 shadow-sm ml-1"
+                                                        title="View Certificate"
+                                                    >
+                                                        <Award className="w-4 h-4" />
+                                                    </button>
                                                 )}
                                             </div>
 
@@ -615,6 +635,12 @@ const AssignedTrainings = () => {
                     </form>
                 )}
             </Modal>
+
+            <CertificateModal 
+                isOpen={certificateModal.isOpen} 
+                onClose={() => setCertificateModal({ isOpen: false, assignment: null })} 
+                assignment={certificateModal.assignment} 
+            />
         </div>
     );
 };
