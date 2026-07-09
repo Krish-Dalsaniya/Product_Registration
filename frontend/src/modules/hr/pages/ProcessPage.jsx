@@ -7,7 +7,7 @@ import { formatDistanceToNow } from 'date-fns';
 import CandidateViewPanel from '../components/CandidateViewPanel';
 import CandidateTrelloModal from '../components/CandidateTrelloModal';
 
-const INITIAL_STAGES = ['Applied', 'Screened', 'Primary Call', 'HR Round', 'Tech Round', 'Offered', 'Accepted'];
+const INITIAL_STAGES = ['Applied', 'Screened', 'Primary Call', 'HR Round', 'Tech Round', 'Rejected By Company', 'Offered', 'Offer Rejected', 'Offer Accepted'];
 
 const getStatusColor = (status) => {
     switch (status) {
@@ -16,8 +16,10 @@ const getStatusColor = (status) => {
         case 'Primary Call': return 'bg-purple-500/10 text-purple-500 border-purple-500/20';
         case 'HR Round': return 'bg-pink-500/10 text-pink-500 border-pink-500/20';
         case 'Tech Round': return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
+        case 'Rejected By Company': return 'bg-red-500/10 text-red-500 border-red-500/20';
         case 'Offered': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-        case 'Accepted': return 'bg-green-500/10 text-green-500 border-green-500/20';
+        case 'Offer Rejected': return 'bg-red-500/10 text-red-500 border-red-500/20';
+        case 'Offer Accepted': return 'bg-green-500/10 text-green-500 border-green-500/20';
         default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
     }
 };
@@ -63,7 +65,11 @@ const ProcessPage = () => {
       setLoading(true);
       const res = await fetchCandidatesApi();
       if (res.data?.success) {
-        const data = res.data.data.map(c => ({...c, status: c.status === 'Pending' || !c.status ? 'Applied' : c.status}));
+        const data = res.data.data.map(c => {
+            let st = c.status === 'Pending' || !c.status ? 'Applied' : c.status;
+            if (st === 'Accepted') st = 'Offer Accepted';
+            return { ...c, status: st };
+        });
         setCandidates(data);
       }
     } catch (error) {
@@ -373,7 +379,7 @@ const ProcessPage = () => {
                                     <div className="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[11px] font-bold px-2 py-0.5 rounded-full mb-4">
                                         {stageCandidates.length}
                                     </div>
-                                    <div className="font-bold text-[14px] text-gray-600 dark:text-gray-400 [writing-mode:vertical-lr] rotate-180 flex-1 flex items-center justify-center tracking-wider">
+                                    <div className="font-bold text-[14px] text-gray-600 dark:text-gray-400 [writing-mode:vertical-lr] rotate-180 flex-1 flex items-center justify-center tracking-wider whitespace-nowrap">
                                         {stage}
                                     </div>
                                 </div>

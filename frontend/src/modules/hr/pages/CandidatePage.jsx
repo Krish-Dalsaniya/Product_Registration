@@ -575,6 +575,46 @@ const CandidatePage = () => {
       toast.error('Please enter the candidate\'s email');
       return;
     }
+
+    // Document Validations
+    if (!uploadMock.aadharCard) {
+      toast.error('Please upload Aadhar Card');
+      return;
+    }
+    if (!uploadMock.panCard) {
+      toast.error('Please upload PAN Card');
+      return;
+    }
+    if (!uploadMock.marksheet_10th) {
+      toast.error('Please upload 10th Marksheet');
+      return;
+    }
+
+    if (formData.educationRoute === 'REGULAR') {
+      if (!uploadMock.marksheet_12th) {
+        toast.error('Please upload 12th Marksheet');
+        return;
+      }
+      for (let i = 1; i <= 6; i++) {
+        if (!uploadMock[`deg_sem_${i}`]) {
+          toast.error(`Please upload Degree Semester ${i} Marksheet`);
+          return;
+        }
+      }
+    } else if (formData.educationRoute === 'DIPLOMA') {
+      for (let i = 1; i <= 6; i++) {
+        if (!uploadMock[`dip_sem_${i}`]) {
+          toast.error(`Please upload Diploma Semester ${i} Marksheet`);
+          return;
+        }
+      }
+      for (let i = 3; i <= 6; i++) {
+        if (!uploadMock[`deg_sem_${i}`]) {
+          toast.error(`Please upload Degree Semester ${i} Marksheet`);
+          return;
+        }
+      }
+    }
     
     try {
       setIsSubmitting(true);
@@ -969,12 +1009,12 @@ const CandidatePage = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                       <DocumentDropzone label="Application Form" id="applicationForm" isUploaded={uploadMock.applicationForm} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.applicationForm} />
                       <DocumentDropzone label="Resume" id="resume" isUploaded={uploadMock.resume} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.resume} />
-                      <DocumentDropzone label="10th Marksheet" id="marksheet_10th" isUploaded={uploadMock.marksheet_10th} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.marksheet_10th} />
-                      <DocumentDropzone label="Aadhar Card" id="aadharCard" isUploaded={uploadMock.aadharCard} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.aadharCard} />
-                      <DocumentDropzone label="PAN Card" id="panCard" isUploaded={uploadMock.panCard} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.panCard} />
+                      <DocumentDropzone label="10th Marksheet*" id="marksheet_10th" isUploaded={uploadMock.marksheet_10th} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.marksheet_10th} />
+                      <DocumentDropzone label="Aadhar Card*" id="aadharCard" isUploaded={uploadMock.aadharCard} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.aadharCard} />
+                      <DocumentDropzone label="PAN Card*" id="panCard" isUploaded={uploadMock.panCard} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.panCard} />
                       <DocumentDropzone label="Indian Passport" id="passport" isUploaded={uploadMock.passport} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.passport} />
                       {formData.educationRoute === 'REGULAR' && (
-                        <DocumentDropzone label="12th Marksheet" id="marksheet_12th" isUploaded={uploadMock.marksheet_12th} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.marksheet_12th} />
+                        <DocumentDropzone label="12th Marksheet*" id="marksheet_12th" isUploaded={uploadMock.marksheet_12th} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.marksheet_12th} />
                       )}
                     </div>
                   </div>
@@ -984,7 +1024,7 @@ const CandidatePage = () => {
                       <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Diploma Marksheets</h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {[1, 2, 3, 4, 5, 6].map(sem => (
-                          <DocumentDropzone key={`dip_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`dip_sem_${sem}`} isUploaded={uploadMock[`dip_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`dip_sem_${sem}`]} />
+                          <DocumentDropzone key={`dip_sem_${sem}`} label={`Sem ${sem} Marksheet*`} id={`dip_sem_${sem}`} isUploaded={uploadMock[`dip_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`dip_sem_${sem}`]} />
                         ))}
                       </div>
                     </div>
@@ -995,11 +1035,11 @@ const CandidatePage = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {formData.educationRoute === 'REGULAR' ? (
                         [1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
-                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
+                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet${sem <= 6 ? '*' : ''}`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
                         ))
                       ) : (
                         [3, 4, 5, 6, 7, 8].map(sem => (
-                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
+                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet${sem <= 6 ? '*' : ''}`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
                         ))
                       )}
                     </div>
@@ -1011,7 +1051,7 @@ const CandidatePage = () => {
                 </div> */}
               </div>
 
-              <CandidateTimeline educationRoute={formData.educationRoute} documents={uploadMock} extractedInfo={liveExtractedInfo} />
+              <CandidateTimeline educationRoute={formData.educationRoute} documents={uploadMock} extractedInfo={liveExtractedInfo} eduDetails={formData.education_details} />
 
             </div>
           )}

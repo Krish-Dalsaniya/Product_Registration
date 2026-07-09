@@ -14,7 +14,7 @@ const createTrainee = async (req, res) => {
         const userId = req.user.user_id;
         const { 
             first_name, last_name, email, mobile, gender, date_of_birth, 
-            joining_date, expected_completion_date, department_id, mentor_employee_id, 
+            joining_date, expected_completion_date, department_id, designation_id, mentor_employee_id, 
             training_batch, education, institute, specialization, status, remarks, image_url,
             password
         } = req.body;
@@ -88,14 +88,14 @@ const createTrainee = async (req, res) => {
 
         const insertQuery = `
             INSERT INTO hr_trainees 
-            (trainee_code, first_name, last_name, email, mobile, gender, date_of_birth, joining_date, expected_completion_date, department_id, mentor_employee_id, training_batch, education, institute, specialization, status, remarks, created_by, user_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+            (trainee_code, first_name, last_name, email, mobile, gender, date_of_birth, joining_date, expected_completion_date, department_id, designation_id, mentor_employee_id, training_batch, education, institute, specialization, status, remarks, created_by, user_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
             RETURNING *
         `;
         
         const values = [
             trainee_code, first_name, last_name, email, mobile || null, gender || null, date_of_birth || null, 
-            joining_date || null, expected_completion_date || null, department_id || null, mentor_employee_id || null, 
+            joining_date || null, expected_completion_date || null, department_id || null, designation_id || null, mentor_employee_id || null, 
             training_batch || null, education || null, institute || null, specialization || null, 
             status || 'Applied', remarks || null, userId, newUserId
         ];
@@ -182,10 +182,11 @@ const getTrainees = async (req, res) => {
     try {
         const query = `
             SELECT t.*, 
-                   d.name as department_name,
+                   d.name as department_name, desig.name as designation_name,
                    m.full_name as mentor_name, m_emp.emp_code as mentor_emp_code
             FROM hr_trainees t
             LEFT JOIN hr_departments d ON t.department_id = d.department_id
+            LEFT JOIN hr_designations desig ON t.designation_id = desig.designation_id
             LEFT JOIN hr_employees m_emp ON t.mentor_employee_id = m_emp.employee_id
             LEFT JOIN users m ON m_emp.user_id = m.user_id
             ORDER BY t.created_at DESC
@@ -205,10 +206,11 @@ const getTraineeById = async (req, res) => {
         // Fetch trainee details
         const query = `
             SELECT t.*, 
-                   d.name as department_name,
+                   d.name as department_name, desig.name as designation_name,
                    m.full_name as mentor_name, m_emp.emp_code as mentor_emp_code
             FROM hr_trainees t
             LEFT JOIN hr_departments d ON t.department_id = d.department_id
+            LEFT JOIN hr_designations desig ON t.designation_id = desig.designation_id
             LEFT JOIN hr_employees m_emp ON t.mentor_employee_id = m_emp.employee_id
             LEFT JOIN users m ON m_emp.user_id = m.user_id
             WHERE t.trainee_id = $1
@@ -246,7 +248,7 @@ const updateTrainee = async (req, res) => {
         const { id } = req.params;
         const { 
             first_name, last_name, email, mobile, gender, date_of_birth, 
-            joining_date, expected_completion_date, department_id, mentor_employee_id, 
+            joining_date, expected_completion_date, department_id, designation_id, mentor_employee_id, 
             training_batch, education, institute, specialization, status, remarks, image_url 
         } = req.body;
 
@@ -275,16 +277,16 @@ const updateTrainee = async (req, res) => {
         const updateQuery = `
             UPDATE hr_trainees 
             SET first_name = $1, last_name = $2, email = $3, mobile = $4, gender = $5, date_of_birth = $6, 
-                joining_date = $7, expected_completion_date = $8, department_id = $9, mentor_employee_id = $10, 
-                training_batch = $11, education = $12, institute = $13, specialization = $14, status = $15, remarks = $16,
-                image_url = COALESCE($17, image_url), updated_at = CURRENT_TIMESTAMP
-            WHERE trainee_id = $18
+                joining_date = $7, expected_completion_date = $8, department_id = $9, designation_id = $10, mentor_employee_id = $11, 
+                training_batch = $12, education = $13, institute = $14, specialization = $15, status = $16, remarks = $17,
+                image_url = COALESCE($18, image_url), updated_at = CURRENT_TIMESTAMP
+            WHERE trainee_id = $19
             RETURNING *
         `;
         
         const values = [
             first_name, last_name, email, mobile || null, gender || null, date_of_birth || null, 
-            joining_date || null, expected_completion_date || null, department_id || null, mentor_employee_id || null, 
+            joining_date || null, expected_completion_date || null, department_id || null, designation_id || null, mentor_employee_id || null, 
             training_batch || null, education || null, institute || null, specialization || null, 
             status || 'Applied', remarks || null, finalImageUrl !== image_url ? finalImageUrl : null, id
         ];
