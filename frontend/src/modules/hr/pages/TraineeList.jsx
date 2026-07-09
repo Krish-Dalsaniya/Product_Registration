@@ -227,6 +227,7 @@ const TraineeList = () => {
             )
         },
         { key: 'department_name', label: 'Department' },
+        { key: 'designation_name', label: 'Designation', render: (row) => row.designation_name || <span className="text-xs text-[var(--text-muted)] italic">N/A</span> },
         { key: 'mentor_name', label: 'Mentor', render: (row) => row.mentor_name || <span className="text-xs text-[var(--text-muted)] italic">Unassigned</span> },
         { key: 'training_batch', label: 'Batch' },
         {
@@ -260,7 +261,7 @@ const TraineeList = () => {
                         </button>
                     )}
                     {hasPermission('hr', 'edit', 'trainee') && row.status !== 'Converted to Employee' && (
-                        <button onClick={() => { setConvertingTrainee(row); setConvertData({ emp_code: '', base_salary: 0, designation_id: '' }); setIsConvertModalOpen(true); }} className="p-1.5 text-purple-500 hover:bg-purple-50 rounded-lg" title="Convert to Employee">
+                        <button onClick={() => navigate(`/hr/employees/new?onboarding=true&traineeId=${row.trainee_id}`)} className="p-1.5 text-purple-500 hover:bg-purple-50 rounded-lg" title="Convert to Employee">
                             <UserPlus size={16} />
                         </button>
                     )}
@@ -405,7 +406,7 @@ const TraineeList = () => {
                                                 </button>
                                                 {trainee.status !== 'Converted to Employee' && (
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); setConvertingTrainee(trainee); setConvertData({ emp_code: '', base_salary: 0, designation_id: '' }); setIsConvertModalOpen(true); }}
+                                                        onClick={(e) => { e.stopPropagation(); navigate(`/hr/employees/new?onboarding=true&traineeId=${trainee.trainee_id}`); }}
                                                         className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-all"
                                                         title="Convert to Employee"
                                                     >

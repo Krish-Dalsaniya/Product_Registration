@@ -88,7 +88,12 @@ const TraineeProfile = () => {
                         <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-[var(--text-muted)]">
                             <span className="flex items-center gap-1.5"><Mail size={16} /> {trainee.email}</span>
                             {trainee.mobile && <span className="flex items-center gap-1.5"><Phone size={16} /> {trainee.mobile}</span>}
-                            {trainee.department_name && <span className="flex items-center gap-1.5"><Briefcase size={16} /> {trainee.department_name}</span>}
+                            {(trainee.department_name || trainee.designation_name) && (
+                                <span className="flex items-center gap-1.5">
+                                    <Briefcase size={16} /> 
+                                    {trainee.designation_name ? `${trainee.designation_name} • ` : ''}{trainee.department_name || 'No Department'}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>

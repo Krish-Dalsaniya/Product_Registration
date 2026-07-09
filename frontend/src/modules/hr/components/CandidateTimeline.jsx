@@ -14,19 +14,22 @@ const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {},
       { key: 'Status', value: isFilled(key) ? 'Document Uploaded' : 'Pending Upload' }
     ];
 
-    if (key === 'marksheet_10th' && extractedInfo?.tenth_percentage) {
-        details.push({ key: 'Per', value: String(extractedInfo.tenth_percentage) });
+    const tenth_per = eduDetails?.tenth_percentage || extractedInfo?.tenth_percentage;
+    if (key === 'marksheet_10th' && tenth_per) {
+        details.push({ key: 'Per', value: String(tenth_per) });
     }
-    if (key === 'marksheet_12th' && extractedInfo?.twelfth_percentage) {
-        details.push({ key: 'Percentage', value: String(extractedInfo.twelfth_percentage) });
+
+    const twelfth_per = eduDetails?.twelfth_percentage || extractedInfo?.twelfth_percentage;
+    if (key === 'marksheet_12th' && twelfth_per) {
+        details.push({ key: 'Percentage', value: String(twelfth_per) });
     }
+
     if ((key.startsWith('deg_sem_') || key.startsWith('dip_sem_')) && extractedInfo?.college_cgpa) {
-        // Show CGPA on the degree/diploma semesters
-        details.push({ key: 'CGPA', value: String(extractedInfo.college_cgpa) });
-    }
-    if ((key.startsWith('deg_sem_') || key.startsWith('dip_sem_')) && extractedInfo?.college_sgpa) {
-        // Show SGPA on the degree/diploma semesters
-        details.push({ key: 'SGPA', value: String(extractedInfo.college_sgpa) });
+        // Show CGPA on the degree/diploma semesters if newly extracted (legacy support)
+        // Usually handled by the main view, but kept here for live-extraction fallback
+        if (extractedInfo?.college_cgpa && !details.find(d => d.key === 'CGPA')) {
+            details.push({ key: 'CGPA', value: String(extractedInfo.college_cgpa) });
+        }
     }
 
     return details;

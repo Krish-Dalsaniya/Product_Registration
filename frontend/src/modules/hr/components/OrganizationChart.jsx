@@ -150,7 +150,7 @@ const ProfileModal = ({ allProfiles, onClose, onSuccess, initialParentId }) => {
 };
 
 // ---- Side Panel component -----------------------------------------------
-const SidePanel = ({ profile, allProfiles, onClose, onUpdate, onUpdateEmployee, editMode, employees = [] }) => {
+const SidePanel = ({ profile, allProfiles, onClose, onUpdate, onUpdateEmployee, editMode, setEditMode, employees = [] }) => {
   const [activeTab, setActiveTab] = useState('about');
   const [viewMode, setViewMode] = useState('profile');
   const [formData, setFormData] = useState({});
@@ -375,9 +375,24 @@ const SidePanel = ({ profile, allProfiles, onClose, onUpdate, onUpdateEmployee, 
             <p className="text-xs font-bold text-[var(--text-muted)] mt-1">{profile.department_name || 'Organization'}</p>
           </div>
         </div>
-        <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg-workspace)] text-[var(--text-muted)] transition-colors">
-          <X size={20} />
-        </button>
+        <div className="flex items-center gap-2">
+          {setEditMode && (
+            <button
+              onClick={() => setEditMode(!editMode)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-sm border transition-colors ${
+                editMode
+                  ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                  : 'bg-[var(--bg-card)] text-[var(--text-main)] border-[var(--border-color)] hover:border-[var(--accent)]'
+              }`}
+            >
+              {editMode ? <Check size={13} /> : <Pencil size={13} />}
+              {editMode ? 'Done' : 'Edit'}
+            </button>
+          )}
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--bg-workspace)] text-[var(--text-muted)] transition-colors">
+            <X size={20} />
+          </button>
+        </div>
       </div>
 
       {/* View Toggle */}
@@ -1168,6 +1183,7 @@ const OrganizationChart = () => {
           onUpdate={handleUpdateProfile}
           onUpdateEmployee={handleUpdateEmployee}
           editMode={editMode}
+          setEditMode={setEditMode}
           employees={employees}
         />
       )}

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { generateFaceEmbedding } from '../../../utils/faceRecognition';
 import { Loader2, ArrowLeft, Save, User, Briefcase, IndianRupee, FileText, ChevronRight, Check, CreditCard, ClipboardCheck, UploadCloud, Camera, MapPin, PhoneCall, Trash2 } from 'lucide-react';
 import { fetchHRMetadataApi, createHREmployeeApi, fetchHREmployeesApi, createOnboardingRecordApi, extractOnboardingZipApi, registerEmployeeApi, fetchCandidatesApi, updateCandidateStatusApi } from '../../../api/hr';
+import { fetchTraineeByIdApi, updateTraineeApi } from '../../../api/trainee';
 import { getRoles } from '../../../api/roles';
 import ImageCropperModal from '../../../components/shared/ImageCropperModal';
 
@@ -110,6 +111,7 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
   const searchParams = new URLSearchParams(location.search);
   const isOnboarding = searchParams.get('onboarding') === 'true';
   const candidateId = searchParams.get('candidateId');
+  const traineeId = searchParams.get('traineeId');
   
   const [formData, setFormData] = useState(() => {
     const draft = localStorage.getItem('employee_wizard_draft');
@@ -154,7 +156,10 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
     if (candidateId) {
       loadCandidateData(candidateId);
     }
-  }, [candidateId]);
+    if (traineeId) {
+      loadTraineeData(traineeId);
+    }
+  }, [candidateId, traineeId]);
 
   const loadCandidateData = async (id) => {
     try {
@@ -183,6 +188,33 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
       }
     } catch (err) {
       console.error('Failed to load candidate data', err);
+    }
+  };
+
+  const loadTraineeData = async (id) => {
+    try {
+      const res = await fetchTraineeByIdApi(id);
+      if (res.data?.success) {
+        const trainee = res.data.data;
+        if (trainee) {
+          setFormData(prev => ({
+            ...prev,
+            full_name: `${trainee.first_name || ''} ${trainee.last_name || ''}`.trim() || prev.full_name,
+            email: trainee.email || prev.email,
+            phone_number: trainee.mobile || prev.phone_number,
+            gender: trainee.gender || prev.gender,
+            date_of_birth: trainee.date_of_birth ? trainee.date_of_birth.split('T')[0] : prev.date_of_birth,
+            department_id: trainee.department_id || prev.department_id,
+            designation_id: trainee.designation_id || prev.designation_id,
+            designation_name: trainee.designation_name || prev.designation_name,
+            date_of_joining: trainee.joining_date ? trainee.joining_date.split('T')[0] : prev.date_of_joining,
+            image_url: trainee.image_url || prev.image_url
+          }));
+          toast.success('Pre-filled data from Trainee profile');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load trainee data', err);
     }
   };
 
@@ -424,6 +456,13 @@ const AddEmployeeWizard = ({ isPublicRegistration = false }) => {
               await updateCandidateStatusApi(candidateId, 'Hired');
             } catch(e) {
               console.warn('Failed to update candidate status to Hired', e);
+            }
+          }
+          if (traineeId) {
+            try {
+              await updateTraineeApi(traineeId, { status: 'Converted to Employee' });
+            } catch(e) {
+              console.warn('Failed to update trainee status', e);
             }
           }
           if (isOnboarding) {

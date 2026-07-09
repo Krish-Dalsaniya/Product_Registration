@@ -15,7 +15,7 @@ const STEPS = [
 
 const INITIAL_FORM_DATA = {
   first_name: '', last_name: '', email: '', mobile: '', gender: 'Male', date_of_birth: '',
-  joining_date: '', expected_completion_date: '', company_code: '', department_id: '', mentor_employee_id: '',
+  joining_date: '', expected_completion_date: '', company_code: '', department_id: '', designation_id: '', mentor_employee_id: '',
   training_batch: '', education: '', institute: '', specialization: '', status: 'Applied', remarks: '',
   image_url: '', password: '', confirmPassword: ''
 };
@@ -43,7 +43,7 @@ const AddTraineeWizard = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [metadata, setMetadata] = useState({ departments: [] });
+  const [metadata, setMetadata] = useState({ departments: [], designations: [] });
   const [employees, setEmployees] = useState([]);
   
   const [isCropperOpen, setIsCropperOpen] = useState(false);
@@ -164,8 +164,8 @@ const AddTraineeWizard = () => {
         return;
       }
     } else if (currentStep === 2) {
-      if (!formData.company_code || !formData.department_id) {
-        toast.error('Please fill out mandatory fields in the Training Info step (Company, Department).');
+      if (!formData.company_code || !formData.department_id || !formData.designation_id) {
+        toast.error('Please fill out mandatory fields in the Training Info step (Company, Department, Designation).');
         return;
       }
     }
@@ -184,7 +184,7 @@ const AddTraineeWizard = () => {
       handleNext();
       return;
     }
-    if (!formData.first_name || !formData.last_name || !formData.email || !formData.company_code || !formData.department_id) {
+    if (!formData.first_name || !formData.last_name || !formData.email || !formData.company_code || !formData.department_id || !formData.designation_id) {
       toast.error('Please ensure all mandatory Personal and Training fields are filled before submitting.');
       return;
     }
@@ -383,10 +383,19 @@ const AddTraineeWizard = () => {
                 </div>
                 <div>
                   <label className={labelClass}>Department *</label>
-                  <select value={formData.department_id} onChange={e => setFormData(prev => ({...prev, department_id: e.target.value}))} className={inputClass}>
+                  <select value={formData.department_id} onChange={e => setFormData(prev => ({...prev, department_id: e.target.value, designation_id: ''}))} className={inputClass}>
                     <option value="">Select Department</option>
                     {metadata.departments.map(d => (
                       <option key={d.department_id} value={d.department_id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Designation *</label>
+                  <select value={formData.designation_id} onChange={e => setFormData(prev => ({...prev, designation_id: e.target.value}))} className={inputClass}>
+                    <option value="">Select Designation</option>
+                    {metadata.designations?.map(d => (
+                      <option key={d.designation_id} value={d.designation_id}>{d.name}</option>
                     ))}
                   </select>
                 </div>

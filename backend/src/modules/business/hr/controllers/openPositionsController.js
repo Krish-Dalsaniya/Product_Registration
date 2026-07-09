@@ -9,22 +9,12 @@ const getPositions = async (req, res) => {
   try {
     const result = await db.query(`
       SELECT 
-        op.id, op.name, 
-        op.skills_form_id, op.knowledge_form_id, op.traits_form_id, op.self_image_form_id, op.motive_form_id,
-        op.rcd_doc, op.prerequisite_doc, op.training_doc, op.eligibility_doc, op.kpi_doc, op.kra_doc, op.lms_training_ids,
-        sf.label as skills_form_label,
-        kf.label as knowledge_form_label,
-        tf.label as traits_form_label,
-        sif.label as self_image_form_label,
-        mf.label as motive_form_label,
-        op.created_at, op.updated_at
-      FROM open_positions op
-      LEFT JOIN candidate_evaluation_forms sf ON op.skills_form_id = sf.id
-      LEFT JOIN candidate_evaluation_forms kf ON op.knowledge_form_id = kf.id
-      LEFT JOIN candidate_evaluation_forms tf ON op.traits_form_id = tf.id
-      LEFT JOIN candidate_evaluation_forms sif ON op.self_image_form_id = sif.id
-      LEFT JOIN candidate_evaluation_forms mf ON op.motive_form_id = mf.id
-      ORDER BY op.created_at DESC
+        id, name, 
+        skills, knowledge, traits, self_image, motive,
+        rcd_doc, prerequisite_doc, training_doc, eligibility_doc, kpi_doc, kra_doc, lms_training_ids,
+        created_at, updated_at
+      FROM open_positions
+      ORDER BY created_at DESC
     `);
     
     // Format dates and structure
@@ -47,11 +37,11 @@ const createPosition = async (req, res) => {
   try {
     const { 
       name, 
-      skills_form_id, 
-      knowledge_form_id, 
-      traits_form_id, 
-      self_image_form_id, 
-      motive_form_id,
+      skills, 
+      knowledge, 
+      traits, 
+      self_image, 
+      motive,
       lms_training_ids
     } = req.body;
     
@@ -60,12 +50,16 @@ const createPosition = async (req, res) => {
     }
 
     let parsedTrainingIds = [];
-    if (lms_training_ids) {
-      try {
-        parsedTrainingIds = typeof lms_training_ids === 'string' ? JSON.parse(lms_training_ids) : lms_training_ids;
-      } catch (e) {
-        console.error("Error parsing lms_training_ids:", e);
-      }
+    let parsedSkills = [], parsedKnowledge = [], parsedTraits = [], parsedSelfImage = [], parsedMotive = [];
+    try {
+      if (lms_training_ids) parsedTrainingIds = typeof lms_training_ids === 'string' ? JSON.parse(lms_training_ids) : lms_training_ids;
+      if (skills) parsedSkills = typeof skills === 'string' ? JSON.parse(skills) : skills;
+      if (knowledge) parsedKnowledge = typeof knowledge === 'string' ? JSON.parse(knowledge) : knowledge;
+      if (traits) parsedTraits = typeof traits === 'string' ? JSON.parse(traits) : traits;
+      if (self_image) parsedSelfImage = typeof self_image === 'string' ? JSON.parse(self_image) : self_image;
+      if (motive) parsedMotive = typeof motive === 'string' ? JSON.parse(motive) : motive;
+    } catch (e) {
+      console.error("Error parsing arrays:", e);
     }
 
     const uploadedDocs = {
@@ -97,16 +91,16 @@ const createPosition = async (req, res) => {
 
     const result = await db.query(
       `INSERT INTO open_positions 
-       (name, skills_form_id, knowledge_form_id, traits_form_id, self_image_form_id, motive_form_id, created_by, rcd_doc, prerequisite_doc, training_doc, eligibility_doc, kpi_doc, kra_doc, lms_training_ids)
+       (name, skills, knowledge, traits, self_image, motive, created_by, rcd_doc, prerequisite_doc, training_doc, eligibility_doc, kpi_doc, kra_doc, lms_training_ids)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
         name, 
-        skills_form_id || null, 
-        knowledge_form_id || null, 
-        traits_form_id || null, 
-        self_image_form_id || null, 
-        motive_form_id || null, 
+        JSON.stringify(parsedSkills), 
+        JSON.stringify(parsedKnowledge), 
+        JSON.stringify(parsedTraits), 
+        JSON.stringify(parsedSelfImage), 
+        JSON.stringify(parsedMotive), 
         req.user?.id || null,
         uploadedDocs.rcd_doc,
         uploadedDocs.prerequisite_doc,
@@ -133,11 +127,11 @@ const updatePosition = async (req, res) => {
     const { id } = req.params;
     const { 
       name, 
-      skills_form_id, 
-      knowledge_form_id, 
-      traits_form_id, 
-      self_image_form_id, 
-      motive_form_id,
+      skills, 
+      knowledge, 
+      traits, 
+      self_image, 
+      motive,
       lms_training_ids
     } = req.body;
     
@@ -153,12 +147,21 @@ const updatePosition = async (req, res) => {
     const existingRow = existing.rows[0];
 
     let parsedTrainingIds = existingRow.lms_training_ids || [];
-    if (lms_training_ids !== undefined) {
-      try {
-        parsedTrainingIds = typeof lms_training_ids === 'string' ? JSON.parse(lms_training_ids) : lms_training_ids;
-      } catch (e) {
-        console.error("Error parsing lms_training_ids:", e);
-      }
+    let parsedSkills = existingRow.skills || [];
+    let parsedKnowledge = existingRow.knowledge || [];
+    let parsedTraits = existingRow.traits || [];
+    let parsedSelfImage = existingRow.self_image || [];
+    let parsedMotive = existingRow.motive || [];
+
+    try {
+      if (lms_training_ids !== undefined) parsedTrainingIds = typeof lms_training_ids === 'string' ? JSON.parse(lms_training_ids) : lms_training_ids;
+      if (skills !== undefined) parsedSkills = typeof skills === 'string' ? JSON.parse(skills) : skills;
+      if (knowledge !== undefined) parsedKnowledge = typeof knowledge === 'string' ? JSON.parse(knowledge) : knowledge;
+      if (traits !== undefined) parsedTraits = typeof traits === 'string' ? JSON.parse(traits) : traits;
+      if (self_image !== undefined) parsedSelfImage = typeof self_image === 'string' ? JSON.parse(self_image) : self_image;
+      if (motive !== undefined) parsedMotive = typeof motive === 'string' ? JSON.parse(motive) : motive;
+    } catch (e) {
+      console.error("Error parsing arrays:", e);
     }
 
     const uploadedDocs = {
@@ -190,18 +193,18 @@ const updatePosition = async (req, res) => {
 
     const result = await db.query(
       `UPDATE open_positions
-       SET name = $1, skills_form_id = $2, knowledge_form_id = $3, traits_form_id = $4, self_image_form_id = $5, motive_form_id = $6, 
+       SET name = $1, skills = $2, knowledge = $3, traits = $4, self_image = $5, motive = $6, 
            rcd_doc = $7, prerequisite_doc = $8, training_doc = $9, eligibility_doc = $10, kpi_doc = $11, kra_doc = $12, lms_training_ids = $13,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $14
        RETURNING *`,
       [
         name, 
-        skills_form_id || null, 
-        knowledge_form_id || null, 
-        traits_form_id || null, 
-        self_image_form_id || null, 
-        motive_form_id || null, 
+        JSON.stringify(parsedSkills), 
+        JSON.stringify(parsedKnowledge), 
+        JSON.stringify(parsedTraits), 
+        JSON.stringify(parsedSelfImage), 
+        JSON.stringify(parsedMotive), 
         uploadedDocs.rcd_doc,
         uploadedDocs.prerequisite_doc,
         uploadedDocs.training_doc,

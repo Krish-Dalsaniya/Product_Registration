@@ -911,3 +911,6 @@ CREATE TABLE IF NOT EXISTS open_positions (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add designation_id to hr_trainees
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS designation_id UUID REFERENCES hr_designations(designation_id) ON DELETE SET NULL;
