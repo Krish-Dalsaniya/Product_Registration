@@ -43,3 +43,19 @@ A feature is NOT complete unless:
 - [x] All database schema changes are appended to `migration.sql`
 
 *If migration.sql is not updated, the feature is considered incomplete even if it works on the Main database.*
+
+### ALWAYS
+- Add every schema change to `migration.sql`
+- Keep `migration.sql` idempotent wherever possible (`IF NOT EXISTS`, etc.)
+- Test `migration.sql` before pushing
+- Commit schema and migration together
+- Ensure Local, Testing, UAT and Production remain identical
+
+### NEVER
+- Create tables manually on Production
+- Create tables manually on Testing
+- Modify Production schema directly
+- Modify only your local database
+- Forget `migration.sql`
+- Merge schema changes without `migration.sql`
+- Assume another developer already added the migration

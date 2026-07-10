@@ -43,6 +43,14 @@ export const deleteAssignmentApi = async (id) => {
     return await axios.delete(`/hr/lms/assignment/${id}`);
 };
 
+export const requestRetestApi = async (assignmentId) => {
+    return await axios.post(`/hr/lms/assignment/${assignmentId}/request-retest`);
+};
+
+export const approveRetestApi = async (assignmentId) => {
+    return await axios.post(`/hr/lms/assignment/${assignmentId}/approve-retest`);
+};
+
 export const logAssessmentApi = async (data) => {
     return await axios.post('/hr/lms/assessment', data);
 };

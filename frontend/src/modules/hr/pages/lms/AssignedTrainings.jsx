@@ -5,8 +5,8 @@ import DataTable from '../../../../components/shared/DataTable';
 import Modal from '../../../../components/shared/Modal';
 import ViewToggle from '../../../../components/shared/ViewToggle';
 import CertificateModal from '../../components/lms/CertificateModal';
-import { getAllAssignmentsApi, assignTrainingApi, updateAssignmentStatusApi, updateAssignmentProgressApi, getAllModulesApi, deleteAssignmentApi } from '../../../../api/lms';
-import { fetchHREmployeesApi, fetchTraineesApi, assignTrainingToTraineeApi } from '../../../../api/hr';
+import { getAllAssignmentsApi, assignTrainingApi, updateAssignmentStatusApi, updateAssignmentProgressApi, getAllModulesApi, deleteAssignmentApi, approveRetestApi } from '../../../../api/lms';
+import { fetchHREmployeesApi, fetchTraineesApi, assignTrainingToTraineeApi, fetchInternsApi, assignTrainingToInternApi } from '../../../../api/hr';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -49,6 +49,7 @@ const AssignedTrainings = () => {
     const [modules, setModules] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [trainees, setTrainees] = useState([]);
+    const [interns, setInterns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState('grid'); // 'list' or 'grid'
@@ -71,6 +72,7 @@ const AssignedTrainings = () => {
         fetchModules();
         fetchEmployees();
         fetchTrainees();
+        fetchInterns();
 
         // Live Tracking Polling: Silently refresh the table every 10 seconds
         const intervalId = setInterval(() => {
@@ -127,12 +129,28 @@ const AssignedTrainings = () => {
         }
     };
 
+    const fetchInterns = async () => {
+        try {
+            const { data } = await fetchInternsApi();
+            if (data.success) {
+                setInterns(data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching interns:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const [type, id] = formData.assignee.split('_');
             if (type === 'trn') {
                 await assignTrainingToTraineeApi(id, {
+                    module_id: formData.module_id,
+                    due_date: formData.due_date
+                });
+            } else if (type === 'int') {
+                await assignTrainingToInternApi(id, {
                     module_id: formData.module_id,
                     due_date: formData.due_date
                 });
@@ -172,6 +190,16 @@ const AssignedTrainings = () => {
             } catch (error) {
                 toast.error('Failed to update status');
             }
+        }
+    };
+
+    const handleApproveRetest = async (id) => {
+        try {
+            await approveRetestApi(id);
+            toast.success('Retest approved successfully');
+            fetchAssignments();
+        } catch (error) {
+            toast.error('Failed to approve retest');
         }
     };
 
@@ -240,10 +268,20 @@ const AssignedTrainings = () => {
                     'Overdue': 'bg-rose-500/10 text-rose-500'
                 };
                 return (
-                    <div className="flex justify-center">
+                    <div className="flex flex-col items-center gap-1">
                         <span className={`px-2 py-1 text-xs rounded-lg font-bold ${colors[row.status] || 'bg-gray-500/10 text-gray-500'}`}>
                             {row.status}
                         </span>
+                        {row.retest_requested && (
+                            <span className="px-2 py-0.5 text-[10px] rounded bg-purple-500/10 text-purple-500 font-bold uppercase">
+                                Retest Req
+                            </span>
+                        )}
+                        {row.retest_approved && (
+                            <span className="px-2 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-500 font-bold uppercase">
+                                Retest Appr
+                            </span>
+                        )}
                     </div>
                 );
             }
@@ -532,7 +570,14 @@ const AssignedTrainings = () => {
                             <optgroup label="Trainees">
                                 {trainees.map(trn => (
                                     <option key={`trn_${trn.trainee_id}`} value={`trn_${trn.trainee_id}`}>
-                                        {trn.trainee_code} - {trn.first_name} {trn.last_name}
+                                        {trn.first_name} {trn.last_name} ({trn.trainee_code})
+                                    </option>
+                                ))}
+                            </optgroup>
+                            <optgroup label="Interns">
+                                {interns.map(int => (
+                                    <option key={`int_${int.intern_id}`} value={`int_${int.intern_id}`}>
+                                        {int.first_name} {int.last_name} ({int.intern_code})
                                     </option>
                                 ))}
                             </optgroup>
@@ -550,7 +595,7 @@ const AssignedTrainings = () => {
                             <option value="">Select Module</option>
                             {modules.map(mod => (
                                 <option key={mod.module_id} value={mod.module_id}>
-                                    {mod.title} ({mod.training_type})
+                                    {mod.title} ({mod.training_type}){mod.duration_hours ? ` - ${mod.duration_hours} hrs` : ''}
                                 </option>
                             ))}
                         </select>

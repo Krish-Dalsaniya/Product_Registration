@@ -182,7 +182,16 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
                     </div>
                     
                     <div className="pr-2">
-                        <CandidateTimeline educationRoute={candidate.education_route} documents={docs} extractedInfo={extracted} eduDetails={eduDetails} compact />
+                        <CandidateTimeline 
+                            experienceType={candidate.experience_type}
+                            pastExperiences={typeof candidate.past_experiences === 'string' ? JSON.parse(candidate.past_experiences || '[]') : (candidate.past_experiences || [])}
+                            educationRoute={candidate.education_route} 
+                            documents={docs} 
+                            extractedInfo={extracted} 
+                            eduDetails={eduDetails} 
+                            dateOfBirth={candidate.date_of_birth} 
+                            compact 
+                        />
                     </div>
                 </div>
 

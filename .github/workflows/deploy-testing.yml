@@ -1,12 +1,12 @@
-name: Deploy to DigitalOcean
+name: Deploy Testing to DigitalOcean
 
 on:
   push:
     branches:
-      - main
+      - testing
 
 concurrency:
-  group: product-registration-deploy
+  group: product-registration-testing-deploy
   cancel-in-progress: true
 
 jobs:
@@ -24,23 +24,11 @@ jobs:
           ${{ secrets.DO_SSH_KEY }}
           EOF
 
-          echo "SSH directory:"
-          ls -la ~/.ssh
-
-          echo "Key line count:"
-          wc -l ~/.ssh/do_key
-
-          echo "Validating key format:"
-          ssh-keygen -l -f ~/.ssh/do_key
-
           chmod 600 ~/.ssh/do_key
 
-          echo "Testing ssh-keyscan..."
           ssh-keyscan -p "${{ secrets.DO_PORT }}" -H "${{ secrets.DO_HOST }}" >> ~/.ssh/known_hosts
 
-          echo "SSH setup complete"
-
-      - name: Deploy on DigitalOcean
+      - name: Deploy Testing on DigitalOcean
         run: |
           ssh -i ~/.ssh/do_key \
               -o StrictHostKeyChecking=yes \
@@ -49,8 +37,8 @@ jobs:
 
             set -e
 
-            APP_DIR="/var/www/product-registration-app"
-            BRANCH="main"
+            APP_DIR="/var/www/product-registration-app-testing"
+            BRANCH="testing"
             NODE_OPTIONS_VALUE="--dns-result-order=ipv4first --no-network-family-autoselection"
 
             echo "Going to app directory..."
@@ -71,12 +59,10 @@ jobs:
 
             echo "Installing backend dependencies..."
             cd "$APP_DIR/backend"
-
             npm ci || npm install
 
             echo "Installing frontend dependencies..."
             cd "$APP_DIR/frontend"
-
             npm ci || npm install
 
             echo "Building frontend..."
@@ -86,19 +72,19 @@ jobs:
             cd "$APP_DIR/backend"
 
             if [ -f database/migration.sql ]; then
-              sudo -u postgres psql -v ON_ERROR_STOP=1 -d product_registration -f database/migration.sql
+              sudo -u postgres psql -v ON_ERROR_STOP=1 -d product_registration_testing -f database/migration.sql
             fi
 
-            echo "Restarting backend..."
+            echo "Restarting testing backend..."
             cd "$APP_DIR/backend"
 
-            NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 restart product-registration-backend --update-env || \
-            NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 start npm --name product-registration-backend -- start
+            NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 restart product-registration-backend-testing --update-env || \
+            NODE_OPTIONS="$NODE_OPTIONS_VALUE" pm2 start src/server.js --name product-registration-backend-testing
 
             pm2 save
 
             nginx -t
             systemctl reload nginx
 
-            echo "Deployment completed successfully."
+            echo "Testing deployment completed successfully."
           EOF

@@ -47,6 +47,7 @@ const OpenPositionsPage = () => {
   });
 
   const [selectInputs, setSelectInputs] = useState({});
+  const [dropdownOpen, setDropdownOpen] = useState({});
 
   const [files, setFiles] = useState({
     rcd_doc: null,
@@ -108,6 +109,7 @@ const OpenPositionsPage = () => {
         lms_training_ids: parsedTrainings
       });
       setSelectInputs({});
+      setDropdownOpen({});
       setFiles({
         rcd_doc: null, prerequisite_doc: null, training_doc: null, 
         eligibility_doc: null, kpi_doc: null, kra_doc: null
@@ -124,6 +126,7 @@ const OpenPositionsPage = () => {
         lms_training_ids: []
       });
       setSelectInputs({});
+      setDropdownOpen({});
       setFiles({
         rcd_doc: null, prerequisite_doc: null, training_doc: null, 
         eligibility_doc: null, kpi_doc: null, kra_doc: null
@@ -264,59 +267,123 @@ const OpenPositionsPage = () => {
     }
   };
 
-  const renderCreatableSelect = (label, key) => (
-    <div className="flex flex-col space-y-1.5">
-      <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{label}</label>
-      <CreatableSelect
-        isMulti
-        components={{ DropdownIndicator: null, Menu: () => null }}
-        inputValue={selectInputs[key] || ''}
-        onInputChange={(val) => setSelectInputs(prev => ({...prev, [key]: val}))}
-        onKeyDown={(e) => handleKeyDown(e, key)}
-        onBlur={() => handleBlur(key)}
-        value={(formData[key] || []).map(v => ({ value: v, label: v }))}
-        onChange={(selected) => setFormData({...formData, [key]: selected ? selected.map(s => s.value) : []})}
-        className="text-sm"
-        placeholder={`Type...`}
-        styles={{
-          control: (base) => ({
-            ...base,
-            backgroundColor: 'var(--bg-workspace)',
-            borderColor: 'var(--border-color)',
-            borderRadius: '0.5rem',
-            minHeight: '36px',
-            boxShadow: 'none',
-            '&:hover': { borderColor: 'var(--accent)' }
-          }),
-          multiValue: (base) => ({
-            ...base,
-            backgroundColor: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '6px'
-          }),
-          multiValueLabel: (base) => ({
-            ...base,
-            color: 'var(--text-main)',
-            fontWeight: '600',
-            padding: '4px 8px'
-          }),
-          multiValueRemove: (base) => ({
-            ...base,
-            color: 'var(--text-muted)',
-            cursor: 'pointer',
-            ':hover': {
-              backgroundColor: 'rgba(255,0,0,0.1)',
-              color: 'red'
-            }
-          }),
-          input: (base) => ({
-            ...base,
-            color: 'var(--text-main)'
-          })
-        }}
-      />
-    </div>
-  );
+  const renderCreatableSelect = (label, key) => {
+    const options = buildOptions(key).filter(o => !(formData[key] || []).includes(o.value));
+    const currentInput = selectInputs[key] || '';
+    const filteredOptions = options.filter(o => o.label.toLowerCase().includes(currentInput.toLowerCase()));
+
+    const handleAdd = (val) => {
+      if (!val.trim()) return;
+      if (!(formData[key] || []).includes(val.trim())) {
+        setFormData(prev => ({
+          ...prev,
+          [key]: [...(prev[key] || []), val.trim()]
+        }));
+      }
+      setSelectInputs(prev => ({ ...prev, [key]: '' }));
+      setDropdownOpen(prev => ({ ...prev, [key]: false }));
+    };
+
+    const handleRemove = (valToRemove) => {
+      setFormData(prev => ({
+        ...prev,
+        [key]: (prev[key] || []).filter(v => v !== valToRemove)
+      }));
+    };
+
+    return (
+      <div className="flex flex-col space-y-2 bg-[var(--bg-card)] p-3 rounded-xl border border-[var(--border-color)] h-[250px]">
+        <label className="text-[11px] font-black text-[var(--text-main)] uppercase tracking-wider flex items-center justify-between">
+          {label}
+          <span className="bg-[var(--bg-workspace)] text-[var(--text-muted)] px-1.5 py-0.5 rounded text-[9px]">
+            {(formData[key] || []).length}
+          </span>
+        </label>
+        
+        <div className="relative">
+          <div className="flex relative items-center">
+            <input
+              type="text"
+              value={currentInput}
+              onChange={(e) => {
+                setSelectInputs(prev => ({ ...prev, [key]: e.target.value }));
+                setDropdownOpen(prev => ({ ...prev, [key]: true }));
+              }}
+              onFocus={() => setDropdownOpen(prev => ({ ...prev, [key]: true }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAdd(currentInput);
+                }
+              }}
+              placeholder={`Add ${label.toLowerCase()}...`}
+              className="w-full px-3 py-1.5 text-[12px] rounded-lg bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors pr-8"
+            />
+            <button
+              type="button"
+              onClick={() => handleAdd(currentInput)}
+              className="absolute right-1.5 p-1 text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {dropdownOpen[key] && (filteredOptions.length > 0 || currentInput.trim()) && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setDropdownOpen(prev => ({ ...prev, [key]: false }))} 
+              />
+              <div className="absolute z-50 w-full mt-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg shadow-xl overflow-hidden">
+                <div className="max-h-32 overflow-y-auto custom-scrollbar">
+                  {filteredOptions.length > 0 ? (
+                    filteredOptions.map((opt, i) => (
+                      <div
+                        key={i}
+                        onClick={() => handleAdd(opt.value)}
+                        className="px-3 py-1.5 text-[11px] font-semibold text-[var(--text-main)] hover:bg-[var(--bg-workspace)] hover:text-[var(--accent)] cursor-pointer transition-colors"
+                      >
+                        {opt.label}
+                      </div>
+                    ))
+                  ) : currentInput.trim() ? (
+                    <div
+                      onClick={() => handleAdd(currentInput)}
+                      className="px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)] hover:bg-[var(--bg-workspace)] cursor-pointer transition-colors flex items-center gap-1.5"
+                    >
+                      <Plus size={12} /> Add "{currentInput}"
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1.5 mt-2">
+          {(formData[key] || []).length === 0 ? (
+            <div className="h-full flex items-center justify-center text-[10px] text-[var(--text-dim)] italic border-2 border-dashed border-[var(--border-color)] rounded-lg">
+              No entries added
+            </div>
+          ) : (
+            (formData[key] || []).map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between bg-[var(--bg-workspace)] px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] group hover:border-[var(--accent)] transition-all">
+                <span className="text-[11px] font-semibold text-[var(--text-main)] break-all pr-2">{item}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(item)}
+                  className="text-[var(--text-dim)] hover:text-red-500 opacity-50 group-hover:opacity-100 transition-all flex-shrink-0"
+                  title="Remove"
+                >
+                  <X size={12} strokeWidth={3} />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full pb-8">
@@ -442,48 +509,16 @@ const OpenPositionsPage = () => {
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-[var(--bg-workspace)]/50 p-4 rounded-xl border border-[var(--border-color)] flex flex-col justify-center">
-                <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-2 uppercase tracking-wider">Name of the Position *</label>
-                <input 
-                  type="text" 
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="e.g. Senior Frontend Developer"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors font-semibold"
-                />
-              </div>
-
-              <div className="bg-[var(--bg-workspace)]/50 p-4 rounded-xl border border-[var(--border-color)] flex flex-col">
-                <h4 className="text-[11px] font-black text-[var(--text-main)] uppercase tracking-[0.15em] mb-2 flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-                  Link LMS Trainings
-                </h4>
-                <div className="max-h-24 overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1 custom-scrollbar">
-                  {lmsModules && lmsModules.length > 0 ? lmsModules.map(module => {
-                    const currentIds = Array.isArray(formData.lms_training_ids) ? formData.lms_training_ids : [];
-                    return (
-                      <label key={module.module_id} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-[var(--bg-card)] border border-transparent hover:border-[var(--border-color)] cursor-pointer transition-colors">
-                        <input 
-                          type="checkbox" 
-                          checked={currentIds.includes(module.module_id) || currentIds.includes(String(module.module_id))}
-                          onChange={(e) => {
-                            const newIds = e.target.checked 
-                              ? [...currentIds, module.module_id]
-                              : currentIds.filter(id => id !== module.module_id && id !== String(module.module_id));
-                            setFormData({...formData, lms_training_ids: newIds});
-                          }}
-                          className="w-3.5 h-3.5 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)] cursor-pointer"
-                        />
-                        <span className="text-[11px] font-semibold text-[var(--text-main)] truncate" title={module.title}>{module.title}</span>
-                      </label>
-                    );
-                  }) : (
-                    <p className="text-[10px] text-[var(--text-muted)] italic">No LMS Modules available.</p>
-                  )}
-                </div>
-              </div>
+            <div className="bg-[var(--bg-workspace)]/50 p-4 rounded-xl border border-[var(--border-color)] flex flex-col justify-center">
+              <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-2 uppercase tracking-wider">Name of the Position *</label>
+              <input 
+                type="text" 
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                placeholder="e.g. Senior Frontend Developer"
+                className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors font-semibold"
+              />
             </div>
 
             <div className="bg-[var(--bg-workspace)]/50 p-4 rounded-xl border border-[var(--border-color)]">
@@ -577,7 +612,38 @@ const OpenPositionsPage = () => {
                 </div>
               ))}
             </div>
-          </div>
+            </div>
+
+            <div className="bg-[var(--bg-workspace)]/50 p-4 rounded-xl border border-[var(--border-color)] flex flex-col">
+              <h4 className="text-[11px] font-black text-[var(--text-main)] uppercase tracking-[0.15em] mb-3 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+                Link LMS Trainings
+              </h4>
+              <div className="max-h-32 overflow-y-auto pr-2 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 custom-scrollbar">
+                {lmsModules && lmsModules.length > 0 ? lmsModules.map(module => {
+                  const currentIds = Array.isArray(formData.lms_training_ids) ? formData.lms_training_ids : [];
+                  return (
+                    <label key={module.module_id} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] hover:bg-[var(--bg-card)] cursor-pointer transition-all shadow-sm">
+                      <input 
+                        type="checkbox" 
+                        checked={currentIds.includes(module.module_id) || currentIds.includes(String(module.module_id))}
+                        onChange={(e) => {
+                          const newIds = e.target.checked 
+                            ? [...currentIds, module.module_id]
+                            : currentIds.filter(id => id !== module.module_id && id !== String(module.module_id));
+                          setFormData({...formData, lms_training_ids: newIds});
+                        }}
+                        className="w-3.5 h-3.5 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)] cursor-pointer flex-shrink-0"
+                      />
+                      <span className="text-[11px] font-semibold text-[var(--text-main)] truncate" title={module.title}>{module.title}</span>
+                    </label>
+                  );
+                }) : (
+                  <p className="text-[10px] text-[var(--text-muted)] italic">No LMS Modules available.</p>
+                )}
+              </div>
+            </div>
+
           
           <div className="flex justify-end pt-2 mt-2">
             <button 

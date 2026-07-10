@@ -4,6 +4,7 @@ import { Home, Users, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid } from '
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { getNotifications, addPCBStock, addElectronicsStock, addElectricalStock, addStructuralStock } from '../../api/inventory';
 import { fetchPendingRegistrationsApi, approveRegistrationApi, rejectRegistrationApi } from '../../api/hr';
+import { getAllAssignmentsApi, approveRetestApi } from '../../api/lms';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import Modal from './Modal';
@@ -77,9 +78,17 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
     refetchInterval: 60000,
   });
 
+  const { data: assignmentsRes } = useQuery({
+    queryKey: ['lmsAssignments'],
+    queryFn: () => getAllAssignmentsApi().then(res => res.data.data),
+    enabled: !!hasHRAccess,
+    refetchInterval: 60000,
+  });
+
   const alerts = notificationsRes?.inventoryAlerts || [];
   const tickets = notificationsRes?.supportTickets || [];
   const pendingRegistrations = pendingRegRes || [];
+  const pendingRetests = (assignmentsRes || []).filter(a => a.retest_requested);
 
   // --- MOCK DATA FOR HR VISUAL DEMONSTRATION ---
   const mockLeaveRequests = [
@@ -101,14 +110,14 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
   // Calculate context-aware total notifications
   let activeNotifications = 0;
   if (isHRModule) {
-    activeNotifications = pendingRegistrations.length + mockLeaveRequests.length + mockAttendanceAnomalies.length;
+    activeNotifications = pendingRegistrations.length + mockLeaveRequests.length + mockAttendanceAnomalies.length + pendingRetests.length;
   } else if (isInventoryModule) {
     activeNotifications = alerts.length;
   } else if (isPMSModule) {
     activeNotifications = tickets.length;
   } else {
     // Admin dashboard / global view
-    activeNotifications = alerts.length + tickets.length + pendingRegistrations.length + mockLeaveRequests.length + mockAttendanceAnomalies.length;
+    activeNotifications = alerts.length + tickets.length + pendingRegistrations.length + mockLeaveRequests.length + mockAttendanceAnomalies.length + pendingRetests.length;
   }
 
   const getNotificationTitle = () => {
@@ -188,6 +197,16 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
       } catch (error) {
         toast.error('Failed to reject registration');
       }
+    }
+  };
+
+  const handleApproveRetest = async (assignmentId) => {
+    try {
+      await approveRetestApi(assignmentId);
+      toast.success('Retest approved successfully');
+      queryClient.invalidateQueries(['lmsAssignments']);
+    } catch (error) {
+      toast.error('Failed to approve retest');
     }
   };
 
@@ -368,6 +387,27 @@ const Navbar = ({ onMenuClick, tabs = [], activePath = '', onTabClose, onTabClic
                                     className="flex-1 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded text-[10px] font-bold transition-colors"
                                   >
                                     Reject
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {pendingRetests.length > 0 && (!isPMSModule && !isInventoryModule) && (
+                          <div className="py-2">
+                            <h4 className="px-4 py-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Retest Requests</h4>
+                            {pendingRetests.map((retest) => (
+                              <div key={`retest-${retest.assignment_id}`} className="px-4 py-3 hover:bg-[var(--nav-hover)] transition-colors group border-b border-[var(--border-color)]/30 last:border-0">
+                                <div className="flex-1 min-w-0 pr-4">
+                                  <p className="text-[12px] font-bold text-[var(--text-main)] truncate">{retest.employee_name || 'Employee'}</p>
+                                  <p className="text-[10px] font-black tracking-widest text-[var(--text-dim)] mt-1 truncate">{retest.module_title}</p>
+                                </div>
+                                <div className="flex gap-2 mt-2">
+                                  <button
+                                    onClick={() => { setShowNotifications(false); handleApproveRetest(retest.assignment_id); }}
+                                    className="flex-1 py-1 bg-purple-500/10 text-purple-500 hover:bg-purple-500 hover:text-white rounded text-[10px] font-bold transition-colors uppercase"
+                                  >
+                                    Approve Retest
                                   </button>
                                 </div>
                               </div>

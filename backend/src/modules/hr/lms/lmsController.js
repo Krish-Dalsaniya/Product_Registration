@@ -137,13 +137,14 @@ const getAllAssignments = async (req, res) => {
         const query = `
             SELECT a.*, 
                    m.title as module_title, m.training_type, m.training_url, m.attachment_url,
-                   COALESCE(e.emp_code, tr.trainee_code) as emp_code, 
-                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name) as employee_name
+                   COALESCE(e.emp_code, tr.trainee_code, int.intern_code) as emp_code, 
+                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name, int.first_name || ' ' || int.last_name) as employee_name
             FROM hr_lms_assignments a
             JOIN hr_lms_modules m ON a.module_id = m.module_id
             LEFT JOIN hr_employees e ON a.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.user_id
             LEFT JOIN hr_trainees tr ON a.trainee_id = tr.trainee_id
+            LEFT JOIN hr_interns int ON a.intern_id = int.intern_id
             ORDER BY a.created_at DESC
         `;
         const result = await pool.query(query);
@@ -279,8 +280,8 @@ const getAllAssessments = async (req, res) => {
             SELECT a.*, 
                    assign.assigned_date, assign.completed_at,
                    m.title as module_title, m.training_type, m.difficulty_level,
-                   COALESCE(e.emp_code, tr.trainee_code) as emp_code, 
-                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name) as employee_name,
+                   COALESCE(e.emp_code, tr.trainee_code, int.intern_code) as emp_code, 
+                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name, int.first_name || ' ' || int.last_name) as employee_name,
                    assessor.full_name as assessor_name
             FROM hr_lms_assessments a
             JOIN hr_lms_assignments assign ON a.assignment_id = assign.assignment_id
@@ -288,6 +289,7 @@ const getAllAssessments = async (req, res) => {
             LEFT JOIN hr_employees e ON assign.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.user_id
             LEFT JOIN hr_trainees tr ON assign.trainee_id = tr.trainee_id
+            LEFT JOIN hr_interns int ON assign.intern_id = int.intern_id
             LEFT JOIN users assessor ON a.assessed_by = assessor.user_id
             ORDER BY a.created_at DESC
         `;
@@ -341,15 +343,15 @@ const submitQuiz = async (req, res) => {
         const { assignment_id, answers } = req.body;
         const assessed_by = req.user.user_id;
         
-        // Check if assessment already exists
-        const existingAssessment = await pool.query('SELECT * FROM hr_lms_assessments WHERE assignment_id = $1', [assignment_id]);
-        if (existingAssessment.rows.length > 0) {
-            return res.status(400).json({ success: false, error: { message: 'An assessment has already been submitted for this assignment.' } });
-        }
-        
-        // Fetch assignment to get module_id
-        const assignmentRes = await pool.query('SELECT module_id FROM hr_lms_assignments WHERE assignment_id = $1', [assignment_id]);
+        // Fetch assignment to check retest status and get module_id
+        const assignmentRes = await pool.query('SELECT module_id, retest_approved FROM hr_lms_assignments WHERE assignment_id = $1', [assignment_id]);
         if (assignmentRes.rows.length === 0) return res.status(404).json({ success: false, error: { message: 'Assignment not found' } });
+        
+        // Check if assessment already exists and retest is not approved
+        const existingAssessment = await pool.query('SELECT * FROM hr_lms_assessments WHERE assignment_id = $1', [assignment_id]);
+        if (existingAssessment.rows.length > 0 && !assignmentRes.rows[0].retest_approved) {
+            return res.status(400).json({ success: false, error: { message: 'An assessment has already been submitted for this assignment and no retest is approved.' } });
+        }
         
         const module_id = assignmentRes.rows[0].module_id;
         
@@ -380,6 +382,9 @@ const submitQuiz = async (req, res) => {
             RETURNING *
         `;
         const result = await pool.query(query, [assignment_id, score, status, remarks, assessed_by]);
+        
+        // Reset retest_approved once quiz is taken
+        await pool.query('UPDATE hr_lms_assignments SET retest_approved = FALSE WHERE assignment_id = $1', [assignment_id]);
         
         res.status(201).json({ success: true, data: result.rows[0], message: 'Quiz submitted successfully' });
     } catch (error) {
@@ -564,6 +569,26 @@ const addQuizQuestionsBulk = async (req, res) => {
     }
 };
 
+const requestRetest = async (req, res) => {
+    try {
+        const { assignment_id } = req.params;
+        await pool.query('UPDATE hr_lms_assignments SET retest_requested = TRUE WHERE assignment_id = $1', [assignment_id]);
+        res.json({ success: true, message: 'Retest requested successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: { message: 'Failed to request retest' } });
+    }
+};
+
+const approveRetest = async (req, res) => {
+    try {
+        const { assignment_id } = req.params;
+        await pool.query('UPDATE hr_lms_assignments SET retest_approved = TRUE, retest_requested = FALSE WHERE assignment_id = $1', [assignment_id]);
+        res.json({ success: true, message: 'Retest approved' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: { message: 'Failed to approve retest' } });
+    }
+};
+
 module.exports = {
     createModule,
     getAllModules,
@@ -584,7 +609,9 @@ module.exports = {
     getYoutubeTitle,
     generateQuestionsFromTranscript,
     addQuizQuestionsBulk,
-    transcribeAudio
+    transcribeAudio,
+    requestRetest,
+    approveRetest
 };
 
 async function transcribeAudio(req, res) {

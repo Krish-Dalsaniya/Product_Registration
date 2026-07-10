@@ -1,31 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchTraineeByIdApi } from '../../../api/trainee';
+import { fetchInternByIdApi } from '../../../api/intern';
 import { ArrowLeft, GraduationCap, Briefcase, Mail, Phone, Calendar, CheckCircle, Clock, BookOpen, AlertCircle, XCircle, RotateCcw } from 'lucide-react';
 import { requestRetestApi } from '../../../api/lms';
 import toast from 'react-hot-toast';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 
-const TraineeProfile = () => {
+const InternProfile = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [trainee, setTrainee] = useState(null);
+    const [intern, setIntern] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        loadTrainee();
+        loadIntern();
     }, [id]);
 
-    const loadTrainee = async () => {
+    const loadIntern = async () => {
         setIsLoading(true);
         try {
-            const res = await fetchTraineeByIdApi(id);
+            const res = await fetchInternByIdApi(id);
             if (res.data?.success) {
-                setTrainee(res.data.data);
+                setIntern(res.data.data);
             }
         } catch (error) {
-            toast.error('Failed to load trainee profile');
-            navigate('/hr/trainee');
+            toast.error('Failed to load intern profile');
+            navigate('/hr/intern');
         } finally {
             setIsLoading(false);
         }
@@ -35,7 +35,7 @@ const TraineeProfile = () => {
         try {
             await requestRetestApi(assignmentId);
             toast.success('Retest requested successfully');
-            loadTrainee();
+            loadIntern();
         } catch (error) {
             toast.error('Failed to request retest');
         }
@@ -45,7 +45,7 @@ const TraineeProfile = () => {
         return <div className="p-10 text-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--accent)] mx-auto"></div></div>;
     }
 
-    if (!trainee) return null;
+    if (!intern) return null;
 
     const colors = {
         'Applied': 'bg-gray-100 text-gray-700',
@@ -65,8 +65,8 @@ const TraineeProfile = () => {
     };
 
     const breadcrumbItems = [
-        { label: 'Trainees', path: '/hr/trainee' },
-        { label: `${trainee.first_name} ${trainee.last_name}`, path: '' }
+        { label: 'Interns', path: '/hr/intern' },
+        { label: `${intern.first_name} ${intern.last_name}`, path: '' }
     ];
 
     return (
@@ -75,34 +75,34 @@ const TraineeProfile = () => {
                 <Breadcrumbs items={breadcrumbItems} />
             </div>
 
-            <button onClick={() => navigate('/hr/trainee')} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--accent)] font-bold mb-6 pt-4 transition-colors">
-                <ArrowLeft size={18} /> Back to Trainees
+            <button onClick={() => navigate('/hr/intern')} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--accent)] font-bold mb-6 pt-4 transition-colors">
+                <ArrowLeft size={18} /> Back to Interns
             </button>
 
             {/* Header Card */}
             <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div className="flex items-center gap-6">
                     <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center border-4 border-white shadow-md overflow-hidden">
-                        {trainee.profile_photo ? (
-                            <img src={trainee.profile_photo} alt="Profile" className="w-full h-full object-cover" />
+                        {intern.profile_photo ? (
+                            <img src={intern.profile_photo} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
                             <GraduationCap size={40} className="text-blue-500" />
                         )}
                     </div>
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-3xl font-black text-[var(--text-main)]">{trainee.first_name} {trainee.last_name}</h1>
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${colors[trainee.status] || 'bg-gray-100'}`}>{trainee.status}</span>
+                            <h1 className="text-3xl font-black text-[var(--text-main)]">{intern.first_name} {intern.last_name}</h1>
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${colors[intern.status] || 'bg-gray-100'}`}>{intern.status}</span>
                         </div>
-                        <p className="text-sm font-bold text-[var(--accent)] tracking-widest uppercase mb-3">{trainee.trainee_code}</p>
+                        <p className="text-sm font-bold text-[var(--accent)] tracking-widest uppercase mb-3">{intern.intern_code}</p>
                         
                         <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-[var(--text-muted)]">
-                            <span className="flex items-center gap-1.5"><Mail size={16} /> {trainee.email}</span>
-                            {trainee.mobile && <span className="flex items-center gap-1.5"><Phone size={16} /> {trainee.mobile}</span>}
-                            {(trainee.department_name || trainee.designation_name) && (
+                            <span className="flex items-center gap-1.5"><Mail size={16} /> {intern.email}</span>
+                            {intern.mobile && <span className="flex items-center gap-1.5"><Phone size={16} /> {intern.mobile}</span>}
+                            {(intern.department_name || intern.designation_name) && (
                                 <span className="flex items-center gap-1.5">
                                     <Briefcase size={16} /> 
-                                    {trainee.designation_name ? `${trainee.designation_name} • ` : ''}{trainee.department_name || 'No Department'}
+                                    {intern.designation_name ? `${intern.designation_name} • ` : ''}{intern.department_name || 'No Department'}
                                 </span>
                             )}
                         </div>
@@ -118,10 +118,10 @@ const TraineeProfile = () => {
                     <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm">
                         <h3 className="text-sm font-black text-[var(--text-main)] uppercase tracking-wider mb-4 border-b pb-2">Training Details</h3>
                         <div className="space-y-4">
-                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Batch</p><p className="font-semibold text-[var(--text-main)]">{trainee.training_batch || 'N/A'}</p></div>
-                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Mentor</p><p className="font-semibold text-[var(--text-main)]">{trainee.mentor_name || 'N/A'}</p></div>
-                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Joining Date</p><p className="font-semibold text-[var(--text-main)]">{trainee.joining_date ? new Date(trainee.joining_date).toLocaleDateString() : 'N/A'}</p></div>
-                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Expected Completion</p><p className="font-semibold text-[var(--text-main)]">{trainee.expected_completion_date ? new Date(trainee.expected_completion_date).toLocaleDateString() : 'N/A'}</p></div>
+                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Batch</p><p className="font-semibold text-[var(--text-main)]">{intern.training_batch || 'N/A'}</p></div>
+                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Mentor</p><p className="font-semibold text-[var(--text-main)]">{intern.mentor_name || 'N/A'}</p></div>
+                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Joining Date</p><p className="font-semibold text-[var(--text-main)]">{intern.joining_date ? new Date(intern.joining_date).toLocaleDateString() : 'N/A'}</p></div>
+                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Expected Completion</p><p className="font-semibold text-[var(--text-main)]">{intern.expected_completion_date ? new Date(intern.expected_completion_date).toLocaleDateString() : 'N/A'}</p></div>
                         </div>
                     </div>
 
@@ -129,9 +129,9 @@ const TraineeProfile = () => {
                     <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm">
                         <h3 className="text-sm font-black text-[var(--text-main)] uppercase tracking-wider mb-4 border-b pb-2">Education</h3>
                         <div className="space-y-4">
-                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Qualification</p><p className="font-semibold text-[var(--text-main)]">{trainee.education || 'N/A'}</p></div>
-                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Institute</p><p className="font-semibold text-[var(--text-main)]">{trainee.institute || 'N/A'}</p></div>
-                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Specialization</p><p className="font-semibold text-[var(--text-main)]">{trainee.specialization || 'N/A'}</p></div>
+                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Qualification</p><p className="font-semibold text-[var(--text-main)]">{intern.education || 'N/A'}</p></div>
+                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Institute</p><p className="font-semibold text-[var(--text-main)]">{intern.institute || 'N/A'}</p></div>
+                            <div><p className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Specialization</p><p className="font-semibold text-[var(--text-main)]">{intern.specialization || 'N/A'}</p></div>
                         </div>
                     </div>
                 </div>
@@ -144,9 +144,9 @@ const TraineeProfile = () => {
                             <h3 className="text-lg font-black text-[var(--text-main)]">Learning & Assignments</h3>
                         </div>
 
-                        {trainee.lms_assignments && trainee.lms_assignments.length > 0 ? (
+                        {intern.lms_assignments && intern.lms_assignments.length > 0 ? (
                             <div className="space-y-4">
-                                {trainee.lms_assignments.map((assignment) => (
+                                {intern.lms_assignments.map((assignment) => (
                                     <div key={assignment.assignment_id} className="p-4 border border-[var(--border-color)] rounded-xl hover:border-[var(--accent)] transition-colors bg-[var(--bg-workspace)] flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <div className="flex-1">
                                             <h4 className="font-bold text-[var(--text-main)] text-base">{assignment.module_title}</h4>
@@ -202,7 +202,7 @@ const TraineeProfile = () => {
                                     <BookOpen size={32} />
                                 </div>
                                 <h4 className="text-base font-bold text-[var(--text-main)]">No Training Assigned</h4>
-                                <p className="text-sm text-[var(--text-muted)] mt-1">This trainee hasn't been assigned any LMS modules yet.</p>
+                                <p className="text-sm text-[var(--text-muted)] mt-1">This intern hasn't been assigned any LMS modules yet.</p>
                             </div>
                         )}
                     </div>
@@ -213,4 +213,5 @@ const TraineeProfile = () => {
     );
 };
 
-export default TraineeProfile;
+export default InternProfile;
+

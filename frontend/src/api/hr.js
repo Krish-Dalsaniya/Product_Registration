@@ -90,3 +90,13 @@ export const fetchOrgProfilesApi = () => api.get('/hr/org-chart/profiles');
 export const createOrgProfileApi = (data) => api.post('/hr/org-chart/profiles', data);
 export const updateOrgProfileApi = (id, data) => api.put(`/hr/org-chart/profiles/${id}`, data);
 export const deleteOrgProfileApi = (id) => api.delete(`/hr/org-chart/profiles/${id}`);
+
+export const fetchInternsApi = () => api.get('/hr/interns');
+export const fetchInternDashboardStatsApi = () => api.get('/hr/interns/dashboard');
+export const createInternApi = (data) => api.post('/hr/interns', data);
+export const fetchInternByIdApi = (id) => api.get(`/hr/interns/${id}`);
+export const updateInternApi = (id, data) => api.put(`/hr/interns/${id}`, data);
+export const deleteInternApi = (id) => api.delete(`/hr/interns/${id}`);
+export const convertInternToEmployeeApi = (id, data) => api.post(`/hr/interns/${id}/convert`, data);
+export const convertInternToTraineeApi = (id, data) => api.post(`/hr/interns/${id}/convert-to-trainee`, data);
+export const assignTrainingToInternApi = (id, data) => api.post(`/hr/interns/${id}/assign-training`, data);

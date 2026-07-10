@@ -249,13 +249,6 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-    DELETE FROM permissions WHERE permission_key LIKE '%.export' OR permission_key LIKE '%.publish' OR permission_key LIKE '%.assign';
-
-    -- B) Remove .comm_view completely
-    DELETE FROM role_permissions WHERE permission_id IN (SELECT permission_id FROM permissions WHERE permission_key LIKE '%.comm_view');
-    DELETE FROM permissions WHERE permission_key LIKE '%.comm_view';
-
-
 
 -- 5. User Security & Extensions
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -518,6 +511,8 @@ CREATE TABLE IF NOT EXISTS hr_lms_assignments (
     assigned_date DATE NOT NULL,
     due_date DATE,
     status VARCHAR(50) DEFAULT 'Assigned',
+    retest_requested BOOLEAN DEFAULT FALSE,
+    retest_approved BOOLEAN DEFAULT FALSE,
     progress_percentage INTEGER DEFAULT 0,
     completed_at TIMESTAMP WITH TIME ZONE NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -739,8 +734,7 @@ CREATE TABLE IF NOT EXISTS hr_candidates (
     total_years NUMERIC,
     designation VARCHAR(255),
     current_company VARCHAR(255),
-    monthly_taken_home NUMERIC,
-    expected_monthly NUMERIC,
+    past_experiences JSONB DEFAULT '[]'::jsonb,
     documents JSONB DEFAULT '{}',
     status VARCHAR(50) DEFAULT 'Pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -935,3 +929,41 @@ ADD COLUMN IF NOT EXISTS release_id VARCHAR(255),
 ADD COLUMN IF NOT EXISTS workflow_run_id VARCHAR(255),
 ADD COLUMN IF NOT EXISTS build_number VARCHAR(255),
 ADD COLUMN IF NOT EXISTS firmware_binary_url VARCHAR(500);
+
+-- Candidate experiences schema changes
+ALTER TABLE hr_candidates DROP COLUMN IF EXISTS monthly_taken_home;
+ALTER TABLE hr_candidates DROP COLUMN IF EXISTS expected_monthly;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS past_experiences JSONB DEFAULT '[]'::jsonb;
+
+-- 2026-07-10: Add policy_checklist to hr_onboarding
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS policy_checklist JSONB DEFAULT '[]'::jsonb;
+
+-- MODULE: HR Interns
+CREATE TABLE IF NOT EXISTS hr_interns (
+  intern_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  intern_code VARCHAR(50) UNIQUE NOT NULL,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  mobile VARCHAR(20),
+  gender VARCHAR(20),
+  date_of_birth DATE,
+  joining_date DATE,
+  expected_completion_date DATE,
+  department_id UUID REFERENCES hr_departments(department_id) ON DELETE SET NULL,
+  designation_id UUID REFERENCES hr_designations(designation_id) ON DELETE SET NULL,
+  mentor_employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE SET NULL,
+  training_batch VARCHAR(100),
+  education VARCHAR(200),
+  institute VARCHAR(200),
+  specialization VARCHAR(200),
+  status VARCHAR(50) DEFAULT 'Applied',
+  remarks TEXT,
+  image_url TEXT,
+  created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE hr_lms_assignments 
+ADD COLUMN IF NOT EXISTS intern_id UUID REFERENCES hr_interns(intern_id) ON DELETE CASCADE;

@@ -44,6 +44,8 @@ router.get('/assignments', lmsController.getAllAssignments);
 router.patch('/assignment/:id/status', lmsController.updateAssignmentStatus);
 router.patch('/assignment/:id/progress', lmsController.updateAssignmentProgress);
 router.delete('/assignment/:id', lmsController.deleteAssignment);
+router.post('/assignment/:assignment_id/request-retest', lmsController.requestRetest);
+router.post('/assignment/:assignment_id/approve-retest', lmsController.approveRetest);
 
 // --- Assessments & Results ---
 router.post('/assessment', lmsController.logAssessment);

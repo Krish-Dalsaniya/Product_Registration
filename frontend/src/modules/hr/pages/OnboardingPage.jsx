@@ -24,11 +24,12 @@ const OnboardingPage = () => {
     const [editDocs, setEditDocs] = useState([]);
     const [editAssets, setEditAssets] = useState([]);
     const [editTraining, setEditTraining] = useState([]);
+    const [editPolicies, setEditPolicies] = useState([]);
     const [editRcd, setEditRcd] = useState([]);
     const [editStatus, setEditStatus] = useState('');
 
     // New item inputs
-    const [newItemInputs, setNewItemInputs] = useState({ docs: '', assets: '', training: '', rcd: '' });
+    const [newItemInputs, setNewItemInputs] = useState({ docs: '', assets: '', training: '', policies: '', rcd: '' });
 
     const loadRecords = async () => {
         try {
@@ -42,7 +43,7 @@ const OnboardingPage = () => {
                 setRecords(onboardingRes.data.data);
             }
             if (candidatesRes.data?.success) {
-                const accepted = candidatesRes.data.data.filter(c => c.status === 'Accepted');
+                const accepted = candidatesRes.data.data.filter(c => c.status === 'Offer Accepted' || c.status === 'Accepted');
                 setPendingCandidates(accepted);
             }
         } catch (error) {
@@ -62,6 +63,7 @@ const OnboardingPage = () => {
         setEditDocs(record.document_checklist || []);
         setEditAssets(record.asset_checklist || []);
         setEditTraining(record.training_checklist || []);
+        setEditPolicies(record.policy_checklist || []);
         setEditRcd(record.rcd_checklist || []);
         setEditStatus(record.status || 'Pending');
     };
@@ -79,6 +81,7 @@ const OnboardingPage = () => {
                 document_checklist: editDocs,
                 asset_checklist: editAssets,
                 training_checklist: editTraining,
+                policy_checklist: editPolicies,
                 rcd_checklist: editRcd
             });
 
@@ -111,6 +114,10 @@ const OnboardingPage = () => {
             const newList = [...editTraining];
             newList[idx].checked = !newList[idx].checked;
             setEditTraining(newList);
+        } else if (listName === 'policies') {
+            const newList = [...editPolicies];
+            newList[idx].checked = !newList[idx].checked;
+            setEditPolicies(newList);
         } else if (listName === 'rcd') {
             const newList = [...editRcd];
             newList[idx].checked = !newList[idx].checked;
@@ -131,6 +138,10 @@ const OnboardingPage = () => {
             const newList = [...editTraining];
             newList[idx].remarks = val;
             setEditTraining(newList);
+        } else if (listName === 'policies') {
+            const newList = [...editPolicies];
+            newList[idx].remarks = val;
+            setEditPolicies(newList);
         } else if (listName === 'rcd') {
             const newList = [...editRcd];
             newList[idx].remarks = val;
@@ -145,10 +156,16 @@ const OnboardingPage = () => {
         } else if (listName === 'assets' && newItemInputs.assets.trim()) {
             setEditAssets([...editAssets, { name: newItemInputs.assets.trim(), checked: false, remarks: '' }]);
             setNewItemInputs(prev => ({ ...prev, assets: '' }));
-        } else if (listName === 'training' && newItemInputs.training.trim()) {
+        } else if (listName === 'training') {
+            if (!newItemInputs.training.trim()) return;
             setEditTraining([...editTraining, { name: newItemInputs.training.trim(), checked: false, remarks: '' }]);
             setNewItemInputs(prev => ({ ...prev, training: '' }));
-        } else if (listName === 'rcd' && newItemInputs.rcd.trim()) {
+        } else if (listName === 'policies') {
+            if (!newItemInputs.policies.trim()) return;
+            setEditPolicies([...editPolicies, { name: newItemInputs.policies.trim(), checked: false, remarks: '' }]);
+            setNewItemInputs(prev => ({ ...prev, policies: '' }));
+        } else if (listName === 'rcd') {
+            if (!newItemInputs.rcd.trim()) return;
             setEditRcd([...editRcd, { name: newItemInputs.rcd.trim(), checked: false, remarks: '' }]);
             setNewItemInputs(prev => ({ ...prev, rcd: '' }));
         }
@@ -160,9 +177,17 @@ const OnboardingPage = () => {
         } else if (listName === 'assets') {
             setEditAssets(editAssets.filter((_, i) => i !== idx));
         } else if (listName === 'training') {
-            setEditTraining(editTraining.filter((_, i) => i !== idx));
+            const newList = [...editTraining];
+            newList.splice(idx, 1);
+            setEditTraining(newList);
+        } else if (listName === 'policies') {
+            const newList = [...editPolicies];
+            newList.splice(idx, 1);
+            setEditPolicies(newList);
         } else if (listName === 'rcd') {
-            setEditRcd(editRcd.filter((_, i) => i !== idx));
+            const newList = [...editRcd];
+            newList.splice(idx, 1);
+            setEditRcd(newList);
         }
     };
 
@@ -172,15 +197,17 @@ const OnboardingPage = () => {
         const docs = record.document_checklist || [];
         const assets = record.asset_checklist || [];
         const training = record.training_checklist || [];
+        const policies = record.policy_checklist || [];
         const rcd = record.rcd_checklist || [];
         
-        const total = docs.length + assets.length + training.length + rcd.length;
+        const total = docs.length + assets.length + training.length + policies.length + rcd.length;
         if (total === 0) return 0;
 
         const checked = 
             docs.filter(i => i.checked).length + 
             assets.filter(i => i.checked).length + 
             training.filter(i => i.checked).length +
+            policies.filter(i => i.checked).length +
             rcd.filter(i => i.checked).length;
             
         return Math.round((checked / total) * 100);
@@ -273,6 +300,7 @@ const OnboardingPage = () => {
                 const docsStatus = getTaskCategoryStatus(row.document_checklist);
                 const assetsStatus = getTaskCategoryStatus(row.asset_checklist);
                 const trainingStatus = getTaskCategoryStatus(row.training_checklist);
+                const policiesStatus = getTaskCategoryStatus(row.policy_checklist);
                 const rcdStatus = getTaskCategoryStatus(row.rcd_checklist);
                 
                 return (
@@ -280,6 +308,7 @@ const OnboardingPage = () => {
                         <TaskIndicator label="Docs" status={docsStatus} />
                         <TaskIndicator label="Assets" status={assetsStatus} />
                         <TaskIndicator label="Training" status={trainingStatus} />
+                        <TaskIndicator label="Policies" status={policiesStatus} />
                         <TaskIndicator label="RCD" status={rcdStatus} />
                     </div>
                 );
@@ -348,6 +377,15 @@ const OnboardingPage = () => {
                         className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-[12px] font-bold transition-colors shadow-sm border border-emerald-200"
                     >
                         Trainee
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/hr/intern/new?candidateId=${row.id}`);
+                        }}
+                        className="bg-purple-50 text-purple-600 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-[12px] font-bold transition-colors shadow-sm border border-purple-200"
+                    >
+                        Intern
                     </button>
                 </div>
             )
@@ -692,6 +730,68 @@ const OnboardingPage = () => {
                                     />
                                     <button 
                                         onClick={() => handleAddItem('training')}
+                                        className="p-1.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)] hover:text-white transition-colors"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Company Policies */}
+                            <div>
+                                <div className="flex items-center justify-between mb-4 border-b border-[var(--border-color)] pb-2">
+                                    <div className="flex items-center gap-2">
+                                        <FileText size={18} className="text-indigo-500" />
+                                        <h4 className="text-[14px] font-bold text-[var(--text-main)]">Company Policies</h4>
+                                    </div>
+                                </div>
+                                <div className="space-y-3 mb-3">
+                                    {editPolicies.map((item, idx) => (
+                                        <div key={idx} className="flex flex-col gap-2 group mb-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="flex items-center gap-3 cursor-pointer flex-1">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={item.checked} 
+                                                        onChange={() => toggleChecklist('policies', idx)}
+                                                        className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                                                    />
+                                                    <span className={`text-[13px] font-medium transition-colors ${item.checked ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-main)] hover:text-[var(--accent)]'}`}>
+                                                        {item.name}
+                                                    </span>
+                                                </label>
+                                                <button 
+                                                    onClick={() => handleDeleteItem('policies', idx)}
+                                                    className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                                                    title="Remove item"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                            <input 
+                                                type="text"
+                                                placeholder="Add remarks..."
+                                                className="w-[calc(100%-1.75rem)] ml-7 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-md px-2 py-1 text-[11px] focus:outline-none focus:border-[var(--accent)]"
+                                                value={item.remarks || ''}
+                                                onChange={(e) => handleRemarksChange('policies', idx, e.target.value)}
+                                            />
+                                        </div>
+                                    ))}
+                                    {editPolicies.length === 0 && (
+                                        <p className="text-[12px] text-[var(--text-muted)] italic">No policies in checklist.</p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Add a policy..." 
+                                        className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-[var(--accent)]"
+                                        value={newItemInputs.policies}
+                                        onChange={(e) => setNewItemInputs(prev => ({ ...prev, policies: e.target.value }))}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddItem('policies')}
+                                    />
+                                    <button 
+                                        onClick={() => handleAddItem('policies')}
                                         className="p-1.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)] hover:text-white transition-colors"
                                     >
                                         <Plus size={16} />

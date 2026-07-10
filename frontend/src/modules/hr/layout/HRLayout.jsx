@@ -611,6 +611,8 @@ const HRSidebar = ({ isOpen, onClose, isCollapsed }) => {
           </div>
           )}
 
+          
+          {hasPermission('hr', 'view', 'trainee') && <NavItem to="/hr/intern" label="Intern" icon={GraduationCap} />}
           {hasPermission('hr', 'view', 'trainee') && <NavItem to="/hr/trainee" label="Trainee" icon={GraduationCap} />}
           {hasPermission('hr', 'view', 'employees') && <NavItem to="/hr/employees" label="Employee" icon={Users} />}
           

@@ -445,6 +445,17 @@ const TrainingModules = () => {
                                 <option value="Advanced">Advanced</option>
                             </select>
                         </div>
+                        <div>
+                            <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">Duration (Hours)</label>
+                            <input
+                                type="number"
+                                min="1"
+                                value={formData.duration_hours}
+                                onChange={(e) => setFormData({...formData, duration_hours: e.target.value})}
+                                className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-semibold text-[var(--text-main)] focus:outline-none focus:border-[var(--accent)]"
+                                placeholder="e.g. 2"
+                            />
+                        </div>
                         
                         {['YouTube Video', 'NAS / Local Video (MP4)', 'NAS Video Playlist (JSON)', 'Udemy Course', 'Coursera Course', 'External Website'].includes(formData.training_type) && (
                             <div className="md:col-span-2">

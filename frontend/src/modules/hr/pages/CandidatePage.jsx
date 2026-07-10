@@ -4,6 +4,7 @@ import { useNavigate, useParams, useLocation, useOutletContext } from 'react-rou
 import toast from 'react-hot-toast';
 import { createCandidateApi, fetchCandidateByIdApi, updateCandidateApi, extractCandidateLiveApi } from '../../../api/hr';
 import CandidateTimeline from '../components/CandidateTimeline';
+import SGPABarChart from '../components/SGPABarChart';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 
 const DocumentDropzone = ({ label, id, isUploaded, setUploadMock, onUpload, onFileSelected, isParsing }) => (
@@ -86,12 +87,19 @@ const CandidatePage = () => {
     currentLocation: '',
     relocate: 'YES',
     educationRoute: 'REGULAR',
+    date_of_birth: '',
     experience_details: {
       total_years: '0',
       designation: 'N/A',
       current_company: 'N/A',
-      monthly_taken_home: '0.00',
-      expected_monthly: '0.00'
+      past_experiences: [
+        {
+          company_name: '',
+          designation: '',
+          reason_for_leaving: '',
+          year_of_leaving: ''
+        }
+      ]
     },
     education_details: {
       tenth_percentage: '',
@@ -105,7 +113,11 @@ const CandidatePage = () => {
       
       degree_sgpa_1: '', degree_sgpa_2: '', degree_sgpa_3: '', degree_sgpa_4: '', degree_sgpa_5: '', degree_sgpa_6: '', degree_sgpa_7: '', degree_sgpa_8: '',
       degree_cgpa: '',
-      degree_passing_year: ''
+      degree_passing_year: '',
+      
+      has_masters: false,
+      masters_cgpa: '',
+      masters_passing_year: ''
     }
   });
 
@@ -520,12 +532,14 @@ const CandidatePage = () => {
             currentLocation: candidate.current_location || '',
             relocate: candidate.relocate ? 'YES' : 'NO',
             educationRoute: candidate.education_route || 'REGULAR',
+            date_of_birth: candidate.date_of_birth || '',
             experience_details: {
               total_years: candidate.total_years || '0',
               designation: candidate.designation || 'N/A',
               current_company: candidate.current_company || 'N/A',
-              monthly_taken_home: candidate.monthly_taken_home || '0.00',
-              expected_monthly: candidate.expected_monthly || '0.00'
+              past_experiences: (typeof candidate.past_experiences === 'string' ? JSON.parse(candidate.past_experiences) : candidate.past_experiences) || [
+                { company_name: '', designation: '', reason_for_leaving: '', year_of_leaving: '' }
+              ]
             },
             education_details: typeof candidate.education_details === 'string' 
               ? JSON.parse(candidate.education_details) 
@@ -576,46 +590,9 @@ const CandidatePage = () => {
       return;
     }
 
-    // Document Validations
-    if (!uploadMock.aadharCard) {
-      toast.error('Please upload Aadhar Card');
-      return;
-    }
-    if (!uploadMock.panCard) {
-      toast.error('Please upload PAN Card');
-      return;
-    }
-    if (!uploadMock.marksheet_10th) {
-      toast.error('Please upload 10th Marksheet');
-      return;
-    }
-
-    if (formData.educationRoute === 'REGULAR') {
-      if (!uploadMock.marksheet_12th) {
-        toast.error('Please upload 12th Marksheet');
-        return;
-      }
-      for (let i = 1; i <= 6; i++) {
-        if (!uploadMock[`deg_sem_${i}`]) {
-          toast.error(`Please upload Degree Semester ${i} Marksheet`);
-          return;
-        }
-      }
-    } else if (formData.educationRoute === 'DIPLOMA') {
-      for (let i = 1; i <= 6; i++) {
-        if (!uploadMock[`dip_sem_${i}`]) {
-          toast.error(`Please upload Diploma Semester ${i} Marksheet`);
-          return;
-        }
-      }
-      for (let i = 3; i <= 6; i++) {
-        if (!uploadMock[`deg_sem_${i}`]) {
-          toast.error(`Please upload Degree Semester ${i} Marksheet`);
-          return;
-        }
-      }
-    }
+    // Document Validations removed as per user request
     
+
     try {
       setIsSubmitting(true);
       const submitData = new FormData();
@@ -628,7 +605,15 @@ const CandidatePage = () => {
       submitData.append('currentLocation', formData.currentLocation);
       submitData.append('relocate', formData.relocate);
       submitData.append('educationRoute', formData.educationRoute);
-      submitData.append('experience_details', JSON.stringify(formData.experience_details));
+      if (formData.date_of_birth) {
+        submitData.append('date_of_birth', formData.date_of_birth);
+      }
+      const experience_details_payload = { ...formData.experience_details };
+      if (experience_details_payload.past_experiences && experience_details_payload.past_experiences.length > 0) {
+        experience_details_payload.designation = experience_details_payload.past_experiences[0].designation;
+        experience_details_payload.current_company = experience_details_payload.past_experiences[0].company_name;
+      }
+      submitData.append('experience_details', JSON.stringify(experience_details_payload));
       submitData.append('education_details', JSON.stringify(formData.education_details));
 
       const combinedTechDetails = {};
@@ -816,6 +801,10 @@ const CandidatePage = () => {
                       <input type="text" value={formData.currentLocation} onChange={e => setFormData(prev => ({...prev, currentLocation: e.target.value}))} className={inputClass} />
                     </div>
                     <div>
+                      <label className={labelClass}>Date of Birth</label>
+                      <input type="date" value={formData.date_of_birth} onChange={e => setFormData(prev => ({...prev, date_of_birth: e.target.value}))} className={inputClass} />
+                    </div>
+                    <div>
                       <label className={labelClass}>Ready to relocate to Vadodara?</label>
                       <div className="flex items-center gap-6 mt-3">
                         <div onClick={() => setFormData(prev => ({...prev, relocate: 'NO'}))} className="flex items-center gap-2 cursor-pointer group">
@@ -838,37 +827,54 @@ const CandidatePage = () => {
                 {/* Experience Details Fields */}
                 {formData.experienceType === 'EXPERIENCE' && (
                   <div className="transition-opacity duration-300">
-                    <h3 className={sectionTitleClass}>
-                      <Briefcase size={18} className="text-[var(--accent)]" /> Experience Details
-                    </h3>
-                    <div className="space-y-5">
+                    <div className="flex items-center justify-between mb-5 border-b border-[var(--border-color)] pb-2">
+                      <h3 className="text-[14px] font-black uppercase tracking-widest text-[var(--text-main)] flex items-center gap-2 m-0">
+                        <Briefcase size={18} className="text-[var(--accent)]" /> Experience Details
+                      </h3>
+                      <button type="button" onClick={() => setFormData(prev => ({...prev, experience_details: {...prev.experience_details, past_experiences: [...prev.experience_details.past_experiences, { company_name: '', designation: '', reason_for_leaving: '' }]}}))} className="text-[12px] font-bold text-[var(--accent)] hover:underline flex items-center gap-1 uppercase tracking-widest">
+                        <UserPlus size={14} /> Add Company
+                      </button>
+                    </div>
+                    <div className="space-y-6">
                       <div className="grid grid-cols-[1.5fr_1fr] items-center gap-4">
                         <label className={`${labelClass} mb-0`}>Total Experience (in years)*</label>
                         <input type="number" value={formData.experience_details.total_years} onChange={e => setFormData(prev => ({...prev, experience_details: {...prev.experience_details, total_years: e.target.value}}))} className={inputClass} />
                       </div>
-                      <div className="grid grid-cols-[1.5fr_1fr] items-center gap-4">
-                        <label className={`${labelClass} mb-0`}>Designation*</label>
-                        <input type="text" value={formData.experience_details.designation} onChange={e => setFormData(prev => ({...prev, experience_details: {...prev.experience_details, designation: e.target.value}}))} className={inputClass} />
-                      </div>
-                      <div className="grid grid-cols-[1.5fr_1fr] items-center gap-4">
-                        <label className={`${labelClass} mb-0`}>Current Company*</label>
-                        <input type="text" value={formData.experience_details.current_company} onChange={e => setFormData(prev => ({...prev, experience_details: {...prev.experience_details, current_company: e.target.value}}))} className={inputClass} />
-                      </div>
-                      <div className="grid grid-cols-[1.5fr_1fr] items-center gap-4">
-                        <label className={`${labelClass} mb-0`}>Monthly taken home salary</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] font-black">₹</span>
-                          <input type="number" value={formData.experience_details.monthly_taken_home} onChange={e => setFormData(prev => ({...prev, experience_details: {...prev.experience_details, monthly_taken_home: e.target.value}}))} className={`${inputClass} pl-8`} />
+
+                      {formData.experience_details.past_experiences.map((exp, idx) => (
+                        <div key={`exp_${idx}`} className="p-4 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl relative space-y-4">
+                          {idx > 0 && (
+                            <button type="button" onClick={() => setFormData(prev => ({...prev, experience_details: {...prev.experience_details, past_experiences: prev.experience_details.past_experiences.filter((_, i) => i !== idx)}}))} className="absolute top-4 right-4 text-red-500 text-[10px] font-bold uppercase hover:underline">Remove</button>
+                          )}
+                          <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest border-b border-[var(--border-color)] pb-2">Company {idx + 1}</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label className={labelClass}>Company Name*</label>
+                              <input type="text" value={exp.company_name} onChange={e => { const newExp = [...formData.experience_details.past_experiences]; newExp[idx].company_name = e.target.value; setFormData(prev => ({...prev, experience_details: {...prev.experience_details, past_experiences: newExp}}))}} className={inputClass} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Designation*</label>
+                              <input type="text" value={exp.designation} onChange={e => { const newExp = [...formData.experience_details.past_experiences]; newExp[idx].designation = e.target.value; setFormData(prev => ({...prev, experience_details: {...prev.experience_details, past_experiences: newExp}}))}} className={inputClass} />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className={labelClass}>Reason for Leaving*</label>
+                              <input type="text" value={exp.reason_for_leaving} onChange={e => { const newExp = [...formData.experience_details.past_experiences]; newExp[idx].reason_for_leaving = e.target.value; setFormData(prev => ({...prev, experience_details: {...prev.experience_details, past_experiences: newExp}}))}} className={inputClass} />
+                            </div>
+                            <div>
+                              <label className={labelClass}>Year of Leaving*</label>
+                              <input type="text" value={exp.year_of_leaving || ''} onChange={e => { const newExp = [...formData.experience_details.past_experiences]; newExp[idx].year_of_leaving = e.target.value; setFormData(prev => ({...prev, experience_details: {...prev.experience_details, past_experiences: newExp}}))}} className={inputClass} />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="grid grid-cols-[1.5fr_1fr] items-center gap-4">
-                        <label className={`${labelClass} mb-0`}>Expected monthly salary</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] font-black">₹</span>
-                          <input type="number" value={formData.experience_details.expected_monthly} onChange={e => setFormData(prev => ({...prev, experience_details: {...prev.experience_details, expected_monthly: e.target.value}}))} className={`${inputClass} pl-8`} />
-                        </div>
-                      </div>
+                      ))}
                     </div>
+                  </div>
+                )}
+
+                {/* SGPABarChart for Fresher */}
+                {formData.experienceType === 'FRESHER' && (
+                  <div className="transition-opacity duration-300 h-full min-h-[300px]">
+                    <SGPABarChart eduDetails={formData.education_details} educationRoute={formData.educationRoute} />
                   </div>
                 )}
               </div>
@@ -958,35 +964,63 @@ const CandidatePage = () => {
                   )}
 
                   {/* Bachelor Degree */}
-                  <div className="border-t border-[var(--border-color)] pt-6">
-                    <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest mb-4">Degree ({formData.educationRoute === 'REGULAR' ? '8' : '6'} Semesters)</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                      {(formData.educationRoute === 'REGULAR' ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3, 4, 5, 6]).map(sem => (
-                        <div key={`deg_sem_${sem}`} className="flex flex-col gap-2 p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl">
-                          <label className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Sem {sem}</label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 block">SGPA</label>
-                              <input type="number" step="0.01" value={formData.education_details[`degree_sgpa_${sem}`] || ''} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`degree_sgpa_${sem}`]: e.target.value}}))} className={inputClass} />
-                            </div>
-                            <div>
-                              <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 block">Pass Month</label>
-                              <input type="month" value={formData.education_details[`degree_pass_date_${sem}`] || ''} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`degree_pass_date_${sem}`]: e.target.value}}))} className={inputClass} />
+                  {formData.experienceType !== 'EXPERIENCE' && (
+                    <div className="border-t border-[var(--border-color)] pt-6">
+                      <h4 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest mb-4">Degree ({formData.educationRoute === 'REGULAR' ? '8' : '6'} Semesters)</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        {(formData.educationRoute === 'REGULAR' ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3, 4, 5, 6]).map(sem => (
+                          <div key={`deg_sem_${sem}`} className="flex flex-col gap-2 p-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl">
+                            <label className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Sem {sem}</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 block">SGPA</label>
+                                <input type="number" step="0.01" value={formData.education_details[`degree_sgpa_${sem}`] || ''} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`degree_sgpa_${sem}`]: e.target.value}}))} className={inputClass} />
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 block">Pass Month</label>
+                                <input type="month" value={formData.education_details[`degree_pass_date_${sem}`] || ''} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, [`degree_pass_date_${sem}`]: e.target.value}}))} className={inputClass} />
+                              </div>
                             </div>
                           </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className={labelClass}>Degree CGPA*</label>
+                          <input type="number" step="0.01" value={formData.education_details.degree_cgpa} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, degree_cgpa: e.target.value}}))} className={inputClass} />
                         </div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className={labelClass}>Degree CGPA*</label>
-                        <input type="number" step="0.01" value={formData.education_details.degree_cgpa} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, degree_cgpa: e.target.value}}))} className={inputClass} />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Degree Passing Year*</label>
-                        <input type="text" value={formData.education_details.degree_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, degree_passing_year: e.target.value}}))} className={inputClass} />
+                        <div>
+                          <label className={labelClass}>Degree Passing Year*</label>
+                          <input type="text" value={formData.education_details.degree_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, degree_passing_year: e.target.value}}))} className={inputClass} />
+                        </div>
                       </div>
                     </div>
+                  )}
+
+                  {/* Master's Degree */}
+                  <div className="border-t border-[var(--border-color)] pt-6">
+                    <label className="flex items-center gap-2 cursor-pointer w-max group mb-4">
+                      <input 
+                        type="checkbox" 
+                        checked={formData.education_details.has_masters} 
+                        onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, has_masters: e.target.checked}}))} 
+                        className="accent-[var(--accent)] w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest group-hover:text-[var(--accent)] transition-colors">Candidate has Master's Degree?</span>
+                    </label>
+
+                    {formData.education_details.has_masters && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl animate-in slide-in-from-top-2">
+                        <div>
+                          <label className={labelClass}>Master's CGPA*</label>
+                          <input type="number" step="0.01" value={formData.education_details.masters_cgpa} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, masters_cgpa: e.target.value}}))} className={inputClass} />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Master's Passing Year*</label>
+                          <input type="text" value={formData.education_details.masters_passing_year} onChange={e => setFormData(prev => ({...prev, education_details: {...prev.education_details, masters_passing_year: e.target.value}}))} className={inputClass} />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1016,8 +1050,28 @@ const CandidatePage = () => {
                       {formData.educationRoute === 'REGULAR' && (
                         <DocumentDropzone label="12th Marksheet*" id="marksheet_12th" isUploaded={uploadMock.marksheet_12th} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.marksheet_12th} />
                       )}
+                      {formData.experienceType === 'EXPERIENCE' && (
+                        <DocumentDropzone label="Degree Certificate*" id="degreeCertificate" isUploaded={uploadMock.degreeCertificate} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.degreeCertificate} />
+                      )}
+                      {formData.education_details.has_masters && (
+                        <DocumentDropzone label="Master's Certificate*" id="mastersCertificate" isUploaded={uploadMock.mastersCertificate} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles.mastersCertificate} />
+                      )}
                     </div>
                   </div>
+
+                  {formData.experienceType === 'EXPERIENCE' && formData.experience_details.past_experiences.map((exp, idx) => (
+                    <div key={`exp_docs_${idx}`}>
+                      <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">{exp.company_name ? `${exp.company_name} Documents` : `Company ${idx + 1} Documents`}</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <DocumentDropzone label="Salary Slip 1" id={`salary_slip_1_${idx}`} isUploaded={uploadMock[`salary_slip_1_${idx}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`salary_slip_1_${idx}`]} />
+                        <DocumentDropzone label="Salary Slip 2" id={`salary_slip_2_${idx}`} isUploaded={uploadMock[`salary_slip_2_${idx}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`salary_slip_2_${idx}`]} />
+                        <DocumentDropzone label="Salary Slip 3" id={`salary_slip_3_${idx}`} isUploaded={uploadMock[`salary_slip_3_${idx}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`salary_slip_3_${idx}`]} />
+                        <DocumentDropzone label="Experience Letter" id={`experience_letter_${idx}`} isUploaded={uploadMock[`experience_letter_${idx}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`experience_letter_${idx}`]} />
+                        <DocumentDropzone label="Relieving Letter" id={`relieving_letter_${idx}`} isUploaded={uploadMock[`relieving_letter_${idx}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`relieving_letter_${idx}`]} />
+                        <DocumentDropzone label="Offer Letter" id={`offer_letter_${idx}`} isUploaded={uploadMock[`offer_letter_${idx}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`offer_letter_${idx}`]} />
+                      </div>
+                    </div>
+                  ))}
 
                   {formData.educationRoute === 'DIPLOMA' && (
                     <div>
@@ -1030,20 +1084,22 @@ const CandidatePage = () => {
                     </div>
                   )}
 
-                  <div>
-                    <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Degree Marksheets</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {formData.educationRoute === 'REGULAR' ? (
-                        [1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
-                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet${sem <= 6 ? '*' : ''}`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
-                        ))
-                      ) : (
-                        [3, 4, 5, 6, 7, 8].map(sem => (
-                          <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet${sem <= 6 ? '*' : ''}`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
-                        ))
-                      )}
+                  {formData.experienceType !== 'EXPERIENCE' && (
+                    <div>
+                      <h4 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3">Degree Marksheets</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        {formData.educationRoute === 'REGULAR' ? (
+                          [1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                            <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet${sem <= 6 ? '*' : ''}`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
+                          ))
+                        ) : (
+                          [3, 4, 5, 6, 7, 8].map(sem => (
+                            <DocumentDropzone key={`deg_sem_${sem}`} label={`Sem ${sem} Marksheet${sem <= 6 ? '*' : ''}`} id={`deg_sem_${sem}`} isUploaded={uploadMock[`deg_sem_${sem}`]} setUploadMock={setUploadMock} onFileSelected={handleDocumentExtract} isParsing={parsingFiles[`deg_sem_${sem}`]} />
+                          ))
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* <div className="mt-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-bold text-[11px] uppercase tracking-wider leading-relaxed text-center">
@@ -1051,7 +1107,15 @@ const CandidatePage = () => {
                 </div> */}
               </div>
 
-              <CandidateTimeline educationRoute={formData.educationRoute} documents={uploadMock} extractedInfo={liveExtractedInfo} eduDetails={formData.education_details} />
+              <CandidateTimeline 
+                experienceType={formData.experienceType}
+                pastExperiences={formData.experience_details.past_experiences}
+                educationRoute={formData.educationRoute} 
+                documents={uploadMock} 
+                extractedInfo={liveExtractedInfo} 
+                eduDetails={formData.education_details} 
+                dateOfBirth={formData.date_of_birth}
+              />
 
             </div>
           )}

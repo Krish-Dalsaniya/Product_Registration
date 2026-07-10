@@ -278,7 +278,15 @@ const CandidateViewPage = () => {
 
             {renderTechSection()}
 
-            <CandidateTimeline educationRoute={candidate.education_route} documents={docs} extractedInfo={extracted} eduDetails={eduDetails} />
+            <CandidateTimeline 
+                experienceType={candidate.experience_type}
+                pastExperiences={typeof candidate.past_experiences === 'string' ? JSON.parse(candidate.past_experiences || '[]') : (candidate.past_experiences || [])}
+                educationRoute={candidate.education_route} 
+                documents={docs} 
+                extractedInfo={extracted} 
+                eduDetails={eduDetails} 
+                dateOfBirth={candidate.date_of_birth} 
+            />
         </div>
     );
 };
