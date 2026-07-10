@@ -154,6 +154,9 @@ const EmployeesList = lazy(() => import('../modules/hr/pages/EmployeesList'));
 const TraineeList = lazy(() => import('../modules/hr/pages/TraineeList'));
 const TraineeProfile = lazy(() => import('../modules/hr/pages/TraineeProfile'));
 const AddTraineeWizard = lazy(() => import('../modules/hr/pages/AddTraineeWizard'));
+const InternList = lazy(() => import('../modules/hr/pages/InternList'));
+const InternProfile = lazy(() => import('../modules/hr/pages/InternProfile'));
+const AddInternWizard = lazy(() => import('../modules/hr/pages/AddInternWizard'));
 const AddEmployeeWizard = lazy(() => import('../modules/hr/pages/AddEmployeeWizard'));
 const EmployeeProfile = lazy(() => import('../modules/hr/pages/EmployeeProfile'));
 const OrganizationChartPage = lazy(() => import('../modules/hr/pages/OrganizationChartPage'));
@@ -441,6 +444,10 @@ const Router = () => {
           <Route path="/hr/trainee" element={<TraineeList />} />
           <Route path="/hr/trainee/new" element={<AddTraineeWizard />} />
           <Route path="/hr/trainee/:id" element={<TraineeProfile />} />
+          <Route path="/hr/intern" element={<InternList />} />
+          <Route path="/hr/intern/new" element={<AddInternWizard />} />
+          <Route path="/hr/intern/:id" element={<InternProfile />} />
+
           
           {/* Recruitment */}
           <Route path="/hr/recruitment/open-positions" element={<OpenPositionsPage />} />

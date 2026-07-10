@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, School, Award, ChevronDown } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
-const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {}, eduDetails = {}, compact = false }) => {
+const CandidateTimeline = ({ experienceType = 'FRESHER', pastExperiences = [], educationRoute, documents = {}, extractedInfo = {}, eduDetails = {}, compact = false }) => {
   const [selectedNode, setSelectedNode] = useState(null);
 
   // Helper to determine if a document exists
@@ -56,7 +56,7 @@ const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {},
   timelineNodes.push({
     id: '10th',
     label: '10th',
-    year: 'N/A',
+    year: eduDetails?.tenth_passing_year || extractedInfo?.tenth_passing_year || 'N/A',
     type: 'school',
     filled: isFilled('marksheet_10th'),
     details: generateDetails('marksheet_10th', '10th')
@@ -77,51 +77,171 @@ const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {},
     timelineNodes.push({
       id: '12th',
       label: '12th',
-      year: 'N/A',
+      year: eduDetails?.twelfth_passing_year || extractedInfo?.twelfth_passing_year || 'N/A',
       type: 'school',
       filled: isFilled('marksheet_12th'),
       details: generateDetails('marksheet_12th', '12th')
     });
 
     // Semesters 1 to 8
-    for (let i = 1; i <= 8; i++) {
-      const sgpa = eduDetails[`degree_sgpa_${i}`] || extractedInfo?.semester_details?.[i]?.sgpa;
-      const rawDate = eduDetails[`degree_pass_date_${i}`] || extractedInfo?.semester_details?.[i]?.passing_date;
-      const passingDate = formatPassDate(rawDate);
-      
-      const details = generateDetails(`deg_sem_${i}`, `Semester ${i}`);
-      if (sgpa) details.push({ key: 'SGPA', value: String(sgpa) });
-      if (passingDate) details.push({ key: 'Passed', value: passingDate });
+    if (experienceType === 'EXPERIENCE') {
+      // For experience, just show Degree
+      const cgpa = eduDetails?.degree_cgpa || extractedInfo?.college_cgpa;
+      const passYear = eduDetails?.degree_passing_year;
+      const details = generateDetails('degreeCertificate', 'Degree');
+      if (cgpa) details.push({ key: 'CGPA', value: String(cgpa) });
 
       timelineNodes.push({
-        id: `deg_sem_${i}`,
-        label: `Sem ${i}`,
-        year: passingDate || 'Degree',
+        id: 'degree',
+        label: 'Degree',
+        year: passYear || 'N/A',
         type: 'degree',
-        filled: isFilled(`deg_sem_${i}`) || !!sgpa || !!rawDate,
+        filled: isFilled('degreeCertificate') || !!cgpa || !!passYear,
         details
       });
+    } else {
+      for (let i = 1; i <= 8; i++) {
+        const sgpa = eduDetails[`degree_sgpa_${i}`] || extractedInfo?.semester_details?.[i]?.sgpa;
+        const rawDate = eduDetails[`degree_pass_date_${i}`] || extractedInfo?.semester_details?.[i]?.passing_date;
+        const passingDate = formatPassDate(rawDate);
+        
+        const details = generateDetails(`deg_sem_${i}`, `Semester ${i}`);
+        if (sgpa) details.push({ key: 'SGPA', value: String(sgpa) });
+        if (passingDate) details.push({ key: 'Passed', value: passingDate });
+
+        timelineNodes.push({
+          id: `deg_sem_${i}`,
+          label: `Sem ${i}`,
+          year: passingDate || 'Degree',
+          type: 'degree',
+          filled: isFilled(`deg_sem_${i}`) || !!sgpa || !!rawDate,
+          details
+        });
+      }
     }
   } else {
     // Diploma Route
-    for (let i = 1; i <= 6; i++) {
-      const sgpa = eduDetails[`diploma_sgpa_${i}`] || extractedInfo?.semester_details?.[i]?.sgpa;
-      const rawDate = eduDetails[`diploma_pass_date_${i}`] || extractedInfo?.semester_details?.[i]?.passing_date;
-      const passingDate = formatPassDate(rawDate);
-      
-      const details = generateDetails(`dip_sem_${i}`, `Diploma Semester ${i}`);
-      if (sgpa) details.push({ key: 'SGPA', value: String(sgpa) });
-      if (passingDate) details.push({ key: 'Passed', value: passingDate });
+    if (experienceType === 'EXPERIENCE') {
+      const cgpa = eduDetails?.diploma_cgpa || extractedInfo?.diploma_cgpa;
+      const passYear = eduDetails?.diploma_passing_year;
+      const details = generateDetails('marksheet_diploma', 'Diploma'); // Or whatever the final diploma marksheet is
+      if (cgpa) details.push({ key: 'CGPA', value: String(cgpa) });
 
       timelineNodes.push({
-        id: `dip_sem_${i}`,
-        label: `Dip Sem ${i}`,
-        year: passingDate || 'Diploma',
+        id: 'diploma',
+        label: 'Diploma',
+        year: passYear || 'N/A',
         type: 'degree',
-        filled: isFilled(`dip_sem_${i}`) || !!sgpa || !!rawDate,
+        filled: !!cgpa || !!passYear,
         details
       });
+
+      // Add Degree Node too for Diploma route if they have a degree
+      const degCgpa = eduDetails?.degree_cgpa || extractedInfo?.college_cgpa;
+      const degPassYear = eduDetails?.degree_passing_year;
+      const degDetails = generateDetails('degreeCertificate', 'Degree');
+      if (degCgpa) degDetails.push({ key: 'CGPA', value: String(degCgpa) });
+
+      timelineNodes.push({
+        id: 'degree',
+        label: 'Degree',
+        year: degPassYear || 'N/A',
+        type: 'degree',
+        filled: isFilled('degreeCertificate') || !!degCgpa || !!degPassYear,
+        details: degDetails
+      });
+
+    } else {
+      for (let i = 1; i <= 6; i++) {
+        const sgpa = eduDetails[`diploma_sgpa_${i}`] || extractedInfo?.semester_details?.[i]?.sgpa;
+        const rawDate = eduDetails[`diploma_pass_date_${i}`] || extractedInfo?.semester_details?.[i]?.passing_date;
+        const passingDate = formatPassDate(rawDate);
+        
+        const details = generateDetails(`dip_sem_${i}`, `Diploma Semester ${i}`);
+        if (sgpa) details.push({ key: 'SGPA', value: String(sgpa) });
+        if (passingDate) details.push({ key: 'Passed', value: passingDate });
+
+        timelineNodes.push({
+          id: `dip_sem_${i}`,
+          label: `Dip Sem ${i}`,
+          year: passingDate || 'Diploma',
+          type: 'degree',
+          filled: isFilled(`dip_sem_${i}`) || !!sgpa || !!rawDate,
+          details
+        });
+      }
     }
+  }
+
+  // Add Master's Node if applicable
+  const hasMasters = eduDetails?.has_masters || eduDetails?.masters_cgpa || extractedInfo?.masters_cgpa;
+  if (hasMasters) {
+    const mastersCgpa = eduDetails?.masters_cgpa || extractedInfo?.masters_cgpa;
+    const mastersPassYear = eduDetails?.masters_passing_year;
+    const details = generateDetails('mastersCertificate', "Master's Degree");
+    if (mastersCgpa) details.push({ key: 'CGPA', value: String(mastersCgpa) });
+
+    timelineNodes.push({
+      id: 'masters',
+      label: "Master's",
+      year: mastersPassYear || 'N/A',
+      type: 'degree',
+      filled: isFilled('mastersCertificate') || !!mastersCgpa || !!mastersPassYear,
+      details
+    });
+  }
+
+  // Add past experiences for EXPERIENCE route
+  if (experienceType === 'EXPERIENCE' && pastExperiences && pastExperiences.length > 0) {
+    pastExperiences.forEach((exp, idx) => {
+      if (!exp.company_name && !exp.designation) return;
+
+      const details = [
+        { key: 'Designation', value: exp.designation || 'N/A' },
+        { key: 'Company', value: exp.company_name || 'N/A' },
+        { key: 'Reason left', value: exp.reason_for_leaving || 'N/A' }
+      ];
+
+      if (isFilled(`experience_letter_${idx}`)) details.push({ key: 'Exp Letter', value: 'Uploaded' });
+      if (isFilled(`relieving_letter_${idx}`)) details.push({ key: 'Rel. Letter', value: 'Uploaded' });
+      if (isFilled(`offer_letter_${idx}`)) details.push({ key: 'Offer Letter', value: 'Uploaded' });
+
+      timelineNodes.push({
+        id: `job_${idx}`,
+        label: `Job ${idx + 1}`,
+        year: exp.year_of_leaving || 'N/A',
+        type: 'job',
+        filled: !!exp.company_name,
+        details
+      });
+    });
+  }
+
+  // Sort timeline nodes chronologically if experienceType === 'EXPERIENCE'
+  if (experienceType === 'EXPERIENCE') {
+    const parseYear = (yearStr) => {
+      if (!yearStr || yearStr === 'N/A') return 0;
+      const match = String(yearStr).match(/\b(19|20)\d{2}\b/);
+      if (match) return parseInt(match[0], 10);
+      return 0; 
+    };
+
+    timelineNodes.sort((a, b) => {
+      if (a.id === 'birth') return -1;
+      if (b.id === 'birth') return 1;
+
+      const yearA = parseYear(a.year);
+      const yearB = parseYear(b.year);
+
+      if (yearA > 0 && yearB > 0) {
+        return yearA - yearB;
+      }
+
+      if (yearA === 0 && yearB > 0) return 1;
+      if (yearB === 0 && yearA > 0) return -1;
+
+      return 0;
+    });
   }
 
   const completedCount = timelineNodes.filter(n => n.filled).length;
@@ -141,6 +261,7 @@ const CandidateTimeline = ({ educationRoute, documents = {}, extractedInfo = {},
       case 'birth': return <User size={16} />;
       case 'school': return <School size={16} />;
       case 'degree': return <Award size={16} />;
+      case 'job': return <Award size={16} />; // Could import Briefcase and use it, but Award works for now.
       default: return <Award size={16} />;
     }
   };

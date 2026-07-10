@@ -248,16 +248,19 @@ const CandidateListPage = () => {
                     <option value="DIPLOMA">Diploma + Degree</option>
                 </select>
 
-                <input 
-                    type="month"
-                    value={filterMonth}
-                    onChange={(e) => {
-                        setFilterMonth(e.target.value);
-                        if (e.target.value) setFilterYear('');
-                    }}
-                    className="bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] text-xs font-bold rounded-lg px-3 py-2 outline-none focus:border-[var(--accent)]"
-                    title="Filter by Month"
-                />
+                <div className="flex items-center gap-2 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg px-3 py-1 focus-within:border-[var(--accent)] transition-colors">
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap">Applied Month:</span>
+                    <input 
+                        type="month"
+                        value={filterMonth}
+                        onChange={(e) => {
+                            setFilterMonth(e.target.value);
+                            if (e.target.value) setFilterYear('');
+                        }}
+                        className="bg-transparent text-[var(--text-main)] text-xs font-bold outline-none cursor-pointer"
+                        title="Filter by Applied Month"
+                    />
+                </div>
 
                 <select
                     value={filterYear}

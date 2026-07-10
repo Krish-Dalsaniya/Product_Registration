@@ -137,13 +137,14 @@ const getAllAssignments = async (req, res) => {
         const query = `
             SELECT a.*, 
                    m.title as module_title, m.training_type, m.training_url, m.attachment_url,
-                   COALESCE(e.emp_code, tr.trainee_code) as emp_code, 
-                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name) as employee_name
+                   COALESCE(e.emp_code, tr.trainee_code, int.intern_code) as emp_code, 
+                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name, int.first_name || ' ' || int.last_name) as employee_name
             FROM hr_lms_assignments a
             JOIN hr_lms_modules m ON a.module_id = m.module_id
             LEFT JOIN hr_employees e ON a.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.user_id
             LEFT JOIN hr_trainees tr ON a.trainee_id = tr.trainee_id
+            LEFT JOIN hr_interns int ON a.intern_id = int.intern_id
             ORDER BY a.created_at DESC
         `;
         const result = await pool.query(query);
@@ -279,8 +280,8 @@ const getAllAssessments = async (req, res) => {
             SELECT a.*, 
                    assign.assigned_date, assign.completed_at,
                    m.title as module_title, m.training_type, m.difficulty_level,
-                   COALESCE(e.emp_code, tr.trainee_code) as emp_code, 
-                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name) as employee_name,
+                   COALESCE(e.emp_code, tr.trainee_code, int.intern_code) as emp_code, 
+                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name, int.first_name || ' ' || int.last_name) as employee_name,
                    assessor.full_name as assessor_name
             FROM hr_lms_assessments a
             JOIN hr_lms_assignments assign ON a.assignment_id = assign.assignment_id
@@ -288,6 +289,7 @@ const getAllAssessments = async (req, res) => {
             LEFT JOIN hr_employees e ON assign.employee_id = e.employee_id
             LEFT JOIN users u ON e.user_id = u.user_id
             LEFT JOIN hr_trainees tr ON assign.trainee_id = tr.trainee_id
+            LEFT JOIN hr_interns int ON assign.intern_id = int.intern_id
             LEFT JOIN users assessor ON a.assessed_by = assessor.user_id
             ORDER BY a.created_at DESC
         `;

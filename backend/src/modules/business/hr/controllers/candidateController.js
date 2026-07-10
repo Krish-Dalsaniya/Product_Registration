@@ -133,13 +133,13 @@ exports.createCandidate = async (req, res, next) => {
             INSERT INTO hr_candidates (
                 position, name, experience_type, email, whatsapp, mobile,
                 current_location, relocate, education_route,
-                total_years, designation, current_company, monthly_taken_home, expected_monthly,
+                total_years, designation, current_company, past_experiences,
                 documents, status, technical_details, education_details
             ) VALUES (
                 $1, $2, $3, $4, $5, $6,
                 $7, $8, $9,
-                $10, $11, $12, $13, $14,
-                $15, 'Applied', $16, $17
+                $10, $11, $12, $13,
+                $14, 'Applied', $15, $16
             ) RETURNING *
         `;
 
@@ -156,8 +156,7 @@ exports.createCandidate = async (req, res, next) => {
             expDetails?.total_years ? safeParseFloat(expDetails.total_years) : null,
             expDetails?.designation || null,
             expDetails?.current_company || null,
-            expDetails?.monthly_taken_home ? safeParseFloat(expDetails.monthly_taken_home) : null,
-            expDetails?.expected_monthly ? safeParseFloat(expDetails.expected_monthly) : null,
+            JSON.stringify(expDetails?.past_experiences || []),
             JSON.stringify(cloudinaryDocuments),
             JSON.stringify(techDetails || {}),
             JSON.stringify(eduDetails || {})
@@ -380,9 +379,9 @@ exports.updateCandidate = async (req, res, next) => {
             UPDATE hr_candidates SET
                 position = $1, name = $2, experience_type = $3, email = $4, whatsapp = $5, mobile = $6,
                 current_location = $7, relocate = $8, education_route = $9,
-                total_years = $10, designation = $11, current_company = $12, monthly_taken_home = $13, expected_monthly = $14,
-                documents = $15, technical_details = $16, education_details = $17, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $18
+                total_years = $10, designation = $11, current_company = $12, past_experiences = $13,
+                documents = $14, technical_details = $15, education_details = $16, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $17
             RETURNING *
         `;
 
@@ -392,8 +391,7 @@ exports.updateCandidate = async (req, res, next) => {
             expDetails?.total_years ? safeParseFloat(expDetails.total_years) : null,
             expDetails?.designation || null,
             expDetails?.current_company || null,
-            expDetails?.monthly_taken_home ? safeParseFloat(expDetails.monthly_taken_home) : null,
-            expDetails?.expected_monthly ? safeParseFloat(expDetails.expected_monthly) : null,
+            JSON.stringify(expDetails?.past_experiences || []),
             JSON.stringify(documents), JSON.stringify(techDetails || {}), JSON.stringify(eduDetails || {}), id
         ];
 

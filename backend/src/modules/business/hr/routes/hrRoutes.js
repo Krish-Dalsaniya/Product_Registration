@@ -149,7 +149,9 @@ const offboardingRoutes = require('./offboardingRoutes');
 router.use('/offboarding', offboardingRoutes);
 
 const traineeRoutes = require('./traineeRoutes');
+const internRoutes = require('./internRoutes');
 router.use('/trainees', traineeRoutes);
+router.use('/interns', internRoutes);
 
 const claimsAdvancesController = require('../controllers/claimsAdvancesController');
 const upload = require('../../../../middleware/upload');

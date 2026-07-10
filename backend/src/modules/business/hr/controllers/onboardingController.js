@@ -50,7 +50,7 @@ exports.updateOnboardingStatus = async (req, res) => {
 exports.updateChecklist = async (req, res) => {
     try {
         const { id } = req.params;
-        const { document_checklist, asset_checklist, training_checklist } = req.body;
+        const { document_checklist, asset_checklist, training_checklist, policy_checklist } = req.body;
         
         const updates = [];
         const values = [];
@@ -67,6 +67,10 @@ exports.updateChecklist = async (req, res) => {
         if (training_checklist !== undefined) {
             updates.push(`training_checklist = $${paramIndex++}`);
             values.push(JSON.stringify(training_checklist));
+        }
+        if (policy_checklist !== undefined) {
+            updates.push(`policy_checklist = $${paramIndex++}`);
+            values.push(JSON.stringify(policy_checklist));
         }
 
         if (updates.length === 0) {
