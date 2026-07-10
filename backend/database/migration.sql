@@ -518,6 +518,8 @@ CREATE TABLE IF NOT EXISTS hr_lms_assignments (
     assigned_date DATE NOT NULL,
     due_date DATE,
     status VARCHAR(50) DEFAULT 'Assigned',
+    retest_requested BOOLEAN DEFAULT FALSE,
+    retest_approved BOOLEAN DEFAULT FALSE,
     progress_percentage INTEGER DEFAULT 0,
     completed_at TIMESTAMP WITH TIME ZONE NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

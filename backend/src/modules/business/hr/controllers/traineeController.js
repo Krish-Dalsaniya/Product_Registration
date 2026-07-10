@@ -225,9 +225,11 @@ const getTraineeById = async (req, res) => {
         
         // Fetch assigned LMS courses for this trainee
         const lmsQuery = `
-            SELECT a.assignment_id, a.status, a.progress_percentage, a.completed_at, a.due_date,
+            SELECT a.assignment_id, a.status, a.progress_percentage, a.completed_at, a.due_date, a.retest_requested, a.retest_approved,
                    m.title as module_title, m.training_type, m.difficulty_level, m.duration_hours,
-                   (SELECT score FROM hr_lms_assessments WHERE assignment_id = a.assignment_id ORDER BY created_at DESC LIMIT 1) as latest_score
+                   (SELECT score FROM hr_lms_assessments WHERE assignment_id = a.assignment_id ORDER BY created_at DESC LIMIT 1) as latest_score,
+                   (SELECT COUNT(*) FROM hr_lms_assessments WHERE assignment_id = a.assignment_id) as attempt_count,
+                   (SELECT json_agg(score ORDER BY created_at ASC) FROM hr_lms_assessments WHERE assignment_id = a.assignment_id) as scores_history
             FROM hr_lms_assignments a
             JOIN hr_lms_modules m ON a.module_id = m.module_id
             WHERE a.trainee_id = $1

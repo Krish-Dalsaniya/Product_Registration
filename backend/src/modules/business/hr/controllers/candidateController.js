@@ -59,6 +59,7 @@ exports.createCandidate = async (req, res, next) => {
             currentLocation,
             relocate,
             educationRoute,
+            date_of_birth,
             experience_details,
             technical_details,
             education_details
@@ -132,14 +133,14 @@ exports.createCandidate = async (req, res, next) => {
         const sql = `
             INSERT INTO hr_candidates (
                 position, name, experience_type, email, whatsapp, mobile,
-                current_location, relocate, education_route,
+                current_location, relocate, education_route, date_of_birth,
                 total_years, designation, current_company, past_experiences,
                 documents, status, technical_details, education_details
             ) VALUES (
                 $1, $2, $3, $4, $5, $6,
-                $7, $8, $9,
-                $10, $11, $12, $13,
-                $14, 'Applied', $15, $16
+                $7, $8, $9, $10,
+                $11, $12, $13, $14,
+                $15, 'Applied', $16, $17
             ) RETURNING *
         `;
 
@@ -153,6 +154,7 @@ exports.createCandidate = async (req, res, next) => {
             currentLocation,
             relocate === 'YES' || relocate === true,
             educationRoute || 'REGULAR',
+            date_of_birth || null,
             expDetails?.total_years ? safeParseFloat(expDetails.total_years) : null,
             expDetails?.designation || null,
             expDetails?.current_company || null,
@@ -195,7 +197,7 @@ exports.createCandidate = async (req, res, next) => {
  */
 exports.getCandidates = async (req, res, next) => {
     try {
-        const sql = `SELECT * FROM hr_candidates ORDER BY created_at DESC`;
+        const sql = `SELECT *, TO_CHAR(date_of_birth, 'YYYY-MM-DD') AS date_of_birth FROM hr_candidates ORDER BY created_at DESC`;
         const result = await query(sql);
 
         res.status(200).json({
@@ -257,7 +259,7 @@ exports.updateCandidateStatus = async (req, res, next) => {
 exports.getCandidateById = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const sql = `SELECT * FROM hr_candidates WHERE id = $1`;
+        const sql = `SELECT *, TO_CHAR(date_of_birth, 'YYYY-MM-DD') AS date_of_birth FROM hr_candidates WHERE id = $1`;
         const result = await query(sql, [id]);
 
         if (result.rows.length === 0) {
@@ -313,6 +315,7 @@ exports.updateCandidate = async (req, res, next) => {
             currentLocation,
             relocate,
             educationRoute,
+            date_of_birth,
             experience_details,
             technical_details,
             education_details
@@ -378,16 +381,17 @@ exports.updateCandidate = async (req, res, next) => {
         const sql = `
             UPDATE hr_candidates SET
                 position = $1, name = $2, experience_type = $3, email = $4, whatsapp = $5, mobile = $6,
-                current_location = $7, relocate = $8, education_route = $9,
-                total_years = $10, designation = $11, current_company = $12, past_experiences = $13,
-                documents = $14, technical_details = $15, education_details = $16, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $17
+                current_location = $7, relocate = $8, education_route = $9, date_of_birth = $10,
+                total_years = $11, designation = $12, current_company = $13, past_experiences = $14,
+                documents = $15, technical_details = $16, education_details = $17, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $18
             RETURNING *
         `;
 
         const values = [
             position, name, experienceType || 'FRESHER', email, whatsapp, mobile,
             currentLocation, relocate === 'YES' || relocate === true, educationRoute || 'REGULAR',
+            date_of_birth || null,
             expDetails?.total_years ? safeParseFloat(expDetails.total_years) : null,
             expDetails?.designation || null,
             expDetails?.current_company || null,

@@ -39,8 +39,12 @@ const Assessments = () => {
                 setAssessments(assessmentsRes.data.data);
             }
             if (assignmentsRes.data.success) {
-                // Filter only completed assignments
-                setCompletedAssignments(assignmentsRes.data.data.filter(a => a.status === 'Completed'));
+                // Filter only completed assignments that either have no assessment OR have retest_approved = true
+                const allAssessments = assessmentsRes.data.success ? assessmentsRes.data.data : [];
+                setCompletedAssignments(assignmentsRes.data.data.filter(a => {
+                    const hasAssessment = allAssessments.some(ass => ass.assignment_id === a.assignment_id);
+                    return a.status === 'Completed' && (!hasAssessment || a.retest_approved);
+                }));
             }
         } catch (error) {
             toast.error('Failed to load assessments data');

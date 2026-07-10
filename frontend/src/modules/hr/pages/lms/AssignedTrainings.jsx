@@ -5,7 +5,7 @@ import DataTable from '../../../../components/shared/DataTable';
 import Modal from '../../../../components/shared/Modal';
 import ViewToggle from '../../../../components/shared/ViewToggle';
 import CertificateModal from '../../components/lms/CertificateModal';
-import { getAllAssignmentsApi, assignTrainingApi, updateAssignmentStatusApi, updateAssignmentProgressApi, getAllModulesApi, deleteAssignmentApi } from '../../../../api/lms';
+import { getAllAssignmentsApi, assignTrainingApi, updateAssignmentStatusApi, updateAssignmentProgressApi, getAllModulesApi, deleteAssignmentApi, approveRetestApi } from '../../../../api/lms';
 import { fetchHREmployeesApi, fetchTraineesApi, assignTrainingToTraineeApi, fetchInternsApi, assignTrainingToInternApi } from '../../../../api/hr';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
@@ -193,6 +193,16 @@ const AssignedTrainings = () => {
         }
     };
 
+    const handleApproveRetest = async (id) => {
+        try {
+            await approveRetestApi(id);
+            toast.success('Retest approved successfully');
+            fetchAssignments();
+        } catch (error) {
+            toast.error('Failed to approve retest');
+        }
+    };
+
     const handleDelete = async (id) => {
         const result = await Swal.fire({
             title: 'Delete Assignment?',
@@ -258,10 +268,20 @@ const AssignedTrainings = () => {
                     'Overdue': 'bg-rose-500/10 text-rose-500'
                 };
                 return (
-                    <div className="flex justify-center">
+                    <div className="flex flex-col items-center gap-1">
                         <span className={`px-2 py-1 text-xs rounded-lg font-bold ${colors[row.status] || 'bg-gray-500/10 text-gray-500'}`}>
                             {row.status}
                         </span>
+                        {row.retest_requested && (
+                            <span className="px-2 py-0.5 text-[10px] rounded bg-purple-500/10 text-purple-500 font-bold uppercase">
+                                Retest Req
+                            </span>
+                        )}
+                        {row.retest_approved && (
+                            <span className="px-2 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-500 font-bold uppercase">
+                                Retest Appr
+                            </span>
+                        )}
                     </div>
                 );
             }
@@ -575,7 +595,7 @@ const AssignedTrainings = () => {
                             <option value="">Select Module</option>
                             {modules.map(mod => (
                                 <option key={mod.module_id} value={mod.module_id}>
-                                    {mod.title} ({mod.training_type})
+                                    {mod.title} ({mod.training_type}){mod.duration_hours ? ` - ${mod.duration_hours} hrs` : ''}
                                 </option>
                             ))}
                         </select>

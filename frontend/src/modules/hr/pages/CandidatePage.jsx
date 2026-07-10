@@ -87,6 +87,7 @@ const CandidatePage = () => {
     currentLocation: '',
     relocate: 'YES',
     educationRoute: 'REGULAR',
+    date_of_birth: '',
     experience_details: {
       total_years: '0',
       designation: 'N/A',
@@ -531,6 +532,7 @@ const CandidatePage = () => {
             currentLocation: candidate.current_location || '',
             relocate: candidate.relocate ? 'YES' : 'NO',
             educationRoute: candidate.education_route || 'REGULAR',
+            date_of_birth: candidate.date_of_birth || '',
             experience_details: {
               total_years: candidate.total_years || '0',
               designation: candidate.designation || 'N/A',
@@ -588,50 +590,9 @@ const CandidatePage = () => {
       return;
     }
 
-    // Document Validations
-    if (!uploadMock.aadharCard) {
-      toast.error('Please upload Aadhar Card');
-      return;
-    }
-    if (!uploadMock.panCard) {
-      toast.error('Please upload PAN Card');
-      return;
-    }
-    if (!uploadMock.marksheet_10th) {
-      toast.error('Please upload 10th Marksheet');
-      return;
-    }
-
-    if (formData.educationRoute === 'REGULAR') {
-      if (!uploadMock.marksheet_12th) {
-        toast.error('Please upload 12th Marksheet');
-        return;
-      }
-      if (formData.experienceType !== 'EXPERIENCE') {
-        for (let i = 1; i <= 6; i++) {
-          if (!uploadMock[`deg_sem_${i}`]) {
-            toast.error(`Please upload Degree Semester ${i} Marksheet`);
-            return;
-          }
-        }
-      }
-    } else if (formData.educationRoute === 'DIPLOMA') {
-      for (let i = 1; i <= 6; i++) {
-        if (!uploadMock[`dip_sem_${i}`]) {
-          toast.error(`Please upload Diploma Semester ${i} Marksheet`);
-          return;
-        }
-      }
-      if (formData.experienceType !== 'EXPERIENCE') {
-        for (let i = 3; i <= 6; i++) {
-          if (!uploadMock[`deg_sem_${i}`]) {
-            toast.error(`Please upload Degree Semester ${i} Marksheet`);
-            return;
-          }
-        }
-      }
-    }
+    // Document Validations removed as per user request
     
+
     try {
       setIsSubmitting(true);
       const submitData = new FormData();
@@ -644,6 +605,9 @@ const CandidatePage = () => {
       submitData.append('currentLocation', formData.currentLocation);
       submitData.append('relocate', formData.relocate);
       submitData.append('educationRoute', formData.educationRoute);
+      if (formData.date_of_birth) {
+        submitData.append('date_of_birth', formData.date_of_birth);
+      }
       const experience_details_payload = { ...formData.experience_details };
       if (experience_details_payload.past_experiences && experience_details_payload.past_experiences.length > 0) {
         experience_details_payload.designation = experience_details_payload.past_experiences[0].designation;
@@ -835,6 +799,10 @@ const CandidatePage = () => {
                     <div>
                       <label className={labelClass}>Current Location*</label>
                       <input type="text" value={formData.currentLocation} onChange={e => setFormData(prev => ({...prev, currentLocation: e.target.value}))} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Date of Birth</label>
+                      <input type="date" value={formData.date_of_birth} onChange={e => setFormData(prev => ({...prev, date_of_birth: e.target.value}))} className={inputClass} />
                     </div>
                     <div>
                       <label className={labelClass}>Ready to relocate to Vadodara?</label>
@@ -1146,6 +1114,7 @@ const CandidatePage = () => {
                 documents={uploadMock} 
                 extractedInfo={liveExtractedInfo} 
                 eduDetails={formData.education_details} 
+                dateOfBirth={formData.date_of_birth}
               />
 
             </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, School, Award, ChevronDown } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
-const CandidateTimeline = ({ experienceType = 'FRESHER', pastExperiences = [], educationRoute, documents = {}, extractedInfo = {}, eduDetails = {}, compact = false }) => {
+const CandidateTimeline = ({ experienceType = 'FRESHER', pastExperiences = [], educationRoute, documents = {}, extractedInfo = {}, eduDetails = {}, dateOfBirth = '', compact = false }) => {
   const [selectedNode, setSelectedNode] = useState(null);
 
   // Helper to determine if a document exists
@@ -39,16 +39,20 @@ const CandidateTimeline = ({ experienceType = 'FRESHER', pastExperiences = [], e
   const timelineNodes = [];
 
   // Birth node
+  const dobToUse = dateOfBirth || extractedInfo?.birth_date || extractedInfo?.birth_year;
+  const dobYearMatch = String(dobToUse || '').match(/\b(19|20)\d{2}\b/);
+  const dobYear = dobYearMatch ? dobYearMatch[0] : (dobToUse || 'N/A');
+  
   timelineNodes.push({
     id: 'birth',
     label: 'Birth Date/Year',
-    year: extractedInfo?.birth_date || extractedInfo?.birth_year || 'N/A',
+    year: dobYear,
     type: 'birth',
-    filled: !!(extractedInfo?.birth_date || extractedInfo?.birth_year),
+    filled: !!dobToUse,
     details: [
-        { key: 'Status', value: (extractedInfo?.birth_date || extractedInfo?.birth_year) ? 'Extracted' : 'Not Provided' },
-        ...(extractedInfo?.birth_date ? [{ key: 'DOB', value: String(extractedInfo.birth_date) }] : []),
-        ...(extractedInfo?.birth_year ? [{ key: 'Year', value: String(extractedInfo.birth_year) }] : [])
+        { key: 'Status', value: dobToUse ? 'Extracted/Provided' : 'Not Provided' },
+        ...(dateOfBirth ? [{ key: 'DOB', value: dateOfBirth }] : (extractedInfo?.birth_date ? [{ key: 'DOB', value: String(extractedInfo.birth_date) }] : [])),
+        ...(extractedInfo?.birth_year && !dateOfBirth && !extractedInfo?.birth_date ? [{ key: 'Year', value: String(extractedInfo.birth_year) }] : [])
     ]
   });
 

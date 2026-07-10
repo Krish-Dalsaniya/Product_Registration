@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchInternByIdApi } from '../../../api/intern';
-import { ArrowLeft, GraduationCap, Briefcase, Mail, Phone, Calendar, CheckCircle, Clock, BookOpen, AlertCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Briefcase, Mail, Phone, Calendar, CheckCircle, Clock, BookOpen, AlertCircle, XCircle, RotateCcw } from 'lucide-react';
+import { requestRetestApi } from '../../../api/lms';
 import toast from 'react-hot-toast';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
 
@@ -27,6 +28,16 @@ const InternProfile = () => {
             navigate('/hr/intern');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleRequestRetest = async (assignmentId) => {
+        try {
+            await requestRetestApi(assignmentId);
+            toast.success('Retest requested successfully');
+            loadIntern();
+        } catch (error) {
+            toast.error('Failed to request retest');
         }
     };
 
@@ -145,6 +156,14 @@ const InternProfile = () => {
                                                 <span>Duration: {assignment.duration_hours}h</span>
                                                 {assignment.due_date && <span className="flex items-center gap-1"><Calendar size={12} /> Due: {new Date(assignment.due_date).toLocaleDateString()}</span>}
                                             </div>
+                                            {assignment.attempt_count > 0 && (
+                                                <div className="mt-3 pt-3 border-t border-[var(--border-color)]/30 flex flex-wrap items-center gap-4 text-xs font-semibold text-[var(--text-secondary)]">
+                                                    <span>Attempts: <span className="font-bold text-[var(--text-main)]">{assignment.attempt_count}</span></span>
+                                                    {assignment.scores_history && (
+                                                        <span>Score History: <span className="font-bold text-[var(--text-main)]">{assignment.scores_history.join(', ')}</span></span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex flex-col items-end gap-2 min-w-[120px]">
                                             <div className="flex items-center gap-1.5 font-bold text-sm">
@@ -158,6 +177,20 @@ const InternProfile = () => {
                                                 <div className="text-xs font-black bg-white border px-2 py-1 rounded shadow-sm">
                                                     Score: {assignment.latest_score}%
                                                 </div>
+                                            )}
+                                            {assignment.latest_score !== null && assignment.latest_score < 75 && !assignment.retest_requested && !assignment.retest_approved && (
+                                                <button
+                                                    onClick={() => handleRequestRetest(assignment.assignment_id)}
+                                                    className="mt-2 text-[10px] font-bold px-2.5 py-1.5 bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white rounded-md transition-all flex items-center gap-1"
+                                                >
+                                                    <RotateCcw size={12} /> Request Retest
+                                                </button>
+                                            )}
+                                            {assignment.retest_requested && (
+                                                <span className="mt-2 text-[10px] font-bold px-2 py-1 bg-purple-500/10 text-purple-500 rounded uppercase">Retest Pending</span>
+                                            )}
+                                            {assignment.retest_approved && (
+                                                <span className="mt-2 text-[10px] font-bold px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded uppercase">Retest Ready</span>
                                             )}
                                         </div>
                                     </div>
