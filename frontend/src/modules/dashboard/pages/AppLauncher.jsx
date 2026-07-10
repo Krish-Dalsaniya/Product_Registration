@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { Search, Bell, User, LogOut } from 'lucide-react';
+import { Search, Bell, User, LogOut, GitBranch } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import LoginBackground from '../../../components/shared/LoginBackground';
 
@@ -88,13 +88,16 @@ const MotionCard = ({ mod, onClick }) => {
           className="relative z-10 flex items-center gap-5 w-full pointer-events-none"
           style={{ x: translateX, y: translateY }}
         >
-          {/* Floating Icon Base */}
           <div className="w-[72px] h-[72px] rounded-[20px] bg-white/60 border border-white/80 shadow-[0_10px_20px_rgb(0,0,0,0.05)] flex items-center justify-center p-3 backdrop-blur-md">
-            <img
-              src={mod.iconUrl}
-              alt={`${mod.name} icon`}
-              className="w-full h-full object-contain filter drop-shadow-lg group-hover:scale-110 transition-all duration-300 mix-blend-multiply"
-            />
+            {mod.iconComponent ? (
+              <mod.iconComponent className="w-10 h-10 text-emerald-600 drop-shadow-md group-hover:scale-110 transition-all duration-300" />
+            ) : (
+              <img
+                src={mod.iconUrl}
+                alt={`${mod.name} icon`}
+                className="w-full h-full object-contain filter drop-shadow-lg group-hover:scale-110 transition-all duration-300 mix-blend-multiply"
+              />
+            )}
           </div>
 
           {/* Floating Text */}
@@ -193,6 +196,16 @@ const AppLauncher = () => {
       gradient: 'bg-gradient-to-r from-slate-100/90 via-white/80 to-white/90',
       shadowColor: 'shadow-slate-500/10',
       path: '/settings',
+    },
+    {
+      id: 'git_management',
+      name: 'Git Management',
+      description: 'Manage codebase and versions',
+      iconComponent: GitBranch,
+      colSpan: 'md:col-span-4',
+      gradient: 'bg-gradient-to-r from-emerald-100/90 via-white/80 to-white/90',
+      shadowColor: 'shadow-emerald-500/10',
+      path: '/git/dashboard',
       permissionKey: 'admin'
     }
   ];

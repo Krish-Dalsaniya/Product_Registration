@@ -26,7 +26,9 @@ const env = {
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
   FROM_EMAIL: process.env.FROM_EMAIL,
-  ENABLE_2FA: process.env.ENABLE_2FA === 'true'
+  ENABLE_2FA: process.env.ENABLE_2FA === 'true',
+  GIT_ENGINE_URL: process.env.GIT_ENGINE_URL || 'http://localhost:8000',
+  GIT_ENGINE_API_KEY: process.env.GIT_ENGINE_API_KEY
 };
 
 // Simple validation

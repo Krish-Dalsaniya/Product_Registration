@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useFinishedGoods, useFinishedGoodsOptions, useCreateFinishedGood, useUpdateFinishedGood, useDeleteFinishedGood, useAddFinishedGoodStock } from '../../hooks/useFinishedGoods';
+import { getGitReleases, getGitWorkflowRuns, getGitBranches } from '../../api/gitIntegration';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import ViewToggle from '../../components/shared/ViewToggle';
@@ -23,7 +24,8 @@ import {
     List,
     ImageOff,
     Eye,
-    PackagePlus
+    PackagePlus,
+    RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -77,6 +79,18 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
     const [powerController, setPowerController] = useState(false);
     const [motherboardId, setMotherboardId] = useState('');
     
+    // Firmware Traceability Fields
+    const [repositoryOwner, setRepositoryOwner] = useState('');
+    const [repositoryName, setRepositoryName] = useState('');
+    const [branch, setBranch] = useState('');
+    const [commitSha, setCommitSha] = useState('');
+    const [tag, setTag] = useState('');
+    const [releaseId, setReleaseId] = useState('');
+    const [workflowRunId, setWorkflowRunId] = useState('');
+    const [buildNumber, setBuildNumber] = useState('');
+    const [firmwareBinaryUrl, setFirmwareBinaryUrl] = useState('');
+    const [isFetchingGit, setIsFetchingGit] = useState(false);
+
     const COMMUNICATION_OPTIONS = ['wifi', 'bluetooth', 'gsm 2G', 'gsm 3G', 'gsm 4G', 'gsm 5G', 'ethernet', 'RS485', 'USB', 'RS232'];
     const COMMUNICATION_PROTOCOL_OPTIONS = ['MQTT', 'HTTP(Client)', 'HTTP(Server)', 'TCP/IP(Client)', 'TCP/IP(Server)', 'FTP'];
     const OTA_PROTOCOL_OPTIONS = ['MQTT', 'HTTP(Client)', 'HTTP(Server)', 'TCP/IP(Client)', 'TCP/IP(Server)', 'FTP'];
@@ -87,6 +101,35 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
 
 
     const [viewItem, setViewItem] = useState(null);
+
+    const handleFetchGitData = async () => {
+        if (!repositoryOwner || !repositoryName) {
+            toast.error('Repository owner and name are required');
+            return;
+        }
+        setIsFetchingGit(true);
+        try {
+            const [releases, workflowRuns] = await Promise.all([
+                getGitReleases(repositoryOwner, repositoryName),
+                getGitWorkflowRuns(repositoryOwner, repositoryName)
+            ]);
+            
+            if (releases?.length > 0) {
+                setTag(releases[0].tag_name);
+                setReleaseId(releases[0].id);
+            }
+            if (workflowRuns?.length > 0) {
+                setWorkflowRunId(workflowRuns[0].id);
+                setBuildNumber(workflowRuns[0].run_number);
+                setCommitSha(workflowRuns[0].head_sha);
+            }
+            toast.success('Git data fetched successfully');
+        } catch (error) {
+            toast.error('Failed to fetch Git data');
+        } finally {
+            setIsFetchingGit(false);
+        }
+    };
 
     const handleAddHardwareFeature = (type, id, name, stockQuantity = 0) => {
         if (!id) return;
@@ -138,7 +181,16 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                 power_controller: isIot ? powerController : false,
                 motherboard_id: isIot ? motherboardId : null,
                 is_iot: isIot,
-                version: version
+                version: version,
+                repository_owner: isIot ? repositoryOwner : null,
+                repository_name: isIot ? repositoryName : null,
+                branch: isIot ? branch : null,
+                commit_sha: isIot ? commitSha : null,
+                tag: isIot ? tag : null,
+                release_id: isIot ? releaseId : null,
+                workflow_run_id: isIot ? workflowRunId : null,
+                build_number: isIot ? buildNumber : null,
+                firmware_binary_url: isIot ? firmwareBinaryUrl : null
             };
 
             if (editItem) {
@@ -197,9 +249,36 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
         });
         setHardwareFeatures(mappedHardware);
 
-        setCommunicationDetails(row.communication_details || []);
+        const commArray = Array.isArray(row.communication_details) 
+            ? row.communication_details 
+            : (row.communication_details?.interfaces || []);
+            
+        // Attempt to recover corrupted arrays that were spread into objects
+        if (!Array.isArray(commArray) && typeof row.communication_details === 'object' && row.communication_details !== null) {
+            const recovered = [];
+            for (let i = 0; i < 10; i++) {
+                if (row.communication_details[String(i)]) {
+                    recovered.push(row.communication_details[String(i)]);
+                }
+            }
+            if (recovered.length > 0) commArray.push(...recovered);
+        }
+
+        setCommunicationDetails(commArray);
         setPowerController(row.power_controller || false);
         setMotherboardId(row.motherboard_id || '');
+
+        const trace = row.communication_details?.git_traceability || {};
+        
+        setRepositoryOwner(row.repository_owner || trace.repository_owner || '');
+        setRepositoryName(row.repository_name || trace.repository_name || '');
+        setBranch(row.branch || trace.branch || '');
+        setCommitSha(row.commit_sha || trace.commit_sha || '');
+        setTag(row.tag || trace.tag || '');
+        setReleaseId(row.release_id || trace.release_id || '');
+        setWorkflowRunId(row.workflow_run_id || trace.workflow_run_id || '');
+        setBuildNumber(row.build_number || trace.build_number || '');
+        setFirmwareBinaryUrl(row.firmware_binary_url || trace.firmware_binary_url || '');
 
         setIsModalOpen(true);
     };
@@ -255,9 +334,19 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
         setBuilderState({ method: '', communicationProtocol: [], otaProtocol: [], dataFormat: [] });
         setPowerController(false);
         setMotherboardId('');
+        setRepositoryOwner('');
+        setRepositoryName('');
+        setBranch('');
+        setCommitSha('');
+        setTag('');
+        setReleaseId('');
+        setWorkflowRunId('');
+        setBuildNumber('');
+        setFirmwareBinaryUrl('');
         setIsIot(false);
         setEditItem(null);
         setInventoryError('');
+        setIsFetchingGit(false);
     };
 
     const getComponentName = (type, id) => {
@@ -545,6 +634,94 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                                 </label>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Traceability Details */}
+                    <div className="space-y-4 pt-6 border-t border-[var(--border-color)]">
+                        <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">
+                                Firmware Traceability (Git Integration)
+                            </label>
+                            <button 
+                                type="button" 
+                                onClick={async () => {
+                                    if (!repositoryOwner || !repositoryName) {
+                                        toast.error("Please enter both Repository Owner and Name first!");
+                                        return;
+                                    }
+                                    setIsFetchingGit(true);
+                                    try {
+                                        let updated = false;
+                                        
+                                        // 1. Fetch branches (always available even if no releases/workflows)
+                                        try {
+                                            const branchRes = await getGitBranches(repositoryOwner, repositoryName);
+                                            const branches = branchRes.data?.data || [];
+                                            if (branches.length > 0) {
+                                                const defaultBranch = branches.find(b => b.name === 'main' || b.name === 'master') || branches[0];
+                                                setBranch(defaultBranch.name || '');
+                                                if (defaultBranch.commit) {
+                                                    setCommitSha(defaultBranch.commit.id || '');
+                                                }
+                                                updated = true;
+                                            }
+                                        } catch (e) {}
+
+                                        // 2. Fetch releases for tags and firmware
+                                        try {
+                                            const relRes = await getGitReleases(repositoryOwner, repositoryName);
+                                            const releases = relRes.data?.data || [];
+                                            if (releases.length > 0) {
+                                                const latest = releases[0];
+                                                setTag(latest.tag_name || '');
+                                                setReleaseId(String(latest.id || ''));
+                                                if (latest.target_commitish) setBranch(latest.target_commitish);
+                                                if (latest.assets && latest.assets.length > 0) {
+                                                    setFirmwareBinaryUrl(latest.assets[0].browser_download_url || '');
+                                                }
+                                                updated = true;
+                                            }
+                                        } catch (e) {}
+                                        
+                                        // 3. Fetch workflows for build number
+                                        try {
+                                            const runRes = await getGitWorkflowRuns(repositoryOwner, repositoryName);
+                                            const runs = runRes.data?.data || [];
+                                            if (runs.length > 0) {
+                                                const latestRun = runs[0];
+                                                setWorkflowRunId(String(latestRun.id || ''));
+                                                setBuildNumber(String(latestRun.run_number || ''));
+                                                if (!branch) setCommitSha(latestRun.head_sha || '');
+                                                updated = true;
+                                            }
+                                        } catch (e) {}
+
+                                        if (updated) toast.success("Auto-filled from Git!");
+                                        else toast.error("Could not find branches/releases.");
+                                    } catch (err) {
+                                        toast.error("Failed to connect to Git Engine.");
+                                    } finally {
+                                        setIsFetchingGit(false);
+                                    }
+                                }}
+                                disabled={isFetchingGit || !repositoryOwner || !repositoryName}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] rounded-lg text-[10px] font-bold text-[var(--text-main)] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isFetchingGit ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                                Auto-Fill from Repo
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <input type="text" placeholder="Repository Owner (e.g. AcmeCorp)" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={repositoryOwner} onChange={(e) => setRepositoryOwner(e.target.value)} />
+                            <input type="text" placeholder="Repository Name" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={repositoryName} onChange={(e) => setRepositoryName(e.target.value)} />
+                            <input type="text" placeholder="Branch" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={branch} onChange={(e) => setBranch(e.target.value)} />
+                            <input type="text" placeholder="Commit SHA" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold font-mono" value={commitSha} onChange={(e) => setCommitSha(e.target.value)} />
+                            <input type="text" placeholder="Tag (e.g. v1.0.0)" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={tag} onChange={(e) => setTag(e.target.value)} />
+                            <input type="text" placeholder="Release ID" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={releaseId} onChange={(e) => setReleaseId(e.target.value)} />
+                            <input type="text" placeholder="Workflow Run ID" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={workflowRunId} onChange={(e) => setWorkflowRunId(e.target.value)} />
+                            <input type="text" placeholder="Build Number" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={buildNumber} onChange={(e) => setBuildNumber(e.target.value)} />
+                        </div>
+                        <input type="text" placeholder="Firmware Binary URL" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={firmwareBinaryUrl} onChange={(e) => setFirmwareBinaryUrl(e.target.value)} />
                     </div>
                 </div>
             )}
@@ -907,11 +1084,11 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                                     </div>
                                 </div>
                                 
-                                {(viewItem.communication_details || []).length > 0 && (
+                                {(Array.isArray(viewItem.communication_details) ? viewItem.communication_details : (viewItem.communication_details?.interfaces || [])).length > 0 && (
                                     <div className="space-y-4 pt-6 border-t border-[var(--border-color)]">
                                         <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-dim)]">Communication Interfaces</h4>
                                         <div className="grid grid-cols-1 gap-4">
-                                            {(viewItem.communication_details || []).map((comm, i) => (
+                                            {(Array.isArray(viewItem.communication_details) ? viewItem.communication_details : (viewItem.communication_details?.interfaces || [])).map((comm, i) => (
                                                 <div key={i} className="p-5 bg-[var(--accent)]/5 border border-[var(--accent)]/20 rounded-2xl">
                                                     <h5 className="text-[13px] font-black uppercase tracking-widest text-[var(--accent)] mb-4">{comm.method}</h5>
                                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -930,6 +1107,43 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                                                     </div>
                                                 </div>
                                             ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Firmware Traceability View */}
+                                {(viewItem.repository_owner || (viewItem.communication_details?.git_traceability?.repository_owner)) && (viewItem.repository_name || (viewItem.communication_details?.git_traceability?.repository_name)) && (
+                                    <div className="space-y-4 pt-6 border-t border-[var(--border-color)]">
+                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-dim)] mb-3">Firmware Traceability</h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-2xl">
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Repository</span>
+                                                <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.repository_owner || viewItem.communication_details?.git_traceability?.repository_owner}/{viewItem.repository_name || viewItem.communication_details?.git_traceability?.repository_name}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Branch</span>
+                                                <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.branch || viewItem.communication_details?.git_traceability?.branch || 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Commit</span>
+                                                <span className="text-[13px] font-bold text-[var(--text-main)] font-mono">{(viewItem.commit_sha || viewItem.communication_details?.git_traceability?.commit_sha) ? (viewItem.commit_sha || viewItem.communication_details?.git_traceability?.commit_sha).substring(0, 7) : 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Tag / Release</span>
+                                                <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.tag || viewItem.communication_details?.git_traceability?.tag || viewItem.release_id || viewItem.communication_details?.git_traceability?.release_id || 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Workflow / Build</span>
+                                                <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.workflow_run_id || viewItem.communication_details?.git_traceability?.workflow_run_id || viewItem.build_number || viewItem.communication_details?.git_traceability?.build_number || 'N/A'}</span>
+                                            </div>
+                                            {(viewItem.firmware_binary_url || viewItem.communication_details?.git_traceability?.firmware_binary_url) && (
+                                                <div className="lg:col-span-3">
+                                                    <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Binary Asset</span>
+                                                    <a href={viewItem.firmware_binary_url || viewItem.communication_details?.git_traceability?.firmware_binary_url} target="_blank" rel="noreferrer" className="text-[13px] font-bold text-blue-500 hover:underline break-all">
+                                                        {viewItem.firmware_binary_url || viewItem.communication_details?.git_traceability?.firmware_binary_url}
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}

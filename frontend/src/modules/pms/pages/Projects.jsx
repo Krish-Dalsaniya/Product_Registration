@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Clock, FileText, CheckCircle, Search, AlertCircle, Trash2, Edit2, Users, ChevronDown, X, Check, FolderGit2 } from 'lucide-react';
 import { getProjects, createProject, updateProject, deleteProject, getProjectMetrics } from '../../../api/pms';
 import PortfolioDashboard from '../components/project/PortfolioDashboard';
+import CodebaseTracking from '../components/project/CodebaseTracking';
 
 import { getTeams } from '../../../api/adminTeams';
 import { getProducts } from '../../../api/products';
@@ -40,6 +41,7 @@ const Projects = () => {
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewModalTab, setViewModalTab] = useState('details'); // 'details' or 'codebase'
   const [selectedProject, setSelectedProject] = useState(null);
 
   const loadData = async () => {
@@ -352,66 +354,88 @@ const Projects = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Left Column - Main Details */}
-              <div className="lg:col-span-2 space-y-4">
-                <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm">
-                  <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Project Overview</p>
-                  <p className="text-sm font-semibold text-[var(--text-main)] whitespace-pre-wrap leading-relaxed opacity-90">{selectedProject.description || 'No description provided.'}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm flex flex-col justify-center items-center text-center">
-                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Start Date</p>
-                    <p className="text-lg font-black text-[var(--text-main)]">{selectedProject.start_date ? new Date(selectedProject.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</p>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm flex flex-col justify-center items-center text-center">
-                    <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">End Date</p>
-                    <p className="text-lg font-black text-[var(--text-main)]">{selectedProject.end_date ? new Date(selectedProject.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</p>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm">
-                  <div className="flex justify-between items-end mb-3">
-                    <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Progress Tracking</p>
-                    <span className="text-2xl font-black text-[var(--accent)]">{selectedProject.progress_percentage}%</span>
-                  </div>
-                  <div className="w-full bg-[var(--border-color)] rounded-full h-3 shadow-inner">
-                    <div className="bg-gradient-to-r from-[var(--accent)] to-blue-400 h-3 rounded-full transition-all duration-1000 shadow-md" style={{ width: `${selectedProject.progress_percentage}%` }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column - Team details */}
-              <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-[var(--accent)]/5 border border-[var(--accent)]/10 shadow-sm">
-                  <p className="text-[11px] font-black text-[var(--accent)] uppercase tracking-widest mb-4 border-b border-[var(--accent)]/10 pb-2">
-                    Team & Execution
-                  </p>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Assigned Team</p>
-                      <p className="text-sm font-black text-[var(--text-main)]">{selectedProject.team_name || 'Unassigned'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Team Lead</p>
-                      <p className="text-sm font-black text-[var(--text-main)]">{selectedProject.team_lead_name || 'Unassigned'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Client Handler</p>
-                      <p className="text-sm font-black text-[var(--text-main)]">{selectedProject.client_handler_name || 'N/A'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm">
-                  <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3 border-b border-[var(--border-color)]/50 pb-2">Product Link</p>
-                  <div>
-                    <p className="text-sm font-black text-[var(--text-main)] line-clamp-2">{selectedProject.product_name || 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
+            <div className="flex border-b border-[var(--border-color)] mb-4">
+              <button
+                className={`py-2 px-4 font-bold text-sm border-b-2 transition-colors ${viewModalTab === 'details' ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                onClick={() => setViewModalTab('details')}
+              >
+                Project Details
+              </button>
+              <button
+                className={`py-2 px-4 font-bold text-sm border-b-2 transition-colors flex items-center gap-2 ${viewModalTab === 'codebase' ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+                onClick={() => setViewModalTab('codebase')}
+              >
+                <FolderGit2 size={16} /> Codebase
+              </button>
             </div>
+
+            {viewModalTab === 'details' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Left Column - Main Details */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm">
+                    <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Project Overview</p>
+                    <p className="text-sm font-semibold text-[var(--text-main)] whitespace-pre-wrap leading-relaxed opacity-90">{selectedProject.description || 'No description provided.'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm flex flex-col justify-center items-center text-center">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">Start Date</p>
+                      <p className="text-lg font-black text-[var(--text-main)]">{selectedProject.start_date ? new Date(selectedProject.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm flex flex-col justify-center items-center text-center">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">End Date</p>
+                      <p className="text-lg font-black text-[var(--text-main)]">{selectedProject.end_date ? new Date(selectedProject.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm">
+                    <div className="flex justify-between items-end mb-3">
+                      <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Progress Tracking</p>
+                      <span className="text-2xl font-black text-[var(--accent)]">{selectedProject.progress_percentage}%</span>
+                    </div>
+                    <div className="w-full bg-[var(--border-color)] rounded-full h-3 shadow-inner">
+                      <div className="bg-gradient-to-r from-[var(--accent)] to-blue-400 h-3 rounded-full transition-all duration-1000 shadow-md" style={{ width: `${selectedProject.progress_percentage}%` }}></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Team details */}
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-[var(--accent)]/5 border border-[var(--accent)]/10 shadow-sm">
+                    <p className="text-[11px] font-black text-[var(--accent)] uppercase tracking-widest mb-4 border-b border-[var(--accent)]/10 pb-2">
+                      Team & Execution
+                    </p>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Assigned Team</p>
+                        <p className="text-sm font-black text-[var(--text-main)]">{selectedProject.team_name || 'Unassigned'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Team Lead</p>
+                        <p className="text-sm font-black text-[var(--text-main)]">{selectedProject.team_lead_name || 'Unassigned'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase mb-1">Client Handler</p>
+                        <p className="text-sm font-black text-[var(--text-main)]">{selectedProject.client_handler_name || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-[var(--bg-workspace)] border border-[var(--border-color)]/50 shadow-sm">
+                    <p className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-3 border-b border-[var(--border-color)]/50 pb-2">Product Link</p>
+                    <div>
+                      <p className="text-sm font-black text-[var(--text-main)] line-clamp-2">{selectedProject.product_name || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <CodebaseTracking 
+                repositoryOwner={selectedProject.repository_owner}
+                repositoryName={selectedProject.repository_name}
+              />
+            )}
           </div>
         </Modal>
       )}
@@ -430,7 +454,9 @@ const AddEditProjectModal = ({ isOpen, onClose, onSuccess, initialData }) => {
     end_date: '',
     status: 'Planned',
     priority: 'Medium',
-    progress_percentage: 0
+    progress_percentage: 0,
+    repository_owner: '',
+    repository_name: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -495,7 +521,9 @@ const AddEditProjectModal = ({ isOpen, onClose, onSuccess, initialData }) => {
           end_date: initialData.end_date ? new Date(initialData.end_date).toISOString().split('T')[0] : '',
           status: initialData.status || 'Planned',
           priority: initialData.priority || 'Medium',
-          progress_percentage: initialData.progress_percentage || 0
+          progress_percentage: initialData.progress_percentage || 0,
+          repository_owner: initialData.repository_owner || '',
+          repository_name: initialData.repository_name || ''
         });
         setSelectedMembers(initialData.project_members || []);
       } else {
@@ -511,7 +539,9 @@ const AddEditProjectModal = ({ isOpen, onClose, onSuccess, initialData }) => {
           end_date: '',
           status: 'Planned',
           priority: 'Medium',
-          progress_percentage: 0
+          progress_percentage: 0,
+          repository_owner: '',
+          repository_name: ''
         });
         setSelectedMembers([]);
       }
@@ -845,6 +875,34 @@ const AddEditProjectModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                 <option key={u.user_id} value={u.user_id}>{u.full_name} ({u.role_name})</option>
               ))}
             </select>
+          </div>
+          
+          <div className="col-span-2 mt-4 pt-4 border-t border-[var(--border-color)]">
+            <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-dim)] mb-3">Codebase Tracking (Git Integration)</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Repository Owner</label>
+                <input 
+                  type="text" 
+                  name="repository_owner"
+                  value={formData.repository_owner}
+                  onChange={handleChange}
+                  placeholder="e.g. facebook"
+                  className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Repository Name</label>
+                <input 
+                  type="text" 
+                  name="repository_name"
+                  value={formData.repository_name}
+                  onChange={handleChange}
+                  placeholder="e.g. react"
+                  className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
