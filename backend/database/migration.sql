@@ -249,13 +249,6 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-    DELETE FROM permissions WHERE permission_key LIKE '%.export' OR permission_key LIKE '%.publish' OR permission_key LIKE '%.assign';
-
-    -- B) Remove .comm_view completely
-    DELETE FROM role_permissions WHERE permission_id IN (SELECT permission_id FROM permissions WHERE permission_key LIKE '%.comm_view');
-    DELETE FROM permissions WHERE permission_key LIKE '%.comm_view';
-
-
 
 -- 5. User Security & Extensions
 CREATE TABLE IF NOT EXISTS audit_logs (
