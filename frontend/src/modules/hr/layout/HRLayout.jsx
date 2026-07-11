@@ -802,6 +802,7 @@ const HRSidebar = ({ isOpen, onClose, isCollapsed }) => {
                 Administration
               </p>
               <NavItem to="/hr/user-access" label="User Access" icon={LockKeyhole} />
+              <NavItem to="/hr/conversions/pending" label="Pending Conversions" icon={ClipboardCheck} />
             </>
           )}
 
@@ -830,6 +831,7 @@ const getHRTabMetadata = (pathname) => {
   if (pathname === '/hr/lms') return { label: 'LMS', iconType: 'BookOpen' };
   if (pathname === '/hr/user-access') return { label: 'User Access', iconType: 'LockKeyhole' };
   if (pathname.startsWith('/hr/user-access/')) return { label: 'Access Detail', iconType: 'LockKeyhole' };
+  if (pathname === '/hr/conversions/pending') return { label: 'Pending Conversions', iconType: 'ClipboardCheck' };
   
   const segments = pathname.split('/').filter(Boolean);
   const lastSegment = segments[segments.length - 1];

@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import ComingSoon from '../components/shared/ComingSoon';
 import PayslipDownload from '../modules/hr/pages/PayslipDownload';
+import PendingConversions from '../modules/hr/pages/PendingConversions';
 const AuditLogsPage = lazy(() => import('../modules/admin/AuditLogsPage'));
 const SettingsPage = lazy(() => import('../modules/settings/SettingsPage'));
 const AttendanceVerification = lazy(() => import('../modules/hr/pages/AttendanceVerification'));
@@ -447,7 +448,7 @@ const Router = () => {
           <Route path="/hr/intern" element={<InternList />} />
           <Route path="/hr/intern/new" element={<AddInternWizard />} />
           <Route path="/hr/intern/:id" element={<InternProfile />} />
-
+          <Route path="/hr/conversions/pending" element={<PendingConversions />} />
           
           {/* Recruitment */}
           <Route path="/hr/recruitment/open-positions" element={<OpenPositionsPage />} />

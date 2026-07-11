@@ -519,6 +519,24 @@ CREATE TABLE IF NOT EXISTS hr_lms_assignments (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ==========================================
+-- HR CONVERSION REQUESTS (FOR APPROVAL WORKFLOW)
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS hr_conversion_requests (
+    request_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    intern_id UUID REFERENCES hr_interns(intern_id) ON DELETE CASCADE,
+    trainee_id UUID REFERENCES hr_trainees(trainee_id) ON DELETE CASCADE,
+    target_role VARCHAR(50) NOT NULL, -- 'Trainee' or 'Employee'
+    payload JSONB, -- stores base_salary, emp_code, designation_id, etc.
+    status VARCHAR(50) DEFAULT 'Pending', -- 'Pending', 'Approved', 'Rejected'
+    certificate_url TEXT,
+    requested_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    approved_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS hr_lms_assessments (
     assessment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     assignment_id UUID REFERENCES hr_lms_assignments(assignment_id) ON DELETE CASCADE,
@@ -946,3 +964,14 @@ CREATE TABLE IF NOT EXISTS hr_interns (
 
 ALTER TABLE hr_lms_assignments 
 ADD COLUMN IF NOT EXISTS intern_id UUID REFERENCES hr_interns(intern_id) ON DELETE CASCADE;
+
+-- ==============================================================================
+-- 2026-07-10
+-- HR Candidates
+-- Replace position column with multi-select applied_at and shortlisted_for
+-- ==============================================================================
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS applied_at JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS shortlisted_for JSONB DEFAULT '[]'::jsonb;
+
+-- Add user_id to hr_interns
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(user_id);

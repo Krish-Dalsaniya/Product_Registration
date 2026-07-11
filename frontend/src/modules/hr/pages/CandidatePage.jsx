@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Briefcase, User, Check, UploadCloud, FileText, PhoneCall, IndianRupee, UserPlus } from 'lucide-react';
+import { ArrowLeft, Save, Briefcase, User, Check, UploadCloud, FileText, PhoneCall, IndianRupee, UserPlus, Plus, X } from 'lucide-react';
 import { useNavigate, useParams, useLocation, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { createCandidateApi, fetchCandidateByIdApi, updateCandidateApi, extractCandidateLiveApi } from '../../../api/hr';
+import { createCandidateApi, fetchCandidateByIdApi, updateCandidateApi, extractCandidateLiveApi, extractCandidateZipApi } from '../../../api/hr';
 import CandidateTimeline from '../components/CandidateTimeline';
 import SGPABarChart from '../components/SGPABarChart';
 import Breadcrumbs from '../../../components/shared/Breadcrumbs';
@@ -77,8 +77,11 @@ const CandidatePage = () => {
   
   const [activeTab, setActiveTab] = useState('Basic Information');
   const [liveExtractedInfo, setLiveExtractedInfo] = useState({});
+  const [selectInputs, setSelectInputs] = useState({});
+  const [dropdownOpen, setDropdownOpen] = useState({});
   const [formData, setFormData] = useState({
-    position: [],
+    appliedAt: [],
+    shortlistedFor: [],
     name: '',
     experienceType: 'EXPERIENCE', // FRESHER or EXPERIENCE
     email: '',
@@ -521,9 +524,22 @@ const CandidatePage = () => {
       fetchCandidateByIdApi(id).then(res => {
         if (res.data?.success) {
           const candidate = res.data.data;
-          const posList = candidate.position ? candidate.position.split(',').map(p => p.trim()) : [];
+          
+          let parsedAppliedAt = [];
+          if (candidate.applied_at) {
+              parsedAppliedAt = typeof candidate.applied_at === 'string' ? JSON.parse(candidate.applied_at) : candidate.applied_at;
+          } else if (candidate.position) {
+              parsedAppliedAt = candidate.position.split(',').map(p => p.trim()).filter(Boolean);
+          }
+          
+          let parsedShortlistedFor = [];
+          if (candidate.shortlisted_for) {
+              parsedShortlistedFor = typeof candidate.shortlisted_for === 'string' ? JSON.parse(candidate.shortlisted_for) : candidate.shortlisted_for;
+          }
+
           setFormData({
-            position: posList,
+            appliedAt: parsedAppliedAt,
+            shortlistedFor: parsedShortlistedFor,
             name: candidate.name || '',
             experienceType: candidate.experience_type || 'FRESHER',
             email: candidate.email || '',
@@ -579,6 +595,93 @@ const CandidatePage = () => {
   }, [id, location.pathname, updateTabLabel]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExtractingZip, setIsExtractingZip] = useState(false);
+
+  const dataURLtoFile = (dataurl, filename) => {
+    let arr = dataurl.split(','),
+      mime = arr[0].match(/:(.*?);/)[1],
+      bstr = atob(arr[1]),
+      n = bstr.length,
+      u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
+  const handleZipUpload = async (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const uploadFormData = new FormData();
+      uploadFormData.append('zipFile', file);
+      
+      setIsExtractingZip(true);
+      toast.loading('Analyzing ZIP contents using AI...', { id: 'zip-upload' });
+      
+      try {
+        const res = await extractCandidateZipApi(uploadFormData);
+        if (res.data?.success && res.data?.data) {
+          const extracted = res.data.data;
+          const extractedDocs = res.data.documents;
+          
+          setFormData(prev => ({
+            ...prev,
+            name: extracted.name || prev.name,
+            email: extracted.email || prev.email,
+            mobile: extracted.mobile || prev.mobile,
+            whatsapp: extracted.whatsapp || prev.whatsapp,
+            currentLocation: extracted.currentLocation || prev.currentLocation,
+            date_of_birth: extracted.date_of_birth || prev.date_of_birth,
+            experience_details: {
+              ...prev.experience_details,
+              total_years: extracted.total_years_experience || prev.experience_details.total_years,
+            },
+            education_details: {
+              ...prev.education_details,
+              tenth_percentage: extracted.tenth_percentage || prev.education_details.tenth_percentage,
+              twelfth_percentage: extracted.twelfth_percentage || prev.education_details.twelfth_percentage,
+              degree_sgpa_1: extracted.degree_sgpa_1 || prev.education_details.degree_sgpa_1,
+              degree_sgpa_2: extracted.degree_sgpa_2 || prev.education_details.degree_sgpa_2,
+              degree_sgpa_3: extracted.degree_sgpa_3 || prev.education_details.degree_sgpa_3,
+              degree_sgpa_4: extracted.degree_sgpa_4 || prev.education_details.degree_sgpa_4,
+              degree_sgpa_5: extracted.degree_sgpa_5 || prev.education_details.degree_sgpa_5,
+              degree_sgpa_6: extracted.degree_sgpa_6 || prev.education_details.degree_sgpa_6,
+              degree_sgpa_7: extracted.degree_sgpa_7 || prev.education_details.degree_sgpa_7,
+              degree_sgpa_8: extracted.degree_sgpa_8 || prev.education_details.degree_sgpa_8,
+              degree_cgpa: extracted.degree_cgpa || prev.education_details.degree_cgpa,
+              diploma_sgpa_1: extracted.diploma_sgpa_1 || prev.education_details.diploma_sgpa_1,
+              diploma_sgpa_2: extracted.diploma_sgpa_2 || prev.education_details.diploma_sgpa_2,
+              diploma_sgpa_3: extracted.diploma_sgpa_3 || prev.education_details.diploma_sgpa_3,
+              diploma_sgpa_4: extracted.diploma_sgpa_4 || prev.education_details.diploma_sgpa_4,
+              diploma_sgpa_5: extracted.diploma_sgpa_5 || prev.education_details.diploma_sgpa_5,
+              diploma_sgpa_6: extracted.diploma_sgpa_6 || prev.education_details.diploma_sgpa_6,
+              diploma_cgpa: extracted.diploma_cgpa || prev.education_details.diploma_cgpa,
+            }
+          }));
+
+          if (extractedDocs && Object.keys(extractedDocs).length > 0) {
+            setUploadMock(prev => {
+              const newMock = { ...prev };
+              Object.keys(extractedDocs).forEach(key => {
+                const base64Str = extractedDocs[key];
+                const ext = base64Str.includes('application/pdf') ? 'pdf' : (base64Str.includes('image/png') ? 'png' : 'jpg');
+                newMock[key] = dataURLtoFile(base64Str, `${key}.${ext}`);
+              });
+              return newMock;
+            });
+          }
+          
+          toast.success('Successfully extracted and filled data!', { id: 'zip-upload' });
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to extract data from ZIP file.', { id: 'zip-upload' });
+      } finally {
+        setIsExtractingZip(false);
+        e.target.value = '';
+      }
+    }
+  };
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
@@ -596,7 +699,8 @@ const CandidatePage = () => {
     try {
       setIsSubmitting(true);
       const submitData = new FormData();
-      submitData.append('position', formData.position.join(', '));
+      submitData.append('appliedAt', JSON.stringify(formData.appliedAt));
+      submitData.append('shortlistedFor', JSON.stringify(formData.shortlistedFor));
       submitData.append('name', formData.name);
       submitData.append('experienceType', formData.experienceType);
       submitData.append('email', formData.email);
@@ -617,28 +721,30 @@ const CandidatePage = () => {
       submitData.append('education_details', JSON.stringify(formData.education_details));
 
       const combinedTechDetails = {};
-      if (formData.position.includes('Python Developer')) {
+      const allPositions = [...formData.appliedAt, ...formData.shortlistedFor];
+      
+      if (allPositions.includes('Python Developer')) {
         combinedTechDetails.python_developer = pythonDetails;
       }
-      if (formData.position.includes('Embedded Software')) {
+      if (allPositions.includes('Embedded Software')) {
         combinedTechDetails.embedded_software = embeddedDetails;
       }
-      if (formData.position.includes('Embedded Hardware')) {
+      if (allPositions.includes('Embedded Hardware')) {
         combinedTechDetails.embedded_hardware = hardwareDetails;
       }
-      if (formData.position.includes('Sales Executive')) {
+      if (allPositions.includes('Sales Executive')) {
         combinedTechDetails.sales_executive = salesDetails;
       }
-      if (formData.position.includes('Purchase Executive')) {
+      if (allPositions.includes('Purchase Executive')) {
         combinedTechDetails.purchase_executive = purchaseDetails;
       }
-      if (formData.position.includes('Production Engineer')) {
+      if (allPositions.includes('Production Engineer')) {
         combinedTechDetails.production_engineer = productionDetails;
       }
-      if (formData.position.includes('QC Engineer')) {
+      if (allPositions.includes('QC Engineer')) {
         combinedTechDetails.qc_engineer = qcDetails;
       }
-      if (formData.position.includes('PCB Designer')) {
+      if (allPositions.includes('PCB Designer')) {
         combinedTechDetails.pcb_designer = pcbDetails;
       }
       
@@ -672,6 +778,124 @@ const CandidatePage = () => {
     'Embedded Software', 'Embedded Hardware', 'Purchase Executive', 'PCB Designer',
     'Python Developer', 'Sales Executive', 'Production Engineer', 'QC Engineer'
   ];
+
+  const renderCreatableSelect = (label, key) => {
+    const options = POSITIONS.filter(o => !(formData[key] || []).includes(o));
+    const currentInput = selectInputs[key] || '';
+    const filteredOptions = options.filter(o => o.toLowerCase().includes(currentInput.toLowerCase()));
+
+    const handleAdd = (val) => {
+      if (!val.trim()) return;
+      if (!(formData[key] || []).includes(val.trim())) {
+        setFormData(prev => ({
+          ...prev,
+          [key]: [...(prev[key] || []), val.trim()]
+        }));
+      }
+      setSelectInputs(prev => ({ ...prev, [key]: '' }));
+      setDropdownOpen(prev => ({ ...prev, [key]: false }));
+    };
+
+    const handleRemove = (valToRemove) => {
+      setFormData(prev => ({
+        ...prev,
+        [key]: (prev[key] || []).filter(v => v !== valToRemove)
+      }));
+    };
+
+    return (
+      <div className="flex flex-col space-y-2 bg-[var(--bg-card)] p-3 rounded-xl border border-[var(--border-color)] h-[250px]">
+        <label className="text-[11px] font-black text-[var(--text-main)] uppercase tracking-wider flex items-center justify-between">
+          {label}
+          <span className="bg-[var(--bg-workspace)] text-[var(--text-muted)] px-1.5 py-0.5 rounded text-[9px]">
+            {(formData[key] || []).length}
+          </span>
+        </label>
+        
+        <div className="relative">
+          <div className="flex relative items-center">
+            <input
+              type="text"
+              value={currentInput}
+              onChange={(e) => {
+                setSelectInputs(prev => ({ ...prev, [key]: e.target.value }));
+                setDropdownOpen(prev => ({ ...prev, [key]: true }));
+              }}
+              onFocus={() => setDropdownOpen(prev => ({ ...prev, [key]: true }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAdd(currentInput);
+                }
+              }}
+              placeholder={`Add ${label.toLowerCase()}...`}
+              className="w-full px-3 py-1.5 text-[12px] rounded-lg bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors pr-8"
+            />
+            <button
+              type="button"
+              onClick={() => handleAdd(currentInput)}
+              className="absolute right-1.5 p-1 text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {dropdownOpen[key] && (filteredOptions.length > 0 || currentInput.trim()) && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setDropdownOpen(prev => ({ ...prev, [key]: false }))} 
+              />
+              <div className="absolute z-50 w-full mt-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg shadow-xl overflow-hidden">
+                <div className="max-h-32 overflow-y-auto custom-scrollbar relative z-50 bg-[var(--bg-card)]">
+                  {filteredOptions.length > 0 ? (
+                    filteredOptions.map((opt, i) => (
+                      <div
+                        key={i}
+                        onClick={() => handleAdd(opt)}
+                        className="px-3 py-1.5 text-[11px] font-semibold text-[var(--text-main)] hover:bg-[var(--bg-workspace)] hover:text-[var(--accent)] cursor-pointer transition-colors relative z-50"
+                      >
+                        {opt}
+                      </div>
+                    ))
+                  ) : currentInput.trim() ? (
+                    <div
+                      onClick={() => handleAdd(currentInput)}
+                      className="px-3 py-1.5 text-[11px] font-semibold text-[var(--accent)] hover:bg-[var(--bg-workspace)] cursor-pointer transition-colors flex items-center gap-1.5 relative z-50"
+                    >
+                      <Plus size={12} /> Add "{currentInput}"
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1.5 mt-2">
+          {(formData[key] || []).length === 0 ? (
+            <div className="h-full flex items-center justify-center text-[10px] text-[var(--text-dim)] italic border-2 border-dashed border-[var(--border-color)] rounded-lg">
+              No entries added
+            </div>
+          ) : (
+            (formData[key] || []).map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between bg-[var(--bg-workspace)] px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] group hover:border-[var(--accent)] transition-all">
+                <span className="text-[11px] font-semibold text-[var(--text-main)] break-all pr-2">{item}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(item)}
+                  className="text-[var(--text-dim)] hover:text-red-500 opacity-50 group-hover:opacity-100 transition-all flex-shrink-0"
+                  title="Remove"
+                >
+                  <X size={12} strokeWidth={3} />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const breadcrumbItems = [
     { label: 'HR', path: '/hr' },
@@ -720,7 +944,7 @@ const CandidatePage = () => {
           >
             Basic Information
           </button>
-          {formData.position.map(pos => (
+          {[...new Set([...(formData.appliedAt || []), ...(formData.shortlistedFor || [])])].map(pos => (
             <button
               key={pos}
               onClick={() => setActiveTab(pos)}
@@ -740,20 +964,14 @@ const CandidatePage = () => {
             <div className="space-y-8">
               
               {/* Position Selection */}
-              <div>
-                <h3 className={sectionTitleClass}>
-                  <Briefcase size={18} className="text-[var(--accent)]" /> What Position do you wish to apply for
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-8 mb-6">
-                  {POSITIONS.map(pos => (
-                    <div key={pos} onClick={() => handleCheckboxChange(pos)} className="flex items-center justify-between cursor-pointer group">
-                      <span className={`text-[13px] font-bold ${formData.position.includes(pos) ? 'text-[var(--text-main)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-main)]'}`}>{pos}</span>
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${formData.position.includes(pos) ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-[var(--border-color)] bg-[var(--bg-workspace)] group-hover:border-[var(--accent)]'}`}>
-                        {formData.position.includes(pos) && <Check size={14} className="text-white" strokeWidth={3} />}
-                      </div>
-                    </div>
-                  ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                <div>
+                  {renderCreatableSelect('Applied At', 'appliedAt')}
                 </div>
+                <div>
+                  {renderCreatableSelect('Shortlisted For', 'shortlistedFor')}
+                </div>
+              </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-2">
                   <div>
@@ -775,7 +993,6 @@ const CandidatePage = () => {
                     </div>
                   </div>
                 </div>
-              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 {/* Basic Information Fields */}
@@ -1025,7 +1242,6 @@ const CandidatePage = () => {
                 </div>
               </div>
 
-              {/* Document Uploads */}
               <div className="pt-8 border-t border-[var(--border-color)]">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                   <h3 className={`${sectionTitleClass} !mb-0`}>
@@ -1035,6 +1251,24 @@ const CandidatePage = () => {
                     <UploadCloud size={16} /> 
                     Download Candidate Application Form
                   </a>
+                </div>
+
+                <div className="mb-8 p-6 bg-gradient-to-r from-[var(--bg-workspace)] to-white border-2 border-dashed border-[var(--border-color)] hover:border-[var(--accent)] rounded-xl transition-all relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-[var(--accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <input type="file" accept=".zip,.rar" onChange={handleZipUpload} disabled={isExtractingZip} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                  <div className="flex items-center justify-center gap-4 relative z-0">
+                    <div className="p-3 bg-white rounded-full shadow-sm">
+                      <UploadCloud size={24} className={isExtractingZip ? "text-[var(--text-muted)]" : "text-[var(--accent)]"} />
+                    </div>
+                    <div>
+                      <h4 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-widest mb-1">
+                        {isExtractingZip ? 'Analyzing Archive using AI...' : 'Smart Upload (ZIP / RAR)'}
+                      </h4>
+                      <p className="text-[12px] font-semibold text-[var(--text-muted)]">
+                        Drop a ZIP containing candidate documents (Resume, Marksheets, ID proofs, etc.). The system will extract and auto-fill the form.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-6">

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
     fetchInternsApi, fetchInternDashboardStatsApi, createInternApi,
-    updateInternApi, deleteInternApi, convertToEmployeeApi, assignLmsToInternApi
+    updateInternApi, deleteInternApi, convertToEmployeeApi, assignLmsToInternApi,
+    convertInternToTraineeApi
 } from '../../../api/intern';
 import { fetchHRMetadataApi, fetchHREmployeesApi } from '../../../api/hr';
 import { getAllModulesApi } from '../../../api/lms';
@@ -206,6 +207,27 @@ const InternList = () => {
         }
     };
 
+    const handleConvertToTrainee = async (id) => {
+        const result = await Swal.fire({
+            title: 'Convert to Trainee?',
+            text: "This will convert the intern to a trainee.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, convert!'
+        });
+        if (result.isConfirmed) {
+            try {
+                await convertInternToTraineeApi(id);
+                toast.success('Successfully converted to Trainee');
+                loadData();
+            } catch (error) {
+                toast.error(error.response?.data?.error?.message || 'Failed to convert to trainee');
+            }
+        }
+    };
+
     const filteredInterns = interns.filter(t => {
         const matchesSearch = `${t.first_name} ${t.last_name} ${t.intern_code} ${t.email}`.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesDept = departmentFilter ? String(t.department_id) === String(departmentFilter) : true;
@@ -260,9 +282,14 @@ const InternList = () => {
                             <BookOpen size={16} />
                         </button>
                     )}
-                    {hasPermission('hr', 'edit', 'intern') && row.status !== 'Converted to Employee' && (
+                    {hasPermission('hr', 'edit', 'intern') && row.status !== 'Converted to Employee' && row.status !== 'Converted to Trainee' && (
                         <button onClick={() => navigate(`/hr/employees/new?onboarding=true&internId=${row.intern_id}`)} className="p-1.5 text-purple-500 hover:bg-purple-50 rounded-lg" title="Convert to Employee">
                             <UserPlus size={16} />
+                        </button>
+                    )}
+                    {hasPermission('hr', 'edit', 'intern') && row.status !== 'Converted to Employee' && row.status !== 'Converted to Trainee' && (
+                        <button onClick={() => handleConvertToTrainee(row.intern_id)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg" title="Convert to Trainee">
+                            <GraduationCap size={16} />
                         </button>
                     )}
                     {hasPermission('hr', 'delete', 'intern') && (
@@ -404,13 +431,22 @@ const InternList = () => {
                                                 >
                                                     <BookOpen size={14} />
                                                 </button>
-                                                {intern.status !== 'Converted to Employee' && (
+                                                {intern.status !== 'Converted to Employee' && intern.status !== 'Converted to Trainee' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); navigate(`/hr/employees/new?onboarding=true&internId=${intern.intern_id}`); }}
                                                         className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-all"
                                                         title="Convert to Employee"
                                                     >
                                                         <UserPlus size={14} />
+                                                    </button>
+                                                )}
+                                                {intern.status !== 'Converted to Employee' && intern.status !== 'Converted to Trainee' && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleConvertToTrainee(intern.intern_id); }}
+                                                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                                                        title="Convert to Trainee"
+                                                    >
+                                                        <GraduationCap size={14} />
                                                     </button>
                                                 )}
                                             </div>

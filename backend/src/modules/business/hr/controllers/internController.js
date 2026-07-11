@@ -323,81 +323,39 @@ const deleteIntern = async (req, res) => {
 const convertToEmployee = async (req, res) => {
     try {
         const { id } = req.params;
-        
+        const { base_salary, designation_id, emp_code } = req.body;
+        const userId = req.user.user_id;
+
         // 1. Fetch Intern
         const internRes = await db.query('SELECT * FROM hr_interns WHERE intern_id = $1', [id]);
         if (internRes.rows.length === 0) return res.status(404).json({ success: false, error: { message: 'Intern not found' } });
         const intern = internRes.rows[0];
 
-        if (intern.status === 'Converted to Employee') {
-            return res.status(400).json({ success: false, error: { message: 'Intern has already been converted to an employee.' } });
+        if (intern.status === 'Converted to Employee' || intern.status === 'Converted to Trainee') {
+            return res.status(400).json({ success: false, error: { message: 'Intern has already been converted.' } });
         }
 
-        const defaultPassword = "Password123!";
-        const bcrypt = require('bcryptjs');
-        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-        
-        const userQuery = `
-            INSERT INTO users (full_name, email, password_hash, role_id, is_active)
-            VALUES ($1, $2, $3, (SELECT role_id FROM roles WHERE role_name = 'Employee' LIMIT 1), true)
-            ON CONFLICT (email) DO UPDATE SET is_active = true
-            RETURNING user_id
-        `;
-        const userRes = await db.query(userQuery, [`${intern.first_name} ${intern.last_name}`, intern.email, hashedPassword]);
-        const new_user_id = userRes.rows[0].user_id;
-
-        // Generate Employee ID: CCYYYYMMXX for converted employee
-        const compCode = '00';
-        const dojDate = new Date();
-        const dojYear = dojDate.getFullYear().toString();
-        const dojMonth = (dojDate.getMonth() + 1).toString().padStart(2, '0');
-        
-        const countRes = await db.query(`
-            SELECT COUNT(*) 
-            FROM hr_employees 
-            WHERE EXTRACT(YEAR FROM date_of_joining) = $1 
-            AND EXTRACT(MONTH FROM date_of_joining) = $2
-        `, [dojDate.getFullYear(), dojDate.getMonth() + 1]);
-        
-        let nextNum = parseInt(countRes.rows[0].count) + 1;
-        let empCode = `${compCode}${dojYear}${dojMonth}${nextNum.toString().padStart(2, '0')}`;
-        let isUnique = false;
-        
-        while (!isUnique) {
-            const checkRes = await db.query('SELECT 1 FROM hr_employees WHERE emp_code = $1', [empCode]);
-            if (checkRes.rows.length === 0) {
-                isUnique = true;
-            } else {
-                nextNum++;
-                empCode = `${compCode}${dojYear}${dojMonth}${nextNum.toString().padStart(2, '0')}`;
-            }
+        if (intern.status === 'Conversion Requested') {
+            return res.status(400).json({ success: false, error: { message: 'A conversion request is already pending for this intern.' } });
         }
 
-        // 2. Create hr_employees record
-        const empQuery = `
-            INSERT INTO hr_employees (user_id, emp_code, department_id, manager_id, date_of_joining, employment_status, base_salary)
-            VALUES ($1, $2, $3, $4, CURRENT_DATE, 'Full-Time', 0)
+        const payload = { base_salary, designation_id, emp_code };
+
+        // 2. Insert into hr_conversion_requests
+        const requestQuery = `
+            INSERT INTO hr_conversion_requests (intern_id, target_role, payload, status, requested_by)
+            VALUES ($1, 'Employee', $2, 'Pending', $3)
             RETURNING *
         `;
-        const empRes = await db.query(empQuery, [
-            new_user_id, 
-            empCode, 
-            intern.department_id, 
-            intern.mentor_employee_id
-        ]);
-
-        const new_employee_id = empRes.rows[0].employee_id;
+        const requestRes = await db.query(requestQuery, [id, JSON.stringify(payload), userId]);
 
         // 3. Update Intern Status
-        await db.query("UPDATE hr_interns SET status = 'Converted to Employee', updated_at = CURRENT_TIMESTAMP WHERE intern_id = $1", [id]);
+        await db.query("UPDATE hr_interns SET status = 'Conversion Requested', updated_at = CURRENT_TIMESTAMP WHERE intern_id = $1", [id]);
 
-        // 4. (Optional) Transfer LMS assignments from intern_id to employee_id
-        await db.query("UPDATE hr_lms_assignments SET employee_id = $1 WHERE intern_id = $2", [new_employee_id, id]);
-
-        res.json({ success: true, message: 'Intern converted to employee successfully', data: empRes.rows[0] });
+        res.json({ success: true, message: 'Conversion to Employee requested successfully. Pending Admin approval.', data: requestRes.rows[0] });
     } catch (error) {
-        console.error('Error converting intern:', error);
-        res.status(500).json({ success: false, error: { message: 'Failed to convert intern' } });
+        console.error('Error requesting employee conversion:', error);
+        res.status(500).json({ success: false, error: { message: 'Failed to request employee conversion' } });
     }
 };
 
@@ -446,48 +404,38 @@ const assignTrainingToIntern = async (req, res) => {
 const convertToTrainee = async (req, res) => {
     try {
         const { id } = req.params;
-        const internRes = await client.query('SELECT * FROM hr_interns WHERE intern_id = $1', [id]);
+        const userId = req.user.user_id;
+
+        const internRes = await db.query('SELECT * FROM hr_interns WHERE intern_id = $1', [id]);
         if (internRes.rows.length === 0) {
             return res.status(404).json({ success: false, error: { message: 'Intern not found' } });
         }
+
         const intern = internRes.rows[0];
-
-        // Generate trainee code
-        const compCode = 'LIPL';
-        const doj = new Date();
-        const dojYear = doj.getFullYear().toString();
-        const dojMonth = (doj.getMonth() + 1).toString().padStart(2, '0');
-        const codePrefix = `${compCode}${dojYear}${dojMonth}`;
-        
-        let nextNum = 1;
-        const codeRes = await client.query(
-            "SELECT trainee_code FROM hr_trainees WHERE trainee_code LIKE $1 ORDER BY trainee_code DESC LIMIT 1",
-            [`${codePrefix}%`]
-        );
-        if (codeRes.rows.length > 0) {
-            const lastCode = codeRes.rows[0].trainee_code;
-            const lastNumStr = lastCode.substring(codePrefix.length);
-            const lastNum = parseInt(lastNumStr, 10);
-            if (!isNaN(lastNum)) nextNum = lastNum + 1;
+        if (intern.status === 'Converted to Employee' || intern.status === 'Converted to Trainee') {
+            return res.status(400).json({ success: false, error: { message: 'Intern has already been converted.' } });
         }
-        const trainee_code = `${codePrefix}${nextNum.toString().padStart(2, '0')}`;
 
-        // Insert into hr_trainees
-        const insertRes = await client.query(
-            `INSERT INTO hr_trainees 
-            (trainee_code, first_name, last_name, email, mobile, gender, date_of_birth, department_id, designation_id, mentor_employee_id, education, institute, specialization, image_url, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'Applied')
-            RETURNING *`,
-            [trainee_code, intern.first_name, intern.last_name, intern.email, intern.mobile, intern.gender, intern.date_of_birth, intern.department_id, intern.designation_id, intern.mentor_employee_id, intern.education, intern.institute, intern.specialization, intern.image_url]
-        );
+        if (intern.status === 'Conversion Requested') {
+            return res.status(400).json({ success: false, error: { message: 'A conversion request is already pending for this intern.' } });
+        }
+
+        const payload = {}; // No extra payload needed for Trainee conversion
+
+        const requestQuery = `
+            INSERT INTO hr_conversion_requests (intern_id, target_role, payload, status, requested_by)
+            VALUES ($1, 'Trainee', $2, 'Pending', $3)
+            RETURNING *
+        `;
+        const requestRes = await db.query(requestQuery, [id, JSON.stringify(payload), userId]);
 
         // Update intern status
-        await client.query("UPDATE hr_interns SET status = 'Converted to Trainee' WHERE intern_id = $1", [id]);
+        await db.query("UPDATE hr_interns SET status = 'Conversion Requested' WHERE intern_id = $1", [id]);
 
-        res.status(200).json({ success: true, data: insertRes.rows[0], message: 'Converted to Trainee successfully' });
+        res.status(200).json({ success: true, data: requestRes.rows[0], message: 'Conversion to Trainee requested successfully. Pending Admin approval.' });
     } catch (error) {
-        console.error('Error converting intern to trainee:', error);
-        res.status(500).json({ success: false, error: { message: 'Failed to convert to trainee' } });
+        console.error('Error requesting trainee conversion:', error);
+        res.status(500).json({ success: false, error: { message: 'Failed to request conversion to Trainee' } });
     }
 };
 

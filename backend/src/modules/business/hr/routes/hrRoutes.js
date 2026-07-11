@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDashboardMetrics } = require('../controllers/hrController');
 const { getEmployees, getDepartmentsAndDesignations, createEmployee, getEmployeeById, updateEmployee, deleteEmployee, updateEmployeeRole, getEmployeeHierarchy, registerEmployee, getPendingRegistrations, approveRegistration, rejectRegistration, updateOrgChartPlacements } = require('../controllers/employeeController');
-const { createCandidate, getCandidates, updateCandidateStatus, getCandidateById, updateCandidate, deleteCandidate, extractLiveCandidateInfo, updateCandidateTrelloMetadata, addCandidateComment, getCandidateComments, getCandidateActivity, reorderCandidates } = require('../controllers/candidateController');
+const { createCandidate, getCandidates, updateCandidateStatus, getCandidateById, updateCandidate, deleteCandidate, extractLiveCandidateInfo, updateCandidateTrelloMetadata, addCandidateComment, getCandidateComments, getCandidateActivity, reorderCandidates, extractCandidateZip } = require('../controllers/candidateController');
 const cefController = require('../controllers/cefController');
 const openPositionsController = require('../controllers/openPositionsController');
 const { verifyToken } = require('../../../../middleware/auth');
@@ -24,6 +24,7 @@ const candidateStorage = multer.diskStorage({
   }
 });
 const uploadCandidate = multer({ storage: candidateStorage });
+const uploadMemory = multer({ storage: multer.memoryStorage() });
 
 const cefStorage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -67,6 +68,7 @@ router.post('/attendance/verify', verifyAttendance);
 
 // Public Candidate routes
 router.post('/candidates/extract-live', uploadCandidate.single('document'), extractLiveCandidateInfo);
+router.post('/candidates/extract-zip', uploadMemory.single('zipFile'), extractCandidateZip);
 router.post('/candidates', uploadCandidate.any(), createCandidate);
 
 router.post('/employees/register', registerEmployee);
@@ -150,8 +152,10 @@ router.use('/offboarding', offboardingRoutes);
 
 const traineeRoutes = require('./traineeRoutes');
 const internRoutes = require('./internRoutes');
+const conversionRoutes = require('./conversionRoutes');
 router.use('/trainees', traineeRoutes);
 router.use('/interns', internRoutes);
+router.use('/conversions', conversionRoutes);
 
 const claimsAdvancesController = require('../controllers/claimsAdvancesController');
 const upload = require('../../../../middleware/upload');
