@@ -134,6 +134,25 @@ exports.getUserProfile = async (req, res) => {
     }
 };
 
+exports.downloadReleaseAsset = async (req, res) => {
+    try {
+        const { owner, repo, id } = req.params;
+        const response = await gitEngineClient.get(`/api/v1/remote/repos/${owner}/${repo}/releases/assets/${id}`, {
+            responseType: 'stream'
+        });
+        
+        res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+        if (response.headers['content-disposition']) {
+            res.setHeader('Content-Disposition', response.headers['content-disposition']);
+        }
+        
+        response.data.pipe(res);
+    } catch (error) {
+        console.error('Error downloading asset:', error.message);
+        res.status(500).json({ success: false, error: { message: 'Failed to download asset' } });
+    }
+};
+
 // ==========================================
 // LOCAL GIT WORKSPACE ENDPOINTS
 // ==========================================
