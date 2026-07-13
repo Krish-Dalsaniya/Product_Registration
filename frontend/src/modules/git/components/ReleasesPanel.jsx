@@ -34,7 +34,7 @@ const ReleasesPanel = ({ repoOwner, repoName }) => {
         e.preventDefault();
         const toastId = toast.loading(`Downloading ${asset.name}...`);
         try {
-            const res = await downloadGitReleaseAsset(repoOwner, repoName, asset.id);
+            const res = await downloadGitReleaseAsset(asset.browser_download_url);
             const blob = new Blob([res.data]);
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');

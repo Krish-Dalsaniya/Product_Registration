@@ -16,8 +16,8 @@ export const getGitReleases = async (owner, repo) => {
     return api.get(`/integrations/git/repos/${owner}/${repo}/releases`);
 };
 
-export const downloadGitReleaseAsset = async (owner, repo, assetId) => {
-    return api.get(`/integrations/git/repos/${owner}/${repo}/releases/assets/${assetId}`, {
+export const downloadGitReleaseAsset = async (url) => {
+    return api.post(`/integrations/git/local/proxy-download`, { url }, {
         responseType: 'blob'
     });
 };
