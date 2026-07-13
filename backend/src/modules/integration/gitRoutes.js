@@ -9,7 +9,7 @@ router.get('/user/profile', gitController.getUserProfile);
 router.get('/repos', gitController.getRepositories);
 router.post('/repos', gitController.createRepository);
 router.get('/repos/:owner/:repo/releases', gitController.getReleases);
-router.get('/repos/:owner/:repo/releases/assets/:id', gitController.downloadReleaseAsset);
+router.post('/local/proxy-download', gitController.proxyDownload);
 router.get('/repos/:owner/:repo/actions/runs', gitController.getWorkflowRuns);
 router.get('/repos/:owner/:repo/issues', gitController.getIssues);
 router.post('/repos/:owner/:repo/issues', gitController.createIssue);

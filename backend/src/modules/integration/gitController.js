@@ -134,10 +134,9 @@ exports.getUserProfile = async (req, res) => {
     }
 };
 
-exports.downloadReleaseAsset = async (req, res) => {
+exports.proxyDownload = async (req, res) => {
     try {
-        const { owner, repo, id } = req.params;
-        const response = await gitEngineClient.get(`/api/v1/remote/repos/${owner}/${repo}/releases/assets/${id}`, {
+        const response = await gitEngineClient.post(`/api/v1/remote/proxy-download`, req.body, {
             responseType: 'stream'
         });
         
