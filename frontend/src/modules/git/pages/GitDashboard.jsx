@@ -4,7 +4,7 @@ import {
     Plus, Check, FolderGit2, AlertCircle, File, FileText, 
     FileCode, LayoutTemplate, MoreVertical, GitPullRequest, 
     Play, MessageSquare, TerminalSquare, Settings2,
-    FileDiff, Folder, RefreshCcw, Minus, AlertTriangle, GitCommit, List, Clock, Code2, Zap
+    FileDiff, Folder, RefreshCcw, Minus, AlertTriangle, GitCommit, List, Clock, Code2, Zap, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { 
@@ -19,11 +19,15 @@ import {
     localGitCommit,
     localGitTag,
     localGitPushTags,
-    localGitBranches
+    localGitBranches,
+    localFsBrowse
 } from '../../../api/gitIntegration';
 
 import CommitHistory from '../components/CommitHistory';
 import DiffViewer from '../components/DiffViewer';
+import ReleasesPanel from '../components/ReleasesPanel';
+import GitIssues from '../components/GitIssues';
+import GitPullRequests from '../components/GitPullRequests';
 import CreateRepoModal from '../components/CreateRepoModal';
 import BranchManager from '../components/BranchManager';
 
@@ -32,12 +36,26 @@ const GitDashboard = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRepo, setSelectedRepo] = useState(null);
     const [localStatus, setLocalStatus] = useState(null);
+    const [trackingStatus, setTrackingStatus] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [isCreateRepoModalOpen, setIsCreateRepoModalOpen] = useState(false);
+    const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
+    const [cloneTargetPath, setCloneTargetPath] = useState('');
+    
+    // FS Browser States
+    const [fsPath, setFsPath] = useState('');
+    const [fsParentPath, setFsParentPath] = useState('');
+    const [fsDirectories, setFsDirectories] = useState([]);
+    const [isFsLoading, setIsFsLoading] = useState(false);
 
     // Advanced Workflow States
-    const [activeTab, setActiveTab] = useState('changes'); // 'changes' | 'history'
+    const [activeTab, setActiveTab] = useState(() => localStorage.getItem('git_last_tab') || 'changes'); // 'changes' | 'history'
+    
+    const handleTabChange = (tabId) => {
+        setActiveTab(tabId);
+        localStorage.setItem('git_last_tab', tabId);
+    };
     const [diffContext, setDiffContext] = useState(null); // { filename?: str, commitHash?: str }
 
     // Commit & Tag states
@@ -60,7 +78,18 @@ const GitDashboard = () => {
         try {
             const res = await getGitRepositories();
             if (res.data?.success) {
-                setRepos(res.data.data || []);
+                const fetchedRepos = res.data.data || [];
+                setRepos(fetchedRepos);
+                
+                // Auto-restore last selected repo
+                const lastRepoName = localStorage.getItem('git_last_repo');
+                if (lastRepoName) {
+                    const repo = fetchedRepos.find(r => r.name === lastRepoName);
+                    if (repo) {
+                        setSelectedRepo(repo);
+                        checkLocalStatus(repo.name);
+                    }
+                }
             }
         } catch (error) {
             toast.error("Failed to fetch repositories");
@@ -71,6 +100,7 @@ const GitDashboard = () => {
 
     const handleSelectRepo = async (repo) => {
         setSelectedRepo(repo);
+        localStorage.setItem('git_last_repo', repo.name);
         checkLocalStatus(repo.name);
     };
 
@@ -98,11 +128,14 @@ const GitDashboard = () => {
                     unstaged: unstaged,
                     not_cloned: false
                 });
+                setTrackingStatus(statusRes.data.tracking || null);
             } else {
                 setLocalStatus({ not_cloned: true });
+                setTrackingStatus(null);
             }
         } catch (error) {
             setLocalStatus({ not_cloned: true });
+            setTrackingStatus(null);
         } finally {
             setIsLoading(false);
         }
@@ -111,19 +144,47 @@ const GitDashboard = () => {
     const handleClone = async () => {
         if (!selectedRepo) return;
         setIsActionLoading(true);
+        setIsCloneModalOpen(false);
         try {
             await localGitClone({
                 url: selectedRepo.clone_url,
-                name: selectedRepo.name
+                name: selectedRepo.name,
+                target_path: cloneTargetPath.trim() || null
             });
             toast.success("Repository cloned successfully!");
             checkLocalStatus(selectedRepo.name);
+            setCloneTargetPath('');
         } catch (error) {
             toast.error(error.response?.data?.error?.message || "Clone failed");
         } finally {
             setIsActionLoading(false);
         }
     };
+
+    const fetchFs = async (path = '') => {
+        setIsFsLoading(true);
+        try {
+            const res = await localFsBrowse(path);
+            if (res.data?.status === 'success') {
+                setFsPath(res.data.current_path);
+                setFsParentPath(res.data.parent_path);
+                setFsDirectories(res.data.directories);
+                if (!cloneTargetPath && !path) {
+                    setCloneTargetPath(res.data.current_path); // Set initial default
+                }
+            }
+        } catch (error) {
+            toast.error("Failed to load directories: " + (error.response?.data?.error?.message || error.message));
+        } finally {
+            setIsFsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isCloneModalOpen && !fsPath) {
+            fetchFs();
+        }
+    }, [isCloneModalOpen]);
 
     const handleFetch = async () => {
         if (!selectedRepo) return;
@@ -323,7 +384,7 @@ const GitDashboard = () => {
     );
 
     return (
-        <div className="flex-1 flex overflow-hidden animate-in fade-in duration-500">
+        <div className="flex-1 flex overflow-hidden animate-in fade-in duration-500 min-h-0">
             {/* Sidebar */}
             <div className="w-[280px] shrink-0 bg-[var(--bg-card)] border-r border-[var(--border-color)] flex flex-col">
                 <div className="p-4 border-b border-[var(--border-color)]">
@@ -423,6 +484,11 @@ const GitDashboard = () => {
                                         className="btn-outline flex items-center gap-2 h-9 px-4 rounded-lg text-[12px] font-bold"
                                     >
                                         <Download size={14} /> Pull
+                                        {trackingStatus?.behind > 0 && (
+                                            <span className="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded flex items-center shadow-sm ml-1">
+                                                ↓ {trackingStatus.behind}
+                                            </span>
+                                        )}
                                     </button>
                                     <button 
                                         onClick={handlePush} 
@@ -430,6 +496,11 @@ const GitDashboard = () => {
                                         className="btn-primary flex items-center gap-2 h-9 px-4 rounded-lg text-[12px] font-bold bg-[var(--accent)] text-white hover:opacity-90"
                                     >
                                         <Upload size={14} /> Push Origin
+                                        {trackingStatus?.ahead > 0 && (
+                                            <span className="bg-emerald-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded flex items-center shadow-sm ml-1">
+                                                ↑ {trackingStatus.ahead}
+                                            </span>
+                                        )}
                                     </button>
                                 </div>
                             )}
@@ -449,7 +520,7 @@ const GitDashboard = () => {
                                 ].map(tab => (
                                     <button
                                         key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
+                                        onClick={() => handleTabChange(tab.id)}
                                         className={`h-full flex items-center gap-2 px-1 text-[13px] font-bold border-b-2 transition-colors ${activeTab === tab.id ? 'border-[var(--accent)] text-[var(--text-main)]' : 'border-transparent text-slate-500 hover:text-[var(--text-main)] hover:border-[var(--border-color)]'}`}
                                     >
                                         <tab.icon size={15} className={activeTab === tab.id ? 'text-[var(--accent)]' : ''} />
@@ -460,18 +531,18 @@ const GitDashboard = () => {
                         )}
 
                         {/* Content Grid */}
-                        <div className="flex-1 overflow-hidden p-6">
+                        <div className="flex-1 overflow-hidden p-6 flex flex-col min-h-0">
                             {isLoading ? (
-                                <div className="h-full flex items-center justify-center">
+                                <div className="flex-1 flex items-center justify-center">
                                     <RefreshCw size={24} className="animate-spin text-[var(--accent)]" />
                                 </div>
                             ) : localStatus?.not_cloned ? (
-                                <div className="h-full flex flex-col items-center justify-center bg-[var(--bg-card)] rounded-[24px] border border-[var(--border-color)] shadow-sm">
+                                <div className="flex-1 flex flex-col items-center justify-center bg-[var(--bg-card)] rounded-[24px] border border-[var(--border-color)] shadow-sm">
                                     <AlertTriangle size={48} className="text-amber-500 mb-6" strokeWidth={1.5} />
                                     <h2 className="text-[18px] font-black text-[var(--text-main)] mb-3">Repository Not Cloned</h2>
-                                    <p className="text-[13px] text-slate-500 max-w-md text-center mb-8">This repository exists on the Gitea server but has not been cloned to the local NAS workspace. Clone it to start managing changes.</p>
+                                    <p className="text-[13px] text-slate-500 max-w-md text-center mb-8">This repository exists on the server but has not been cloned locally yet. Clone it to a folder on your system to start managing changes.</p>
                                     <button 
-                                        onClick={handleClone} 
+                                        onClick={() => setIsCloneModalOpen(true)} 
                                         disabled={isActionLoading}
                                         className="btn-primary flex items-center gap-2 h-11 px-8 rounded-xl font-black text-[13px] bg-[var(--accent)] text-white hover:opacity-90 transition-all shadow-lg shadow-[var(--accent)]/20"
                                     >
@@ -480,11 +551,11 @@ const GitDashboard = () => {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="h-full relative overflow-y-auto custom-scrollbar">
+                                <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
                                     {activeTab === 'changes' ? (
-                                        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 h-full pb-6">
+                                        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1 pb-6 min-h-0">
                                             {/* Advanced Workflow Area */}
-                                            <div className="xl:col-span-7 flex flex-col gap-6 h-full">
+                                            <div className="xl:col-span-7 flex flex-col gap-6 flex-1 min-h-0">
                                                 <div className="flex-1 flex flex-col bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm overflow-hidden">
                                                     
                                                     {/* Staged Changes */}
@@ -604,12 +675,12 @@ const GitDashboard = () => {
                                             </div>
                                         </div>
                                     ) : activeTab === 'history' ? (
-                                        <div className="h-full flex flex-col gap-6">
-                                            <div className={`${diffContext ? 'h-[40%]' : 'h-full'} shrink-0 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm overflow-hidden transition-all duration-300`}>
+                                        <div className="flex-1 flex flex-col gap-6 min-h-0">
+                                            <div className={`${diffContext ? 'h-[40%]' : 'flex-1'} shrink-0 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm overflow-hidden transition-all duration-300 min-h-0`}>
                                                 <CommitHistory repoName={selectedRepo.name} onSelectCommit={openCommitDiff} />
                                             </div>
                                             {diffContext && (
-                                                <div className="flex-1 bg-white rounded-2xl border border-[var(--border-color)] shadow-sm overflow-hidden relative animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                                <div className="flex-1 bg-white rounded-2xl border border-[var(--border-color)] shadow-sm overflow-hidden relative min-h-0 animate-in fade-in slide-in-from-bottom-4 duration-300">
                                                     <DiffViewer 
                                                         repoName={selectedRepo.name}
                                                         filename={diffContext.filename}
@@ -619,8 +690,18 @@ const GitDashboard = () => {
                                                 </div>
                                             )}
                                         </div>
+                                    ) : activeTab === 'releases' ? (
+                                        <ReleasesPanel repoOwner={selectedRepo.owner?.username || 'devops-LIPL'} repoName={selectedRepo.name} />
+                                    ) : activeTab === 'issues' ? (
+                                        <div className="h-full flex flex-col bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm mt-6 min-h-0">
+                                            <GitIssues selectedRepo={selectedRepo} />
+                                        </div>
+                                    ) : activeTab === 'prs' ? (
+                                        <div className="h-full flex flex-col bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm mt-6 min-h-0">
+                                            <GitPullRequests selectedRepo={selectedRepo} />
+                                        </div>
                                     ) : (
-                                        <div className="h-[400px] flex flex-col items-center justify-center bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm mt-6">
+                                        <div className="flex-1 flex flex-col items-center justify-center bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-sm mt-6 min-h-0">
                                             <Zap size={48} className="text-slate-300 mb-4" strokeWidth={1} />
                                             <h2 className="text-[18px] font-black text-[var(--text-main)] mb-2 capitalize">{activeTab} Integration</h2>
                                             <p className="text-[13px] text-slate-500 max-w-sm text-center">
@@ -660,6 +741,87 @@ const GitDashboard = () => {
                     }
                 }}
             />
+
+            {/* Clone Repository Modal */}
+            {isCloneModalOpen && (
+                <div className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="h-14 border-b border-slate-100 flex items-center justify-between px-6 bg-slate-50">
+                            <h3 className="font-black text-slate-800 flex items-center gap-2">
+                                <Download size={16} className="text-[var(--accent)]" /> Clone Repository
+                            </h3>
+                            <button onClick={() => setIsCloneModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <div className="mb-4">
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Repository</label>
+                                <div className="text-[14px] font-bold text-slate-800 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">{selectedRepo?.name}</div>
+                            </div>
+                            <div className="mb-6">
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Target Path</label>
+                                <div className="border border-[var(--border-color)] rounded-xl overflow-hidden bg-white shadow-sm">
+                                    <div className="bg-slate-50 px-3 py-2 border-b border-[var(--border-color)] flex items-center gap-2">
+                                        <button 
+                                            onClick={() => fetchFs(fsParentPath)}
+                                            disabled={isFsLoading || fsPath === '/'}
+                                            className="p-1 hover:bg-slate-200 rounded text-slate-600 disabled:opacity-30"
+                                            title="Go Up"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                                        </button>
+                                        <div className="text-[12px] font-mono text-slate-700 truncate flex-1">{fsPath}</div>
+                                        {isFsLoading && <RefreshCw size={14} className="text-slate-400 animate-spin" />}
+                                    </div>
+                                    <div className="h-[200px] overflow-y-auto p-2">
+                                        {fsDirectories.length === 0 && !isFsLoading && (
+                                            <div className="h-full flex items-center justify-center text-[12px] text-slate-400 italic">No subdirectories found</div>
+                                        )}
+                                        {fsDirectories.map(dir => (
+                                            <div 
+                                                key={dir.path}
+                                                onClick={() => {
+                                                    setCloneTargetPath(dir.path);
+                                                    fetchFs(dir.path);
+                                                }}
+                                                className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${cloneTargetPath === dir.path ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-slate-50 text-slate-700'}`}
+                                            >
+                                                <Folder size={16} className={cloneTargetPath === dir.path ? 'text-blue-500 fill-blue-100' : 'text-slate-400 fill-slate-100'} />
+                                                <span className="text-[13px] truncate">{dir.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex items-center gap-2 px-1">
+                                    <span className="text-[12px] font-bold text-slate-500 whitespace-nowrap">Selected:</span>
+                                    <input 
+                                        type="text"
+                                        value={cloneTargetPath}
+                                        onChange={(e) => setCloneTargetPath(e.target.value)}
+                                        className="flex-1 h-8 px-2 text-[12px] font-mono rounded bg-slate-50 border border-slate-200 focus:outline-none focus:border-[var(--accent)]"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => setIsCloneModalOpen(false)}
+                                    className="flex-1 h-10 rounded-xl font-bold text-[13px] text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleClone}
+                                    disabled={isActionLoading}
+                                    className="flex-1 h-10 rounded-xl font-bold text-[13px] text-white bg-[var(--accent)] hover:opacity-90 transition-colors shadow-lg shadow-[var(--accent)]/20 disabled:opacity-50"
+                                >
+                                    {isActionLoading ? 'Cloning...' : 'Clone Now'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

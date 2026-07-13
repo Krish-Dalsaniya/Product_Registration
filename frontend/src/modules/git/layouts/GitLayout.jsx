@@ -9,7 +9,7 @@ const GitLayout = () => {
     const { user } = useAuth();
 
     return (
-        <div className="min-h-screen bg-[var(--bg-workspace)] flex flex-col transition-colors duration-300">
+        <div className="h-screen overflow-hidden bg-[var(--bg-workspace)] flex flex-col transition-colors duration-300">
             {/* Top Navigation Bar */}
             <header className="h-[60px] bg-[var(--bg-card)] border-b border-[var(--border-color)] shadow-sm flex items-center justify-between px-6 shrink-0 z-50 relative">
                 
@@ -61,7 +61,7 @@ const GitLayout = () => {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-hidden relative flex">
+            <main className="flex-1 overflow-hidden relative flex min-h-0">
                 <Outlet />
             </main>
         </div>

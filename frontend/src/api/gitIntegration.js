@@ -1,5 +1,9 @@
 import api from './axiosInstance';
 
+export const getGitUserProfile = async () => {
+    return api.get('/integrations/git/user/profile');
+};
+
 export const getGitRepositories = async () => {
     return api.get('/integrations/git/repos');
 };
@@ -20,8 +24,24 @@ export const getGitIssues = async (owner, repo) => {
     return api.get(`/integrations/git/repos/${owner}/${repo}/issues`);
 };
 
+export const createGitIssue = async (owner, repo, data) => {
+    return api.post(`/integrations/git/repos/${owner}/${repo}/issues`, data);
+};
+
 export const getGitPullRequests = async (owner, repo) => {
     return api.get(`/integrations/git/repos/${owner}/${repo}/pulls`);
+};
+
+export const createGitPullRequest = async (owner, repo, data) => {
+    return api.post(`/integrations/git/repos/${owner}/${repo}/pulls`, data);
+};
+
+export const compareGitBranches = async (owner, repo, base, head) => {
+    return api.get(`/integrations/git/repos/${owner}/${repo}/compare?base=${base}&head=${head}`);
+};
+
+export const compareGitDiffs = async (owner, repo, base, head) => {
+    return api.get(`/integrations/git/repos/${owner}/${repo}/compare/diffs?base=${base}&head=${head}`);
 };
 
 export const getGitBranches = async (owner, repo) => {
@@ -54,3 +74,9 @@ export const localGitDiff = (repo_name, filename = '', commit_hash = '') => {
 export const localGitBranchCheckout = (data) => api.post('/integrations/git/local/branch/checkout', data);
 export const localGitBranchCreate = (data) => api.post('/integrations/git/local/branch/create', data);
 export const localGitBranchDelete = (data) => api.post('/integrations/git/local/branch/delete', data);
+
+export const localFsBrowse = (path = '') => {
+    let url = '/integrations/git/local/fs/browse';
+    if (path) url += `?path=${encodeURIComponent(path)}`;
+    return api.get(url);
+};

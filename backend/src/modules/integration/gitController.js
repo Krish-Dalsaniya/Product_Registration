@@ -67,6 +67,17 @@ exports.getIssues = async (req, res) => {
     }
 };
 
+exports.createIssue = async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const response = await gitEngineClient.post(`/api/v1/remote/repos/${owner}/${repo}/issues`, req.body);
+        res.status(201).json({ success: true, data: response.data.issue });
+    } catch (error) {
+        console.error('Error creating issue in Git Engine:', error.response?.data || error.message);
+        res.status(500).json({ success: false, error: { message: 'Failed to create issue' } });
+    }
+};
+
 exports.getPullRequests = async (req, res) => {
     try {
         const { owner, repo } = req.params;
@@ -75,6 +86,51 @@ exports.getPullRequests = async (req, res) => {
     } catch (error) {
         console.error('Error fetching PRs from Git Engine:', error.response?.data || error.message);
         res.status(500).json({ success: false, error: { message: 'Failed to fetch pull requests' } });
+    }
+};
+
+exports.createPullRequest = async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const response = await gitEngineClient.post(`/api/v1/remote/repos/${owner}/${repo}/pulls`, req.body);
+        res.status(201).json({ success: true, data: response.data.pull_request });
+    } catch (error) {
+        console.error('Error creating PR in Git Engine:', error.response?.data || error.message);
+        res.status(500).json({ success: false, error: { message: error.response?.data?.detail || 'Failed to create PR' } });
+    }
+};
+
+exports.compareBranches = async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { base, head } = req.query;
+        const response = await gitEngineClient.get(`/api/v1/remote/repos/${owner}/${repo}/compare?base=${base}&head=${head}`);
+        res.status(200).json({ success: true, data: response.data.comparison });
+    } catch (error) {
+        console.error('Error comparing branches from Git Engine:', error.response?.data || error.message);
+        res.status(500).json({ success: false, error: { message: 'Failed to compare branches' } });
+    }
+};
+
+exports.compareDiffs = async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { base, head } = req.query;
+        const response = await gitEngineClient.get(`/api/v1/remote/repos/${owner}/${repo}/compare/diffs?base=${base}&head=${head}`);
+        res.status(200).json({ success: true, data: response.data.diffs });
+    } catch (error) {
+        console.error('Error fetching diffs from Git Engine:', error.response?.data || error.message);
+        res.status(500).json({ success: false, error: { message: 'Failed to fetch diffs' } });
+    }
+};
+
+exports.getUserProfile = async (req, res) => {
+    try {
+        const response = await gitEngineClient.get('/api/v1/remote/user/profile');
+        res.status(200).json({ success: true, data: response.data.user });
+    } catch (error) {
+        console.error('Error fetching user profile from Git Engine:', error.response?.data || error.message);
+        res.status(500).json({ success: false, error: { message: 'Failed to fetch user profile' } });
     }
 };
 
@@ -227,6 +283,18 @@ exports.localBranchCreate = async (req, res) => {
 exports.localBranchDelete = async (req, res) => {
     try {
         const response = await gitEngineClient.post('/api/v1/local/branch/delete', req.body);
+        res.status(200).json(response.data);
+    } catch (error) {
+        res.status(500).json({ success: false, error: { message: error.response?.data?.detail || error.message } });
+    }
+};
+
+exports.localFsBrowse = async (req, res) => {
+    try {
+        const { path } = req.query;
+        let url = '/api/v1/local/fs/browse';
+        if (path) url += `?path=${encodeURIComponent(path)}`;
+        const response = await gitEngineClient.get(url);
         res.status(200).json(response.data);
     } catch (error) {
         res.status(500).json({ success: false, error: { message: error.response?.data?.detail || error.message } });
