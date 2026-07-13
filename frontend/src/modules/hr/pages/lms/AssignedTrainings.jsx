@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, CheckCircle, ExternalLink, Download, FileText, TrendingUp, Play, LayoutGrid, List, Trash2, Briefcase, Award } from 'lucide-react';
+import { Plus, CheckCircle, ExternalLink, Download, FileText, TrendingUp, Play, LayoutGrid, List, Trash2, Briefcase, Award, CalendarClock, Info } from 'lucide-react';
 import DataTable from '../../../../components/shared/DataTable';
 import Modal from '../../../../components/shared/Modal';
 import ViewToggle from '../../../../components/shared/ViewToggle';
 import CertificateModal from '../../components/lms/CertificateModal';
-import { getAllAssignmentsApi, assignTrainingApi, updateAssignmentStatusApi, updateAssignmentProgressApi, getAllModulesApi, deleteAssignmentApi, approveRetestApi } from '../../../../api/lms';
+import { getAllAssignmentsApi, assignTrainingApi, updateAssignmentStatusApi, updateAssignmentProgressApi, getAllModulesApi, deleteAssignmentApi, approveRetestApi, extendAssignmentDueDateApi } from '../../../../api/lms';
 import { fetchHREmployeesApi, fetchTraineesApi, assignTrainingToTraineeApi, fetchInternsApi, assignTrainingToInternApi } from '../../../../api/hr';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
@@ -65,6 +65,13 @@ const AssignedTrainings = () => {
         isOpen: false,
         assignment: null,
         progress: 0
+    });
+
+    const [extendModal, setExtendModal] = useState({
+        isOpen: false,
+        assignment: null,
+        due_date: '',
+        extension_reason: ''
     });
 
     useEffect(() => {
@@ -239,6 +246,21 @@ const AssignedTrainings = () => {
         }
     };
 
+    const handleExtendDueDate = async (e) => {
+        e.preventDefault();
+        try {
+            await extendAssignmentDueDateApi(extendModal.assignment.assignment_id, {
+                due_date: extendModal.due_date,
+                extension_reason: extendModal.extension_reason
+            });
+            toast.success('Due date extended successfully');
+            setExtendModal({ isOpen: false, assignment: null, due_date: '', extension_reason: '' });
+            fetchAssignments();
+        } catch (error) {
+            toast.error(error.response?.data?.error?.message || 'Failed to extend due date');
+        }
+    };
+
     const columns = [
         { key: 'employee_name', label: 'Assignee', sortable: true },
         { key: 'emp_code', label: 'ID Code', sortable: true },
@@ -253,7 +275,12 @@ const AssignedTrainings = () => {
             key: 'due_date',
             label: 'Due Date',
             sortable: true,
-            render: (row) => row.due_date ? new Date(row.due_date).toLocaleDateString() : 'No Due Date'
+            render: (row) => row.due_date ? (
+                <div className="flex items-center gap-1" title={row.extension_reason ? `Extended: ${row.extension_reason}` : ''}>
+                    {new Date(row.due_date).toLocaleDateString()}
+                    {row.extension_reason && <Info className="w-3.5 h-3.5 text-amber-500 cursor-help" />}
+                </div>
+            ) : 'No Due Date'
         },
         {
             key: 'status',
@@ -349,6 +376,13 @@ const AssignedTrainings = () => {
                         )}
                         {row.status !== 'Completed' && hasPermission('hr', 'edit', 'lms') && (
                             <>
+                                <button
+                                    onClick={() => setExtendModal({ isOpen: true, assignment: row, due_date: row.due_date ? row.due_date.split('T')[0] : '', extension_reason: '' })}
+                                    className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+                                    title="Extend Due Date"
+                                >
+                                    <CalendarClock className="w-4 h-4" />
+                                </button>
                                 <button
                                     onClick={() => setProgressModal({ isOpen: true, assignment: row, progress: row.progress_percentage || 0 })}
                                     className="p-1.5 text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
@@ -503,6 +537,13 @@ const AssignedTrainings = () => {
 
                                             {assignment.status !== 'Completed' && hasPermission('hr', 'edit', 'lms') && (
                                                 <div className="flex gap-1.5">
+                                                    <button
+                                                        onClick={() => setExtendModal({ isOpen: true, assignment, due_date: assignment.due_date ? assignment.due_date.split('T')[0] : '', extension_reason: '' })}
+                                                        className="p-2 text-blue-500 bg-blue-500/10 hover:bg-blue-500 hover:text-white rounded-xl transition-all duration-300 shadow-sm"
+                                                        title="Extend Due Date"
+                                                    >
+                                                        <CalendarClock className="w-4 h-4" />
+                                                    </button>
                                                     <button
                                                         onClick={() => setProgressModal({ isOpen: true, assignment, progress: assignment.progress_percentage || 0 })}
                                                         className="p-2 text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white rounded-xl transition-all duration-300 shadow-sm"
@@ -675,6 +716,69 @@ const AssignedTrainings = () => {
                                 className="px-6 py-2.5 bg-[var(--accent)] text-white rounded-xl font-bold hover:bg-opacity-90 transition-all shadow-lg shadow-[var(--accent)]/20"
                             >
                                 Save Progress
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
+
+            {/* Extend Due Date Modal */}
+            <Modal
+                isOpen={extendModal.isOpen}
+                onClose={() => setExtendModal({ isOpen: false, assignment: null, due_date: '', extension_reason: '' })}
+                title="Extend Training Due Date"
+                size="md"
+            >
+                {extendModal.assignment && (
+                    <form onSubmit={handleExtendDueDate} className="space-y-6">
+                        <div className="bg-[var(--bg-workspace)] p-4 rounded-xl border border-[var(--border-color)]">
+                            <h4 className="font-bold text-[var(--text-main)] mb-1">{extendModal.assignment.module_title}</h4>
+                            <p className="text-xs font-semibold text-[var(--text-muted)]">Assigned to: {extendModal.assignment.employee_name}</p>
+                            {extendModal.assignment.due_date && (
+                                <p className="text-xs font-semibold text-rose-500 mt-2">
+                                    Current Due Date: {new Date(extendModal.assignment.due_date).toLocaleDateString()}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">New Due Date *</label>
+                                <input
+                                    type="date"
+                                    required
+                                    value={extendModal.due_date}
+                                    onChange={(e) => setExtendModal({ ...extendModal, due_date: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-semibold text-[var(--text-main)] focus:outline-none focus:border-[var(--accent)]"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">Reason for Extension *</label>
+                                <textarea
+                                    required
+                                    rows="3"
+                                    placeholder="e.g., Busy with high-priority project deliverables"
+                                    value={extendModal.extension_reason}
+                                    onChange={(e) => setExtendModal({ ...extendModal, extension_reason: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl text-sm font-semibold text-[var(--text-main)] focus:outline-none focus:border-[var(--accent)] resize-none"
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]">
+                            <button
+                                type="button"
+                                onClick={() => setExtendModal({ isOpen: false, assignment: null, due_date: '', extension_reason: '' })}
+                                className="px-6 py-2.5 rounded-xl font-bold text-[var(--text-muted)] hover:bg-[var(--bg-workspace)] transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-6 py-2.5 bg-[var(--accent)] text-white rounded-xl font-bold hover:bg-opacity-90 transition-all shadow-lg shadow-[var(--accent)]/20"
+                            >
+                                Extend Date
                             </button>
                         </div>
                     </form>

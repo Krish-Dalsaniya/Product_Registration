@@ -417,6 +417,7 @@ const CandidatePage = () => {
     try {
       const form = new FormData();
       form.append('document', file);
+      form.append('fileId', fileId);
       
       const res = await extractCandidateLiveApi(form);
       if (res.data?.success && res.data.data) {
@@ -438,23 +439,52 @@ const CandidatePage = () => {
             }
           }
         }
+        if (fileId === 'marksheet_10th') {
+            if (info.tenth_percentage) extractedFields.push('10th Percentage');
+            if (info.tenth_subjects?.length) extractedFields.push('10th Subjects');
+        }
+        if (fileId === 'marksheet_12th') {
+            if (info.twelfth_percentage) extractedFields.push('12th Percentage');
+            if (info.twelfth_subjects?.length) extractedFields.push('12th Subjects');
+        }
+        if (fileId === 'marksheet_diploma' || fileId === 'diplomaCertificate') {
+            if (info.college_cgpa) extractedFields.push('CGPA');
+            if (info.diploma_subjects?.length) extractedFields.push('Diploma Subjects');
+        }
+        if (fileId === 'degreeCertificate') {
+            if (info.college_cgpa) extractedFields.push('CGPA');
+            if (info.degree_subjects?.length) extractedFields.push('Degree Subjects');
+        }
         
         if (info.email && !formData.email) extractedFields.push('Email');
         if (info.mobile && !formData.mobile) extractedFields.push('Mobile');
         if (info.current_location && !formData.currentLocation) extractedFields.push('Location');
         if (info.total_years_experience) extractedFields.push('Experience');
         
-        if (fileId.startsWith('deg_sem_') && info.college_sgpa) extractedFields.push('SGPA');
-        if (fileId.startsWith('dip_sem_') && info.college_sgpa) extractedFields.push('SGPA');
+        if (fileId.startsWith('deg_sem_')) {
+            const sem = fileId.replace('deg_sem_', '');
+            if (info.college_sgpa || info.semester_details?.[sem]?.sgpa) extractedFields.push('SGPA');
+            if (info.semester_details?.[sem]?.subjects?.length) extractedFields.push('Subjects');
+        }
+        if (fileId.startsWith('dip_sem_')) {
+            const sem = fileId.replace('dip_sem_', '');
+            if (info.college_sgpa || info.semester_details?.[sem]?.sgpa) extractedFields.push('SGPA');
+            if (info.semester_details?.[sem]?.subjects?.length) extractedFields.push('Subjects');
+        }
 
         if (extractedFields.length > 0) {
             toast.success(`Information is extracted: ${extractedFields.join(', ')}`);
         } else {
             toast.error(`No information could be extracted from this document.`);
         }
-
-        setLiveExtractedInfo(prev => ({ ...prev, ...info }));
-
+        setLiveExtractedInfo(prev => ({
+          ...prev,
+          ...info,
+          semester_details: {
+            ...(prev.semester_details || {}),
+            ...(info.semester_details || {})
+          }
+        }));
         setFormData(prev => {
           const newData = { ...prev };
           if (info.name && !newData.name) newData.name = info.name;
@@ -472,20 +502,33 @@ const CandidatePage = () => {
             };
           }
 
-          if (fileId.startsWith('deg_sem_') && info.college_sgpa) {
-            const sem = fileId.replace('deg_sem_', '');
-            newData.education_details = {
-              ...newData.education_details,
-              [`degree_sgpa_${sem}`]: info.college_sgpa
-            };
+          if (fileId === 'marksheet_10th' && info.tenth_percentage) {
+            newData.education_details = { ...newData.education_details };
+            newData.education_details.tenth_percentage = info.tenth_percentage;
+          }
+          if (fileId === 'marksheet_12th' && info.twelfth_percentage) {
+            newData.education_details = { ...newData.education_details };
+            newData.education_details.twelfth_percentage = info.twelfth_percentage;
           }
 
-          if (fileId.startsWith('dip_sem_') && info.college_sgpa) {
+          if (fileId.startsWith('deg_sem_')) {
+            const sem = fileId.replace('deg_sem_', '');
+            const sgpa = info.college_sgpa || info.semester_details?.[sem]?.sgpa;
+            const passDate = info.semester_details?.[sem]?.passing_date;
+            
+            newData.education_details = { ...newData.education_details };
+            if (sgpa) newData.education_details[`degree_sgpa_${sem}`] = sgpa;
+            if (passDate) newData.education_details[`degree_pass_date_${sem}`] = passDate;
+          }
+
+          if (fileId.startsWith('dip_sem_')) {
             const sem = fileId.replace('dip_sem_', '');
-            newData.education_details = {
-              ...newData.education_details,
-              [`diploma_sgpa_${sem}`]: info.college_sgpa
-            };
+            const sgpa = info.college_sgpa || info.semester_details?.[sem]?.sgpa;
+            const passDate = info.semester_details?.[sem]?.passing_date;
+            
+            newData.education_details = { ...newData.education_details };
+            if (sgpa) newData.education_details[`diploma_sgpa_${sem}`] = sgpa;
+            if (passDate) newData.education_details[`diploma_pass_date_${sem}`] = passDate;
           }
 
           return newData;
@@ -624,40 +667,51 @@ const CandidatePage = () => {
           const extracted = res.data.data;
           const extractedDocs = res.data.documents;
           
-          setFormData(prev => ({
+          setLiveExtractedInfo(prev => ({
             ...prev,
-            name: extracted.name || prev.name,
-            email: extracted.email || prev.email,
-            mobile: extracted.mobile || prev.mobile,
-            whatsapp: extracted.whatsapp || prev.whatsapp,
-            currentLocation: extracted.currentLocation || prev.currentLocation,
-            date_of_birth: extracted.date_of_birth || prev.date_of_birth,
-            experience_details: {
-              ...prev.experience_details,
-              total_years: extracted.total_years_experience || prev.experience_details.total_years,
-            },
-            education_details: {
-              ...prev.education_details,
-              tenth_percentage: extracted.tenth_percentage || prev.education_details.tenth_percentage,
-              twelfth_percentage: extracted.twelfth_percentage || prev.education_details.twelfth_percentage,
-              degree_sgpa_1: extracted.degree_sgpa_1 || prev.education_details.degree_sgpa_1,
-              degree_sgpa_2: extracted.degree_sgpa_2 || prev.education_details.degree_sgpa_2,
-              degree_sgpa_3: extracted.degree_sgpa_3 || prev.education_details.degree_sgpa_3,
-              degree_sgpa_4: extracted.degree_sgpa_4 || prev.education_details.degree_sgpa_4,
-              degree_sgpa_5: extracted.degree_sgpa_5 || prev.education_details.degree_sgpa_5,
-              degree_sgpa_6: extracted.degree_sgpa_6 || prev.education_details.degree_sgpa_6,
-              degree_sgpa_7: extracted.degree_sgpa_7 || prev.education_details.degree_sgpa_7,
-              degree_sgpa_8: extracted.degree_sgpa_8 || prev.education_details.degree_sgpa_8,
-              degree_cgpa: extracted.degree_cgpa || prev.education_details.degree_cgpa,
-              diploma_sgpa_1: extracted.diploma_sgpa_1 || prev.education_details.diploma_sgpa_1,
-              diploma_sgpa_2: extracted.diploma_sgpa_2 || prev.education_details.diploma_sgpa_2,
-              diploma_sgpa_3: extracted.diploma_sgpa_3 || prev.education_details.diploma_sgpa_3,
-              diploma_sgpa_4: extracted.diploma_sgpa_4 || prev.education_details.diploma_sgpa_4,
-              diploma_sgpa_5: extracted.diploma_sgpa_5 || prev.education_details.diploma_sgpa_5,
-              diploma_sgpa_6: extracted.diploma_sgpa_6 || prev.education_details.diploma_sgpa_6,
-              diploma_cgpa: extracted.diploma_cgpa || prev.education_details.diploma_cgpa,
+            ...extracted,
+            semester_details: {
+              ...(prev.semester_details || {}),
+              ...(extracted.semester_details || {})
             }
           }));
+
+          setFormData(prev => {
+            const newData = { ...prev };
+            if (extracted.name && !newData.name) newData.name = extracted.name;
+            if (extracted.email && !newData.email) newData.email = extracted.email;
+            if (extracted.mobile && !newData.mobile) newData.mobile = extracted.mobile;
+            if (extracted.current_location && !newData.currentLocation) newData.currentLocation = extracted.current_location;
+            if (extracted.whatsapp && !newData.whatsapp) newData.whatsapp = extracted.whatsapp;
+            if (extracted.date_of_birth && !newData.date_of_birth) newData.date_of_birth = extracted.date_of_birth;
+            
+            if (extracted.total_years_experience || extracted.current_company || extracted.designation) {
+              newData.experienceType = (extracted.total_years_experience > 0 || extracted.total_years_experience === '1+') ? 'EXPERIENCE' : 'FRESHER';
+              newData.experience_details = {
+                ...newData.experience_details,
+                total_years: extracted.total_years_experience || newData.experience_details.total_years,
+                current_company: extracted.current_company || newData.experience_details.current_company,
+                designation: extracted.designation || newData.experience_details.designation
+              };
+            }
+
+            newData.education_details = { ...newData.education_details };
+            if (extracted.tenth_percentage) newData.education_details.tenth_percentage = extracted.tenth_percentage;
+            if (extracted.twelfth_percentage) newData.education_details.twelfth_percentage = extracted.twelfth_percentage;
+            if (extracted.college_cgpa) newData.education_details.degree_cgpa = extracted.college_cgpa;
+            
+            // Loop for SGPAs if they exist in semester_details
+            if (extracted.semester_details) {
+              Object.keys(extracted.semester_details).forEach(sem => {
+                const semData = extracted.semester_details[sem];
+                if (semData.sgpa) {
+                  // By default mapped to degree_sgpa since zip doesn't strongly differentiate diploma/degree here easily
+                  newData.education_details[`degree_sgpa_${sem}`] = semData.sgpa;
+                }
+              });
+            }
+            return newData;
+          });
 
           if (extractedDocs && Object.keys(extractedDocs).length > 0) {
             setUploadMock(prev => {

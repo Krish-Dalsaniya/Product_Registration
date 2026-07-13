@@ -35,6 +35,90 @@ async function extractTextFromFile(filePath) {
     }
 }
 
+function getSchemaForDocType(key) {
+    if (key === 'marksheet_10th') {
+        return `{
+            "tenth_percentage": "string or number (Find the overall percentage or calculate it if only total marks are given)",
+            "tenth_subjects": [{"subject": "string", "marks": "string or number (CRITICAL: Extract the FINAL/TOTAL marks out of 100. Ignore internal/external marks which are usually smaller numbers like 46, 48, etc.)"}]
+        }`;
+    }
+    if (key === 'marksheet_12th') {
+        return `{
+            "twelfth_percentage": "string or number (Find the overall percentage or calculate it)",
+            "twelfth_subjects": [{"subject": "string", "marks": "string or number (CRITICAL: Extract the FINAL/TOTAL marks out of 100. Ignore internal/external marks.)"}]
+        }`;
+    }
+    if (key.startsWith('deg_sem_')) {
+        const sem = key.replace('deg_sem_', '');
+        return `{
+            "college_sgpa": "string or number (Find the SGPA or CGPA on the document)",
+            "semester_details": {
+                "${sem}": {
+                    "sgpa": "number (Find the SGPA for this specific semester)",
+                    "passing_date": "YYYY-MM",
+                    "subjects": [{"subject": "string (Full subject name)", "marks": "string or number (CRITICAL: Extract the TOTAL marks or final grade, not internal marks)"}]
+                }
+            }
+        }`;
+    }
+    if (key.startsWith('dip_sem_')) {
+        const sem = key.replace('dip_sem_', '');
+        return `{
+            "college_sgpa": "string or number (Find the SGPA or CGPA on the document)",
+            "semester_details": {
+                "${sem}": {
+                    "sgpa": "number (Find the SGPA for this specific semester)",
+                    "passing_date": "YYYY-MM",
+                    "subjects": [{"subject": "string (Full subject name)", "marks": "string or number (CRITICAL: Extract the TOTAL marks or final grade, not internal marks)"}]
+                }
+            }
+        }`;
+    }
+    if (key === 'degreeCertificate') {
+        return `{
+            "college_cgpa": "string or number",
+            "degree_subjects": [{"subject": "string", "marks": "string or number"}]
+        }`;
+    }
+    if (key === 'marksheet_diploma' || key === 'diplomaCertificate') {
+        return `{
+            "college_cgpa": "string or number",
+            "diploma_subjects": [{"subject": "string", "marks": "string or number"}]
+        }`;
+    }
+    
+    // Default schema for resume, application form, ID cards, etc.
+    return `{
+        "name": "string",
+        "email": "string",
+        "mobile": "string",
+        "current_location": "string",
+        "total_years_experience": "string or number",
+        "current_company": "string",
+        "designation": "string",
+        "birth_date": "string (e.g. DD/MM/YYYY or YYYY-MM-DD)",
+        "birth_year": "string or number"
+    }`;
+}
+
+function deepMerge(target, source) {
+    if (typeof source !== 'object' || source === null) return;
+    for (const key of Object.keys(source)) {
+        if (source[key] === null) continue; // Skip nulls
+        
+        if (Array.isArray(source[key])) {
+            target[key] = source[key];
+        } else if (typeof source[key] === 'object') {
+            if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) {
+                target[key] = {};
+            }
+            deepMerge(target[key], source[key]);
+        } else {
+            target[key] = source[key];
+        }
+    }
+}
+
 /**
  * Processes a candidate's uploaded documents and extracts AI structured info
  * @param {Object} documents - Object mapping fieldname to relative file paths
@@ -46,79 +130,95 @@ async function extractCandidateInfo(documents, rootDir) {
         return {};
     }
 
-    let combinedText = '';
+    const finalResult = {};
+    const MAX_LENGTH = 15000;
 
     for (const [key, relativePath] of Object.entries(documents)) {
         const absolutePath = path.join(rootDir, relativePath);
         if (fs.existsSync(absolutePath)) {
-            const text = await extractTextFromFile(absolutePath);
-            if (text) {
-                combinedText += `--- Document: ${key} ---\n${text}\n\n`;
+            const ext = path.extname(absolutePath).toLowerCase();
+            const schema = getSchemaForDocType(key);
+
+            const systemPrompt = `You are an HR assistant extracting structured data from a candidate's document.
+Document type: ${key}.
+
+CRITICAL INSTRUCTIONS:
+- Read the ENTIRE subject-wise marks/grades table if present in the document, not just a summary line.
+- Extract EVERY row of the table as a separate entry in the appropriate subjects array.
+- Use the exact subject name and mark/grade as printed in the document.
+- If a percentage or SGPA/CGPA is explicitly mentioned, extract it. If it is NOT explicitly mentioned, you MUST calculate it mathematically from the marks you extracted (Sum of obtained marks / Sum of max marks * 100) and output the calculated value. Do NOT omit it if you can calculate it.
+- Return ONLY a valid JSON object matching the exact schema provided below.
+- Do NOT include markdown formatting (like \`\`\`json) or any extra conversational text.
+- If a value is not found and cannot be calculated, use null or omit it.
+
+SCHEMA:
+${schema}`;
+
+            try {
+                if (ext === '.pdf') {
+                    // PDF Branch: Extract text first, then use text-based LLM
+                    let text = await extractTextFromFile(absolutePath);
+                    if (!text || !text.trim()) continue;
+
+                    if (text.length > MAX_LENGTH) {
+                        text = text.substring(0, MAX_LENGTH);
+                    }
+
+                    const completion = await groq.chat.completions.create({
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: `Here is the candidate document text:\n\n${text}` }
+                        ],
+                        model: 'llama-3.3-70b-versatile',
+                        temperature: 0.1,
+                        response_format: { type: 'json_object' }
+                    });
+
+                    const jsonString = completion.choices[0]?.message?.content;
+                    if (jsonString) {
+                        const parsed = JSON.parse(jsonString);
+                        deepMerge(finalResult, parsed);
+                    }
+                } else if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
+                    // Image Branch: Send directly to Vision Model
+                    const imageBuffer = fs.readFileSync(absolutePath);
+                    const base64Image = imageBuffer.toString('base64');
+                    const mimeType = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+                    const imageUrl = `data:${mimeType};base64,${base64Image}`;
+
+                    const completion = await groq.chat.completions.create({
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            {
+                                role: 'user',
+                                content: [
+                                    { type: "text", text: "Here is the candidate document image. Extract the data according to the schema." },
+                                    { type: "image_url", image_url: { url: imageUrl } }
+                                ]
+                            }
+                        ],
+                        model: 'meta-llama/llama-4-scout-17b-16e-instruct', // Vision model
+                        temperature: 0.1,
+                        response_format: { type: 'json_object' }
+                    });
+
+                    const jsonString = completion.choices[0]?.message?.content;
+                    if (jsonString) {
+                        const parsed = JSON.parse(jsonString);
+                        deepMerge(finalResult, parsed);
+                    }
+                } else {
+                    console.warn(`Unsupported file type for AI extraction: ${ext}`);
+                }
+            } catch (error) {
+                console.error(`AI Extraction failed for document ${key}:`, error.message);
+                require('fs').writeFileSync('extraction_error.log', error.message + '\n' + (error.stack || ''));
+                // Continue processing other documents instead of failing the whole batch
             }
         }
     }
 
-    if (!combinedText.trim()) {
-        return {};
-    }
-
-    // Truncate to avoid exceeding context window (e.g., 20,000 chars roughly)
-    const MAX_LENGTH = 20000;
-    if (combinedText.length > MAX_LENGTH) {
-        combinedText = combinedText.substring(0, MAX_LENGTH);
-    }
-
-    try {
-        const completion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are an HR assistant. Extract the following information from the provided candidate documents text. Return ONLY a valid JSON object matching this schema. If a value is not found, use null. Do not include markdown formatting or extra text.
-                    {
-                        "name": "string",
-                        "email": "string",
-                        "mobile": "string",
-                        "current_location": "string",
-                        "total_years_experience": "string or number",
-                        "current_company": "string",
-                        "designation": "string",
-                        "birth_date": "string (e.g. DD/MM/YYYY or YYYY-MM-DD)",
-                        "birth_year": "string or number",
-                        "tenth_percentage": "string or number (e.g. 85.5 or '85.5%')",
-                        "twelfth_percentage": "string or number",
-                        "college_cgpa": "string or number",
-                        "college_sgpa": "string or number (Semester Grade Point Average, also known as SGPA, SPI, etc.)",
-                        "semester_details": {
-                            "1": { "sgpa": "number", "passing_date": "YYYY-MM" },
-                            "2": { "sgpa": "number", "passing_date": "YYYY-MM" },
-                            "3": { "sgpa": "number", "passing_date": "YYYY-MM" },
-                            "4": { "sgpa": "number", "passing_date": "YYYY-MM" },
-                            "5": { "sgpa": "number", "passing_date": "YYYY-MM" },
-                            "6": { "sgpa": "number", "passing_date": "YYYY-MM" },
-                            "7": { "sgpa": "number", "passing_date": "YYYY-MM" },
-                            "8": { "sgpa": "number", "passing_date": "YYYY-MM" }
-                        }
-                    }`
-                },
-                {
-                    role: 'user',
-                    content: `Here is the candidate document text:\n\n${combinedText}`
-                }
-            ],
-            model: 'llama-3.1-8b-instant', // Updated as llama3-8b-8192 is decommissioned
-            temperature: 0.1,
-            response_format: { type: 'json_object' }
-        });
-
-        const jsonString = completion.choices[0]?.message?.content;
-        if (jsonString) {
-            return JSON.parse(jsonString);
-        }
-    } catch (error) {
-        console.error("AI Extraction failed:", error.message);
-    }
-
-    return {};
+    return finalResult;
 }
 
 module.exports = {
