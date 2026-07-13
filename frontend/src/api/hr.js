@@ -64,7 +64,16 @@ export const rejectRegistrationApi = (id) => api.post(`/hr/employees/pending-reg
 // Candidates
 export const fetchCandidatesApi = () => api.get('/hr/candidates');
 export const updateCandidateStatusApi = (id, status) => api.put(`/hr/candidates/${id}/status`, { status });
-export const extractCandidateLiveApi = (formData) => api.post('/hr/candidates/extract-live', formData);
+export const extractCandidateLiveApi = (formData) => api.post('/hr/candidates/extract-live', formData, {
+  headers: {
+    'Content-Type': 'multipart/form-data',
+  },
+});
+export const extractCandidateZipApi = (formData) => api.post('/hr/candidates/extract-zip', formData, {
+  headers: {
+    'Content-Type': 'multipart/form-data',
+  },
+});
 export const createCandidateApi = (formData) => api.post('/hr/candidates', formData);
 export const fetchCandidateByIdApi = (id) => api.get(`/hr/candidates/${id}`);
 export const updateCandidateApi = (id, formData) => api.put(`/hr/candidates/${id}`, formData);

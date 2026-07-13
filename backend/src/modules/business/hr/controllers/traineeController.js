@@ -323,6 +323,8 @@ const deleteTrainee = async (req, res) => {
 const convertToEmployee = async (req, res) => {
     try {
         const { id } = req.params;
+        const { base_salary, designation_id, emp_code } = req.body;
+        const userId = req.user.user_id;
         
         // 1. Fetch Trainee
         const traineeRes = await db.query('SELECT * FROM hr_trainees WHERE trainee_id = $1', [id]);
@@ -333,71 +335,26 @@ const convertToEmployee = async (req, res) => {
             return res.status(400).json({ success: false, error: { message: 'Trainee has already been converted to an employee.' } });
         }
 
-        const defaultPassword = "Password123!";
-        const bcrypt = require('bcryptjs');
-        const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-        
-        const userQuery = `
-            INSERT INTO users (full_name, email, password_hash, role_id, is_active)
-            VALUES ($1, $2, $3, (SELECT role_id FROM roles WHERE role_name = 'Employee' LIMIT 1), true)
-            ON CONFLICT (email) DO UPDATE SET is_active = true
-            RETURNING user_id
-        `;
-        const userRes = await db.query(userQuery, [`${trainee.first_name} ${trainee.last_name}`, trainee.email, hashedPassword]);
-        const new_user_id = userRes.rows[0].user_id;
-
-        // Generate Employee ID: CCYYYYMMXX for converted employee
-        const compCode = '00';
-        const dojDate = new Date();
-        const dojYear = dojDate.getFullYear().toString();
-        const dojMonth = (dojDate.getMonth() + 1).toString().padStart(2, '0');
-        
-        const countRes = await db.query(`
-            SELECT COUNT(*) 
-            FROM hr_employees 
-            WHERE EXTRACT(YEAR FROM date_of_joining) = $1 
-            AND EXTRACT(MONTH FROM date_of_joining) = $2
-        `, [dojDate.getFullYear(), dojDate.getMonth() + 1]);
-        
-        let nextNum = parseInt(countRes.rows[0].count) + 1;
-        let empCode = `${compCode}${dojYear}${dojMonth}${nextNum.toString().padStart(2, '0')}`;
-        let isUnique = false;
-        
-        while (!isUnique) {
-            const checkRes = await db.query('SELECT 1 FROM hr_employees WHERE emp_code = $1', [empCode]);
-            if (checkRes.rows.length === 0) {
-                isUnique = true;
-            } else {
-                nextNum++;
-                empCode = `${compCode}${dojYear}${dojMonth}${nextNum.toString().padStart(2, '0')}`;
-            }
+        if (trainee.status === 'Conversion Requested') {
+            return res.status(400).json({ success: false, error: { message: 'A conversion request is already pending for this trainee.' } });
         }
 
-        // 2. Create hr_employees record
-        const empQuery = `
-            INSERT INTO hr_employees (user_id, emp_code, department_id, manager_id, date_of_joining, employment_status, base_salary)
-            VALUES ($1, $2, $3, $4, CURRENT_DATE, 'Full-Time', 0)
+        const payload = { base_salary, designation_id, emp_code };
+
+        const requestQuery = `
+            INSERT INTO hr_conversion_requests (trainee_id, target_role, payload, status, requested_by)
+            VALUES ($1, 'Employee', $2, 'Pending', $3)
             RETURNING *
         `;
-        const empRes = await db.query(empQuery, [
-            new_user_id, 
-            empCode, 
-            trainee.department_id, 
-            trainee.mentor_employee_id
-        ]);
+        const requestRes = await db.query(requestQuery, [id, JSON.stringify(payload), userId]);
 
-        const new_employee_id = empRes.rows[0].employee_id;
+        // Update Trainee Status
+        await db.query("UPDATE hr_trainees SET status = 'Conversion Requested', updated_at = CURRENT_TIMESTAMP WHERE trainee_id = $1", [id]);
 
-        // 3. Update Trainee Status
-        await db.query("UPDATE hr_trainees SET status = 'Converted to Employee', updated_at = CURRENT_TIMESTAMP WHERE trainee_id = $1", [id]);
-
-        // 4. (Optional) Transfer LMS assignments from trainee_id to employee_id
-        await db.query("UPDATE hr_lms_assignments SET employee_id = $1 WHERE trainee_id = $2", [new_employee_id, id]);
-
-        res.json({ success: true, message: 'Trainee converted to employee successfully', data: empRes.rows[0] });
+        res.json({ success: true, message: 'Conversion to Employee requested successfully. Pending Admin approval.', data: requestRes.rows[0] });
     } catch (error) {
-        console.error('Error converting trainee:', error);
-        res.status(500).json({ success: false, error: { message: 'Failed to convert trainee' } });
+        console.error('Error requesting trainee conversion:', error);
+        res.status(500).json({ success: false, error: { message: 'Failed to request trainee conversion' } });
     }
 };
 
