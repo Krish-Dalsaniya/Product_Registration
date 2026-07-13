@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Tag, Calendar, Download, RefreshCw, FileBox, File, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import toast from 'react-hot-toast';
-import { getGitReleases } from '../../../api/gitIntegration';
+import { getGitReleases, downloadGitReleaseAsset } from '../../../api/gitIntegration';
 
 const ReleasesPanel = ({ repoOwner, repoName }) => {
     const [releases, setReleases] = useState([]);
@@ -34,15 +34,8 @@ const ReleasesPanel = ({ repoOwner, repoName }) => {
         e.preventDefault();
         const toastId = toast.loading(`Downloading ${asset.name}...`);
         try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/integrations/git/repos/${repoOwner}/${repoName}/releases/assets/${asset.id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (!res.ok) throw new Error('Download failed');
-            
-            const blob = await res.blob();
+            const res = await downloadGitReleaseAsset(repoOwner, repoName, asset.id);
+            const blob = new Blob([res.data]);
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
