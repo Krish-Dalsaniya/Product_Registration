@@ -29,6 +29,34 @@ const ReleasesPanel = ({ repoOwner, repoName }) => {
         }
     }, [repoOwner, repoName]);
 
+    
+    const handleDownload = async (e, asset) => {
+        e.preventDefault();
+        const toastId = toast.loading(`Downloading ${asset.name}...`);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/integrations/git/repos/${repoOwner}/${repoName}/releases/assets/${asset.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (!res.ok) throw new Error('Download failed');
+            
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', asset.name);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            toast.success(`Downloaded ${asset.name}`, { id: toastId });
+        } catch (error) {
+            toast.error(`Failed to download ${asset.name}`, { id: toastId });
+            console.error(error);
+        }
+    };
+
     const formatBytes = (bytes) => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -142,9 +170,9 @@ const ReleasesPanel = ({ repoOwner, repoName }) => {
                                                 </div>
                                             </div>
                                             <a 
-                                                href={asset.browser_download_url} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
+                                                href="#" onClick={(e) => handleDownload(e, asset)} 
+                                                 
+                                                
                                                 className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors shrink-0 opacity-0 group-hover:opacity-100 md:opacity-100"
                                                 title={`Download ${asset.name}`}
                                             >

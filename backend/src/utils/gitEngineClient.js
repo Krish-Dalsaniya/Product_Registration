@@ -11,6 +11,8 @@ gitEngineClient.interceptors.request.use((config) => {
     if (env.GIT_ENGINE_API_KEY) {
         config.headers['Authorization'] = `Bearer ${env.GIT_ENGINE_API_KEY}`;
     }
+    // Required to bypass Ngrok's free tier browser warning screen
+    config.headers['ngrok-skip-browser-warning'] = '1';
     return config;
 }, (error) => {
     return Promise.reject(error);
