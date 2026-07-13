@@ -16,6 +16,12 @@ export const getGitReleases = async (owner, repo) => {
     return api.get(`/integrations/git/repos/${owner}/${repo}/releases`);
 };
 
+export const downloadGitReleaseAsset = async (owner, repo, assetId) => {
+    return api.get(`/integrations/git/repos/${owner}/${repo}/releases/assets/${assetId}`, {
+        responseType: 'blob'
+    });
+};
+
 export const getGitWorkflowRuns = async (owner, repo) => {
     return api.get(`/integrations/git/repos/${owner}/${repo}/actions/runs`);
 };
