@@ -149,7 +149,12 @@ const updateHardwareInventory = async (client, hardwareFeatures, qty, isRefund =
 };
 
 const createFinishedGood = async (req, res, next) => {
-    const { product_id, quantity, hardware_features, communication_details, power_controller, motherboard_id, is_iot, version } = req.body;
+    const { 
+        product_id, quantity, hardware_features, communication_details, 
+        power_controller, motherboard_id, is_iot, version,
+        repository_owner, repository_name, branch, commit_sha, tag, 
+        release_id, workflow_run_id, build_number, firmware_binary_url
+    } = req.body;
     
     try {
         const isIotEnabled = is_iot === true || is_iot === 'true';
@@ -167,6 +172,22 @@ const createFinishedGood = async (req, res, next) => {
             return res.status(400).json({ success: false, error: { code: 'DUPLICATE_VERSION', message: `A finished good with version '${versionToCheck}' already exists for this product.` } });
         }
 
+        // Parallel Solution: Store git metadata in JSONB to bypass PostgreSQL column ownership locks
+        const enriched_communication = isIotEnabled ? {
+            interfaces: Array.isArray(communication_details) ? communication_details : [],
+            git_traceability: {
+                repository_owner,
+                repository_name,
+                branch,
+                commit_sha,
+                tag,
+                release_id,
+                workflow_run_id,
+                build_number,
+                firmware_binary_url
+            }
+        } : [];
+
         await db.withTransaction(async (client) => {
             const fgResult = await client.query(
                 `INSERT INTO finished_goods 
@@ -176,7 +197,7 @@ const createFinishedGood = async (req, res, next) => {
                     product_id, 
                     quantity || 1, 
                     isIotEnabled,
-                    isIotEnabled ? JSON.stringify(communication_details || []) : '[]',
+                    isIotEnabled ? JSON.stringify(enriched_communication) : '[]',
                     isIotEnabled ? !!power_controller : false,
                     isIotEnabled ? (motherboard_id || null) : null,
                     version || '1.0'
@@ -308,7 +329,12 @@ const deleteFinishedGood = async (req, res, next) => {
 
 const updateFinishedGood = async (req, res, next) => {
     const { id } = req.params;
-    const { product_id, quantity, hardware_features, communication_details, power_controller, motherboard_id, is_iot, version } = req.body;
+    const { 
+        product_id, quantity, hardware_features, communication_details, 
+        power_controller, motherboard_id, is_iot, version,
+        repository_owner, repository_name, branch, commit_sha, tag, 
+        release_id, workflow_run_id, build_number, firmware_binary_url 
+    } = req.body;
 
     try {
         const isIotEnabled = is_iot === true || is_iot === 'true';
@@ -342,15 +368,32 @@ const updateFinishedGood = async (req, res, next) => {
                 throw new Error(inventoryError.message);
             }
 
+            // Parallel Solution: Store git metadata in JSONB to bypass PostgreSQL column ownership locks
+            const enriched_communication = isIotEnabled ? {
+                interfaces: Array.isArray(communication_details) ? communication_details : [],
+                git_traceability: {
+                    repository_owner,
+                    repository_name,
+                    branch,
+                    commit_sha,
+                    tag,
+                    release_id,
+                    workflow_run_id,
+                    build_number,
+                    firmware_binary_url
+                }
+            } : [];
+
             await client.query(
                 `UPDATE finished_goods 
-                 SET product_id = $1, quantity = $2, is_iot = $3, communication_details = $4, power_controller = $5, motherboard_id = $6, updated_at = CURRENT_TIMESTAMP, version = $7
+                 SET product_id = $1, quantity = $2, is_iot = $3, communication_details = $4, power_controller = $5, 
+                     motherboard_id = $6, updated_at = CURRENT_TIMESTAMP, version = $7
                  WHERE id = $8`,
                 [
                     product_id, 
                     quantity || 1, 
                     isIotEnabled,
-                    isIotEnabled ? JSON.stringify(communication_details || []) : '[]',
+                    isIotEnabled ? JSON.stringify(enriched_communication) : '[]',
                     isIotEnabled ? !!power_controller : false,
                     isIotEnabled ? (motherboard_id || null) : null,
                     version || '1.0',

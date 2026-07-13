@@ -147,6 +147,8 @@ const SupportTicketProfilePage = lazy(() => import('../modules/admin/SupportTick
 const ChatPage = lazy(() => import('../modules/chat/ChatPage'));
 const RolesPage = lazy(() => import('../modules/admin/RolesPage'));
 const AppLauncher = lazy(() => import('../modules/dashboard/pages/AppLauncher'));
+const GitLayout = lazy(() => import('../modules/git/layouts/GitLayout'));
+const GitDashboard = lazy(() => import('../modules/git/pages/GitDashboard'));
 
 // HR Module
 const HRLayout = lazy(() => import('../modules/hr/layout/HRLayout'));
@@ -397,7 +399,11 @@ const Router = () => {
           <Route path="/admin/support-tickets/:id" element={<SupportTicketProfilePage />} />
           <Route path="/admin/chat" element={<ChatPage />} />
           <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+        </Route>
 
+        {/* Dedicated Git Workspace */}
+        <Route element={<AuthGuard><GitLayout /></AuthGuard>}>
+          <Route path="/git/dashboard" element={<GitDashboard />} />
         </Route>
 
         {/* Designer Workspace Dashboard & Specifics */}

@@ -85,16 +85,18 @@ const createProject = async (req, res) => {
     const { 
       project_code, project_name, description, team_id, 
       product_id, start_date, end_date, status, priority, progress_percentage,
-      team_lead_id, client_handler_id, project_members
+      team_lead_id, client_handler_id, project_members,
+      repository_owner, repository_name
     } = req.body;
 
     const query = `
       INSERT INTO pms_projects (
         project_code, project_name, description, team_id, 
         product_id, start_date, end_date, status, priority, progress_percentage,
-        team_lead_id, client_handler_id, project_members, created_by
+        team_lead_id, client_handler_id, project_members, created_by,
+        repository_owner, repository_name
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING project_id
     `;
     const values = [
@@ -103,7 +105,9 @@ const createProject = async (req, res) => {
       status || 'Planned', priority || 'Medium', progress_percentage || 0,
       team_lead_id || null, client_handler_id || null, 
       project_members ? JSON.stringify(project_members) : '[]',
-      req.user.user_id
+      req.user.user_id,
+      repository_owner || null,
+      repository_name || null
     ];
 
     const result = await pool.query(query, values);
@@ -131,7 +135,8 @@ const updateProject = async (req, res) => {
     const { 
       project_code, project_name, description, team_id, 
       product_id, start_date, end_date, status, priority, progress_percentage,
-      team_lead_id, client_handler_id, project_members
+      team_lead_id, client_handler_id, project_members,
+      repository_owner, repository_name
     } = req.body;
 
     const updates = [];
@@ -157,6 +162,8 @@ const updateProject = async (req, res) => {
     buildUpdate('progress_percentage', progress_percentage);
     buildUpdate('team_lead_id', team_lead_id);
     buildUpdate('client_handler_id', client_handler_id);
+    buildUpdate('repository_owner', repository_owner);
+    buildUpdate('repository_name', repository_name);
 
     if (project_members !== undefined) {
       updates.push(`project_members = $${paramCount++}`);

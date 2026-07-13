@@ -927,6 +927,27 @@ CREATE TABLE IF NOT EXISTS open_positions (
 -- Add designation_id to hr_trainees
 ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS designation_id UUID REFERENCES hr_designations(designation_id) ON DELETE SET NULL;
 
+-- ==============================================================================
+-- Git Engine Integration Metadata
+-- ==============================================================================
+
+-- Add Git metadata to pms_projects
+ALTER TABLE pms_projects 
+ADD COLUMN IF NOT EXISTS repository_owner VARCHAR(255),
+ADD COLUMN IF NOT EXISTS repository_name VARCHAR(255);
+
+-- Add Git metadata to finished_goods
+ALTER TABLE finished_goods 
+ADD COLUMN IF NOT EXISTS repository_owner VARCHAR(255),
+ADD COLUMN IF NOT EXISTS repository_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS branch VARCHAR(255),
+ADD COLUMN IF NOT EXISTS commit_sha VARCHAR(255),
+ADD COLUMN IF NOT EXISTS tag VARCHAR(255),
+ADD COLUMN IF NOT EXISTS release_id VARCHAR(255),
+ADD COLUMN IF NOT EXISTS workflow_run_id VARCHAR(255),
+ADD COLUMN IF NOT EXISTS build_number VARCHAR(255),
+ADD COLUMN IF NOT EXISTS firmware_binary_url VARCHAR(500);
+
 -- Candidate experiences schema changes
 ALTER TABLE hr_candidates DROP COLUMN IF EXISTS monthly_taken_home;
 ALTER TABLE hr_candidates DROP COLUMN IF EXISTS expected_monthly;

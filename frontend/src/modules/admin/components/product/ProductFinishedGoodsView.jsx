@@ -84,7 +84,7 @@ const ProductFinishedGoodsView = ({ productId }) => {
                                 <div className="space-y-4 pt-4 border-t border-[var(--border-color)]">
                                     <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-dim)] mb-3">Communication Interfaces</h4>
                                     <div className="grid grid-cols-1 gap-4">
-                                        {(viewItem.communication_details || []).map((comm, i) => (
+                                        {(Array.isArray(viewItem.communication_details) ? viewItem.communication_details : (viewItem.communication_details?.interfaces || [])).map((comm, i) => (
                                             <div key={i} className="p-4 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-2xl">
                                                 <h5 className="text-[12px] font-black uppercase tracking-widest text-[var(--accent)] mb-4">{comm.method}</h5>
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -103,6 +103,43 @@ const ProductFinishedGoodsView = ({ productId }) => {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Traceability Details */}
+                            {(viewItem.repository_owner || (viewItem.communication_details?.git_traceability?.repository_owner)) && (viewItem.repository_name || (viewItem.communication_details?.git_traceability?.repository_name)) && (
+                                <div className="space-y-4 pt-6 border-t border-[var(--border-color)]">
+                                    <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-dim)] mb-3">Firmware Traceability</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-2xl">
+                                        <div>
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Repository</span>
+                                            <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.repository_owner || viewItem.communication_details?.git_traceability?.repository_owner}/{viewItem.repository_name || viewItem.communication_details?.git_traceability?.repository_name}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Branch</span>
+                                            <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.branch || viewItem.communication_details?.git_traceability?.branch || 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Commit</span>
+                                            <span className="text-[13px] font-bold text-[var(--text-main)] font-mono">{(viewItem.commit_sha || viewItem.communication_details?.git_traceability?.commit_sha) ? (viewItem.commit_sha || viewItem.communication_details?.git_traceability?.commit_sha).substring(0, 7) : 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Tag / Release</span>
+                                            <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.tag || viewItem.communication_details?.git_traceability?.tag || viewItem.release_id || viewItem.communication_details?.git_traceability?.release_id || 'N/A'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Workflow / Build</span>
+                                            <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.workflow_run_id || viewItem.communication_details?.git_traceability?.workflow_run_id || viewItem.build_number || viewItem.communication_details?.git_traceability?.build_number || 'N/A'}</span>
+                                        </div>
+                                        {(viewItem.firmware_binary_url || viewItem.communication_details?.git_traceability?.firmware_binary_url) && (
+                                            <div className="lg:col-span-3">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Binary Asset</span>
+                                                <a href={viewItem.firmware_binary_url || viewItem.communication_details?.git_traceability?.firmware_binary_url} target="_blank" rel="noreferrer" className="text-[13px] font-bold text-blue-500 hover:underline break-all">
+                                                    {viewItem.firmware_binary_url || viewItem.communication_details?.git_traceability?.firmware_binary_url}
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
