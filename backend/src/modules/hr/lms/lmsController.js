@@ -136,9 +136,10 @@ const getAllAssignments = async (req, res) => {
     try {
         const query = `
             SELECT a.*, 
-                   m.title as module_title, m.training_type, m.training_url, m.attachment_url,
+                   m.title as module_title, m.training_type, m.training_url, m.attachment_url, m.duration_hours,
                    COALESCE(e.emp_code, tr.trainee_code, int.intern_code) as emp_code, 
-                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name, int.first_name || ' ' || int.last_name) as employee_name
+                   COALESCE(u.full_name, tr.first_name || ' ' || tr.last_name, int.first_name || ' ' || int.last_name) as employee_name,
+                   (SELECT MAX(score) FROM hr_lms_assessments WHERE assignment_id = a.assignment_id) as highest_score
             FROM hr_lms_assignments a
             JOIN hr_lms_modules m ON a.module_id = m.module_id
             LEFT JOIN hr_employees e ON a.employee_id = e.employee_id
@@ -589,6 +590,34 @@ const approveRetest = async (req, res) => {
     }
 };
 
+const extendAssignmentDueDate = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { due_date, extension_reason } = req.body;
+        
+        if (!due_date || !extension_reason) {
+            return res.status(400).json({ success: false, error: { message: 'Due date and reason are required' } });
+        }
+
+        const updateQuery = `
+            UPDATE hr_lms_assignments 
+            SET due_date = $1, extension_reason = $2, updated_at = CURRENT_TIMESTAMP
+            WHERE assignment_id = $3
+            RETURNING *
+        `;
+        
+        const result = await pool.query(updateQuery, [due_date, extension_reason, id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: { message: 'Assignment not found' } });
+        }
+        res.json({ success: true, data: result.rows[0] });
+    } catch (error) {
+        console.error('Error extending assignment due date:', error);
+        res.status(500).json({ success: false, error: { message: 'Failed to extend due date' } });
+    }
+};
+
 module.exports = {
     createModule,
     getAllModules,
@@ -611,7 +640,8 @@ module.exports = {
     addQuizQuestionsBulk,
     transcribeAudio,
     requestRetest,
-    approveRetest
+    approveRetest,
+    extendAssignmentDueDate
 };
 
 async function transcribeAudio(req, res) {

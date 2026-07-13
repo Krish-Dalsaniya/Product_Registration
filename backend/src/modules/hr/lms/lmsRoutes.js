@@ -43,6 +43,7 @@ router.post('/assignment', lmsController.assignTraining);
 router.get('/assignments', lmsController.getAllAssignments);
 router.patch('/assignment/:id/status', lmsController.updateAssignmentStatus);
 router.patch('/assignment/:id/progress', lmsController.updateAssignmentProgress);
+router.patch('/assignment/:id/extend', lmsController.extendAssignmentDueDate);
 router.delete('/assignment/:id', lmsController.deleteAssignment);
 router.post('/assignment/:assignment_id/request-retest', lmsController.requestRetest);
 router.post('/assignment/:assignment_id/approve-retest', lmsController.approveRetest);

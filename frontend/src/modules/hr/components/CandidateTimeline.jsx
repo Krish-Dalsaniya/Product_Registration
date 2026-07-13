@@ -15,13 +15,53 @@ const CandidateTimeline = ({ experienceType = 'FRESHER', pastExperiences = [], e
     ];
 
     const tenth_per = eduDetails?.tenth_percentage || extractedInfo?.tenth_percentage;
-    if (key === 'marksheet_10th' && tenth_per) {
-        details.push({ key: 'Per', value: String(tenth_per) });
+    if (key === 'marksheet_10th') {
+        if (tenth_per) details.push({ key: 'Per', value: String(tenth_per) });
+        const subjects = extractedInfo?.tenth_subjects;
+        if (subjects && Array.isArray(subjects)) {
+            subjects.forEach(sub => {
+                if (sub.subject && sub.marks) details.push({ key: String(sub.subject), value: String(sub.marks) });
+            });
+        }
     }
 
     const twelfth_per = eduDetails?.twelfth_percentage || extractedInfo?.twelfth_percentage;
-    if (key === 'marksheet_12th' && twelfth_per) {
-        details.push({ key: 'Percentage', value: String(twelfth_per) });
+    if (key === 'marksheet_12th') {
+        if (twelfth_per) details.push({ key: 'Percentage', value: String(twelfth_per) });
+        const subjects = extractedInfo?.twelfth_subjects;
+        if (subjects && Array.isArray(subjects)) {
+            subjects.forEach(sub => {
+                if (sub.subject && sub.marks) details.push({ key: String(sub.subject), value: String(sub.marks) });
+            });
+        }
+    }
+
+    if (key.startsWith('deg_sem_') || key.startsWith('dip_sem_')) {
+        const sem = key.replace('deg_sem_', '').replace('dip_sem_', '');
+        const subjects = extractedInfo?.semester_details?.[sem]?.subjects;
+        if (subjects && Array.isArray(subjects)) {
+            subjects.forEach(sub => {
+                if (sub.subject && sub.marks) details.push({ key: String(sub.subject), value: String(sub.marks) });
+            });
+        }
+    }
+
+    if (key === 'degreeCertificate') {
+        const subjects = extractedInfo?.degree_subjects;
+        if (subjects && Array.isArray(subjects)) {
+            subjects.forEach(sub => {
+                if (sub.subject && sub.marks) details.push({ key: String(sub.subject), value: String(sub.marks) });
+            });
+        }
+    }
+
+    if (key === 'marksheet_diploma' || key === 'diplomaCertificate') {
+        const subjects = extractedInfo?.diploma_subjects;
+        if (subjects && Array.isArray(subjects)) {
+            subjects.forEach(sub => {
+                if (sub.subject && sub.marks) details.push({ key: String(sub.subject), value: String(sub.marks) });
+            });
+        }
     }
 
     if ((key.startsWith('deg_sem_') || key.startsWith('dip_sem_')) && extractedInfo?.college_cgpa) {
@@ -91,9 +131,10 @@ const CandidateTimeline = ({ experienceType = 'FRESHER', pastExperiences = [], e
     if (experienceType === 'EXPERIENCE') {
       // For experience, just show Degree
       const cgpa = eduDetails?.degree_cgpa || extractedInfo?.college_cgpa;
-      const passYear = eduDetails?.degree_passing_year;
+      const passYear = eduDetails?.degree_passing_year || extractedInfo?.college_passing_year;
       const details = generateDetails('degreeCertificate', 'Degree');
       if (cgpa) details.push({ key: 'CGPA', value: String(cgpa) });
+      if (passYear) details.push({ key: 'Passed', value: String(passYear) });
 
       timelineNodes.push({
         id: 'degree',
@@ -127,9 +168,10 @@ const CandidateTimeline = ({ experienceType = 'FRESHER', pastExperiences = [], e
     // Diploma Route
     if (experienceType === 'EXPERIENCE') {
       const cgpa = eduDetails?.diploma_cgpa || extractedInfo?.diploma_cgpa;
-      const passYear = eduDetails?.diploma_passing_year;
+      const passYear = eduDetails?.diploma_passing_year || extractedInfo?.diploma_passing_year;
       const details = generateDetails('marksheet_diploma', 'Diploma'); // Or whatever the final diploma marksheet is
       if (cgpa) details.push({ key: 'CGPA', value: String(cgpa) });
+      if (passYear) details.push({ key: 'Passed', value: String(passYear) });
 
       timelineNodes.push({
         id: 'diploma',
@@ -142,9 +184,10 @@ const CandidateTimeline = ({ experienceType = 'FRESHER', pastExperiences = [], e
 
       // Add Degree Node too for Diploma route if they have a degree
       const degCgpa = eduDetails?.degree_cgpa || extractedInfo?.college_cgpa;
-      const degPassYear = eduDetails?.degree_passing_year;
+      const degPassYear = eduDetails?.degree_passing_year || extractedInfo?.college_passing_year;
       const degDetails = generateDetails('degreeCertificate', 'Degree');
       if (degCgpa) degDetails.push({ key: 'CGPA', value: String(degCgpa) });
+      if (degPassYear) degDetails.push({ key: 'Passed', value: String(degPassYear) });
 
       timelineNodes.push({
         id: 'degree',
@@ -421,7 +464,7 @@ const CandidateTimeline = ({ experienceType = 'FRESHER', pastExperiences = [], e
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {selectedNode.details.map((detail, idx) => (
               <div key={idx} className="flex flex-col gap-1">
-                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">{detail.key}</span>
+                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider break-words">{detail.key}</span>
                 <span className="text-[13px] font-bold text-[var(--text-main)]">
                   {detail.value}
                 </span>

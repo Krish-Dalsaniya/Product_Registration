@@ -6,220 +6,437 @@ export const getCertificateHtml = (assignment) => {
         month: 'long',
         day: 'numeric'
     });
+    
+    const duration = assignment.duration_hours ? `${assignment.duration_hours} Hours` : 'N/A';
+    
+    let grade = 'Completed';
+    if (assignment.highest_score !== null && assignment.highest_score !== undefined) {
+        if (assignment.highest_score >= 90) grade = 'Distinction';
+        else if (assignment.highest_score >= 75) grade = 'Pass';
+        else grade = 'Completed';
+    }
+
+    // Verify URL for QR Code
+    const verifyUrl = `${window.location.origin}/verify/${assignment.assignment_id}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}`;
 
     return `
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Great+Vibes&family=Montserrat:wght@400;600;700&display=swap');
+
         .cert-container {
-            background-color: #ffffff;
-            font-family: "Times New Roman", Times, serif;
             width: 297mm;
             height: 210mm;
+            background: #fdfbf7;
             position: relative;
+            padding: 15mm;
             box-sizing: border-box;
             overflow: hidden;
-            padding: 48px;
         }
-        .outer-border {
+
+        /* Borders */
+        .border-outer {
             position: absolute;
-            top: 20px; left: 20px; right: 20px; bottom: 20px;
-            border: 4px solid #0f172a;
+            top: 15px; left: 15px; right: 15px; bottom: 15px;
+            border: 4px solid #061c3f; /* Navy */
             z-index: 1;
         }
-        .inner-border {
+        .border-inner {
             position: absolute;
-            top: 30px; left: 30px; right: 30px; bottom: 30px;
-            border: 1px solid #0f172a;
-            z-index: 1;
-        }
-        .content-wrapper {
-            position: relative;
+            top: 25px; left: 25px; right: 25px; bottom: 25px;
+            border: 2px solid #d4af37; /* Gold */
             z-index: 2;
+        }
+
+        /* Corner accents */
+        .corner {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: #061c3f;
+            z-index: 10;
+        }
+        .corner-tl { top: -60px; left: -60px; transform: rotate(45deg); border-bottom: 4px solid #d4af37; }
+        .corner-tr { top: -60px; right: -60px; transform: rotate(-45deg); border-bottom: 4px solid #d4af37; }
+        .corner-bl { bottom: -60px; left: -60px; transform: rotate(-45deg); border-top: 4px solid #d4af37; }
+        .corner-br { bottom: -60px; right: -60px; transform: rotate(45deg); border-top: 4px solid #d4af37; }
+
+        .content {
+            position: relative;
+            z-index: 20;
             width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
             align-items: center;
             text-align: center;
-            background: #ffffff;
-            padding-top: 10px;
+            background: #fff;
+            padding: 20px 40px;
+            box-sizing: border-box;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.02);
         }
-        .header-logo {
-            margin-top: 15px;
-            margin-bottom: 25px;
-        }
-        .header-logo img {
-            height: 70px;
-            width: auto;
+
+        .logo {
+            height: 60px;
+            margin-top: 10px;
+            margin-bottom: 15px;
             object-fit: contain;
         }
-        .middle-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-        .cert-title {
-            font-size: 50px;
-            font-weight: bold;
-            color: #0f172a;
+
+        .title {
+            font-family: 'Cinzel', serif;
+            font-size: 46px;
+            color: #061c3f;
+            letter-spacing: 10px;
+            margin: 0 0 5px 0;
             text-transform: uppercase;
-            letter-spacing: 5px;
-            margin: 0;
+        }
+
+        .subtitle {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 16px;
+            color: #d4af37;
+            letter-spacing: 6px;
+            text-transform: uppercase;
             margin-bottom: 35px;
-            border-bottom: 2px solid #cbd5e1;
-            padding-bottom: 12px;
+            position: relative;
             display: inline-block;
         }
-        .cert-text {
-            font-size: 20px;
-            font-style: italic;
-            color: #64748b;
+        .subtitle::before, .subtitle::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 100px;
+            height: 1.5px;
+            background: #d4af37;
+        }
+        .subtitle::before { left: -120px; }
+        .subtitle::after { right: -120px; }
+
+        .presented-to {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            color: #061c3f;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .name {
+            font-family: 'Great Vibes', cursive;
+            font-size: 80px;
+            color: #061c3f;
+            margin: 0 0 25px 0;
+            line-height: 1;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #d4af37;
+            display: inline-block;
+            min-width: 600px;
+        }
+
+        .reason {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 15px;
+            color: #444;
             margin-bottom: 15px;
+            font-weight: 600;
         }
-        .employee-name {
-            font-size: 56px;
-            font-weight: bold;
-            color: #0f172a;
-            font-family: "Georgia", serif;
-            margin: 15px 0 20px 0;
-            text-transform: capitalize;
-            letter-spacing: 1px;
+
+        .course-badge {
+            background: #061c3f;
+            color: #ffffff;
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            padding: 12px 50px;
+            border: 2px solid #d4af37;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            max-width: 800px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .course-name {
-            font-size: 32px;
-            font-weight: bold;
-            color: #1e293b;
-            margin: 25px auto;
-            max-width: 850px;
-            line-height: 1.4;
-            font-family: "Georgia", serif;
-        }
-        .date-text {
-            font-size: 18px;
-            color: #475569;
-            margin-top: 25px;
-        }
-        .footer-section {
+
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin-bottom: 40px;
             width: 100%;
+        }
+
+        .stat-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-align: left;
+        }
+
+        .stat-icon {
+            width: 45px;
+            height: 45px;
+            background: #061c3f;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d4af37;
+            border: 1px solid #d4af37;
+        }
+
+        .stat-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .stat-text-label {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            color: #061c3f;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        .stat-text-value {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .footer {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            padding: 0 50px;
-            box-sizing: border-box;
-            margin-bottom: 20px;
+            width: 100%;
             margin-top: auto;
+            padding: 0 20px;
         }
-        .signature-block {
-            width: 250px;
+
+        .signature {
             text-align: center;
+            width: 220px;
         }
+
+        .signature-img {
+            font-family: 'Great Vibes', cursive;
+            font-size: 38px;
+            color: #061c3f;
+            margin-bottom: -5px;
+        }
+
         .signature-line {
-            border-bottom: 1px solid #334155;
-            padding-bottom: 5px;
-            margin-bottom: 12px;
-            height: 50px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
+            border-top: 1px solid #061c3f;
+            padding-top: 8px;
         }
-        .signature-text {
-            font-family: "Brush Script MT", cursive, serif;
-            font-size: 40px;
-            color: #1e293b;
-            display: inline-block;
-            margin-bottom: -8px;
-        }
-        .sig-name {
-            font-size: 16px;
-            font-weight: bold;
-            color: #0f172a;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin: 0 0 6px 0;
-            font-family: Arial, sans-serif;
-        }
-        .sig-title {
+
+        .signature-name {
+            font-family: 'Montserrat', sans-serif;
             font-size: 13px;
-            color: #64748b;
-            margin: 0;
-            font-family: Arial, sans-serif;
+            font-weight: 700;
+            color: #061c3f;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        .badge {
-            width: 125px;
-            height: 125px;
-            background-color: #f8fafc;
-            border: 2px solid #cbd5e1;
+
+        .signature-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .seal-container {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin-bottom: -20px; /* Overlap bottom slightly */
+        }
+
+        .seal {
+            width: 140px;
+            height: 140px;
+            background: linear-gradient(135deg, #e5c058 0%, #aa801b 100%);
             border-radius: 50%;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #fff;
+            box-shadow: 0 0 0 6px #d4af37, 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .seal-inner {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.6);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 0 5px #ffffff, 0 0 0 7px #cbd5e1;
-            margin: 0 20px;
-        }
-        .badge-inner {
-            font-size: 11px;
-            font-family: Arial, sans-serif;
-            color: #64748b;
             text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: bold;
-            line-height: 1.4;
         }
-        .badge-star {
-            font-size: 26px;
-            color: #0f172a;
+        
+        .seal-text {
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .seal-logo {
+            height: 35px;
+            filter: brightness(0) invert(1);
             margin: 4px 0;
+            drop-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .ribbon {
+            position: absolute;
+            bottom: -35px;
+            width: 36px;
+            height: 70px;
+            background: #061c3f;
+            z-index: 1;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .ribbon-left { left: 25px; transform: rotate(20deg); }
+        .ribbon-right { right: 25px; transform: rotate(-20deg); }
+        .ribbon::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-bottom: 18px solid #fff;
+        }
+        
+        .qr-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-align: left;
+            width: 220px;
+            justify-content: flex-end;
+        }
+        .qr-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .qr-text-label {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            color: #061c3f;
+            letter-spacing: 1px;
+        }
+        .qr-text-value {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 9px;
+            color: #666;
+            margin-top: 2px;
+            text-align: right;
+        }
+        .qr-code {
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            padding: 3px;
+            border-radius: 4px;
         }
     </style>
     <div class="cert-container">
-        <div class="outer-border"></div>
-        <div class="inner-border"></div>
-        <div class="content-wrapper">
+        <div class="border-outer"></div>
+        <div class="border-inner"></div>
+        
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+
+        <div class="content">
+            <img src="${LOGO_BASE64}" class="logo" alt="Logo" />
             
-            <div class="header-logo">
-                <img src="${LOGO_BASE64}" alt="Company Logo" />
-            </div>
-
-            <div class="middle-content">
-                <h1 class="cert-title">Certificate of Completion</h1>
-                
-                <div class="cert-text">This is proudly presented to</div>
-                
-                <h2 class="employee-name">${assignment.employee_name}</h2>
-                
-                <div class="cert-text">for successfully completing the training module</div>
-                
-                <h3 class="course-name">${assignment.module_title}</h3>
-                
-                <div class="date-text">Awarded on <strong>${completedDate}</strong></div>
-            </div>
-
-            <div class="footer-section">
-                <div class="signature-block">
-                    <div class="signature-line">
-                        <span class="signature-text" style="transform: rotate(-3deg);">Mansi S.</span>
+            <h1 class="title">Certificate</h1>
+            <div class="subtitle">Of Completion</div>
+            
+            <div class="presented-to">PROUDLY PRESENTED TO</div>
+            
+            <h2 class="name">${assignment.employee_name}</h2>
+            
+            <div class="reason">For successfully completing the</div>
+            
+            <div class="course-badge">${assignment.module_title}</div>
+            
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                     </div>
-                    <p class="sig-name">Mansi Shah</p>
-                    <p class="sig-title">Chief Executive Officer</p>
+                    <div>
+                        <div class="stat-text-label">DATE OF COMPLETION</div>
+                        <div class="stat-text-value">${completedDate}</div>
+                    </div>
                 </div>
                 
-                <div class="badge">
-                    <div class="badge-inner">Official</div>
-                    <div class="badge-star">★</div>
-                    <div class="badge-inner">Document</div>
+                <div class="stat-box">
+                    <div class="stat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </div>
+                    <div>
+                        <div class="stat-text-label">DURATION</div>
+                        <div class="stat-text-value">${duration}</div>
+                    </div>
                 </div>
 
-                <div class="signature-block">
-                    <div class="signature-line">
-                        <span class="signature-text" style="transform: rotate(-2deg);">Mihir P.</span>
+                <div class="stat-box">
+                    <div class="stat-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
                     </div>
-                    <p class="sig-name">Mihir Patel</p>
-                    <p class="sig-title">Director</p>
+                    <div>
+                        <div class="stat-text-label">GRADE</div>
+                        <div class="stat-text-value">${grade}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="signature">
+                    <div class="signature-img">Mihir Patel</div>
+                    <div class="signature-line">
+                        <div class="signature-name">MIHIR PATEL</div>
+                        <div class="signature-title">Managing Director</div>
+                    </div>
+                </div>
+
+                <div class="seal-container">
+                    <div class="ribbon ribbon-left"></div>
+                    <div class="ribbon ribbon-right"></div>
+                    <div class="seal">
+                        <div class="seal-inner">
+                            <div class="seal-text">LEON'S</div>
+                            <img src="${LOGO_BASE64}" class="seal-logo" alt="Seal Logo" />
+                            <div class="seal-text">INTEGRATIONS</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qr-box">
+                    <div class="qr-text">
+                        <div class="qr-text-label">VERIFY CERTIFICATE</div>
+                        <div class="qr-text-value">Scan the QR code to<br/>verify authenticity</div>
+                    </div>
+                    <img src="${qrUrl}" class="qr-code" alt="QR Code" />
                 </div>
             </div>
         </div>

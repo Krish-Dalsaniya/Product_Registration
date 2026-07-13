@@ -28,11 +28,12 @@ exports.extractLiveCandidateInfo = async (req, res, next) => {
         }
         
         // Pass to the extractor
+        const docKey = req.body.fileId || req.file.fieldname;
         const documents = {
-            [req.file.fieldname]: `uploads/candidates/${req.file.filename}`
+            [docKey]: `uploads/candidates/${req.file.filename}`
         };
         console.log("Documents object for extraction:", documents);
-        console.log("Absolute path will be:", require('path').join(process.cwd(), documents[req.file.fieldname]));
+        console.log("Absolute path will be:", require('path').join(process.cwd(), documents[docKey]));
         
         const extractedInfo = await extractCandidateInfo(documents, process.cwd());
         console.log("Extracted Info:", extractedInfo);
@@ -512,8 +513,8 @@ exports.extractCandidateZip = async (req, res) => {
             return res.status(400).json({ success: false, error: { message: 'No file provided' } });
         }
 
-        let combinedText = '';
         let extractedDocuments = {};
+        let documentsToProcess = {};
         const entries = [];
         const filename = req.file.originalname.toLowerCase();
 
@@ -557,17 +558,18 @@ exports.extractCandidateZip = async (req, res) => {
 
             // Document matching logic for Candidates
             const lowerName = entry.name.toLowerCase();
+            console.log(`ZIP Entry found: ${entry.name}`);
             let matchedKey = null;
             if (lowerName.includes('10th')) matchedKey = 'marksheet_10th';
             else if (lowerName.includes('12th')) matchedKey = 'marksheet_12th';
-            else if (lowerName.includes('sem 1') || lowerName.includes('sem_1') || lowerName.includes('sem1')) matchedKey = 'deg_sem_1';
-            else if (lowerName.includes('sem 2') || lowerName.includes('sem_2') || lowerName.includes('sem2')) matchedKey = 'deg_sem_2';
-            else if (lowerName.includes('sem 3') || lowerName.includes('sem_3') || lowerName.includes('sem3')) matchedKey = 'deg_sem_3';
-            else if (lowerName.includes('sem 4') || lowerName.includes('sem_4') || lowerName.includes('sem4')) matchedKey = 'deg_sem_4';
-            else if (lowerName.includes('sem 5') || lowerName.includes('sem_5') || lowerName.includes('sem5')) matchedKey = 'deg_sem_5';
-            else if (lowerName.includes('sem 6') || lowerName.includes('sem_6') || lowerName.includes('sem6')) matchedKey = 'deg_sem_6';
-            else if (lowerName.includes('sem 7') || lowerName.includes('sem_7') || lowerName.includes('sem7')) matchedKey = 'deg_sem_7';
-            else if (lowerName.includes('sem 8') || lowerName.includes('sem_8') || lowerName.includes('sem8')) matchedKey = 'deg_sem_8';
+            else if (lowerName.includes('sem 1') || lowerName.includes('sem_1') || lowerName.includes('sem1') || lowerName.includes('sem-1')) matchedKey = 'deg_sem_1';
+            else if (lowerName.includes('sem 2') || lowerName.includes('sem_2') || lowerName.includes('sem2') || lowerName.includes('sem-2')) matchedKey = 'deg_sem_2';
+            else if (lowerName.includes('sem 3') || lowerName.includes('sem_3') || lowerName.includes('sem3') || lowerName.includes('sem-3')) matchedKey = 'deg_sem_3';
+            else if (lowerName.includes('sem 4') || lowerName.includes('sem_4') || lowerName.includes('sem4') || lowerName.includes('sem-4')) matchedKey = 'deg_sem_4';
+            else if (lowerName.includes('sem 5') || lowerName.includes('sem_5') || lowerName.includes('sem5') || lowerName.includes('sem-5')) matchedKey = 'deg_sem_5';
+            else if (lowerName.includes('sem 6') || lowerName.includes('sem_6') || lowerName.includes('sem6') || lowerName.includes('sem-6')) matchedKey = 'deg_sem_6';
+            else if (lowerName.includes('sem 7') || lowerName.includes('sem_7') || lowerName.includes('sem7') || lowerName.includes('sem-7')) matchedKey = 'deg_sem_7';
+            else if (lowerName.includes('sem 8') || lowerName.includes('sem_8') || lowerName.includes('sem8') || lowerName.includes('sem-8')) matchedKey = 'deg_sem_8';
             else if (lowerName.includes('resume') || lowerName.includes('cv')) matchedKey = 'resume';
             else if (lowerName.includes('aadhar') || lowerName.includes('adhar')) matchedKey = 'aadharCard';
             else if (lowerName.includes('pan')) matchedKey = 'panCard';
@@ -579,89 +581,22 @@ exports.extractCandidateZip = async (req, res) => {
                 else if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
                 else if (ext === 'png') mimeType = 'image/png';
                 extractedDocuments[matchedKey] = `data:${mimeType};base64,${data.toString('base64')}`;
-            }
 
-            try {
-                if (ext === 'pdf') {
-                    // Quick check if PDFParse works this way
-                    let text = '';
-                    try {
-                        const pdf = require('pdf-parse');
-                        const pdfData = await pdf(data);
-                        text = pdfData.text;
-                    } catch (e) {
-                        try {
-                            const parser = new PDFParse({ data: data });
-                            const pdfData = await parser.getText();
-                            text = pdfData.text;
-                        } catch(e2) {
-                            console.error('PDF parsing failed in both ways', e2);
-                        }
-                    }
-                    combinedText += `\n--- Content from ${entry.name} ---\n${text}\n`;
-                } else if (ext === 'txt') {
-                    combinedText += `\n--- Content from ${entry.name} ---\n${data.toString('utf8')}\n`;
-                } else if (['jpg', 'jpeg', 'png'].includes(ext)) {
-                    const worker = await tesseract.createWorker('eng');
-                    const ret = await worker.recognize(data);
-                    combinedText += `\n--- Content from ${entry.name} ---\n${ret.data.text}\n`;
-                    await worker.terminate();
-                } else {
-                    console.log(`Skipping unsupported file type: ${entry.name}`);
-                }
-            } catch (err) {
-                console.error(`Error parsing file ${entry.name}:`, err.message);
+                // Write the file to disk so extractCandidateInfo can process it
+                const tempFilename = `zip_ext_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+                const tempFilePath = path.join(process.cwd(), 'uploads', 'candidates', tempFilename);
+                fs.writeFileSync(tempFilePath, data);
+                
+                documentsToProcess[matchedKey] = `uploads/candidates/${tempFilename}`;
             }
         }
 
-        if (!combinedText.trim()) {
-            return res.status(400).json({ success: false, error: { message: 'Could not extract any text from the provided archive.' } });
+        if (Object.keys(documentsToProcess).length === 0) {
+            return res.status(400).json({ success: false, error: { message: 'No valid candidate documents found in the archive.' } });
         }
 
-        const prompt = `
-You are an HR assistant bot. Extract the following information from the provided Candidate documents and return ONLY a valid JSON object matching this exact schema. If a value is not found, leave it as an empty string.
-
-Schema:
-{
-  "name": "string",
-  "email": "string",
-  "mobile": "string",
-  "whatsapp": "string",
-  "currentLocation": "string",
-  "date_of_birth": "YYYY-MM-DD",
-  "total_years_experience": "string",
-  "tenth_percentage": "string",
-  "twelfth_percentage": "string",
-  "degree_sgpa_1": "string",
-  "degree_sgpa_2": "string",
-  "degree_sgpa_3": "string",
-  "degree_sgpa_4": "string",
-  "degree_sgpa_5": "string",
-  "degree_sgpa_6": "string",
-  "degree_sgpa_7": "string",
-  "degree_sgpa_8": "string",
-  "degree_cgpa": "string",
-  "diploma_sgpa_1": "string",
-  "diploma_sgpa_2": "string",
-  "diploma_sgpa_3": "string",
-  "diploma_sgpa_4": "string",
-  "diploma_sgpa_5": "string",
-  "diploma_sgpa_6": "string",
-  "diploma_cgpa": "string"
-}
-
-Document Content:
-${combinedText.substring(0, 25000)}
-`;
-
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [{ role: 'user', content: prompt }],
-            model: 'llama-3.1-8b-instant',
-            temperature: 0.1,
-            response_format: { type: 'json_object' }
-        });
-
-        const extractedData = JSON.parse(chatCompletion.choices[0].message.content);
+        // Process all matched files using the exact same logic as live extraction
+        const extractedData = await extractCandidateInfo(documentsToProcess, process.cwd());
 
         return res.json({
             success: true,

@@ -39,6 +39,10 @@ export const updateAssignmentProgressApi = async (id, progress_percentage) => {
     return await axios.patch(`/hr/lms/assignment/${id}/progress`, { progress_percentage });
 };
 
+export const extendAssignmentDueDateApi = async (id, data) => {
+    return await axios.patch(`/hr/lms/assignment/${id}/extend`, data);
+};
+
 export const deleteAssignmentApi = async (id) => {
     return await axios.delete(`/hr/lms/assignment/${id}`);
 };
