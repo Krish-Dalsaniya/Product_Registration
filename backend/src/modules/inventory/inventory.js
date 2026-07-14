@@ -83,6 +83,7 @@ router.delete('/:module/categories/:categoryName', customCategoryController.dele
 
 router.get('/pcb', cache(60), inventoryController.getPCBs);
 router.get('/pcb/:id', cache(60), inventoryController.getPCBById);
+router.get('/firmware-traceability', cache(60), inventoryController.getFirmwareTraceabilityMap);
 router.post('/pcb', requirePermission('inventory.create'), upload.fields(pcbFiles), clearCache('/api/inventory'), inventoryController.createPCB);
 router.post('/pcb/:id/add-stock', requirePermission('inventory.edit'), clearCache('/api/inventory'), inventoryController.addPCBStock);
 router.put('/pcb/:id', requirePermission('inventory.edit'), upload.fields(pcbFiles), clearCache('/api/inventory'), inventoryController.updatePCB);

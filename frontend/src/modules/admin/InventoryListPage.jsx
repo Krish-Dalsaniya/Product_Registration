@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { getGitRepositories, getGitReleases, createGitRepository } from '../../api/gitIntegration';
 import { useNavigate } from 'react-router-dom';
 import { useDebounce } from '../../hooks/useDebounce';
 import DataTable from '../../components/shared/DataTable';
@@ -59,7 +60,9 @@ import {
   Ruler,
   Pencil,
   Maximize2,
-  PackagePlus
+  PackagePlus,
+  FileCode2,
+  Check
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
@@ -71,6 +74,14 @@ import { useAuth } from '../../context/AuthContext';
 const InventoryListPage = ({ type = '' }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const [gitRepos, setGitRepos] = useState([]);
+  
+  useEffect(() => {
+    getGitRepositories()
+      .then(res => setGitRepos(res.data?.data || []))
+      .catch(err => console.error(err));
+  }, []);
   const store = useStore();
   const { hasPermission } = useAuth();
 
@@ -385,8 +396,26 @@ const InventoryListPage = ({ type = '' }) => {
         });
       }
 
+
       if (type === 'PCB' || selectedItem?.category === 'PCB') {
+          // Serialize processors array
+          if (data.processors) {
+              formData.append('processors_data', JSON.stringify(data.processors));
+          } else if (data.processor_type || data.processor_part_no) {
+              // Fallback for draft/legacy format if any
+              formData.append('processors_data', JSON.stringify([{
+                  processor_type: data.processor_type,
+                  processor_part_no: data.processor_part_no,
+                  processor_desc: data.processor_desc,
+                  has_embedded_firmware: data.has_embedded_firmware,
+                  repository_name: data.repository_name,
+                  firmware_branch: data.firmware_branch,
+                  firmware_version: data.firmware_version
+              }]));
+          }
+          
           if (modalMode === 'create') {
+
               await createPCBMutation.mutateAsync(formData);
               toast.success('PCB registered successfully!');
           } else if (modalMode === 'edit') {
@@ -453,9 +482,9 @@ const InventoryListPage = ({ type = '' }) => {
     } else {
         setModalTab('general');
         reset({
-            pcb_name: '', part_number: '', pcb_description: '', pcb_type: '', pcb_type_desc: '',
-            processor_type: '', processor_part_no: '', processor_count: 0, processor_desc: '',
-            firmware_branch: '', firmware_version: '', firmware_feature: '', firmware_feature_desc: ''
+            pcb_name: '', part_number: '', pcb_type: '', pcb_description: '',
+            processor_count: 1,
+            processors: [{ processor_type: '', processor_part_no: '', processor_desc: '', has_embedded_firmware: false, repository_name: '', firmware_branch: '', firmware_version: '' }]
         });
     }
     
@@ -819,35 +848,51 @@ const InventoryListPage = ({ type = '' }) => {
     
     if (category === 'PCB') {
       return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-           {/* Hardware Profile */}
-           <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
-              <div className="flex items-center gap-4 mb-7">
-                 <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Cpu size={22} /></div>
-                 <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Hardware Profile</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                 <DataSheetEntry label="Core Architecture" value={selectedItem?.processor_type} icon={Cpu} />
-                 <DataSheetEntry label="Component Part No" value={selectedItem?.processor_part_no} icon={HardDrive} />
-                 <div className="sm:col-span-2">
-                   <DataSheetEntry label="Technical Notes" value={selectedItem?.processor_desc} icon={Info} />
-                 </div>
-              </div>
-           </div>
+        <div className="space-y-10">
+           {(selectedItem?.processors || []).map((proc, idx) => (
+             <div key={idx} className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* Hardware Profile */}
+                <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm relative overflow-hidden">
+                   <div className="absolute top-0 right-0 px-4 py-1.5 bg-[var(--bg-workspace)] border-b border-l border-[var(--border-color)] rounded-bl-2xl text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">
+                     Processor {idx + 1}
+                   </div>
+                   <div className="flex items-center gap-4 mb-7">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Cpu size={22} /></div>
+                      <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Hardware Profile</h3>
+                   </div>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <DataSheetEntry label="Core Architecture" value={proc.processor_type} icon={Cpu} />
+                      <DataSheetEntry label="Component Part No" value={proc.processor_part_no} icon={HardDrive} />
+                      <div className="sm:col-span-2">
+                        <DataSheetEntry label="Technical Notes" value={proc.processor_desc} icon={Info} />
+                      </div>
+                   </div>
+                </div>
 
-           {/* Firmware Profile */}
-           <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
-              <div className="flex items-center gap-4 mb-7">
-                 <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Binary size={22} /></div>
-                 <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Firmware Build</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                 <DataSheetEntry label="Active Branch" value={selectedItem?.firmware_branch} icon={Code} />
-                 <DataSheetEntry label="Version Spec" value={selectedItem?.firmware_version} icon={CheckCircle2} />
-                 <DataSheetEntry label="Primary Feature" value={selectedItem?.firmware_feature} icon={Zap} />
-                 <DataSheetEntry label="Release Context" value={selectedItem?.firmware_feature_desc} icon={Info} />
-              </div>
-           </div>
+                {/* Firmware Profile */}
+                {proc.has_embedded_firmware && (
+                  <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
+                     <div className="flex items-center gap-4 mb-7">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Binary size={22} /></div>
+                        <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Firmware Build</h3>
+                     </div>
+                     <div className="grid grid-cols-1 gap-5">
+                        <DataSheetEntry label="Repository Name" value={proc.repository_name} icon={Box} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <DataSheetEntry label="Active Branch" value={proc.firmware_branch} icon={Code} />
+                          <DataSheetEntry label="Version Spec" value={proc.firmware_version} icon={CheckCircle2} />
+                        </div>
+                     </div>
+                  </div>
+                )}
+             </div>
+           ))}
+           {(!selectedItem?.processors || selectedItem?.processors.length === 0) && (
+             <div className="text-center py-10 opacity-50">
+               <Cpu size={32} className="mx-auto mb-3 text-[var(--text-dim)]" />
+               <p className="text-[12px] font-bold text-[var(--text-dim)] uppercase tracking-widest">No processors mapped to this board</p>
+             </div>
+           )}
         </div>
       );
     }
@@ -1024,6 +1069,220 @@ const InventoryListPage = ({ type = '' }) => {
     { key: 'stock_quantity', label: 'Stock Qty', render: (row) => <span className="font-black text-[var(--accent)]">{row.stock_quantity ?? 0}</span> },
     { key: 'created_at', label: 'Registered On', render: (row) => new Date(row.created_at).toLocaleDateString() }
   ];
+
+
+  const ProcessorBlock = ({ index, control, watch, setValue, gitRepos, getGitReleases }) => {
+      const [repoReleases, setRepoReleases] = useState([]);
+      const [isFetchingReleases, setIsFetchingReleases] = useState(false);
+      const [showCreateRepo, setShowCreateRepo] = useState(false);
+      const [newRepoName, setNewRepoName] = useState('');
+      const [isCreatingRepo, setIsCreatingRepo] = useState(false);
+      
+      const has_embedded = watch(`processors.${index}.has_embedded_firmware`);
+      const repoName = watch(`processors.${index}.repository_name`);
+      
+      useEffect(() => {
+          if (repoName) {
+              const repoObj = gitRepos.find(r => r.name === repoName);
+              const owner = repoObj?.owner?.login || repoObj?.owner?.username || 'mihir';
+              if (owner) {
+                  setIsFetchingReleases(true);
+                  getGitReleases(owner, repoName)
+                      .then(res => setRepoReleases(res.data?.data || []))
+                      .catch(err => setRepoReleases([]))
+                      .finally(() => setIsFetchingReleases(false));
+              }
+          } else {
+              setRepoReleases([]);
+          }
+      }, [repoName, gitRepos, getGitReleases]);
+
+      const submitCreateRepo = async () => {
+          if (!newRepoName.trim()) return;
+          setIsCreatingRepo(true);
+          try {
+              const res = await createGitRepository({ name: newRepoName.trim(), description: 'Created via PCB Registration', private: true });
+              toast.success('Repository created successfully!');
+              setShowCreateRepo(false);
+              setValue(`processors.${index}.repository_name`, res.data?.data?.name || newRepoName.trim());
+              setNewRepoName('');
+              // Re-fetch repos (we can't easily trigger the global fetch here, but the component will update if parent updates gitRepos)
+          } catch (error) {
+              toast.error(error.response?.data?.message || 'Failed to create repository');
+          } finally {
+              setIsCreatingRepo(false);
+          }
+      };
+
+      return (
+          <div className="bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] p-6 rounded-2xl space-y-6 relative mb-6">
+              <h3 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest mb-4 flex items-center gap-2">
+                  Processor {index + 1} Configuration
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-8">
+                  <FormField label="Processor Type" name={`processors.${index}.processor_type`} placeholder="e.g. ARM Cortex-M4" />
+                  <FormField label="Processor Part Number" name={`processors.${index}.processor_part_no`} placeholder="e.g. STM32F405RGT6" />
+              </div>
+              <div className="grid grid-cols-1 gap-8">
+                  <FormField label="Processor Description" name={`processors.${index}.processor_desc`} placeholder="Package type, clock speed, etc..." />
+              </div>
+
+              {/* Firmware Linkage Block */}
+              <div className="bg-[var(--bg-workspace)]/80 p-5 rounded-xl border border-[var(--border-color)]/60 space-y-5 mt-6">
+                  <div className="flex gap-8">
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                          <Controller
+                              name={`processors.${index}.has_embedded_firmware`}
+                              control={control}
+                              render={({ field: { onChange, value } }) => (
+                                  <div 
+                                      onClick={() => onChange(!value)}
+                                      className={`w-5 h-5 flex-shrink-0 rounded-[6px] border flex items-center justify-center transition-all cursor-pointer ${value ? 'bg-[var(--accent)] border-[var(--accent)] text-white' : 'border-[var(--border-color)] bg-[var(--bg-main)]'}`}
+                                  >
+                                      {value && <Check size={14} strokeWidth={4} />}
+                                  </div>
+                              )}
+                          />
+                          <span className="text-[13px] font-bold text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors">Has Embedded Firmware</span>
+                      </label>
+                  </div>
+
+                  {has_embedded && (
+                      <div className="space-y-6 pt-4 border-t border-[var(--border-color)]/50 animate-in slide-in-from-top-2 duration-300">
+                          <div className="space-y-2">
+                              <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+                                  Repository Name
+                              </label>
+                              {showCreateRepo ? (
+                                  <div className="flex gap-2 w-full">
+                                      <input 
+                                          type="text"
+                                          value={newRepoName}
+                                          onChange={(e) => setNewRepoName(e.target.value)}
+                                          placeholder="Enter new repository name..."
+                                          className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
+                                          autoFocus
+                                      />
+                                      <button 
+                                          type="button"
+                                          onClick={submitCreateRepo}
+                                          disabled={isCreatingRepo || !newRepoName.trim()}
+                                          className="btn-primary px-4 py-3 flex items-center justify-center min-w-[80px] rounded-xl"
+                                      >
+                                          {isCreatingRepo ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                                      </button>
+                                      <button 
+                                          type="button"
+                                          onClick={() => { setShowCreateRepo(false); setNewRepoName(''); }}
+                                          className="bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--text-muted)] text-[var(--text-muted)] hover:text-[var(--text-main)] px-4 py-3 rounded-xl transition-colors text-[13px] font-bold"
+                                      >
+                                          Cancel
+                                      </button>
+                                  </div>
+                              ) : (
+                                  <div className="flex gap-3">
+                                      <div className="flex-1">
+                                          <Controller
+                                              name={`processors.${index}.repository_name`}
+                                              control={control}
+                                              render={({ field }) => (
+                                                  <select 
+                                                      {...field}
+                                                      className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 transition-all font-bold appearance-none cursor-pointer"
+                                                  >
+                                                      <option value="">Select a repository...</option>
+                                                      {gitRepos.map(repo => (
+                                                          <option key={repo.id} value={repo.name}>{repo.name}</option>
+                                                      ))}
+                                                  </select>
+                                              )}
+                                          />
+                                      </div>
+                                      <button 
+                                          type="button" 
+                                          onClick={() => {
+                                              setShowCreateRepo(true);
+                                              setValue(`processors.${index}.repository_name`, '');
+                                              setRepoReleases([]);
+                                          }}
+                                          className="bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] text-[var(--text-main)] hover:text-[var(--accent)] px-4 rounded-xl font-bold transition-colors text-[13px] whitespace-nowrap flex items-center gap-2"
+                                      >
+                                          <Plus size={16} /> New Repo
+                                      </button>
+                                  </div>
+                              )}
+                          </div>
+
+                          {repoName && repoReleases.length > 0 && (
+                              <div className="pt-4 border-t border-[var(--border-color)]/50 animate-in fade-in duration-300">
+                                  <div className="flex items-center justify-between mb-3">
+                                      <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+                                          Available Firmware Binaries (Releases)
+                                      </label>
+                                      {isFetchingReleases && <Loader2 size={12} className="animate-spin text-[var(--accent)]" />}
+                                  </div>
+                                  <div className="space-y-3 max-h-[160px] overflow-y-auto custom-scrollbar pr-2">
+                                      {repoReleases.map(release => (
+                                          <div key={release.id} className="mb-4 last:mb-0">
+                                              <div className="flex justify-between items-start mb-2 px-1">
+                                                  <div>
+                                                      <div className="flex items-center gap-2 mb-1.5">
+                                                          <span className="text-[13px] font-bold text-[var(--text-main)]">{release.name || release.tag_name}</span>
+                                                          <span className="text-[9px] bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 px-1.5 py-0.5 rounded font-black tracking-widest uppercase">{release.tag_name}</span>
+                                                      </div>
+                                                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-[var(--text-muted)] font-medium">
+                                                          <span className="flex items-center gap-1.5"><Calendar size={12} className="opacity-70" /> {new Date(release.published_at || release.created_at).toLocaleDateString()}</span>
+                                                          <span className="flex items-center gap-1.5"><Fingerprint size={12} className="opacity-70" /> {release.author?.username || 'System'}</span>
+                                                      </div>
+                                                      {release.body && (
+                                                          <div className="text-[11px] text-[var(--text-muted)] mt-2 line-clamp-2 leading-relaxed opacity-80 border-l-2 border-[var(--border-color)] pl-2">
+                                                              {release.body}
+                                                          </div>
+                                                      )}
+                                                  </div>
+                                              </div>
+                                              {release.assets?.filter(a => a.name.endsWith('.bin')).length > 0 ? (
+                                                  release.assets.filter(a => a.name.endsWith('.bin')).map(asset => (
+                                                      <div key={asset.id} 
+                                                           onClick={() => {
+                                                               setValue(`processors.${index}.firmware_version`, release.tag_name || '');
+                                                               if (release.target_commitish) {
+                                                                   setValue(`processors.${index}.firmware_branch`, release.target_commitish);
+                                                               }
+                                                           }}
+                                                           className="flex items-center justify-between py-2.5 px-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl mt-2 group cursor-pointer hover:bg-[var(--nav-hover)] hover:border-[var(--accent)] transition-all shadow-sm"
+                                                      >
+                                                          <div className="flex items-center gap-3 text-[13px] text-[var(--text-main)] font-bold">
+                                                          <FileCode2 size={16} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
+                                                          {asset.name}
+                                                          <span className="text-[10px] text-[var(--text-muted)] font-medium">({(asset.size / 1024).toFixed(1)} KB)</span>
+                                                          </div>
+                                                          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] group-hover:text-white group-hover:bg-[var(--accent)] transition-all bg-[var(--bg-main)] px-3 py-1.5 rounded-lg border border-[var(--border-color)] group-hover:border-[var(--accent)] shadow-sm">
+                                                              <CheckCircle2 size={14} className="opacity-40 group-hover:opacity-100 transition-opacity" />
+                                                              Select
+                                                          </div>
+                                                      </div>
+                                                  ))
+                                              ) : (
+                                                  <div className="text-[11px] text-[var(--text-muted)] italic px-1 pt-1 opacity-60">No .bin assets found in this release.</div>
+                                              )}
+                                          </div>
+                                      ))}
+                                  </div>
+                              </div>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-8 pt-4">
+                              <FormField label="Firmware Branch Name" name={`processors.${index}.firmware_branch`} placeholder="e.g. main / production-v1" />
+                              <FormField label="Firmware Version Number" name={`processors.${index}.firmware_version`} placeholder="e.g. v2.1.0-stable" />
+                          </div>
+                      </div>
+                  )}
+              </div>
+          </div>
+      );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-10 px-2">
@@ -1417,8 +1676,7 @@ const InventoryListPage = ({ type = '' }) => {
                   {((selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
                     [
                       { id: 'general', label: 'General', icon: Info },
-                      { id: 'processor', label: 'Processor', icon: Settings },
-                      { id: 'firmware', label: 'Firmware', icon: Code },
+                      { id: 'processors', label: 'Processors', icon: Settings },
                       { id: 'files', label: 'PCB Files', icon: FileUp }
                     ]
                   ) : (
@@ -1451,13 +1709,8 @@ const InventoryListPage = ({ type = '' }) => {
                       </div>
                       {(selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
                         <>
-                          <div className="grid grid-cols-2 gap-8">
+                          <div className="grid grid-cols-1 gap-8">
                               <FormField label="PCB Type" name="pcb_type" placeholder="e.g. 4-Layer FR4" />
-                              <FormField label="PCB Type Description" name="pcb_type_desc" placeholder="Details about construction..." />
-                          </div>
-                          <div className="grid grid-cols-2 gap-8">
-                              <FormField label="Processor Count" name="processor_count" type="number" placeholder="e.g. 1" />
-                              <FormField label="Stock Quantity" name="stock_quantity" type="number" placeholder="e.g. 10" />
                           </div>
                           <TextAreaField label="PCB Description" name="pcb_description" placeholder="Technical overview and purpose of this board..." />
                         </>
@@ -1523,49 +1776,33 @@ const InventoryListPage = ({ type = '' }) => {
                   {/* Processor & Firmware Tabs (PCB Only) */}
                   {(selectedItem?.category === 'PCB' || !selectedItem?.category) && (
                     <>
-                      {modalTab === 'processor' && (
+                      
+                      {modalTab === 'processors' && (
                           <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                          <div className="grid grid-cols-2 gap-8">
-                              <FormField label="Processor Type" name="processor_type" placeholder="e.g. ARM Cortex-M4" />
-                              <FormField label="Processor Part Number" name="processor_part_no" placeholder="e.g. STM32F405RGT6" />
-                          </div>
-                          <div className="grid grid-cols-2 gap-8">
-                              <FormField label="Processor Count" name="processor_count" type="number" placeholder="e.g. 1" />
-                              <FormField label="Processor Description" name="processor_desc" placeholder="Package type, clock speed, etc..." />
-                          </div>
-                          
-                          {/* Save & Next Button for Processor */}
-                          <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
-                              <button type="button" onClick={() => setModalTab('firmware')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
-                                  Save & Next <ChevronRight size={16} strokeWidth={3} />
-                              </button>
-                          </div>
+                              <div className="grid grid-cols-1 gap-8 mb-6">
+                                  <FormField label="Total Processor Count" name="processor_count" type="number" placeholder="e.g. 1, 2" />
+                              </div>
+                              
+                              {Array.from({ length: Math.max(1, parseInt(watch('processor_count') || 1)) }).map((_, idx) => (
+                                  <ProcessorBlock 
+                                      key={idx} 
+                                      index={idx} 
+                                      control={control} 
+                                      watch={watch} 
+                                      setValue={setValue} 
+                                      gitRepos={gitRepos} 
+                                      getGitReleases={getGitReleases} 
+                                  />
+                              ))}
+                              
+                              <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                                  <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                                      Save & Next <ChevronRight size={16} strokeWidth={3} />
+                                  </button>
+                              </div>
                           </div>
                       )}
-
-                      {modalTab === 'firmware' && (
-                          <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                          <div className="grid grid-cols-2 gap-8">
-                              <FormField label="Firmware Branch Name" name="firmware_branch" placeholder="e.g. main / production-v1" />
-                              <FormField label="Firmware Version Number" name="firmware_version" placeholder="e.g. v2.1.0-stable" />
-                          </div>
-                          <div className="grid grid-cols-1 gap-8">
-                              <FormField label="Firmware Feature Name" name="firmware_feature" placeholder="e.g. CAN-FD Support" />
-                              <TextAreaField label="Firmware Feature Description" name="firmware_feature_desc" placeholder="Describe the capabilities of this firmware build..." />
-                          </div>
-                          
-                          {/* Save & Next Button for Firmware */}
-                          <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
-                              <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
-                                  Save & Next <ChevronRight size={16} strokeWidth={3} />
-                              </button>
-                          </div>
-                          </div>
-                      )}
-                    </>
-                  )}
-
-                  {modalTab === 'files' && (
+{modalTab === 'files' && (
                       <div className="animate-in fade-in slide-in-from-left-4 duration-500">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                           {(selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
@@ -1675,6 +1912,8 @@ const InventoryListPage = ({ type = '' }) => {
                       </div>
                       </div>
                   )}
+                  </>
+                )}
 
                   </form>
               </div>

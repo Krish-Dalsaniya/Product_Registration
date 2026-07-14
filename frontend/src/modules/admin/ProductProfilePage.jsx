@@ -89,7 +89,7 @@ const ProductProfilePage = () => {
     ...(hasPermission('products', 'view', 'tech_spec') ? ['specification', 'faqs'] : []), 
     ...(hasPermission('products', 'view', 'files') ? ['documents'] : []), 
     ...(hasPermission('products', 'view', 'bom') ? ['bill of materials'] : []),
-    ...(hasPermission('inventory', 'view') ? ['finished goods'] : [])
+    ...(hasPermission('inventory', 'view') ? ['versions'] : [])
   ], [hasPermission]);
 
   useEffect(() => {
@@ -325,7 +325,7 @@ const ProductProfilePage = () => {
             ...(hasPermission('products', 'view', 'tech_spec') ? ['specification', 'faqs'] : []), 
             ...(hasPermission('products', 'view', 'files') ? ['documents'] : []), 
             ...(hasPermission('products', 'view', 'bom') ? ['bill of materials'] : []),
-            ...(hasPermission('inventory', 'view') ? ['finished goods'] : [])
+            ...(hasPermission('inventory', 'view') ? ['versions'] : [])
           ].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-4.5 text-[11px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
               {tab}
@@ -475,7 +475,7 @@ const ProductProfilePage = () => {
               )}
             </div>
           )}
-          {activeTab === 'finished goods' && (
+          {activeTab === 'versions' && (
             <FinishedGoodsPage isEmbedded={true} hideAddButton={true} defaultProductId={selectedProduct?.product_id} />
           )}
         </div>

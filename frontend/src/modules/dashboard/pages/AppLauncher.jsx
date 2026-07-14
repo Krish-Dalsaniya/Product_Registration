@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { Search, Bell, User, LogOut, GitBranch } from 'lucide-react';
+import { Search, Bell, User, LogOut, GitBranch, Clock, Network } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import LoginBackground from '../../../components/shared/LoginBackground';
 
@@ -206,6 +206,17 @@ const AppLauncher = () => {
       gradient: 'bg-gradient-to-r from-emerald-100/90 via-white/80 to-white/90',
       shadowColor: 'shadow-emerald-500/10',
       path: '/git/dashboard',
+      permissionKey: 'admin'
+    },
+    {
+      id: 'firmware_map',
+      name: 'Firmware Map',
+      description: 'Trace firmware deployments',
+      iconComponent: Network,
+      colSpan: 'md:col-span-4',
+      gradient: 'bg-gradient-to-r from-orange-100/90 via-white/80 to-white/90',
+      shadowColor: 'shadow-orange-500/10',
+      path: '/admin/inventory/firmware-traceability',
       permissionKey: 'admin'
     }
   ];

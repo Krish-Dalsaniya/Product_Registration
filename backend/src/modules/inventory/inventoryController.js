@@ -56,12 +56,12 @@ const getPCBById = async (req, res, next) => {
         const imagesResult = await db.query('SELECT image_url FROM pcb_images WHERE pcb_id = $1', [id]);
         const pcb_images = imagesResult.rows.map(row => row.image_url);
         
-        // Fetch Firmware Mapping
+        // Fetch Firmware Mapping (All Processors)
         const mappingResult = await db.query(`
             SELECT 
                 pfm.*, 
                 pm.processor_type, pm.part_no as processor_part_no, pm.description as processor_desc,
-                fm.firmware_branch_name as firmware_branch, fm.description as firmware_feature_desc,
+                fm.repository_name, fm.firmware_branch_name as firmware_branch, fm.description as firmware_feature_desc,
                 fvm.firmware_version,
                 ffm.feature_name as firmware_feature
             FROM PCB_FIRMWARE_MAPPING pfm
@@ -70,14 +70,23 @@ const getPCBById = async (req, res, next) => {
             LEFT JOIN FIRMWARE_VERSION_MASTER fvm ON pfm.firmware_version_id = fvm.firmware_version_id
             LEFT JOIN FIRMWARE_FEATURE_MASTER ffm ON fm.firmware_master_id = ffm.firmware_master_id
             WHERE pfm.pcb_id = $1
-            LIMIT 1
+            ORDER BY pfm.pcb_firmware_mapping_id ASC
         `, [id]);
 
-        const mapping = mappingResult.rows[0] || {};
+        const processors = mappingResult.rows.map(row => ({
+            processor_type: row.processor_type || '',
+            processor_part_no: row.processor_part_no || '',
+            processor_desc: row.processor_desc || '',
+            has_embedded_firmware: !!row.firmware_master_id,
+            repository_name: row.repository_name || '',
+            firmware_branch: row.firmware_branch || '',
+            firmware_version: row.firmware_version || ''
+        }));
 
         sendSuccess(res, {
             ...pcb,
-            ...mapping,
+            processor_count: processors.length > 0 ? processors.length : (pcb.processor_count || 1),
+            processors: processors,
             files: filesResult.rows[0] || {},
             pcb_images
         });
@@ -87,30 +96,34 @@ const getPCBById = async (req, res, next) => {
 };
 
 const createPCB = async (req, res, next) => {
+  
   const { 
     pcb_name, 
     part_number, 
     pcb_description, 
     pcb_type, 
-    pcb_type_desc,
-    processor_type,
-    processor_part_no,
     processor_count,
-    processor_desc,
-    firmware_branch,
-    firmware_version,
-    firmware_feature,
-    firmware_feature_desc
+    processors_data,
+    stock_quantity
   } = req.body;
 
   try {
+    let processors = [];
+    if (processors_data) {
+        try {
+            processors = JSON.parse(processors_data);
+        } catch(e) {
+            console.error("Failed to parse processors_data", e);
+        }
+    }
+
     await db.withTransaction(async (client) => {
       // 1. Handle PCB Type
       let typeId = null;
       if (pcb_type) {
           const typeResult = await client.query(
               'INSERT INTO PCB_TYPE_MASTER (type_name, type_description) VALUES ($1, $2) ON CONFLICT (type_name) DO UPDATE SET type_description = $2 RETURNING pcb_type_id',
-              [pcb_type, pcb_type_desc || '']
+              [pcb_type, '']
           );
           typeId = typeResult.rows[0].pcb_type_id;
       }
@@ -119,58 +132,56 @@ const createPCB = async (req, res, next) => {
       const pcbResult = await client.query(
         `INSERT INTO PCB_MASTER (pcb_name, pcb_type_id, part_no, description, processor_count, stock_quantity) 
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [pcb_name, typeId, part_number, pcb_description || '', parseInt(processor_count) || 0, parseInt(req.body.stock_quantity) || 0]
+        [pcb_name, typeId, part_number, pcb_description || '', parseInt(processor_count) || processors.length || 0, parseInt(stock_quantity) || 0]
       );
       const pcb = pcbResult.rows[0];
 
-      // 3. Handle Processor
-      let processorId = null;
-      if (processor_part_no) {
-          const procResult = await client.query(
-              'INSERT INTO PROCESSOR_MASTER (processor_type, part_no, description) VALUES ($1, $2, $3) ON CONFLICT (part_no) DO UPDATE SET processor_type = $1 RETURNING processor_id',
-              [processor_type || 'Unknown', processor_part_no, processor_desc || '']
-          );
-          processorId = procResult.rows[0].processor_id;
-      }
+      // 3 & 4 & 5. Handle Processors & Firmware Mapping Loop
+      if (processors && processors.length > 0) {
+          for (let i = 0; i < processors.length; i++) {
+              const proc = processors[i];
+              let processorId = null;
+              
+              if (proc.processor_part_no) {
+                  const procResult = await client.query(
+                      'INSERT INTO PROCESSOR_MASTER (processor_type, part_no, description) VALUES ($1, $2, $3) ON CONFLICT (part_no) DO UPDATE SET processor_type = $1 RETURNING processor_id',
+                      [proc.processor_type || 'Unknown', proc.processor_part_no, proc.processor_desc || '']
+                  );
+                  processorId = procResult.rows[0].processor_id;
+              }
 
-      // 4. Handle Firmware
-      let firmwareMasterId = null;
-      let firmwareVersionId = null;
+              let firmwareMasterId = null;
+              let firmwareVersionId = null;
 
-      const hasFirmware = firmware_branch || firmware_version || firmware_feature || firmware_feature_desc;
-      if (hasFirmware) {
-          const branchName = firmware_branch || 'Unknown Branch';
-          const firmwareResult = await client.query(
-              'INSERT INTO FIRMWARE_MASTER (processor_id, firmware_branch_name, description) VALUES ($1, $2, $3) RETURNING firmware_master_id',
-              [processorId, branchName, firmware_feature_desc || '']
-          );
-          firmwareMasterId = firmwareResult.rows[0].firmware_master_id;
+              if (proc.has_embedded_firmware && (proc.firmware_branch || proc.firmware_version || proc.repository_name)) {
+                  const branchName = proc.firmware_branch || 'Unknown Branch';
+                  const repoName = proc.repository_name || 'Unknown Repository';
+                  const firmwareResult = await client.query(
+                      'INSERT INTO FIRMWARE_MASTER (processor_id, repository_name, firmware_branch_name, description) VALUES ($1, $2, $3, $4) RETURNING firmware_master_id',
+                      [processorId, repoName, branchName, '']
+                  );
+                  firmwareMasterId = firmwareResult.rows[0].firmware_master_id;
 
-          if (firmware_version) {
-              const versionResult = await client.query(
-                  'INSERT INTO FIRMWARE_VERSION_MASTER (firmware_master_id, firmware_version) VALUES ($1, $2) RETURNING firmware_version_id',
-                  [firmwareMasterId, firmware_version]
-              );
-              firmwareVersionId = versionResult.rows[0].firmware_version_id;
+                  if (proc.firmware_version) {
+                      const versionResult = await client.query(
+                          'INSERT INTO FIRMWARE_VERSION_MASTER (firmware_master_id, firmware_version) VALUES ($1, $2) RETURNING firmware_version_id',
+                          [firmwareMasterId, proc.firmware_version]
+                      );
+                      firmwareVersionId = versionResult.rows[0].firmware_version_id;
+                  }
+              }
+
+              if (processorId || firmwareMasterId) {
+                  await client.query(
+                      'INSERT INTO PCB_FIRMWARE_MAPPING (pcb_id, processor_id, firmware_master_id, firmware_version_id, is_default) VALUES ($1, $2, $3, $4, $5)',
+                      [pcb.pcb_id, processorId, firmwareMasterId, firmwareVersionId, i === 0] // Make the first one default
+                  );
+              }
           }
-
-          if (firmware_feature) {
-              await client.query(
-                  'INSERT INTO FIRMWARE_FEATURE_MASTER (firmware_master_id, feature_name, feature_description) VALUES ($1, $2, $3)',
-                  [firmwareMasterId, firmware_feature, firmware_feature_desc || '']
-              );
-          }
-      }
-
-      // 5. Create Mapping
-      if (processorId || firmwareMasterId) {
-          await client.query(
-              'INSERT INTO PCB_FIRMWARE_MAPPING (pcb_id, processor_id, firmware_master_id, firmware_version_id, is_default) VALUES ($1, $2, $3, $4, $5)',
-              [pcb.pcb_id, processorId, firmwareMasterId, firmwareVersionId, true]
-          );
       }
 
       // 6. Handle Files
+
       if (req.files) {
           const files = req.files;
           await client.query(
@@ -224,32 +235,36 @@ const createPCB = async (req, res, next) => {
   }
 };
 
+
 const updatePCB = async (req, res, next) => {
     const { id } = req.params;
     const { 
       pcb_name, 
       part_number, 
       pcb_description, 
-      pcb_type, 
-      pcb_type_desc,
-      processor_type,
-      processor_part_no,
+      pcb_type,
       processor_count,
-      processor_desc,
-      firmware_branch,
-      firmware_version,
-      firmware_feature,
-      firmware_feature_desc
+      processors_data,
+      stock_quantity
     } = req.body;
   
     try {
+      let processors = [];
+      if (processors_data) {
+          try {
+              processors = JSON.parse(processors_data);
+          } catch(e) {
+              console.error("Failed to parse processors_data", e);
+          }
+      }
+
       await db.withTransaction(async (client) => {
         // 1. Handle PCB Type
         let typeId = null;
         if (pcb_type) {
             const typeResult = await client.query(
                 'INSERT INTO PCB_TYPE_MASTER (type_name, type_description) VALUES ($1, $2) ON CONFLICT (type_name) DO UPDATE SET type_description = $2 RETURNING pcb_type_id',
-                [pcb_type, pcb_type_desc || '']
+                [pcb_type, '']
             );
             typeId = typeResult.rows[0].pcb_type_id;
         }
@@ -259,101 +274,72 @@ const updatePCB = async (req, res, next) => {
           `UPDATE PCB_MASTER 
            SET pcb_name = $1, pcb_type_id = $2, part_no = $3, description = $4, processor_count = $5, stock_quantity = $6, updated_at = CURRENT_TIMESTAMP
            WHERE pcb_id = $7`,
-          [pcb_name, typeId, part_number, pcb_description || '', parseInt(processor_count) || 0, parseInt(req.body.stock_quantity) || 0, id]
+          [pcb_name, typeId, part_number, pcb_description || '', parseInt(processor_count) || processors.length || 0, parseInt(stock_quantity) || 0, id]
         );
     
-        // 3. Handle Processor
-        let processorId = null;
-        if (processor_part_no) {
-            const procResult = await client.query(
-                'INSERT INTO PROCESSOR_MASTER (processor_type, part_no, description) VALUES ($1, $2, $3) ON CONFLICT (part_no) DO UPDATE SET processor_type = $1, description = $3 RETURNING processor_id',
-                [processor_type || 'Unknown', processor_part_no, processor_desc || '']
-            );
-            processorId = procResult.rows[0].processor_id;
-        }
-    
-        // 4. Handle Firmware & Mapping
-        let firmwareMasterId = null;
-        let firmwareVersionId = null;
+        // Clear old firmware mappings for this PCB to easily replace them
+        await client.query('DELETE FROM PCB_FIRMWARE_MAPPING WHERE pcb_id = $1', [id]);
 
-        const hasFirmware = firmware_branch || firmware_version || firmware_feature || firmware_feature_desc;
-        if (hasFirmware) {
-            const branchName = firmware_branch || 'Unknown Branch';
-            // Check if firmware master exists, if not create
-            let fmResult;
-            if (processorId) {
-                fmResult = await client.query(
-                    'SELECT firmware_master_id FROM FIRMWARE_MASTER WHERE processor_id = $1 AND firmware_branch_name = $2',
-                    [processorId, branchName]
-                );
-            } else {
-                fmResult = await client.query(
-                    'SELECT firmware_master_id FROM FIRMWARE_MASTER WHERE processor_id IS NULL AND firmware_branch_name = $1',
-                    [branchName]
-                );
-            }
+        // 3 & 4. Handle Processors & Firmware Mapping
+        if (processors && processors.length > 0) {
+            for (let i = 0; i < processors.length; i++) {
+                const proc = processors[i];
+                let processorId = null;
+                
+                if (proc.processor_part_no) {
+                    const procResult = await client.query(
+                        'INSERT INTO PROCESSOR_MASTER (processor_type, part_no, description) VALUES ($1, $2, $3) ON CONFLICT (part_no) DO UPDATE SET processor_type = $1, description = $3 RETURNING processor_id',
+                        [proc.processor_type || 'Unknown', proc.processor_part_no, proc.processor_desc || '']
+                    );
+                    processorId = procResult.rows[0].processor_id;
+                }
             
-            if (fmResult.rows.length > 0) {
-                firmwareMasterId = fmResult.rows[0].firmware_master_id;
-                await client.query(
-                    'UPDATE FIRMWARE_MASTER SET description = $1 WHERE firmware_master_id = $2',
-                    [firmware_feature_desc || '', firmwareMasterId]
-                );
-            } else {
-                const insertFmResult = await client.query(
-                    'INSERT INTO FIRMWARE_MASTER (processor_id, firmware_branch_name, description) VALUES ($1, $2, $3) RETURNING firmware_master_id',
-                    [processorId, branchName, firmware_feature_desc || '']
-                );
-                firmwareMasterId = insertFmResult.rows[0].firmware_master_id;
-            }
+                let firmwareMasterId = null;
+                let firmwareVersionId = null;
 
-            if (firmware_version) {
-                const fvResult = await client.query(
-                    'SELECT firmware_version_id FROM FIRMWARE_VERSION_MASTER WHERE firmware_master_id = $1 AND firmware_version = $2',
-                    [firmwareMasterId, firmware_version]
-                );
-                if (fvResult.rows.length > 0) {
-                    firmwareVersionId = fvResult.rows[0].firmware_version_id;
-                } else {
-                    const insertFvResult = await client.query(
-                        'INSERT INTO FIRMWARE_VERSION_MASTER (firmware_master_id, firmware_version) VALUES ($1, $2) RETURNING firmware_version_id',
-                        [firmwareMasterId, firmware_version]
-                    );
-                    firmwareVersionId = insertFvResult.rows[0].firmware_version_id;
+                if (proc.has_embedded_firmware && (proc.firmware_branch || proc.firmware_version || proc.repository_name)) {
+                    const branchName = proc.firmware_branch || 'Unknown Branch';
+                    const repoName = proc.repository_name || 'Unknown Repository';
+                    
+                    // Check if firmware master exists, if not create
+                    let fmResult;
+                    if (processorId) {
+                        fmResult = await client.query(
+                            'SELECT firmware_master_id FROM FIRMWARE_MASTER WHERE processor_id = $1 AND repository_name = $2 AND firmware_branch_name = $3',
+                            [processorId, repoName, branchName]
+                        );
+                    } else {
+                        fmResult = await client.query(
+                            'SELECT firmware_master_id FROM FIRMWARE_MASTER WHERE processor_id IS NULL AND repository_name = $1 AND firmware_branch_name = $2',
+                            [repoName, branchName]
+                        );
+                    }
+                    
+                    if (fmResult.rows.length > 0) {
+                        firmwareMasterId = fmResult.rows[0].firmware_master_id;
+                    } else {
+                        const insertFmResult = await client.query(
+                            'INSERT INTO FIRMWARE_MASTER (processor_id, repository_name, firmware_branch_name, description) VALUES ($1, $2, $3, $4) RETURNING firmware_master_id',
+                            [processorId, repoName, branchName, '']
+                        );
+                        firmwareMasterId = insertFmResult.rows[0].firmware_master_id;
+                    }
+
+                    if (proc.firmware_version) {
+                        const versionResult = await client.query(
+                            'INSERT INTO FIRMWARE_VERSION_MASTER (firmware_master_id, firmware_version) VALUES ($1, $2) RETURNING firmware_version_id',
+                            [firmwareMasterId, proc.firmware_version]
+                        );
+                        firmwareVersionId = versionResult.rows[0].firmware_version_id;
+                    }
                 }
-            }
 
-            if (firmware_feature) {
-                const ffResult = await client.query(
-                    'SELECT firmware_feature_id FROM FIRMWARE_FEATURE_MASTER WHERE firmware_master_id = $1 AND feature_name = $2',
-                    [firmwareMasterId, firmware_feature]
-                );
-                if (ffResult.rows.length > 0) {
+                if (processorId || firmwareMasterId) {
                     await client.query(
-                        'UPDATE FIRMWARE_FEATURE_MASTER SET feature_description = $1 WHERE firmware_master_id = $2 AND feature_name = $3',
-                        [firmware_feature_desc || '', firmwareMasterId, firmware_feature]
-                    );
-                } else {
-                    await client.query(
-                        'INSERT INTO FIRMWARE_FEATURE_MASTER (firmware_master_id, feature_name, feature_description) VALUES ($1, $2, $3)',
-                        [firmwareMasterId, firmware_feature, firmware_feature_desc || '']
+                        'INSERT INTO PCB_FIRMWARE_MAPPING (pcb_id, processor_id, firmware_master_id, firmware_version_id, is_default) VALUES ($1, $2, $3, $4, $5)',
+                        [id, processorId, firmwareMasterId, firmwareVersionId, i === 0]
                     );
                 }
-            }
-        }
-
-        if (processorId || firmwareMasterId) {
-            const existingMapping = await client.query('SELECT * FROM PCB_FIRMWARE_MAPPING WHERE pcb_id = $1', [id]);
-            if (existingMapping.rows.length > 0) {
-                await client.query(
-                    'UPDATE PCB_FIRMWARE_MAPPING SET processor_id = $1, firmware_master_id = $2, firmware_version_id = $3 WHERE pcb_id = $4',
-                    [processorId, firmwareMasterId, firmwareVersionId, id]
-                );
-            } else {
-                await client.query(
-                  'INSERT INTO PCB_FIRMWARE_MAPPING (pcb_id, processor_id, firmware_master_id, firmware_version_id, is_default) VALUES ($1, $2, $3, $4, $5)',
-                  [id, processorId, firmwareMasterId, firmwareVersionId, true]
-                );
             }
         }
     
@@ -494,6 +480,79 @@ const addPCBStock = async (req, res, next) => {
     }
 };
 
+const getFirmwareTraceabilityMap = async (req, res, next) => {
+    try {
+        const queryText = `
+            SELECT 
+                fm.firmware_master_id,
+                fm.firmware_branch_name,
+                fm.description,
+                pfm.pcb_firmware_mapping_id,
+                fvm.firmware_version as assigned_version,
+                pcb.pcb_id,
+                pcb.pcb_name,
+                pcb.part_no as pcb_part_no,
+                pm.processor_id,
+                pm.processor_type as processor_name,
+                fg.id as finished_good_id,
+                prod.product_name,
+                fg.version as fg_version,
+                fg.quantity as fg_quantity
+            FROM FIRMWARE_MASTER fm
+            LEFT JOIN PCB_FIRMWARE_MAPPING pfm ON fm.firmware_master_id = pfm.firmware_master_id
+            LEFT JOIN FIRMWARE_VERSION_MASTER fvm ON pfm.firmware_version_id = fvm.firmware_version_id
+            LEFT JOIN PCB_MASTER pcb ON pfm.pcb_id = pcb.pcb_id
+            LEFT JOIN PROCESSOR_MASTER pm ON pfm.processor_id = pm.processor_id
+            LEFT JOIN finished_goods fg ON (fg.motherboard_id = pcb.pcb_id AND fg.is_iot = true)
+            LEFT JOIN products prod ON fg.product_id = prod.product_id
+            ORDER BY fm.firmware_branch_name, pcb.pcb_name, pm.processor_type;
+        `;
+        
+        const result = await db.query(queryText);
+        
+        const map = {};
+        
+        result.rows.forEach(row => {
+            const repoId = row.firmware_master_id;
+            
+            if (!map[repoId]) {
+                map[repoId] = {
+                    firmware_master_id: repoId,
+                    firmware_branch_name: row.firmware_branch_name,
+                    description: row.description,
+                    deployments: []
+                };
+            }
+            
+            if (row.pcb_id) {
+                map[repoId].deployments.push({
+                    pcb_id: row.pcb_id,
+                    pcb_name: row.pcb_name,
+                    pcb_part_no: row.pcb_part_no,
+                    assigned_version: row.assigned_version,
+                    processor_id: row.processor_id,
+                    processor_name: row.processor_name,
+                    finished_good: row.finished_good_id ? {
+                        id: row.finished_good_id,
+                        product_name: row.product_name,
+                        version: row.fg_version,
+                        quantity: row.fg_quantity
+                    } : null
+                });
+            }
+        });
+        
+        return res.status(200).json({
+            success: true,
+            data: Object.values(map)
+        });
+
+    } catch (error) {
+        console.error('Traceability Map Error:', error);
+        next(error);
+    }
+};
+
 module.exports = {
   getPCBs,
   getPCBById,
@@ -502,5 +561,6 @@ module.exports = {
   deletePCB,
   deletePCBImage,
   deletePCBFile,
-  addPCBStock
+  addPCBStock,
+  getFirmwareTraceabilityMap
 };
