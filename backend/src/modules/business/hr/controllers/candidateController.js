@@ -1,4 +1,4 @@
-const { query } = require('../../../../config/db');
+const { query, withTransaction } = require('../../../../config/db');
 const path = require('path');
 const fs = require('fs');
 const { extractCandidateInfo } = require('../../../../utils/documentExtractor');
@@ -490,15 +490,13 @@ exports.reorderCandidates = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Invalid updates format' });
         }
 
-        // Bulk update query
-        // We'll update the status and kanban_order for each candidate
-        const client = await query('BEGIN'); 
-        for (const update of updates) {
-            await query('UPDATE hr_candidates SET status = $1, kanban_order = $2 WHERE id = $3', [
-                update.status, update.kanban_order, update.id
-            ]);
-        }
-        await query('COMMIT');
+        await withTransaction(async (client) => {
+            for (const update of updates) {
+                await client.query('UPDATE hr_candidates SET status = $1, kanban_order = $2 WHERE id = $3', [
+                    update.status, update.kanban_order, update.id
+                ]);
+            }
+        });
 
         res.status(200).json({ success: true, message: 'Kanban order updated' });
     } catch (error) {
