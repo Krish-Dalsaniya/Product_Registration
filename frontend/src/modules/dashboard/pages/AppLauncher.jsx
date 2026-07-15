@@ -208,6 +208,7 @@ const AppLauncher = () => {
       path: '/git/dashboard',
       permissionKey: 'admin'
     },
+    /*
     {
       id: 'firmware_map',
       name: 'Firmware Map',
@@ -219,6 +220,7 @@ const AppLauncher = () => {
       path: '/admin/inventory/firmware-traceability',
       permissionKey: 'admin'
     }
+    */
   ];
 
   const authorizedModules = modules.filter(mod => {
@@ -294,16 +296,16 @@ const AppLauncher = () => {
         {/* Module Grid */}
         <div className="grid grid-cols-12 gap-5 mb-14 max-w-[1100px] mx-auto">
           {authorizedModules.map((mod) => (
-            <MotionCard 
-              key={mod.id} 
-              mod={mod} 
+            <MotionCard
+              key={mod.id}
+              mod={mod}
               onClick={() => {
                 if (mod.id === 'git_management') {
                   localStorage.removeItem('git_last_repo');
                   localStorage.removeItem('git_last_tab');
                 }
                 navigate(mod.path);
-              }} 
+              }}
             />
           ))}
         </div>
