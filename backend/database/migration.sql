@@ -1033,3 +1033,197 @@ CREATE TABLE IF NOT EXISTS FIRMWARE_RELEASE_MASTER (
 
 -- 5. Track Product Version in Finished Goods
 ALTER TABLE FINISHED_GOODS ADD COLUMN IF NOT EXISTS product_version_id BIGINT REFERENCES PRODUCT_VERSION_MASTER(product_version_id) ON DELETE SET NULL;
+
+-- ==============================================================================
+-- 2026-07-15
+-- Enterprise Dynamic Form Engine Architecture Updates
+-- ==============================================================================
+
+-- 1. Forms Master Table
+CREATE TABLE IF NOT EXISTS forms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(100),
+    status VARCHAR(50) DEFAULT 'Draft', -- Draft, Published, Archived, Closed
+    is_public BOOLEAN DEFAULT false,
+    public_url UUID UNIQUE DEFAULT gen_random_uuid(),
+    created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Form Settings
+CREATE TABLE IF NOT EXISTS form_settings (
+    form_id UUID PRIMARY KEY REFERENCES forms(id) ON DELETE CASCADE,
+    theme JSONB DEFAULT '{}',
+    language VARCHAR(50) DEFAULT 'en',
+    thank_you_message TEXT,
+    is_anonymous BOOLEAN DEFAULT false,
+    one_response_per_user BOOLEAN DEFAULT false,
+    password_hash VARCHAR(255),
+    access_expiry_date TIMESTAMPTZ,
+    max_responses INT,
+    closing_message TEXT
+);
+
+-- 3. Form Sections
+CREATE TABLE IF NOT EXISTS form_sections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
+    title VARCHAR(255),
+    description TEXT,
+    order_index INT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. Question Bank Categories
+CREATE TABLE IF NOT EXISTS question_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT
+);
+
+-- 5. Question Bank
+CREATE TABLE IF NOT EXISTS question_bank (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category_id UUID REFERENCES question_categories(id) ON DELETE SET NULL,
+    type VARCHAR(50) NOT NULL,
+    label TEXT NOT NULL,
+    default_schema JSONB,
+    difficulty VARCHAR(50),
+    tags TEXT[],
+    created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 6. Form Questions
+CREATE TABLE IF NOT EXISTS form_questions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
+    section_id UUID REFERENCES form_sections(id) ON DELETE CASCADE,
+    bank_question_id UUID REFERENCES question_bank(id) ON DELETE SET NULL,
+    type VARCHAR(50) NOT NULL,
+    label TEXT NOT NULL,
+    placeholder VARCHAR(255),
+    help_text TEXT,
+    is_required BOOLEAN DEFAULT false,
+    is_hidden BOOLEAN DEFAULT false,
+    is_read_only BOOLEAN DEFAULT false,
+    order_index INT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 7. Question Options
+CREATE TABLE IF NOT EXISTS question_options (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question_id UUID REFERENCES form_questions(id) ON DELETE CASCADE,
+    label VARCHAR(255) NOT NULL,
+    value VARCHAR(255),
+    order_index INT NOT NULL,
+    is_default BOOLEAN DEFAULT false,
+    score DECIMAL(10, 2) DEFAULT 0,
+    negative_score DECIMAL(10, 2) DEFAULT 0,
+    is_correct BOOLEAN DEFAULT false
+);
+
+-- 8. Question Validations
+CREATE TABLE IF NOT EXISTS question_validations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question_id UUID REFERENCES form_questions(id) ON DELETE CASCADE UNIQUE,
+    char_limit_min INT,
+    char_limit_max INT,
+    num_min DECIMAL,
+    num_max DECIMAL,
+    regex_pattern TEXT,
+    allowed_file_types TEXT[],
+    max_file_size_kb INT,
+    max_files INT
+);
+
+-- 9. Question Logic
+CREATE TABLE IF NOT EXISTS question_logic (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question_id UUID REFERENCES form_questions(id) ON DELETE CASCADE,
+    condition_type VARCHAR(50), -- IF, AND, OR
+    target_question_id UUID REFERENCES form_questions(id) ON DELETE CASCADE,
+    operator VARCHAR(50), -- EQUALS, GREATER_THAN, etc.
+    value VARCHAR(255),
+    action VARCHAR(50), -- SHOW, HIDE, SKIP
+    action_target_id UUID -- Could be section or question id
+);
+
+-- 10. Question Media
+CREATE TABLE IF NOT EXISTS question_media (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question_id UUID REFERENCES form_questions(id) ON DELETE CASCADE,
+    media_type VARCHAR(50), -- IMAGE, VIDEO, PDF
+    url TEXT NOT NULL,
+    caption VARCHAR(255)
+);
+
+-- 11. Question Scores (Calculated Rules)
+CREATE TABLE IF NOT EXISTS question_scores (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question_id UUID REFERENCES form_questions(id) ON DELETE CASCADE UNIQUE,
+    total_marks DECIMAL(10, 2) DEFAULT 0,
+    formula TEXT -- For calculated fields
+);
+
+-- 12. Form Responses
+CREATE TABLE IF NOT EXISTS form_responses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
+    respondent_id UUID REFERENCES users(user_id) ON DELETE SET NULL, -- Null if anonymous
+    respondent_email VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'Submitted', -- Draft, Submitted
+    started_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMPTZ,
+    total_score DECIMAL(10, 2) DEFAULT 0,
+    is_passed BOOLEAN,
+    ip_address VARCHAR(45)
+);
+
+-- 13. Response Answers
+CREATE TABLE IF NOT EXISTS response_answers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    response_id UUID REFERENCES form_responses(id) ON DELETE CASCADE,
+    question_id UUID REFERENCES form_questions(id) ON DELETE CASCADE,
+    text_value TEXT,
+    number_value DECIMAL,
+    date_value TIMESTAMPTZ,
+    file_url TEXT
+);
+
+-- 14. Response Selected Options (For Multi-Choice)
+CREATE TABLE IF NOT EXISTS response_options (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    answer_id UUID REFERENCES response_answers(id) ON DELETE CASCADE,
+    option_id UUID REFERENCES question_options(id) ON DELETE CASCADE
+);
+
+-- 15. Audit Logs for Forms
+CREATE TABLE IF NOT EXISTS form_audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
+    action VARCHAR(100) NOT NULL,
+    performed_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    details JSONB,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 16. Form Versions
+CREATE TABLE IF NOT EXISTS form_versions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
+    version_number INT NOT NULL,
+    form_schema JSONB NOT NULL,
+    created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add form_mode to candidate_evaluation_forms
+ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS form_mode VARCHAR(20) DEFAULT 'assessment';
+
+-- Add form_mode to forms
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS form_mode VARCHAR(20) DEFAULT 'assessment';
