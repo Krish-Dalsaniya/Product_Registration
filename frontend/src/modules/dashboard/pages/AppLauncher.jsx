@@ -196,8 +196,9 @@ const AppLauncher = () => {
       gradient: 'bg-gradient-to-r from-slate-100/90 via-white/80 to-white/90',
       shadowColor: 'shadow-slate-500/10',
       path: '/settings',
-    },
-    {
+    }
+    /*
+    ,{
       id: 'git_management',
       name: 'Git Management',
       description: 'Manage codebase and versions',
@@ -208,7 +209,6 @@ const AppLauncher = () => {
       path: '/git/dashboard',
       permissionKey: 'admin'
     },
-    /*
     {
       id: 'firmware_map',
       name: 'Firmware Map',
