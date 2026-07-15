@@ -11,9 +11,16 @@ const getForms = async (req, res) => {
   try {
     const result = await db.query(`
       SELECT 
-        id, category, label, file_name as "fileName", file_size as "fileSize", 
-        file_path, type, form_schema, uploaded_by, created_at, updated_at
+        id::text, category, label, file_name as "fileName", file_size as "fileSize", 
+        file_path, type, form_schema, uploaded_by, created_at, updated_at, NULL as public_url,
+        'Draft' as status, false as is_public, form_mode
       FROM candidate_evaluation_forms
+      UNION ALL
+      SELECT 
+        id::text, category, title as label, 'Digital Form' as "fileName", 'N/A' as "fileSize", 
+        NULL as file_path, 'dynamic' as type, '{}'::jsonb as form_schema, created_by as uploaded_by, created_at, updated_at, public_url,
+        status, is_public, form_mode
+      FROM forms
       ORDER BY created_at DESC
     `);
     
@@ -44,7 +51,7 @@ const getForms = async (req, res) => {
  */
 const uploadForm = async (req, res) => {
   try {
-    const { category, label, type, form_schema } = req.body;
+    const { category, label, form_schema, type, form_mode = 'assessment' } = req.body;
     
     if (!category || !label) {
       // delete the file if validation fails
@@ -56,10 +63,10 @@ const uploadForm = async (req, res) => {
       const parsedSchema = typeof form_schema === 'string' ? form_schema : JSON.stringify(form_schema);
       const result = await db.query(
         `INSERT INTO candidate_evaluation_forms 
-         (category, label, type, form_schema, uploaded_by, file_name, file_path)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, category, label, type, form_schema, created_at`,
-        [category, label, 'dynamic', parsedSchema, req.user?.id || null, 'digital_form', 'N/A']
+         (category, label, type, form_schema, uploaded_by, file_name, file_path, form_mode)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id, category, label, type, form_schema, created_at, form_mode`,
+        [category, label, 'dynamic', parsedSchema, req.user?.id || null, 'digital_form', 'N/A', form_mode]
       );
       const newForm = result.rows[0];
       newForm.date = new Date(newForm.created_at).toLocaleDateString();
@@ -111,15 +118,9 @@ const uploadForm = async (req, res) => {
  * Update an existing form (label or file)
  */
 const updateForm = async (req, res) => {
+  const { id } = req.params;
+  const { label, category, form_schema, form_mode = 'assessment' } = req.body;
   try {
-    const { id } = req.params;
-    const { label } = req.body;
-    
-    if (!label) {
-      if (req.file) fs.unlinkSync(req.file.path);
-      return res.status(400).json({ success: false, message: 'Label is required' });
-    }
-
     // Check if form exists
     const existing = await db.query('SELECT * FROM candidate_evaluation_forms WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
@@ -131,16 +132,15 @@ const updateForm = async (req, res) => {
     let params;
 
     if (req.body.type === 'dynamic') {
-      const { label, form_schema } = req.body;
       const parsedSchema = typeof form_schema === 'string' ? form_schema : JSON.stringify(form_schema);
       
       query = `
         UPDATE candidate_evaluation_forms
-        SET label = $1, form_schema = $2, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $3
-        RETURNING id, category, label, type, form_schema, created_at
+        SET label = $1, category = $2, form_schema = $3, form_mode = $4, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $5
+        RETURNING id, category, label, type, form_schema, created_at, form_mode
       `;
-      params = [label, parsedSchema, id];
+      params = [label, category, parsedSchema, form_mode, id];
     } else if (req.file) {
       // Delete old file
       const oldFilePathStr = existing.rows[0].file_path;
@@ -203,6 +203,16 @@ const updateForm = async (req, res) => {
 const deleteForm = async (req, res) => {
   try {
     const { id } = req.params;
+    const isUUID = isNaN(id);
+
+    if (isUUID) {
+      const existing = await db.query('SELECT * FROM forms WHERE id = $1', [id]);
+      if (existing.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Form not found' });
+      }
+      await db.query('DELETE FROM forms WHERE id = $1', [id]);
+      return res.json({ success: true, message: 'Form deleted successfully' });
+    }
 
     const existing = await db.query('SELECT * FROM candidate_evaluation_forms WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
@@ -211,7 +221,7 @@ const deleteForm = async (req, res) => {
 
     // Delete file
     const oldFilePathStr = existing.rows[0].file_path;
-    if (oldFilePathStr && !oldFilePathStr.includes('cloudinary.com')) {
+    if (oldFilePathStr && !oldFilePathStr.includes('cloudinary.com') && oldFilePathStr !== 'N/A') {
       const filePath = path.join(__dirname, '../../../../../../', oldFilePathStr);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);

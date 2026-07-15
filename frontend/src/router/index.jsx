@@ -15,6 +15,7 @@ import PendingConversions from '../modules/hr/pages/PendingConversions';
 const AuditLogsPage = lazy(() => import('../modules/admin/AuditLogsPage'));
 const SettingsPage = lazy(() => import('../modules/settings/SettingsPage'));
 const AttendanceVerification = lazy(() => import('../modules/hr/pages/AttendanceVerification'));
+const FormEditorPage = lazy(() => import('../modules/hr/pages/FormEditorPage'));
 import { X, Home, Users, Briefcase, ShoppingBag, Wrench, Box, Layers, Cpu, LayoutGrid, Package, LifeBuoy, MessageSquare, Shield, LockKeyhole, Settings } from 'lucide-react';
 
 const IconMap = {
@@ -180,6 +181,9 @@ const CandidateListPage = lazy(() => import('../modules/hr/pages/CandidateListPa
 const ProcessPage = lazy(() => import('../modules/hr/pages/ProcessPage'));
 const CandidateEvaluationFormPage = lazy(() => import('../modules/hr/pages/CandidateEvaluationFormPage'));
 const OpenPositionsPage = lazy(() => import('../modules/hr/pages/OpenPositionsPage'));
+
+// Public Forms
+const PublicFormView = lazy(() => import('../modules/public/PublicFormView'));
 
 // PMS Module
 const Closures = lazy(() => import('../modules/pms/pages/Closures'));
@@ -371,6 +375,11 @@ const Router = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/attendance/verify/:token" element={<AttendanceVerification />} />
         <Route path="/payslip/:payrollId" element={<PayslipDownload />} />
+        <Route path="/forms/:uuid" element={<PublicFormView />} />
+        {/* Form Editor — Full page, no sidebar/navbar, like Google Forms */}
+        <Route element={<AuthGuard><Outlet /></AuthGuard>}>
+          <Route path="/hr/recruitment/cef/:id/edit" element={<Suspense fallback={<PageLoader />}><FormEditorPage /></Suspense>} />
+        </Route>
         <Route path="/unauthorized" element={<div className="p-10 text-center text-rose-500 font-bold bg-[var(--bg-workspace)] h-screen uppercase tracking-widest text-sm">Unauthorized Access Restricted</div>} />
         
         {/* Shared Workspace Routes */}
@@ -406,6 +415,7 @@ const Router = () => {
         {/* Dedicated Git Workspace */}
         <Route element={<AuthGuard><GitLayout /></AuthGuard>}>
           <Route path="/git/dashboard" element={<GitDashboard />} />
+          <Route path="/accounts/dashboard" element={<GenericDashboard />} />
         </Route>
 
         {/* Designer Workspace Dashboard & Specifics */}

@@ -4,6 +4,8 @@ const { getDashboardMetrics } = require('../controllers/hrController');
 const { getEmployees, getDepartmentsAndDesignations, createEmployee, getEmployeeById, updateEmployee, deleteEmployee, updateEmployeeRole, getEmployeeHierarchy, registerEmployee, getPendingRegistrations, approveRegistration, rejectRegistration, updateOrgChartPlacements } = require('../controllers/employeeController');
 const { createCandidate, getCandidates, updateCandidateStatus, getCandidateById, updateCandidate, deleteCandidate, extractLiveCandidateInfo, updateCandidateTrelloMetadata, addCandidateComment, getCandidateComments, getCandidateActivity, reorderCandidates, extractCandidateZip } = require('../controllers/candidateController');
 const cefController = require('../controllers/cefController');
+const enterpriseFormController = require('../controllers/enterpriseFormController');
+const publicFormController = require('../controllers/publicFormController');
 const openPositionsController = require('../controllers/openPositionsController');
 const { verifyToken } = require('../../../../middleware/auth');
 const payrollController = require('../controllers/payrollController');
@@ -80,6 +82,10 @@ router.get('/cef-forms/view/:id', cefController.viewForm);
 // Public route for Open Positions (if they need to be fetched without auth by applicants)
 router.get('/open-positions', openPositionsController.getPositions);
 
+// Public Enterprise Form routes
+router.get('/public-forms/:uuid', publicFormController.getPublicForm);
+router.post('/public-forms/:uuid/submit', publicFormController.submitResponse);
+
 router.use(verifyToken);
 // router.use(requireModuleAccess('hr'));
 
@@ -136,11 +142,20 @@ router.use('/payrolls', payrollRoutes);
 const onboardingRoutes = require('./onboardingRoutes');
 router.use('/onboarding', onboardingRoutes);
 
-// Candidate Evaluation Forms (CEF)
+// Candidate Evaluation Forms (CEF) - LEGACY
 router.get('/cef-forms', cefController.getForms);
 router.post('/cef-forms', uploadCef.single('file'), cefController.uploadForm);
 router.put('/cef-forms/:id', uploadCef.single('file'), cefController.updateForm);
 router.delete('/cef-forms/:id', cefController.deleteForm);
+
+// Enterprise Form Routes
+router.get('/enterprise-forms', enterpriseFormController.getForms);
+router.get('/enterprise-forms/:id/schema', enterpriseFormController.getFormSchema);
+router.get('/enterprise-forms/:id/responses', enterpriseFormController.getFormResponses);
+router.post('/enterprise-forms', enterpriseFormController.saveDynamicForm);
+router.put('/enterprise-forms/:id', enterpriseFormController.saveDynamicForm);
+router.delete('/enterprise-forms/:id', enterpriseFormController.deleteForm);
+router.put('/enterprise-forms/:id/publish', enterpriseFormController.publishForm);
 
 // Open positions routes
 router.post('/open-positions', uploadPositions.any(), openPositionsController.createPosition);
