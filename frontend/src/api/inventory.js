@@ -1,6 +1,7 @@
 import axiosInstance from './axiosInstance';
 
 export const getPCBs = (params) => axiosInstance.get('/inventory/pcb', { params });
+export const getFirmwareTraceabilityMap = () => axiosInstance.get('/inventory/firmware-traceability');
 export const getPCBById = (id) => axiosInstance.get(`/inventory/pcb/${id}`);
 export const createPCB = (formData) => axiosInstance.post('/inventory/pcb', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }

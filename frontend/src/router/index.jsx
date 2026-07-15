@@ -134,6 +134,7 @@ const UserAccessPage = lazy(() => import('../modules/admin/UserAccessPage'));
 const TeamsPage = lazy(() => import('../modules/admin/TeamsPage'));
 const ProjectsPage = lazy(() => import('../modules/admin/ProjectsPage'));
 const ProductListPage = lazy(() => import('../modules/admin/ProductListPage'));
+const FirmwareTraceabilityPage = lazy(() => import('../modules/admin/FirmwareTraceabilityPage'));
 const ProductProfilePage = lazy(() => import('../modules/admin/ProductProfilePage'));
 const CustomerListPage = lazy(() => import('../modules/admin/CustomerListPage'));
 const FinishedGoodsPage = lazy(() => import('../modules/admin/FinishedGoodsPage'));
@@ -391,6 +392,7 @@ const Router = () => {
           <Route path="/admin/finished-goods" element={<FinishedGoodsPage />} />
           <Route path="/admin/inventory" element={<InventoryListPage />} />
           <Route path="/admin/inventory/pcb" element={<InventoryListPage type="PCB" />} />
+          <Route path="/admin/inventory/firmware-traceability" element={<FirmwareTraceabilityPage />} />
           <Route path="/admin/inventory/electronics" element={<ElectronicsPartsPage />} />
           <Route path="/admin/inventory/electrical" element={<ElectricalPartsPage />} />
           <Route path="/admin/inventory/structural" element={<StructuralPartsPage />} />

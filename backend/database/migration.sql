@@ -996,3 +996,40 @@ ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS shortlisted_for JSONB DEFAULT
 
 -- Add user_id to hr_interns
 ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(user_id);
+
+-- ==============================================================================
+-- 2026-07-14
+-- PLM and Firmware Lifecycle Architecture Updates
+-- ==============================================================================
+
+-- 1. Expand PROCESSOR_MASTER
+ALTER TABLE PROCESSOR_MASTER ADD COLUMN IF NOT EXISTS manufacturer VARCHAR(255) DEFAULT 'N/A';
+ALTER TABLE PROCESSOR_MASTER ADD COLUMN IF NOT EXISTS core VARCHAR(100) DEFAULT 'N/A';
+ALTER TABLE PROCESSOR_MASTER ADD COLUMN IF NOT EXISTS flash VARCHAR(100) DEFAULT 'N/A';
+ALTER TABLE PROCESSOR_MASTER ADD COLUMN IF NOT EXISTS ram VARCHAR(100) DEFAULT 'N/A';
+ALTER TABLE PROCESSOR_MASTER ADD COLUMN IF NOT EXISTS clock VARCHAR(100) DEFAULT 'N/A';
+ALTER TABLE PROCESSOR_MASTER ADD COLUMN IF NOT EXISTS stock_quantity INT DEFAULT 0;
+
+-- 2. Add repository_name to FIRMWARE_MASTER
+ALTER TABLE FIRMWARE_MASTER ADD COLUMN IF NOT EXISTS repository_name VARCHAR(255);
+
+-- 3. Link Firmware Versions to Git
+ALTER TABLE FIRMWARE_VERSION_MASTER ADD COLUMN IF NOT EXISTS git_commit VARCHAR(40);
+ALTER TABLE FIRMWARE_VERSION_MASTER ADD COLUMN IF NOT EXISTS git_tag VARCHAR(100);
+
+-- 4. Create FIRMWARE_RELEASE_MASTER
+CREATE TABLE IF NOT EXISTS FIRMWARE_RELEASE_MASTER (
+    release_id BIGSERIAL PRIMARY KEY,
+    firmware_version_id BIGINT REFERENCES FIRMWARE_VERSION_MASTER(firmware_version_id) ON DELETE CASCADE,
+    release_number VARCHAR(100),
+    release_notes TEXT,
+    release_date TIMESTAMPTZ,
+    released_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    environment VARCHAR(50),
+    release_status VARCHAR(50) DEFAULT 'Active',
+    binary_url TEXT,
+    checksum VARCHAR(255)
+);
+
+-- 5. Track Product Version in Finished Goods
+ALTER TABLE FINISHED_GOODS ADD COLUMN IF NOT EXISTS product_version_id BIGINT REFERENCES PRODUCT_VERSION_MASTER(product_version_id) ON DELETE SET NULL;

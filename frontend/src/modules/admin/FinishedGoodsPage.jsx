@@ -25,7 +25,9 @@ import {
     ImageOff,
     Eye,
     PackagePlus,
-    RefreshCw
+    RefreshCw,
+    ChevronDown,
+    ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -35,6 +37,8 @@ import { useAuth } from '../../context/AuthContext';
 const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAddButton = false }) => {
     const { hasPermission } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
+    const [iotFilter, setIotFilter] = useState('All Devices');
+    const [collapsedGroups, setCollapsedGroups] = useState(new Set());
     const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
     const [viewMode, setViewMode] = useState('grid');
 
@@ -44,6 +48,21 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
     const items = itemsData?.data || [];
     const options = optionsData || { products: [], pcb: [], electrical: [], electronics: [], structural: [] };
     const loading = itemsLoading || optionsLoading;
+
+    const filteredItems = items.filter(item => {
+        if (iotFilter === 'IoT Devices') return item.is_iot;
+        if (iotFilter === 'Non-IoT Devices') return !item.is_iot;
+        return true;
+    });
+
+    const toggleGroup = (productName) => {
+        setCollapsedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(productName)) next.delete(productName);
+            else next.add(productName);
+            return next;
+        });
+    };
 
     useEffect(() => {
         if (itemsData?.meta) {
@@ -79,18 +98,7 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
     const [powerController, setPowerController] = useState(false);
     const [motherboardId, setMotherboardId] = useState('');
     
-    // Firmware Traceability Fields
-    const [repositoryOwner, setRepositoryOwner] = useState('');
-    const [repositoryName, setRepositoryName] = useState('');
-    const [branch, setBranch] = useState('');
-    const [commitSha, setCommitSha] = useState('');
-    const [tag, setTag] = useState('');
-    const [releaseId, setReleaseId] = useState('');
-    const [workflowRunId, setWorkflowRunId] = useState('');
-    const [buildNumber, setBuildNumber] = useState('');
-    const [firmwareBinaryUrl, setFirmwareBinaryUrl] = useState('');
-    const [isFetchingGit, setIsFetchingGit] = useState(false);
-
+    // Features & Config
     const COMMUNICATION_OPTIONS = ['wifi', 'bluetooth', 'gsm 2G', 'gsm 3G', 'gsm 4G', 'gsm 5G', 'ethernet', 'RS485', 'USB', 'RS232'];
     const COMMUNICATION_PROTOCOL_OPTIONS = ['MQTT', 'HTTP(Client)', 'HTTP(Server)', 'TCP/IP(Client)', 'TCP/IP(Server)', 'FTP'];
     const OTA_PROTOCOL_OPTIONS = ['MQTT', 'HTTP(Client)', 'HTTP(Server)', 'TCP/IP(Client)', 'TCP/IP(Server)', 'FTP'];
@@ -102,34 +110,7 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
 
     const [viewItem, setViewItem] = useState(null);
 
-    const handleFetchGitData = async () => {
-        if (!repositoryOwner || !repositoryName) {
-            toast.error('Repository owner and name are required');
-            return;
-        }
-        setIsFetchingGit(true);
-        try {
-            const [releases, workflowRuns] = await Promise.all([
-                getGitReleases(repositoryOwner, repositoryName),
-                getGitWorkflowRuns(repositoryOwner, repositoryName)
-            ]);
-            
-            if (releases?.length > 0) {
-                setTag(releases[0].tag_name);
-                setReleaseId(releases[0].id);
-            }
-            if (workflowRuns?.length > 0) {
-                setWorkflowRunId(workflowRuns[0].id);
-                setBuildNumber(workflowRuns[0].run_number);
-                setCommitSha(workflowRuns[0].head_sha);
-            }
-            toast.success('Git data fetched successfully');
-        } catch (error) {
-            toast.error('Failed to fetch Git data');
-        } finally {
-            setIsFetchingGit(false);
-        }
-    };
+    const handleFetchGitData = async () => {};
 
     const handleAddHardwareFeature = (type, id, name, stockQuantity = 0) => {
         if (!id) return;
@@ -182,15 +163,7 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                 motherboard_id: isIot ? motherboardId : null,
                 is_iot: isIot,
                 version: version,
-                repository_owner: isIot ? repositoryOwner : null,
-                repository_name: isIot ? repositoryName : null,
-                branch: isIot ? branch : null,
-                commit_sha: isIot ? commitSha : null,
-                tag: isIot ? tag : null,
-                release_id: isIot ? releaseId : null,
-                workflow_run_id: isIot ? workflowRunId : null,
-                build_number: isIot ? buildNumber : null,
-                firmware_binary_url: isIot ? firmwareBinaryUrl : null
+                software_features: [] // Expandable later
             };
 
             if (editItem) {
@@ -267,18 +240,8 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
         setCommunicationDetails(commArray);
         setPowerController(row.power_controller || false);
         setMotherboardId(row.motherboard_id || '');
-
+        // Set communication / trace
         const trace = row.communication_details?.git_traceability || {};
-        
-        setRepositoryOwner(row.repository_owner || trace.repository_owner || '');
-        setRepositoryName(row.repository_name || trace.repository_name || '');
-        setBranch(row.branch || trace.branch || '');
-        setCommitSha(row.commit_sha || trace.commit_sha || '');
-        setTag(row.tag || trace.tag || '');
-        setReleaseId(row.release_id || trace.release_id || '');
-        setWorkflowRunId(row.workflow_run_id || trace.workflow_run_id || '');
-        setBuildNumber(row.build_number || trace.build_number || '');
-        setFirmwareBinaryUrl(row.firmware_binary_url || trace.firmware_binary_url || '');
 
         setIsModalOpen(true);
     };
@@ -334,19 +297,11 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
         setBuilderState({ method: '', communicationProtocol: [], otaProtocol: [], dataFormat: [] });
         setPowerController(false);
         setMotherboardId('');
-        setRepositoryOwner('');
-        setRepositoryName('');
-        setBranch('');
-        setCommitSha('');
-        setTag('');
-        setReleaseId('');
-        setWorkflowRunId('');
-        setBuildNumber('');
-        setFirmwareBinaryUrl('');
+        setHardwareFeatures([]);
+        setPowerController(false);
         setIsIot(false);
         setEditItem(null);
         setInventoryError('');
-        setIsFetchingGit(false);
     };
 
     const getComponentName = (type, id) => {
@@ -635,94 +590,6 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                             </div>
                         </div>
                     </div>
-
-                    {/* Traceability Details */}
-                    <div className="space-y-4 pt-6 border-t border-[var(--border-color)]">
-                        <div className="flex items-center justify-between">
-                            <label className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest ml-1">
-                                Firmware Traceability (Git Integration)
-                            </label>
-                            <button 
-                                type="button" 
-                                onClick={async () => {
-                                    if (!repositoryOwner || !repositoryName) {
-                                        toast.error("Please enter both Repository Owner and Name first!");
-                                        return;
-                                    }
-                                    setIsFetchingGit(true);
-                                    try {
-                                        let updated = false;
-                                        
-                                        // 1. Fetch branches (always available even if no releases/workflows)
-                                        try {
-                                            const branchRes = await getGitBranches(repositoryOwner, repositoryName);
-                                            const branches = branchRes.data?.data || [];
-                                            if (branches.length > 0) {
-                                                const defaultBranch = branches.find(b => b.name === 'main' || b.name === 'master') || branches[0];
-                                                setBranch(defaultBranch.name || '');
-                                                if (defaultBranch.commit) {
-                                                    setCommitSha(defaultBranch.commit.id || '');
-                                                }
-                                                updated = true;
-                                            }
-                                        } catch (e) {}
-
-                                        // 2. Fetch releases for tags and firmware
-                                        try {
-                                            const relRes = await getGitReleases(repositoryOwner, repositoryName);
-                                            const releases = relRes.data?.data || [];
-                                            if (releases.length > 0) {
-                                                const latest = releases[0];
-                                                setTag(latest.tag_name || '');
-                                                setReleaseId(String(latest.id || ''));
-                                                if (latest.target_commitish) setBranch(latest.target_commitish);
-                                                if (latest.assets && latest.assets.length > 0) {
-                                                    setFirmwareBinaryUrl(latest.assets[0].browser_download_url || '');
-                                                }
-                                                updated = true;
-                                            }
-                                        } catch (e) {}
-                                        
-                                        // 3. Fetch workflows for build number
-                                        try {
-                                            const runRes = await getGitWorkflowRuns(repositoryOwner, repositoryName);
-                                            const runs = runRes.data?.data || [];
-                                            if (runs.length > 0) {
-                                                const latestRun = runs[0];
-                                                setWorkflowRunId(String(latestRun.id || ''));
-                                                setBuildNumber(String(latestRun.run_number || ''));
-                                                if (!branch) setCommitSha(latestRun.head_sha || '');
-                                                updated = true;
-                                            }
-                                        } catch (e) {}
-
-                                        if (updated) toast.success("Auto-filled from Git!");
-                                        else toast.error("Could not find branches/releases.");
-                                    } catch (err) {
-                                        toast.error("Failed to connect to Git Engine.");
-                                    } finally {
-                                        setIsFetchingGit(false);
-                                    }
-                                }}
-                                disabled={isFetchingGit || !repositoryOwner || !repositoryName}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] rounded-lg text-[10px] font-bold text-[var(--text-main)] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isFetchingGit ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                                Auto-Fill from Repo
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <input type="text" placeholder="Repository Owner (e.g. AcmeCorp)" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={repositoryOwner} onChange={(e) => setRepositoryOwner(e.target.value)} />
-                            <input type="text" placeholder="Repository Name" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={repositoryName} onChange={(e) => setRepositoryName(e.target.value)} />
-                            <input type="text" placeholder="Branch" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={branch} onChange={(e) => setBranch(e.target.value)} />
-                            <input type="text" placeholder="Commit SHA" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold font-mono" value={commitSha} onChange={(e) => setCommitSha(e.target.value)} />
-                            <input type="text" placeholder="Tag (e.g. v1.0.0)" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={tag} onChange={(e) => setTag(e.target.value)} />
-                            <input type="text" placeholder="Release ID" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={releaseId} onChange={(e) => setReleaseId(e.target.value)} />
-                            <input type="text" placeholder="Workflow Run ID" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={workflowRunId} onChange={(e) => setWorkflowRunId(e.target.value)} />
-                            <input type="text" placeholder="Build Number" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={buildNumber} onChange={(e) => setBuildNumber(e.target.value)} />
-                        </div>
-                        <input type="text" placeholder="Firmware Binary URL" className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[13px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold" value={firmwareBinaryUrl} onChange={(e) => setFirmwareBinaryUrl(e.target.value)} />
-                    </div>
                 </div>
             )}
 
@@ -874,6 +741,16 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-40 pointer-events-none hidden sm:block">{pagination.total} Records Found</div>
                 </div>
                 
+                <select
+                    value={iotFilter}
+                    onChange={(e) => setIotFilter(e.target.value)}
+                    className="bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg py-2.5 px-4 outline-none focus:border-[var(--accent)] text-[13px] text-[var(--text-main)] font-bold cursor-pointer hover:border-[var(--accent)] transition-colors appearance-none min-w-[140px]"
+                >
+                    <option value="All Devices">All Devices</option>
+                    <option value="IoT Devices">IoT Devices</option>
+                    <option value="Non-IoT Devices">Non-IoT Devices</option>
+                </select>
+                
                 {isEmbedded && !hideAddButton && hasPermission('products', 'create') && (
                     <button
                         type="button"
@@ -908,14 +785,14 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                         <div className="flex justify-center items-center h-64">
                             <Loader2 className="animate-spin text-[var(--accent)]" size={32} />
                         </div>
-                    ) : items.length === 0 ? (
+                    ) : filteredItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-64 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl">
                             <Box size={48} className="text-[var(--text-muted)] mb-4 opacity-50" />
                             <p className="text-[var(--text-dim)] font-medium">No finished goods found</p>
                         </div>
-                    ) : (
+                    ) : isEmbedded ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
-                            {items.map((item) => (
+                            {filteredItems.map((item) => (
                                 <div key={item.id} className="group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-[20px] overflow-hidden transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-[var(--accent)] hover:-translate-y-1 relative">
                                     <div onClick={() => handleView(item)} className="relative h-40 w-full overflow-hidden bg-gradient-to-b from-[var(--bg-workspace)] to-[var(--bg-card)] border-b border-[var(--border-color)] cursor-zoom-in">
                                         {item.image_url ? (
@@ -945,10 +822,18 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                                     <div className="p-5 flex-1 flex flex-col">
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start gap-2 mb-1">
-                                                <h3 className="text-[14px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300 line-clamp-2">
-                                                    {item.product_name}
-                                                </h3>
-                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-muted)] shrink-0">v{item.version || '1.0'}</span>
+                                                {isEmbedded ? (
+                                                    <h3 className="text-[14px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
+                                                        Version {item.version || '1.0'}
+                                                    </h3>
+                                                ) : (
+                                                    <>
+                                                        <h3 className="text-[14px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300 line-clamp-2">
+                                                            {item.product_name}
+                                                        </h3>
+                                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--bg-workspace)] border border-[var(--border-color)] text-[var(--text-muted)] shrink-0">v{item.version || '1.0'}</span>
+                                                    </>
+                                                )}
                                             </div>
                                             <p className="text-[10px] text-[var(--text-muted)] font-medium mb-3">
                                                 ID: <span className="font-mono text-[11px]">{item.product_code}</span>
@@ -1011,6 +896,108 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-10">
+                            {Object.entries(
+                                filteredItems.reduce((acc, item) => {
+                                    if (!acc[item.product_name]) acc[item.product_name] = [];
+                                    acc[item.product_name].push(item);
+                                    return acc;
+                                }, {})
+                            ).map(([productName, productItems]) => (
+                                <div key={productName} className="space-y-4">
+                                    <div 
+                                        className="flex items-center gap-3 cursor-pointer group"
+                                        onClick={() => toggleGroup(productName)}
+                                    >
+                                        {collapsedGroups.has(productName) ? (
+                                            <ChevronRight size={18} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
+                                        ) : (
+                                            <ChevronDown size={18} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
+                                        )}
+                                        <h2 className="text-[15px] font-black text-[var(--text-main)] tracking-wide group-hover:text-[var(--accent)] transition-colors">{productName}</h2>
+                                        <div className="h-px bg-[var(--border-color)] flex-1 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                    </div>
+                                    {!collapsedGroups.has(productName) && (
+                                        <div className="flex gap-5 overflow-x-auto pb-4 no-scrollbar snap-x">
+                                            {productItems.map((item) => (
+                                            <div key={item.id} className="snap-start min-w-[240px] max-w-[280px] w-full flex-shrink-0 group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-[20px] overflow-hidden transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-[var(--accent)] hover:-translate-y-1 relative">
+                                                <div onClick={() => handleView(item)} className="relative h-36 w-full overflow-hidden bg-gradient-to-b from-[var(--bg-workspace)] to-[var(--bg-card)] border-b border-[var(--border-color)] cursor-zoom-in">
+                                                    {item.image_url ? (
+                                                        <img src={item.image_url} alt={item.product_name} className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-700 ease-out" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] opacity-20">
+                                                            <ImageOff size={40} strokeWidth={1} />
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                        <button 
+                                                            type="button"
+                                                            onClick={(e) => { e.stopPropagation(); handleView(item); }} 
+                                                            className="w-10 h-10 bg-[var(--accent)] rounded-full shadow-lg flex items-center justify-center text-white hover:scale-110 transition-transform transform translate-y-2 group-hover:translate-y-0" 
+                                                            title="View Details"
+                                                        >
+                                                            <Eye size={18} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="absolute top-2 left-2">
+                                                        <span className={`backdrop-blur-md border border-white/20 text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full shadow-sm text-white ${item.is_iot ? 'bg-[var(--accent)]/90' : 'bg-slate-800/80'}`}>
+                                                            {item.is_iot ? 'IoT' : 'Non-IoT'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="p-4 flex-1 flex flex-col">
+                                                    <div className="flex-1">
+                                                        <div className="flex justify-between items-start gap-2 mb-1">
+                                                            <h3 className="text-[13px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
+                                                                Version {item.version || '1.0'}
+                                                            </h3>
+                                                        </div>
+                                                        <p className="text-[10px] text-[var(--text-muted)] font-medium mb-3">
+                                                            ID: <span className="font-mono text-[11px]">{item.product_code}</span>
+                                                        </p>
+                                                        
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {item.hardware_features?.slice(0, 1).map((f, i) => (
+                                                                <span key={i} className="px-2 py-1 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded-lg text-[9px] uppercase font-bold text-[var(--text-main)] truncate max-w-[140px] flex items-center gap-1.5">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-70"></span>
+                                                                    <span className="opacity-70">{f.component_type}:</span> <span className="truncate">{getComponentName(f.component_type, f.component_id)}</span>
+                                                                </span>
+                                                            ))}
+                                                            {(item.hardware_features?.length || 0) > 1 && (
+                                                                <span className="px-2 py-1 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-lg text-[9px] uppercase font-bold text-[var(--text-dim)] flex items-center">
+                                                                    +{(item.hardware_features?.length || 0) - 1} more
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="flex items-center justify-between pt-3 mt-4 border-t border-[var(--border-color)]/60">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="px-2.5 py-1 bg-[var(--accent)]/10 rounded-md">
+                                                                <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-wider">
+                                                                    Qty: {item.quantity}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 transition-opacity">
+                                                            {hasPermission('products', 'edit') && (
+                                                                <button onClick={() => handleEdit(item)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 rounded-md transition-colors"><Pencil size={12} strokeWidth={3} /></button>
+                                                            )}
+                                                            {hasPermission('products', 'delete') && (
+                                                                <button onClick={() => handleDelete(item.id)} className="p-1.5 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors"><Trash2 size={12} strokeWidth={3} /></button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -1111,42 +1098,6 @@ const FinishedGoodsPage = ({ isEmbedded = false, defaultProductId = null, hideAd
                                     </div>
                                 )}
 
-                                {/* Firmware Traceability View */}
-                                {(viewItem.repository_owner || (viewItem.communication_details?.git_traceability?.repository_owner)) && (viewItem.repository_name || (viewItem.communication_details?.git_traceability?.repository_name)) && (
-                                    <div className="space-y-4 pt-6 border-t border-[var(--border-color)]">
-                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-dim)] mb-3">Firmware Traceability</h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-2xl">
-                                            <div>
-                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Repository</span>
-                                                <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.repository_owner || viewItem.communication_details?.git_traceability?.repository_owner}/{viewItem.repository_name || viewItem.communication_details?.git_traceability?.repository_name}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Branch</span>
-                                                <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.branch || viewItem.communication_details?.git_traceability?.branch || 'N/A'}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Commit</span>
-                                                <span className="text-[13px] font-bold text-[var(--text-main)] font-mono">{(viewItem.commit_sha || viewItem.communication_details?.git_traceability?.commit_sha) ? (viewItem.commit_sha || viewItem.communication_details?.git_traceability?.commit_sha).substring(0, 7) : 'N/A'}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Tag / Release</span>
-                                                <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.tag || viewItem.communication_details?.git_traceability?.tag || viewItem.release_id || viewItem.communication_details?.git_traceability?.release_id || 'N/A'}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Workflow / Build</span>
-                                                <span className="text-[13px] font-bold text-[var(--text-main)]">{viewItem.workflow_run_id || viewItem.communication_details?.git_traceability?.workflow_run_id || viewItem.build_number || viewItem.communication_details?.git_traceability?.build_number || 'N/A'}</span>
-                                            </div>
-                                            {(viewItem.firmware_binary_url || viewItem.communication_details?.git_traceability?.firmware_binary_url) && (
-                                                <div className="lg:col-span-3">
-                                                    <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-dim)] block mb-1">Binary Asset</span>
-                                                    <a href={viewItem.firmware_binary_url || viewItem.communication_details?.git_traceability?.firmware_binary_url} target="_blank" rel="noreferrer" className="text-[13px] font-bold text-blue-500 hover:underline break-all">
-                                                        {viewItem.firmware_binary_url || viewItem.communication_details?.git_traceability?.firmware_binary_url}
-                                                    </a>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )}
 

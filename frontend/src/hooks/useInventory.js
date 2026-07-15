@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  getPCBs, createPCB, updatePCB, deletePCB, deletePCBImage, deletePCBFile,
+  getPCBs, createPCB, updatePCB, deletePCB, deletePCBImage, deletePCBFile, getFirmwareTraceabilityMap,
   getElectronicsParts, createElectronicsPart, updateElectronicsPart, deleteElectronicsPart, deleteElectronicsImage, deleteElectronicsFile,
   getElectricalParts, createElectricalPart, updateElectricalPart, deleteElectricalPart, deleteElectricalImage, deleteElectricalFile,
   getStructuralParts, createStructuralPart, updateStructuralPart, deleteStructuralPart, deleteStructuralImage, deleteStructuralFile
@@ -16,6 +16,16 @@ export const usePCBs = (params) => {
       return response.data;
     },
     keepPreviousData: true,
+  });
+};
+
+export const useFirmwareTraceabilityMap = () => {
+  return useQuery({
+    queryKey: ['firmware-traceability'],
+    queryFn: async () => {
+      const response = await getFirmwareTraceabilityMap();
+      return response.data;
+    },
   });
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { getGitRepositories, getGitReleases, createGitRepository } from '../../api/gitIntegration';
 import { useNavigate } from 'react-router-dom';
 import { useDebounce } from '../../hooks/useDebounce';
 import DataTable from '../../components/shared/DataTable';
@@ -6,12 +7,12 @@ import Modal from '../../components/shared/Modal';
 import Breadcrumbs from '../../components/shared/Breadcrumbs';
 import Lightbox from '../../components/shared/Lightbox';
 import ViewToggle from '../../components/shared/ViewToggle';
-import { 
+import {
   getPCBById, deletePCBImage, deletePCBFile,
   getElectronicsPartById, getElectricalPartById, getStructuralPartById,
   deleteElectricalImage, deleteElectricalFile, deleteStructuralImage, deleteStructuralFile, deleteElectronicsImage, deleteElectronicsFile
 } from '../../api/inventory';
-import { 
+import {
   useInventoryStats, useInventoryOverview,
   useCreatePCB, useUpdatePCB, useDeletePCB,
   useUpdateElectronicsPart, useDeleteElectronicsPart,
@@ -19,19 +20,19 @@ import {
   useUpdateStructuralPart, useDeleteStructuralPart,
   useAddInventoryStock
 } from '../../hooks/useInventory';
-import { 
+import {
   STRUCTURAL_SPEC_FIELDS, ELECTRONICS_SPEC_FIELDS, ELECTRICAL_SPEC_FIELDS,
-  STRUCTURAL_CATEGORY_CONFIG, ELECTRONICS_CATEGORY_CONFIG, ELECTRICAL_CATEGORY_CONFIG 
+  STRUCTURAL_CATEGORY_CONFIG, ELECTRONICS_CATEGORY_CONFIG, ELECTRICAL_CATEGORY_CONFIG
 } from '../../constants/inventorySpecs';
-import { 
-  Search, 
-  Plus, 
-  Loader2, 
-  Cpu, 
-  Zap, 
-  Layers, 
-  Box, 
-  ChevronRight, 
+import {
+  Search,
+  Plus,
+  Loader2,
+  Cpu,
+  Zap,
+  Layers,
+  Box,
+  ChevronRight,
   Trash2,
   FileText,
   Activity,
@@ -59,7 +60,9 @@ import {
   Ruler,
   Pencil,
   Maximize2,
-  PackagePlus
+  PackagePlus,
+  FileCode2,
+  Check
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { useDispatch, useStore } from 'react-redux';
@@ -71,6 +74,14 @@ import { useAuth } from '../../context/AuthContext';
 const InventoryListPage = ({ type = '' }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const [gitRepos, setGitRepos] = useState([]);
+
+  useEffect(() => {
+    getGitRepositories()
+      .then(res => setGitRepos(res.data?.data || []))
+      .catch(err => console.error(err));
+  }, []);
   const store = useStore();
   const { hasPermission } = useAuth();
 
@@ -102,8 +113,8 @@ const InventoryListPage = ({ type = '' }) => {
   // Derive formId for drafts
   const formId = useMemo(() => {
     if (!isModalOpen || modalMode === 'view') return null;
-    return modalMode === 'create' 
-      ? `inventory_create_${type || 'PCB'}` 
+    return modalMode === 'create'
+      ? `inventory_create_${type || 'PCB'}`
       : `inventory_edit_${selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id || 'unknown'}`;
   }, [isModalOpen, modalMode, type, selectedItem]);
 
@@ -115,13 +126,13 @@ const InventoryListPage = ({ type = '' }) => {
   const { data: statsData } = useInventoryStats();
   const stats = statsData || { pcb: 0, electronics: 0, electrical: 0, structural: 0 };
 
-  const { data: inventoryData, isLoading } = useInventoryOverview({ 
-    type, 
-    selectedCategory, 
-    searchTerm: debouncedSearchTerm, 
-    pagination 
+  const { data: inventoryData, isLoading } = useInventoryOverview({
+    type,
+    selectedCategory,
+    searchTerm: debouncedSearchTerm,
+    pagination
   });
-  
+
   let items = inventoryData?.data || [];
   if (stockStatusFilter) {
     items = items.filter(item => {
@@ -157,28 +168,28 @@ const InventoryListPage = ({ type = '' }) => {
   const [quickAddModal, setQuickAddModal] = useState({ isOpen: false, item: null, quantityToAdd: '' });
 
   const handleQuickAddOpen = (item) => {
-      setQuickAddModal({ isOpen: true, item, quantityToAdd: '' });
+    setQuickAddModal({ isOpen: true, item, quantityToAdd: '' });
   };
 
   const handleQuickAddSubmit = async (e) => {
-      e.preventDefault();
-      const { item, quantityToAdd } = quickAddModal;
-      const qty = parseInt(quantityToAdd, 10);
-      if (!qty || qty <= 0) {
-          toast.error('Please enter a valid quantity greater than 0');
-          return;
-      }
-      
-      try {
-          const id = item.pcb_id || item.part_id || item.id;
-          const category = item.category || type || 'PCB';
-          
-          await addStockMutation.mutateAsync({ category, id, quantityToAdd: qty });
-          toast.success(`Successfully added ${qty} units to stock.`);
-          setQuickAddModal({ isOpen: false, item: null, quantityToAdd: '' });
-      } catch (err) {
-          toast.error('Failed to add stock');
-      }
+    e.preventDefault();
+    const { item, quantityToAdd } = quickAddModal;
+    const qty = parseInt(quantityToAdd, 10);
+    if (!qty || qty <= 0) {
+      toast.error('Please enter a valid quantity greater than 0');
+      return;
+    }
+
+    try {
+      const id = item.pcb_id || item.part_id || item.id;
+      const category = item.category || type || 'PCB';
+
+      await addStockMutation.mutateAsync({ category, id, quantityToAdd: qty });
+      toast.success(`Successfully added ${qty} units to stock.`);
+      setQuickAddModal({ isOpen: false, item: null, quantityToAdd: '' });
+    } catch (err) {
+      toast.error('Failed to add stock');
+    }
   };
 
   const getFullUrl = (path) => {
@@ -195,7 +206,7 @@ const InventoryListPage = ({ type = '' }) => {
   // Sync draft to Redux without triggering component re-renders
   useEffect(() => {
     if (!formId || !isModalOpen) return;
-    
+
     const subscription = watch((value, { name, type }) => {
       // Avoid saving empty states when modal just opens
       if (value && Object.keys(value).length > 0) {
@@ -210,7 +221,7 @@ const InventoryListPage = ({ type = '' }) => {
       <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
         {label} {required && <span className="text-rose-500">*</span>}
       </label>
-      <input 
+      <input
         type={type}
         {...register(name, { required: required ? `${label} is required` : false })}
         placeholder={placeholder}
@@ -219,13 +230,13 @@ const InventoryListPage = ({ type = '' }) => {
       {errors[name] && <p className="text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1 mt-1">{errors[name].message}</p>}
     </div>
   );
-  
+
   const SelectField = ({ label, name, options, required = false }) => (
     <div className="space-y-2">
       <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
         {label} {required && <span className="text-rose-500">*</span>}
       </label>
-      <select 
+      <select
         {...register(name, { required: required ? `${label} is required` : false })}
         className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-all font-bold appearance-none cursor-pointer"
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
@@ -242,7 +253,7 @@ const InventoryListPage = ({ type = '' }) => {
   const TextAreaField = ({ label, name, placeholder }) => (
     <div className="space-y-2">
       <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
-      <textarea 
+      <textarea
         {...register(name)}
         placeholder={placeholder}
         rows={3}
@@ -254,20 +265,20 @@ const InventoryListPage = ({ type = '' }) => {
   const FileInput = ({ label, name, accept = "*", existingUrl }) => {
     const selectedFile = watch(name);
     const hasNewFile = selectedFile && selectedFile.length > 0;
-    
-    const fileName = hasNewFile 
-      ? selectedFile[0].name 
+
+    const fileName = hasNewFile
+      ? selectedFile[0].name
       : (existingUrl ? existingUrl.split(/[\\/]/).pop() : 'Click or drag to upload');
 
     return (
       <div className="space-y-2">
         <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">{label}</label>
         <div className="relative group">
-          <input 
-            type="file" 
-            {...register(name)} 
+          <input
+            type="file"
+            {...register(name)}
             accept={accept}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
           />
           <div className={`flex items-center gap-4 p-3 bg-[var(--bg-workspace)] border ${hasNewFile ? 'border-[var(--accent)] ring-2 ring-[var(--border-glow)]' : 'border-[var(--border-color)]'} rounded-xl group-hover:border-[var(--accent)] transition-all`}>
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasNewFile ? 'bg-[var(--accent)] text-white animate-pulse' : 'bg-[var(--nav-hover)] text-[var(--accent)]'}`}>
@@ -280,14 +291,14 @@ const InventoryListPage = ({ type = '' }) => {
               <div className="flex items-center gap-3 mt-1">
                 {existingUrl && !hasNewFile && (
                   <>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => handleDownload(existingUrl)}
                       className="text-[10px] text-[var(--accent)] font-black uppercase flex items-center gap-1 hover:underline relative z-20"
                     >
                       <Download size={10} /> Download
                     </button>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => handleRemoveFile(name)}
                       className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
@@ -297,7 +308,7 @@ const InventoryListPage = ({ type = '' }) => {
                   </>
                 )}
                 {hasNewFile && (
-                  <button 
+                  <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setValue(name, null); }}
                     className="text-[10px] text-rose-500 font-black uppercase flex items-center gap-1 hover:underline relative z-20"
@@ -365,12 +376,12 @@ const InventoryListPage = ({ type = '' }) => {
       const formData = new FormData();
       Object.keys(data).forEach(key => {
         if (!key.startsWith('file_') && key !== 'pcb_images') {
-           formData.append(key, data[key]);
+          formData.append(key, data[key]);
         }
       });
 
       const fileFields = [
-        'file_gerber', 'file_board', 'file_schematic', 'file_bom', 
+        'file_gerber', 'file_board', 'file_schematic', 'file_bom',
         'file_stencile', 'file_panel_gerber', 'file_layer_stack', 'file_production_note'
       ];
       fileFields.forEach(field => {
@@ -385,46 +396,64 @@ const InventoryListPage = ({ type = '' }) => {
         });
       }
 
-      if (type === 'PCB' || selectedItem?.category === 'PCB') {
-          if (modalMode === 'create') {
-              await createPCBMutation.mutateAsync(formData);
-              toast.success('PCB registered successfully!');
-          } else if (modalMode === 'edit') {
-              await updatePCBMutation.mutateAsync({ id: selectedItem.pcb_id, data: formData });
-              toast.success('PCB specifications updated!');
-          }
-      } else {
-          const category = selectedItem?.category;
-          const id = selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id;
-          
-          if (category === 'Electronic Part') {
-              const specFields = Object.keys(data).filter(k => k.startsWith('spec_'));
-              const specDataObj = {};
-              specFields.forEach(k => { specDataObj[k.replace('spec_', '')] = data[k]; });
-              formData.delete('spec_data'); 
-              formData.append('spec_data', JSON.stringify(specDataObj));
-              
-              if (modalMode === 'edit') {
-                  await updateElectronicsPartMutation.mutateAsync({ id, data: formData });
-                  toast.success('Electronics Part updated!');
-              }
-          } else if (category === 'Electrical Part') {
-              if (modalMode === 'edit') {
-                  await updateElectricalPartMutation.mutateAsync({ id, data: formData });
-                  toast.success('Electrical Part updated!');
-              }
-          } else if (category === 'Structural Part') {
-              const specFields = Object.keys(data).filter(k => k.startsWith('spec_'));
-              const specDataObj = {};
-              specFields.forEach(k => { specDataObj[k.replace('spec_', '')] = data[k]; });
-              formData.delete('spec_data'); 
-              formData.append('spec_data', JSON.stringify(specDataObj));
 
-              if (modalMode === 'edit') {
-                  await updateStructuralPartMutation.mutateAsync({ id, data: formData });
-                  toast.success('Structural Part updated!');
-              }
+      if (type === 'PCB' || selectedItem?.category === 'PCB') {
+        // Serialize processors array
+        if (data.processors) {
+          formData.append('processors_data', JSON.stringify(data.processors));
+        } else if (data.processor_type || data.processor_part_no) {
+          // Fallback for draft/legacy format if any
+          formData.append('processors_data', JSON.stringify([{
+            processor_type: data.processor_type,
+            processor_part_no: data.processor_part_no,
+            processor_desc: data.processor_desc,
+            has_embedded_firmware: data.has_embedded_firmware,
+            repository_name: data.repository_name,
+            firmware_branch: data.firmware_branch,
+            firmware_version: data.firmware_version
+          }]));
+        }
+
+        if (modalMode === 'create') {
+
+          await createPCBMutation.mutateAsync(formData);
+          toast.success('PCB registered successfully!');
+        } else if (modalMode === 'edit') {
+          await updatePCBMutation.mutateAsync({ id: selectedItem.pcb_id, data: formData });
+          toast.success('PCB specifications updated!');
+        }
+      } else {
+        const category = selectedItem?.category;
+        const id = selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id;
+
+        if (category === 'Electronic Part') {
+          const specFields = Object.keys(data).filter(k => k.startsWith('spec_'));
+          const specDataObj = {};
+          specFields.forEach(k => { specDataObj[k.replace('spec_', '')] = data[k]; });
+          formData.delete('spec_data');
+          formData.append('spec_data', JSON.stringify(specDataObj));
+
+          if (modalMode === 'edit') {
+            await updateElectronicsPartMutation.mutateAsync({ id, data: formData });
+            toast.success('Electronics Part updated!');
           }
+        } else if (category === 'Electrical Part') {
+          if (modalMode === 'edit') {
+            await updateElectricalPartMutation.mutateAsync({ id, data: formData });
+            toast.success('Electrical Part updated!');
+          }
+        } else if (category === 'Structural Part') {
+          const specFields = Object.keys(data).filter(k => k.startsWith('spec_'));
+          const specDataObj = {};
+          specFields.forEach(k => { specDataObj[k.replace('spec_', '')] = data[k]; });
+          formData.delete('spec_data');
+          formData.append('spec_data', JSON.stringify(specDataObj));
+
+          if (modalMode === 'edit') {
+            await updateStructuralPartMutation.mutateAsync({ id, data: formData });
+            toast.success('Structural Part updated!');
+          }
+        }
       }
 
       setIsModalOpen(false);
@@ -443,111 +472,111 @@ const InventoryListPage = ({ type = '' }) => {
     setModalMode('create');
     setSelectedItem(null);
     setPendingImages([]);
-    
+
     const draftId = `inventory_create_${type || 'PCB'}`;
     const draft = store.getState().drafts[draftId];
-    
+
     if (draft && draft.data && Object.keys(draft.data).length > 0) {
-        reset(draft.data);
-        setModalTab(draft.tab || 'general');
+      reset(draft.data);
+      setModalTab(draft.tab || 'general');
     } else {
-        setModalTab('general');
-        reset({
-            pcb_name: '', part_number: '', pcb_description: '', pcb_type: '', pcb_type_desc: '',
-            processor_type: '', processor_part_no: '', processor_count: 0, processor_desc: '',
-            firmware_branch: '', firmware_version: '', firmware_feature: '', firmware_feature_desc: ''
-        });
+      setModalTab('general');
+      reset({
+        pcb_name: '', part_number: '', pcb_type: '', pcb_description: '',
+        processor_count: 1,
+        processors: [{ processor_type: '', processor_part_no: '', processor_desc: '', has_embedded_firmware: false, repository_name: '', firmware_branch: '', firmware_version: '' }]
+      });
     }
-    
+
     setIsModalOpen(true);
   };
 
   const loadPCBDetails = async (id, mode) => {
-      try {
-          const res = await getPCBById(id);
-          const fullData = { ...res.data.data, category: 'PCB' };
-          setSelectedItem(fullData);
-          
-          if (mode === 'edit') {
-            const draftId = `inventory_edit_${id}`;
-            const draft = store.getState().drafts[draftId];
-            if (draft && draft.data && Object.keys(draft.data).length > 0) {
-              reset(draft.data);
-              setModalTab(draft.tab || 'general');
-            } else {
-              reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
-            }
-          } else {
-            reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
-          }
-          
-          if (mode) setModalMode(mode);
-      } catch (error) {
-          toast.error('Failed to load PCB details');
+    try {
+      const res = await getPCBById(id);
+      const fullData = { ...res.data.data, category: 'PCB' };
+      setSelectedItem(fullData);
+
+      if (mode === 'edit') {
+        const draftId = `inventory_edit_${id}`;
+        const draft = store.getState().drafts[draftId];
+        if (draft && draft.data && Object.keys(draft.data).length > 0) {
+          reset(draft.data);
+          setModalTab(draft.tab || 'general');
+        } else {
+          reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
+        }
+      } else {
+        reset({ ...fullData, part_number: fullData.part_no, pcb_description: fullData.description });
       }
+
+      if (mode) setModalMode(mode);
+    } catch (error) {
+      toast.error('Failed to load PCB details');
+    }
   };
 
   const loadElectronicsDetails = async (id, mode) => {
-      try {
-          const res = await getElectronicsPartById(id);
-          const fullData = { ...res.data.data, category: 'Electronic Part' };
-          setSelectedItem(fullData);
-          
-          // Map technical specs to form
-          let formData = { ...fullData, ...fullData.techSpec };
-          if (fullData.categorySpec) {
-              formData.category_name = fullData.categorySpec.category_name;
-              if (fullData.categorySpec.spec_data) {
-                  const specData = typeof fullData.categorySpec.spec_data === 'string' 
-                    ? JSON.parse(fullData.categorySpec.spec_data) 
-                    : fullData.categorySpec.spec_data;
-                  Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
-              }
-          }
-          reset(formData);
-          if (mode) setModalMode(mode);
-      } catch (error) {
-          toast.error('Failed to load Electronics details');
+    try {
+      const res = await getElectronicsPartById(id);
+      const fullData = { ...res.data.data, category: 'Electronic Part' };
+      setSelectedItem(fullData);
+
+      // Map technical specs to form
+      let formData = { ...fullData, ...fullData.techSpec };
+      if (fullData.categorySpec) {
+        formData.category_name = fullData.categorySpec.category_name;
+        if (fullData.categorySpec.spec_data) {
+          const specData = typeof fullData.categorySpec.spec_data === 'string'
+            ? JSON.parse(fullData.categorySpec.spec_data)
+            : fullData.categorySpec.spec_data;
+          Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
+        }
       }
+      reset(formData);
+      if (mode) setModalMode(mode);
+    } catch (error) {
+      toast.error('Failed to load Electronics details');
+    }
   };
 
   const loadElectricalDetails = async (id, mode) => {
-      try {
-          const res = await getElectricalPartById(id);
-          const fullData = { ...res.data.data, category: 'Electrical Part' };
-          setSelectedItem(fullData);
-          reset(fullData);
-          if (mode) setModalMode(mode);
-      } catch (error) {
-          toast.error('Failed to load Electrical details');
-      }
+    try {
+      const res = await getElectricalPartById(id);
+      const fullData = { ...res.data.data, category: 'Electrical Part' };
+      setSelectedItem(fullData);
+      reset(fullData);
+      if (mode) setModalMode(mode);
+    } catch (error) {
+      toast.error('Failed to load Electrical details');
+    }
   };
 
   const loadStructuralDetails = async (id, mode) => {
-      try {
-          const res = await getStructuralPartById(id);
-          const fullData = { ...res.data.data, category: 'Structural Part' };
-          setSelectedItem(fullData);
-          
-          let formData = { ...fullData, ...fullData.techSpec };
-          if (fullData.categorySpec) {
-              formData.category_name = fullData.categorySpec.category_name;
-              if (fullData.categorySpec.spec_data) {
-                  const specData = typeof fullData.categorySpec.spec_data === 'string' 
-                    ? JSON.parse(fullData.categorySpec.spec_data) 
-                    : fullData.categorySpec.spec_data;
-                  Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
-              }
-          } else if (fullData.categoryData) {
-              // Handle case where it might be in categoryData
-              Object.keys(fullData.categoryData).forEach(k => { formData[`spec_${k}`] = fullData.categoryData[k]; });
-          }
-          
-          reset(formData);
-          if (mode) setModalMode(mode);
-      } catch (error) {
-          toast.error('Failed to load Structural details');
+    try {
+      const res = await getStructuralPartById(id);
+      const fullData = { ...res.data.data, category: 'Structural Part' };
+      setSelectedItem(fullData);
+
+      let formData = { ...fullData, ...fullData.techSpec };
+      if (fullData.categorySpec) {
+        formData.category_name = fullData.categorySpec.category_name;
+        if (fullData.categorySpec.spec_data) {
+          const specData = typeof fullData.categorySpec.spec_data === 'string'
+            ? JSON.parse(fullData.categorySpec.spec_data)
+            : fullData.categorySpec.spec_data;
+          Object.keys(specData).forEach(k => { formData[`spec_${k}`] = specData[k]; });
+        }
+      } else if (fullData.categoryData) {
+        // Handle case where it might be in categoryData
+        Object.keys(fullData.categoryData).forEach(k => { formData[`spec_${k}`] = fullData.categoryData[k]; });
       }
+
+      reset(formData);
+      if (mode) setModalMode(mode);
+    } catch (error) {
+      toast.error('Failed to load Structural details');
+    }
   };
 
   const handleView = async (item) => {
@@ -557,45 +586,45 @@ const InventoryListPage = ({ type = '' }) => {
     setActiveImageIdx(0);
     setIsModalOpen(true);
     setPendingImages([]);
-    
+
     const id = item.pcb_id;
     const category = item.category || type || 'PCB';
 
     if (id) {
-        if (category === 'PCB') {
-            await loadPCBDetails(id);
-        } else if (category === 'Electronic Part') {
-            await loadElectronicsDetails(id);
-        } else if (category === 'Electrical Part') {
-            await loadElectricalDetails(id);
-        } else if (category === 'Structural Part') {
-            await loadStructuralDetails(id);
-        }
+      if (category === 'PCB') {
+        await loadPCBDetails(id);
+      } else if (category === 'Electronic Part') {
+        await loadElectronicsDetails(id);
+      } else if (category === 'Electrical Part') {
+        await loadElectricalDetails(id);
+      } else if (category === 'Structural Part') {
+        await loadStructuralDetails(id);
+      }
     }
   };
 
-   const handleEdit = async (item) => {
+  const handleEdit = async (item) => {
     setModalMode('edit');
     setSelectedItem(item);
     setModalTab('general');
     setIsModalOpen(true);
     setPendingImages([]);
-    
+
     const id = item.pcb_id || item.part_id || item.id;
     const itemType = item.category || type || 'PCB';
     if (id) {
-        if (itemType === 'PCB') {
-            await loadPCBDetails(id);
-        } else if (itemType === 'Electronic Part') {
-            navigate('/admin/inventory/electronics', { state: { editId: id } });
-            setIsModalOpen(false);
-        } else if (itemType === 'Electrical Part') {
-            navigate('/admin/inventory/electrical', { state: { editId: id } });
-            setIsModalOpen(false);
-        } else if (itemType === 'Structural Part') {
-            navigate('/admin/inventory/structural', { state: { editId: id } });
-            setIsModalOpen(false);
-        }
+      if (itemType === 'PCB') {
+        await loadPCBDetails(id);
+      } else if (itemType === 'Electronic Part') {
+        navigate('/admin/inventory/electronics', { state: { editId: id } });
+        setIsModalOpen(false);
+      } else if (itemType === 'Electrical Part') {
+        navigate('/admin/inventory/electrical', { state: { editId: id } });
+        setIsModalOpen(false);
+      } else if (itemType === 'Structural Part') {
+        navigate('/admin/inventory/structural', { state: { editId: id } });
+        setIsModalOpen(false);
+      }
     }
   };
 
@@ -613,13 +642,13 @@ const InventoryListPage = ({ type = '' }) => {
     if (result.isConfirmed) {
       try {
         if (itemType === 'PCB') {
-            await deletePCBMutation.mutateAsync(item.pcb_id);
+          await deletePCBMutation.mutateAsync(item.pcb_id);
         } else if (itemType === 'Electronic Part') {
-            await deleteElectronicsPartMutation.mutateAsync(item.pcb_id); 
+          await deleteElectronicsPartMutation.mutateAsync(item.pcb_id);
         } else if (itemType === 'Electrical Part') {
-            await deleteElectricalPartMutation.mutateAsync(item.pcb_id);
+          await deleteElectricalPartMutation.mutateAsync(item.pcb_id);
         } else if (itemType === 'Structural Part') {
-            await deleteStructuralPartMutation.mutateAsync(item.pcb_id);
+          await deleteStructuralPartMutation.mutateAsync(item.pcb_id);
         }
         toast.success(`${itemType} deleted successfully`);
       } catch (error) {
@@ -639,76 +668,76 @@ const InventoryListPage = ({ type = '' }) => {
       confirmButtonText: 'Yes, remove it!'
     });
     if (result.isConfirmed) {
-        try {
-            const category = selectedItem?.category;
-            const id = selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id;
-            
-            if (category === 'PCB' || !category) {
-                await deletePCBImage(id, imageUrl);
-                loadPCBDetails(id, 'edit');
-            } else if (category === 'Electronic Part') {
-                // Electronics doesn't have a specific deleteImage API in the provided snippet?
-                // Wait, I should check electronicsController.js again.
-                // Actually, let's assume it doesn't have one if not in api/inventory.js.
-                toast.error('Image removal for Electronics not implemented in API');
-            } else if (category === 'Electrical Part') {
-                await deleteElectricalImage(id, imageUrl);
-                loadElectricalDetails(id, 'edit');
-            } else if (category === 'Structural Part') {
-                await deleteStructuralImage(id, imageUrl);
-                loadStructuralDetails(id, 'edit');
-            }
-            toast.success('Image removed successfully');
-        } catch (error) {
-            toast.error('Failed to remove image');
+      try {
+        const category = selectedItem?.category;
+        const id = selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id;
+
+        if (category === 'PCB' || !category) {
+          await deletePCBImage(id, imageUrl);
+          loadPCBDetails(id, 'edit');
+        } else if (category === 'Electronic Part') {
+          // Electronics doesn't have a specific deleteImage API in the provided snippet?
+          // Wait, I should check electronicsController.js again.
+          // Actually, let's assume it doesn't have one if not in api/inventory.js.
+          toast.error('Image removal for Electronics not implemented in API');
+        } else if (category === 'Electrical Part') {
+          await deleteElectricalImage(id, imageUrl);
+          loadElectricalDetails(id, 'edit');
+        } else if (category === 'Structural Part') {
+          await deleteStructuralImage(id, imageUrl);
+          loadStructuralDetails(id, 'edit');
         }
+        toast.success('Image removed successfully');
+      } catch (error) {
+        toast.error('Failed to remove image');
+      }
     }
   };
 
   const handleRemoveFile = async (fieldName) => {
     if (!selectedItem) return;
-    
+
     const category = selectedItem?.category;
     const id = selectedItem?.pcb_id || selectedItem?.part_id || selectedItem?.id;
 
     const pcbMapping = {
-        'file_gerber': 'processor_file_url',
-        'file_board': 'brd_file_url',
-        'file_schematic': 'sch_file_url',
-        'file_bom': 'bom_file_url',
-        'file_stencile': 'stencil_file_url',
-        'file_panel_gerber': 'panel_gerber_file_url',
-        'file_layer_stack': 'layer_stacking_file_url',
-        'file_production_note': 'production_instruction_url'
+      'file_gerber': 'processor_file_url',
+      'file_board': 'brd_file_url',
+      'file_schematic': 'sch_file_url',
+      'file_bom': 'bom_file_url',
+      'file_stencile': 'stencil_file_url',
+      'file_panel_gerber': 'panel_gerber_file_url',
+      'file_layer_stack': 'layer_stacking_file_url',
+      'file_production_note': 'production_instruction_url'
     };
 
     const electronicsMapping = {
-        'file_datasheet': 'datasheet_url',
-        'file_wiring': 'wiring_diagram_url',
-        'file_manual': 'user_manual_url',
-        'file_test_report': 'test_report_url',
-        'file_calib_cert': 'calibration_cert_url',
-        'file_warranty': 'warranty_cert_url',
-        'file_invoice': 'invoice_url'
+      'file_datasheet': 'datasheet_url',
+      'file_wiring': 'wiring_diagram_url',
+      'file_manual': 'user_manual_url',
+      'file_test_report': 'test_report_url',
+      'file_calib_cert': 'calibration_cert_url',
+      'file_warranty': 'warranty_cert_url',
+      'file_invoice': 'invoice_url'
     };
 
     const electricalMapping = {
-        'file_datasheet': 'datasheet_url',
-        'file_wiring': 'wiring_diagram_url',
-        'file_manual': 'installation_manual_url',
-        'file_test_report': 'test_report_url',
-        'file_calib_cert': 'calibration_cert_url',
-        'file_compliance': 'compliance_cert_url',
-        'file_warranty': 'warranty_doc_url',
-        'file_invoice': 'invoice_url'
+      'file_datasheet': 'datasheet_url',
+      'file_wiring': 'wiring_diagram_url',
+      'file_manual': 'installation_manual_url',
+      'file_test_report': 'test_report_url',
+      'file_calib_cert': 'calibration_cert_url',
+      'file_compliance': 'compliance_cert_url',
+      'file_warranty': 'warranty_doc_url',
+      'file_invoice': 'invoice_url'
     };
 
     const structuralMapping = {
-        'file_2d_drawing': 'file_2d_drawing',
-        'file_3d_model': 'file_3d_model',
-        'file_fabrication_drawing': 'file_fabrication_drawing',
-        'file_assembly_drawing': 'file_assembly_drawing',
-        'file_cutting': 'file_cutting'
+      'file_2d_drawing': 'file_2d_drawing',
+      'file_3d_model': 'file_3d_model',
+      'file_fabrication_drawing': 'file_fabrication_drawing',
+      'file_assembly_drawing': 'file_assembly_drawing',
+      'file_cutting': 'file_cutting'
     };
 
     let dbField = null;
@@ -716,21 +745,21 @@ const InventoryListPage = ({ type = '' }) => {
     let reloadFn = null;
 
     if (category === 'PCB' || !category) {
-        dbField = pcbMapping[fieldName];
-        deleteApi = deletePCBFile;
-        reloadFn = loadPCBDetails;
+      dbField = pcbMapping[fieldName];
+      deleteApi = deletePCBFile;
+      reloadFn = loadPCBDetails;
     } else if (category === 'Electronic Part') {
-        dbField = electronicsMapping[fieldName];
-        deleteApi = deleteElectronicsFile;
-        reloadFn = loadElectronicsDetails;
+      dbField = electronicsMapping[fieldName];
+      deleteApi = deleteElectronicsFile;
+      reloadFn = loadElectronicsDetails;
     } else if (category === 'Electrical Part') {
-        dbField = electricalMapping[fieldName];
-        deleteApi = deleteElectricalFile;
-        reloadFn = loadElectricalDetails;
+      dbField = electricalMapping[fieldName];
+      deleteApi = deleteElectricalFile;
+      reloadFn = loadElectricalDetails;
     } else if (category === 'Structural Part') {
-        dbField = structuralMapping[fieldName];
-        deleteApi = deleteStructuralFile;
-        reloadFn = loadStructuralDetails;
+      dbField = structuralMapping[fieldName];
+      deleteApi = deleteStructuralFile;
+      reloadFn = loadStructuralDetails;
     }
 
     if (!dbField || !deleteApi) return;
@@ -745,13 +774,13 @@ const InventoryListPage = ({ type = '' }) => {
       confirmButtonText: 'Yes, delete it!'
     });
     if (result.isConfirmed) {
-        try {
-            await deleteApi(id, dbField);
-            toast.success('File removed successfully');
-            reloadFn(id, 'edit');
-        } catch (error) {
-            toast.error('Failed to remove file');
-        }
+      try {
+        await deleteApi(id, dbField);
+        toast.success('File removed successfully');
+        reloadFn(id, 'edit');
+      } catch (error) {
+        toast.error('Failed to remove file');
+      }
     }
   };
 
@@ -797,7 +826,7 @@ const InventoryListPage = ({ type = '' }) => {
             {loading ? '...' : count}
           </h3>
         </div>
-        <div 
+        <div
           className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-sm"
           style={{ background: 'var(--nav-hover)', color: colorAccent }}
         >
@@ -816,38 +845,54 @@ const InventoryListPage = ({ type = '' }) => {
 
   const renderTechnicalSpecs = () => {
     const category = selectedItem?.category || type || 'PCB';
-    
+
     if (category === 'PCB') {
       return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-           {/* Hardware Profile */}
-           <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
-              <div className="flex items-center gap-4 mb-7">
-                 <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Cpu size={22} /></div>
-                 <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Hardware Profile</h3>
+        <div className="space-y-10">
+          {(selectedItem?.processors || []).map((proc, idx) => (
+            <div key={idx} className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              {/* Hardware Profile */}
+              <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 px-4 py-1.5 bg-[var(--bg-workspace)] border-b border-l border-[var(--border-color)] rounded-bl-2xl text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">
+                  Processor {idx + 1}
+                </div>
+                <div className="flex items-center gap-4 mb-7">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Cpu size={22} /></div>
+                  <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Hardware Profile</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <DataSheetEntry label="Core Architecture" value={proc.processor_type} icon={Cpu} />
+                  <DataSheetEntry label="Component Part No" value={proc.processor_part_no} icon={HardDrive} />
+                  <div className="sm:col-span-2">
+                    <DataSheetEntry label="Technical Notes" value={proc.processor_desc} icon={Info} />
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                 <DataSheetEntry label="Core Architecture" value={selectedItem?.processor_type} icon={Cpu} />
-                 <DataSheetEntry label="Component Part No" value={selectedItem?.processor_part_no} icon={HardDrive} />
-                 <div className="sm:col-span-2">
-                   <DataSheetEntry label="Technical Notes" value={selectedItem?.processor_desc} icon={Info} />
-                 </div>
-              </div>
-           </div>
 
-           {/* Firmware Profile */}
-           <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
-              <div className="flex items-center gap-4 mb-7">
-                 <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Binary size={22} /></div>
-                 <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Firmware Build</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                 <DataSheetEntry label="Active Branch" value={selectedItem?.firmware_branch} icon={Code} />
-                 <DataSheetEntry label="Version Spec" value={selectedItem?.firmware_version} icon={CheckCircle2} />
-                 <DataSheetEntry label="Primary Feature" value={selectedItem?.firmware_feature} icon={Zap} />
-                 <DataSheetEntry label="Release Context" value={selectedItem?.firmware_feature_desc} icon={Info} />
-              </div>
-           </div>
+              {/* Firmware Profile */}
+              {proc.has_embedded_firmware && (
+                <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
+                  <div className="flex items-center gap-4 mb-7">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Binary size={22} /></div>
+                    <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Firmware Build</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-5">
+                    <DataSheetEntry label="Repository Name" value={proc.repository_name} icon={Box} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <DataSheetEntry label="Active Branch" value={proc.firmware_branch} icon={Code} />
+                      <DataSheetEntry label="Version Spec" value={proc.firmware_version} icon={CheckCircle2} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+          {(!selectedItem?.processors || selectedItem?.processors.length === 0) && (
+            <div className="text-center py-10 opacity-50">
+              <Cpu size={32} className="mx-auto mb-3 text-[var(--text-dim)]" />
+              <p className="text-[12px] font-bold text-[var(--text-dim)] uppercase tracking-widest">No processors mapped to this board</p>
+            </div>
+          )}
         </div>
       );
     }
@@ -855,35 +900,35 @@ const InventoryListPage = ({ type = '' }) => {
     // For other categories, render a generic spec sheet
     const specs = selectedItem?.techSpec || selectedItem || {};
     const categoryData = selectedItem?.categoryData || selectedItem?.categorySpec?.spec_data || {};
-    
+
     return (
-       <div className="space-y-10">
-          <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
-              <div className="flex items-center gap-4 mb-7">
-                 <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Settings size={22} /></div>
-                 <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Technical Specifications</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                 {/* Common Specs */}
-                 {specs.mounting_type && <DataSheetEntry label="Mounting" value={specs.mounting_type} icon={Layers} />}
-                 {specs.material && <DataSheetEntry label="Material" value={specs.material} icon={Box} />}
-                 {specs.dimensions && <DataSheetEntry label="Dimensions" value={specs.dimensions} icon={Ruler} />}
-                 {specs.weight && <DataSheetEntry label="Weight" value={specs.weight} icon={Activity} />}
-                 
-                 {/* Category Specific Specs */}
-                 {Object.entries(categoryData).map(([key, value]) => {
-                    const ignoreKeys = [
-                      'id', 'part_id', 'tech_id', 'spec_id', 'inventory_id', 'procurement_id', 
-                      'file_id', 'image_id', 'created_at', 'updated_at', 'is_active', 
-                      'datasheet_file', 'warranty_document', 'part_images_gallery',
-                      'datasheet_url', 'warranty_doc_url', 'category_name'
-                    ];
-                    if (ignoreKeys.includes(key.toLowerCase()) || typeof value === 'object' || !value) return null;
-                    return <DataSheetEntry key={key} label={key.replace(/_/g, ' ')} value={String(value)} icon={Activity} />;
-                 })}
-              </div>
+      <div className="space-y-10">
+        <div className="workspace-card p-8 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-sm">
+          <div className="flex items-center gap-4 mb-7">
+            <div className="w-10 h-10 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-inner"><Settings size={22} /></div>
+            <h3 className="text-[14px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Technical Specifications</h3>
           </div>
-       </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {/* Common Specs */}
+            {specs.mounting_type && <DataSheetEntry label="Mounting" value={specs.mounting_type} icon={Layers} />}
+            {specs.material && <DataSheetEntry label="Material" value={specs.material} icon={Box} />}
+            {specs.dimensions && <DataSheetEntry label="Dimensions" value={specs.dimensions} icon={Ruler} />}
+            {specs.weight && <DataSheetEntry label="Weight" value={specs.weight} icon={Activity} />}
+
+            {/* Category Specific Specs */}
+            {Object.entries(categoryData).map(([key, value]) => {
+              const ignoreKeys = [
+                'id', 'part_id', 'tech_id', 'spec_id', 'inventory_id', 'procurement_id',
+                'file_id', 'image_id', 'created_at', 'updated_at', 'is_active',
+                'datasheet_file', 'warranty_document', 'part_images_gallery',
+                'datasheet_url', 'warranty_doc_url', 'category_name'
+              ];
+              if (ignoreKeys.includes(key.toLowerCase()) || typeof value === 'object' || !value) return null;
+              return <DataSheetEntry key={key} label={key.replace(/_/g, ' ')} value={String(value)} icon={Activity} />;
+            })}
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -901,94 +946,94 @@ const InventoryListPage = ({ type = '' }) => {
   };
 
   const renderDocumentationLibrary = () => {
-      const category = selectedItem?.category || type || 'PCB';
-      
-      if (category === 'PCB') {
-          return (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                 <FileCard label="Gerber File" url={selectedItem?.files?.processor_file_url} />
-                 <FileCard label="Board File" url={selectedItem?.files?.brd_file_url} />
-                 <FileCard label="Schematics" url={selectedItem?.files?.sch_file_url} />
-                 <FileCard label="BOM File" url={selectedItem?.files?.bom_file_url} />
-                 <FileCard label="Stencil Data" url={selectedItem?.files?.stencil_file_url} />
-                 <FileCard label="Panel Gerber" url={selectedItem?.files?.panel_gerber_file_url} />
-                 <FileCard label="Layer Stacking" url={selectedItem?.files?.layer_stacking_file_url} />
-                 <FileCard label="Production Note" url={selectedItem?.files?.production_instruction_url} />
-              </div>
-          );
-      }
+    const category = selectedItem?.category || type || 'PCB';
 
-      // For others, we can map common file fields
-      const files = selectedItem?.files || selectedItem || {};
-      const fileFields = [];
-      
-      if (category === 'Electronic Part' || category === 'Electrical Part') {
-          if (files.datasheet_url) fileFields.push({ label: 'Datasheet', url: files.datasheet_url });
-          if (files.warranty_cert_url || files.warranty_doc_url) fileFields.push({ label: 'Warranty Document', url: files.warranty_cert_url || files.warranty_doc_url });
-      } else if (category === 'Structural Part') {
-          const catData = selectedItem?.categoryData || {};
-          if (catData.file_2d_drawing) fileFields.push({ label: '2D Drawing', url: catData.file_2d_drawing });
-          if (catData.file_3d_model) fileFields.push({ label: '3D Model', url: catData.file_3d_model });
-          if (catData.file_fabrication_drawing) fileFields.push({ label: 'Fabrication Dwg', url: catData.file_fabrication_drawing });
-      }
-
-      if (fileFields.length === 0) {
-          return (
-              <div className="p-10 border-2 border-dashed border-[var(--border-color)] rounded-[32px] flex flex-col items-center justify-center text-[var(--text-dim)]">
-                  <FileText size={48} className="opacity-10 mb-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">No Technical Documents Attached</p>
-              </div>
-          );
-      }
-
+    if (category === 'PCB') {
       return (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-              {fileFields.map((file, idx) => (
-                  <FileCard key={idx} label={file.label} url={file.url} />
-              ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <FileCard label="Gerber File" url={selectedItem?.files?.processor_file_url} />
+          <FileCard label="Board File" url={selectedItem?.files?.brd_file_url} />
+          <FileCard label="Schematics" url={selectedItem?.files?.sch_file_url} />
+          <FileCard label="BOM File" url={selectedItem?.files?.bom_file_url} />
+          <FileCard label="Stencil Data" url={selectedItem?.files?.stencil_file_url} />
+          <FileCard label="Panel Gerber" url={selectedItem?.files?.panel_gerber_file_url} />
+          <FileCard label="Layer Stacking" url={selectedItem?.files?.layer_stacking_file_url} />
+          <FileCard label="Production Note" url={selectedItem?.files?.production_instruction_url} />
+        </div>
       );
+    }
+
+    // For others, we can map common file fields
+    const files = selectedItem?.files || selectedItem || {};
+    const fileFields = [];
+
+    if (category === 'Electronic Part' || category === 'Electrical Part') {
+      if (files.datasheet_url) fileFields.push({ label: 'Datasheet', url: files.datasheet_url });
+      if (files.warranty_cert_url || files.warranty_doc_url) fileFields.push({ label: 'Warranty Document', url: files.warranty_cert_url || files.warranty_doc_url });
+    } else if (category === 'Structural Part') {
+      const catData = selectedItem?.categoryData || {};
+      if (catData.file_2d_drawing) fileFields.push({ label: '2D Drawing', url: catData.file_2d_drawing });
+      if (catData.file_3d_model) fileFields.push({ label: '3D Model', url: catData.file_3d_model });
+      if (catData.file_fabrication_drawing) fileFields.push({ label: 'Fabrication Dwg', url: catData.file_fabrication_drawing });
+    }
+
+    if (fileFields.length === 0) {
+      return (
+        <div className="p-10 border-2 border-dashed border-[var(--border-color)] rounded-[32px] flex flex-col items-center justify-center text-[var(--text-dim)]">
+          <FileText size={48} className="opacity-10 mb-4" />
+          <p className="text-[10px] font-black uppercase tracking-widest">No Technical Documents Attached</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {fileFields.map((file, idx) => (
+          <FileCard key={idx} label={file.label} url={file.url} />
+        ))}
+      </div>
+    );
   };
 
   const FileCard = ({ label, url }) => (
     <div className="flex items-center justify-between p-4.5 bg-[var(--bg-workspace)]/50 border border-[var(--border-color)] rounded-2xl group hover:border-[var(--accent)] transition-all relative overflow-hidden">
-       <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity" />
-       <div className="flex items-center gap-4 min-w-0">
-          <div className="p-3 bg-[var(--nav-hover)] rounded-xl text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors">
-            <FileText size={20} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{label}</p>
-            <p className="text-[13px] font-bold text-[var(--text-main)] truncate max-w-[140px]">{url ? url.split(/[\\/]/).pop() : 'Not Available'}</p>
-          </div>
-       </div>
-       <div className="flex items-center gap-2.5">
-          {url && (
-            <>
-              <a 
-                href={buildFileUrl(url)} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                title="View File"
-                className="p-3 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
-              >
-                <Eye size={16} />
-              </a>
-              <button 
-                onClick={() => handleDownload(url)}
-                title="Download File"
-                className="p-3 bg-[var(--accent)] text-white rounded-xl shadow-md hover:scale-105 transition-transform"
-              >
-                <Download size={16} />
-              </button>
-            </>
-          )}
-       </div>
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="p-3 bg-[var(--nav-hover)] rounded-xl text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors">
+          <FileText size={20} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-1">{label}</p>
+          <p className="text-[13px] font-bold text-[var(--text-main)] truncate max-w-[140px]">{url ? url.split(/[\\/]/).pop() : 'Not Available'}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2.5">
+        {url && (
+          <>
+            <a
+              href={buildFileUrl(url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="View File"
+              className="p-3 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl shadow-sm hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
+            >
+              <Eye size={16} />
+            </a>
+            <button
+              onClick={() => handleDownload(url)}
+              title="Download File"
+              className="p-3 bg-[var(--accent)] text-white rounded-xl shadow-md hover:scale-105 transition-transform"
+            >
+              <Download size={16} />
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 
   const combinedColumns = [
-    { 
+    {
       key: 'image', label: 'Asset',
       render: (row) => {
         const imgUrl = row.pcb_images?.[0] || row.part_images?.[0] || row.image_url;
@@ -996,7 +1041,7 @@ const InventoryListPage = ({ type = '' }) => {
           <div className="w-10 h-10 rounded-xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-workspace)] flex items-center justify-center shadow-sm">
             {imgUrl ? (
               <img src={getFullUrl(imgUrl)} alt="Asset" className="w-full h-full object-cover" />
-            ) : ( <Box size={18} className="text-[var(--text-dim)] opacity-30" /> )}
+            ) : (<Box size={18} className="text-[var(--text-dim)] opacity-30" />)}
           </div>
         );
       }
@@ -1008,13 +1053,13 @@ const InventoryListPage = ({ type = '' }) => {
   ];
 
   const pcbColumns = [
-    { 
+    {
       key: 'image', label: 'Preview',
       render: (row) => (
         <div className="w-10 h-10 rounded-xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-workspace)] flex items-center justify-center shadow-sm">
           {row.pcb_images?.[0] || row.image_url ? (
             <img src={getFullUrl(row.pcb_images?.[0] || row.image_url)} alt="PCB" className="w-full h-full object-cover" />
-          ) : ( <CircuitBoard size={18} className="text-[var(--text-dim)] opacity-30" /> )}
+          ) : (<CircuitBoard size={18} className="text-[var(--text-dim)] opacity-30" />)}
         </div>
       )
     },
@@ -1024,6 +1069,220 @@ const InventoryListPage = ({ type = '' }) => {
     { key: 'stock_quantity', label: 'Stock Qty', render: (row) => <span className="font-black text-[var(--accent)]">{row.stock_quantity ?? 0}</span> },
     { key: 'created_at', label: 'Registered On', render: (row) => new Date(row.created_at).toLocaleDateString() }
   ];
+
+
+  const ProcessorBlock = ({ index, control, watch, setValue, gitRepos, getGitReleases }) => {
+    const [repoReleases, setRepoReleases] = useState([]);
+    const [isFetchingReleases, setIsFetchingReleases] = useState(false);
+    const [showCreateRepo, setShowCreateRepo] = useState(false);
+    const [newRepoName, setNewRepoName] = useState('');
+    const [isCreatingRepo, setIsCreatingRepo] = useState(false);
+
+    const has_embedded = watch(`processors.${index}.has_embedded_firmware`);
+    const repoName = watch(`processors.${index}.repository_name`);
+
+    useEffect(() => {
+      if (repoName) {
+        const repoObj = gitRepos.find(r => r.name === repoName);
+        const owner = repoObj?.owner?.login || repoObj?.owner?.username || 'mihir';
+        if (owner) {
+          setIsFetchingReleases(true);
+          getGitReleases(owner, repoName)
+            .then(res => setRepoReleases(res.data?.data || []))
+            .catch(err => setRepoReleases([]))
+            .finally(() => setIsFetchingReleases(false));
+        }
+      } else {
+        setRepoReleases([]);
+      }
+    }, [repoName, gitRepos, getGitReleases]);
+
+    const submitCreateRepo = async () => {
+      if (!newRepoName.trim()) return;
+      setIsCreatingRepo(true);
+      try {
+        const res = await createGitRepository({ name: newRepoName.trim(), description: 'Created via PCB Registration', private: true });
+        toast.success('Repository created successfully!');
+        setShowCreateRepo(false);
+        setValue(`processors.${index}.repository_name`, res.data?.data?.name || newRepoName.trim());
+        setNewRepoName('');
+        // Re-fetch repos (we can't easily trigger the global fetch here, but the component will update if parent updates gitRepos)
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to create repository');
+      } finally {
+        setIsCreatingRepo(false);
+      }
+    };
+
+    return (
+      <div className="bg-[var(--bg-workspace)]/30 border border-[var(--border-color)] p-6 rounded-2xl space-y-6 relative mb-6">
+        <h3 className="text-[12px] font-black text-[var(--text-main)] uppercase tracking-widest mb-4 flex items-center gap-2">
+          Processor {index + 1} Configuration
+        </h3>
+
+        <div className="grid grid-cols-2 gap-8">
+          <FormField label="Processor Type" name={`processors.${index}.processor_type`} placeholder="e.g. ARM Cortex-M4" />
+          <FormField label="Processor Part Number" name={`processors.${index}.processor_part_no`} placeholder="e.g. STM32F405RGT6" />
+        </div>
+        <div className="grid grid-cols-1 gap-8">
+          <FormField label="Processor Description" name={`processors.${index}.processor_desc`} placeholder="Package type, clock speed, etc..." />
+        </div>
+
+        {/* Firmware Linkage Block */}
+        <div className="bg-[var(--bg-workspace)]/80 p-5 rounded-xl border border-[var(--border-color)]/60 space-y-5 mt-6">
+          <div className="flex gap-8">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <Controller
+                name={`processors.${index}.has_embedded_firmware`}
+                control={control}
+                render={({ field: { onChange, value } }) => (
+                  <div
+                    onClick={() => onChange(!value)}
+                    className={`w-5 h-5 flex-shrink-0 rounded-[6px] border flex items-center justify-center transition-all cursor-pointer ${value ? 'bg-[var(--accent)] border-[var(--accent)] text-white' : 'border-[var(--border-color)] bg-[var(--bg-main)]'}`}
+                  >
+                    {value && <Check size={14} strokeWidth={4} />}
+                  </div>
+                )}
+              />
+              <span className="text-[13px] font-bold text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors">Has Embedded Firmware</span>
+            </label>
+          </div>
+
+          {has_embedded && (
+            <div className="space-y-6 pt-4 border-t border-[var(--border-color)]/50 animate-in slide-in-from-top-2 duration-300">
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+                  Repository Name
+                </label>
+                {showCreateRepo ? (
+                  <div className="flex gap-2 w-full">
+                    <input
+                      type="text"
+                      value={newRepoName}
+                      onChange={(e) => setNewRepoName(e.target.value)}
+                      placeholder="Enter new repository name..."
+                      className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)]"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={submitCreateRepo}
+                      disabled={isCreatingRepo || !newRepoName.trim()}
+                      className="btn-primary px-4 py-3 flex items-center justify-center min-w-[80px] rounded-xl"
+                    >
+                      {isCreatingRepo ? <Loader2 size={16} className="animate-spin" /> : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowCreateRepo(false); setNewRepoName(''); }}
+                      className="bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--text-muted)] text-[var(--text-muted)] hover:text-[var(--text-main)] px-4 py-3 rounded-xl transition-colors text-[13px] font-bold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <Controller
+                        name={`processors.${index}.repository_name`}
+                        control={control}
+                        render={({ field }) => (
+                          <select
+                            {...field}
+                            className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 transition-all font-bold appearance-none cursor-pointer"
+                          >
+                            <option value="">Select a repository...</option>
+                            {gitRepos.map(repo => (
+                              <option key={repo.id} value={repo.name}>{repo.name}</option>
+                            ))}
+                          </select>
+                        )}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateRepo(true);
+                        setValue(`processors.${index}.repository_name`, '');
+                        setRepoReleases([]);
+                      }}
+                      className="bg-[var(--bg-workspace)] border border-[var(--border-color)] hover:border-[var(--accent)] text-[var(--text-main)] hover:text-[var(--accent)] px-4 rounded-xl font-bold transition-colors text-[13px] whitespace-nowrap flex items-center gap-2"
+                    >
+                      <Plus size={16} /> New Repo
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {repoName && repoReleases.length > 0 && (
+                <div className="pt-4 border-t border-[var(--border-color)]/50 animate-in fade-in duration-300">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+                      Available Firmware Binaries (Releases)
+                    </label>
+                    {isFetchingReleases && <Loader2 size={12} className="animate-spin text-[var(--accent)]" />}
+                  </div>
+                  <div className="space-y-3 max-h-[160px] overflow-y-auto custom-scrollbar pr-2">
+                    {repoReleases.map(release => (
+                      <div key={release.id} className="mb-4 last:mb-0">
+                        <div className="flex justify-between items-start mb-2 px-1">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="text-[13px] font-bold text-[var(--text-main)]">{release.name || release.tag_name}</span>
+                              <span className="text-[9px] bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 px-1.5 py-0.5 rounded font-black tracking-widest uppercase">{release.tag_name}</span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-[var(--text-muted)] font-medium">
+                              <span className="flex items-center gap-1.5"><Calendar size={12} className="opacity-70" /> {new Date(release.published_at || release.created_at).toLocaleDateString()}</span>
+                              <span className="flex items-center gap-1.5"><Fingerprint size={12} className="opacity-70" /> {release.author?.username || 'System'}</span>
+                            </div>
+                            {release.body && (
+                              <div className="text-[11px] text-[var(--text-muted)] mt-2 line-clamp-2 leading-relaxed opacity-80 border-l-2 border-[var(--border-color)] pl-2">
+                                {release.body}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {release.assets?.filter(a => a.name.endsWith('.bin')).length > 0 ? (
+                          release.assets.filter(a => a.name.endsWith('.bin')).map(asset => (
+                            <div key={asset.id}
+                              onClick={() => {
+                                setValue(`processors.${index}.firmware_version`, release.tag_name || '');
+                                if (release.target_commitish) {
+                                  setValue(`processors.${index}.firmware_branch`, release.target_commitish);
+                                }
+                              }}
+                              className="flex items-center justify-between py-2.5 px-3 bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl mt-2 group cursor-pointer hover:bg-[var(--nav-hover)] hover:border-[var(--accent)] transition-all shadow-sm"
+                            >
+                              <div className="flex items-center gap-3 text-[13px] text-[var(--text-main)] font-bold">
+                                <FileCode2 size={16} className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
+                                {asset.name}
+                                <span className="text-[10px] text-[var(--text-muted)] font-medium">({(asset.size / 1024).toFixed(1)} KB)</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] group-hover:text-white group-hover:bg-[var(--accent)] transition-all bg-[var(--bg-main)] px-3 py-1.5 rounded-lg border border-[var(--border-color)] group-hover:border-[var(--accent)] shadow-sm">
+                                <CheckCircle2 size={14} className="opacity-40 group-hover:opacity-100 transition-opacity" />
+                                Select
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-[11px] text-[var(--text-muted)] italic px-1 pt-1 opacity-60">No .bin assets found in this release.</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-8 pt-4">
+                <FormField label="Firmware Branch Name" name={`processors.${index}.firmware_branch`} placeholder="e.g. main / production-v1" />
+                <FormField label="Firmware Version Number" name={`processors.${index}.firmware_version`} placeholder="e.g. v2.1.0-stable" />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-10 px-2">
@@ -1043,7 +1302,7 @@ const InventoryListPage = ({ type = '' }) => {
           </div>
         </div>
         {type && hasPermission('inventory', 'create') && (
-          <button 
+          <button
             onClick={handleOpenCreate}
             className="btn-primary shadow-lg px-8 py-3 group hover-scale-md"
             style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
@@ -1070,8 +1329,8 @@ const InventoryListPage = ({ type = '' }) => {
         <div className="workspace-card p-3 flex flex-col md:flex-row gap-4 items-center border border-[var(--border-color)] bg-[var(--bg-card)]">
           <div className="relative flex-1 group w-full">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={18} />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder={type ? `Search ${type}s...` : "Search across all inventory categories..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -1083,41 +1342,41 @@ const InventoryListPage = ({ type = '' }) => {
               </div>
             )}
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             {!type && (
-                <div className="relative group min-w-[180px] flex-1 md:flex-none">
-                    <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={16} />
-                    <select 
-                        value={selectedCategory} 
-                        onChange={(e) => setSelectedCategory(e.target.value)} 
-                        className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-11 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[13px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
-                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
-                    >
-                        <option value="">All Categories</option>
-                        <option value="PCB">PCB Units</option>
-                        <option value="Electronic Part">Electronic Parts</option>
-                        <option value="Electrical Part">Electrical Parts</option>
-                        <option value="Structural Part">Structural Parts</option>
-                    </select>
-                </div>
+              <div className="relative group min-w-[180px] flex-1 md:flex-none">
+                <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] group-focus-within:text-[var(--accent)] transition-colors duration-300" size={16} />
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-11 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[13px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+                >
+                  <option value="">All Categories</option>
+                  <option value="PCB">PCB Units</option>
+                  <option value="Electronic Part">Electronic Parts</option>
+                  <option value="Electrical Part">Electrical Parts</option>
+                  <option value="Structural Part">Structural Parts</option>
+                </select>
+              </div>
             )}
-            
+
             <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
           </div>
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-             <div className="relative group min-w-[150px] flex-1 md:flex-none">
-                 <select 
-                     value={stockStatusFilter} 
-                     onChange={(e) => setStockStatusFilter(e.target.value)} 
-                     className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-4 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[13px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
-                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
-                 >
-                     <option value="">All Stock Status</option>
-                     <option value="In Stock">In Stock</option>
-                     <option value="Out of Stock">Out of Stock</option>
-                 </select>
-             </div>
+            <div className="relative group min-w-[150px] flex-1 md:flex-none">
+              <select
+                value={stockStatusFilter}
+                onChange={(e) => setStockStatusFilter(e.target.value)}
+                className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl py-3 pl-4 pr-10 outline-none focus:border-[var(--accent)] transition-all text-[13px] appearance-none cursor-pointer font-bold text-[var(--text-main)] uppercase tracking-wider"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233d6a7d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.2em', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat' }}
+              >
+                <option value="">All Stock Status</option>
+                <option value="In Stock">In Stock</option>
+                <option value="Out of Stock">Out of Stock</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -1128,7 +1387,7 @@ const InventoryListPage = ({ type = '' }) => {
             <Loader2 size={40} className="animate-spin text-[var(--accent)] opacity-40" />
           </div>
         ) : viewMode === 'table' ? (
-          <DataTable 
+          <DataTable
             columns={!type ? combinedColumns : (type === 'PCB' ? pcbColumns : combinedColumns)}
             data={items}
             loading={loading}
@@ -1146,15 +1405,15 @@ const InventoryListPage = ({ type = '' }) => {
               <div key={item.pcb_id || item.id} className="workspace-card group flex flex-col h-full border border-[var(--border-color)] bg-[var(--bg-card)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl">
                 <div onClick={() => handleView(item)} className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--bg-workspace)] border-b border-[var(--border-color)] block cursor-zoom-in group/img">
                   {(item.pcb_images?.[0] || item.part_images?.[0] || item.image_url) ? (
-                    <img 
-                        src={getFullUrl(item.pcb_images?.[0] || item.part_images?.[0] || item.image_url)} 
-                        alt={item.pcb_name || item.name} 
-                        className="w-full h-full object-contain p-6 group-hover/img:scale-110 transition-transform duration-700 ease-out" 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const allImages = item.pcb_images || item.part_images || (item.image_url ? [item.image_url] : []);
-                            setLightboxData({ isOpen: true, images: allImages, initialIndex: 0 });
-                        }}
+                    <img
+                      src={getFullUrl(item.pcb_images?.[0] || item.part_images?.[0] || item.image_url)}
+                      alt={item.pcb_name || item.name}
+                      className="w-full h-full object-contain p-6 group-hover/img:scale-110 transition-transform duration-700 ease-out"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const allImages = item.pcb_images || item.part_images || (item.image_url ? [item.image_url] : []);
+                        setLightboxData({ isOpen: true, images: allImages, initialIndex: 0 });
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[var(--text-dim)] opacity-20"><Box size={64} strokeWidth={1} /></div>
@@ -1170,11 +1429,11 @@ const InventoryListPage = ({ type = '' }) => {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="p-4 flex-1 flex flex-col">
                   <div className="flex-1 space-y-3">
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">{item.category || type}</span>
+                      <span className="text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">{item.category || type}</span>
                     </div>
                     <h3 className="text-[15px] font-black text-[var(--text-main)] leading-tight group-hover:text-[var(--accent)] transition-colors duration-300">
                       {item.pcb_name || item.name}
@@ -1183,7 +1442,7 @@ const InventoryListPage = ({ type = '' }) => {
                       {item.description || item.pcb_description || 'No detailed technical specifications provided for this inventory record.'}
                     </p>
                   </div>
-                  
+
                   <div className="flex items-center justify-between pt-3 mt-4 border-t border-[var(--border-color)]/60">
                     <div className="flex items-center gap-1.5">
                       {(item.stock_quantity !== undefined && item.stock_quantity !== null) && (
@@ -1195,15 +1454,15 @@ const InventoryListPage = ({ type = '' }) => {
                       )}
                     </div>
                     <div className="flex items-center gap-1 transition-opacity">
-                       {hasPermission('inventory', 'edit') && (
-                          <button onClick={(e) => { e.stopPropagation(); handleQuickAddOpen(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white rounded-md transition-all shadow-sm" title="Quick Restock"><PackagePlus size={12} /></button>
-                       )}
-                       {hasPermission('inventory', 'edit') && (
-                          <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-[var(--accent)] text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm" title="Edit"><Pencil size={12} /></button>
-                       )}
-                       {hasPermission('inventory', 'delete') && (
-                          <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-rose-500 text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm" title="Delete"><Trash2 size={12} /></button>
-                       )}
+                      {hasPermission('inventory', 'edit') && (
+                        <button onClick={(e) => { e.stopPropagation(); handleQuickAddOpen(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white rounded-md transition-all shadow-sm" title="Quick Restock"><PackagePlus size={12} /></button>
+                      )}
+                      {hasPermission('inventory', 'edit') && (
+                        <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-[var(--accent)] text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm" title="Edit"><Pencil size={12} /></button>
+                      )}
+                      {hasPermission('inventory', 'delete') && (
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(item); }} className="w-7 h-7 flex items-center justify-center bg-[var(--bg-workspace)] hover:bg-rose-500 text-[var(--text-dim)] hover:text-white rounded-md transition-all shadow-sm" title="Delete"><Trash2 size={12} /></button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1215,468 +1474,448 @@ const InventoryListPage = ({ type = '' }) => {
 
       {/* Universal Management Modal */}
       {isModalOpen && (
-        <Modal 
-          isOpen={isModalOpen} 
+        <Modal
+          isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           title={modalMode === 'view' ? "Technical Data Sheet" : (modalMode === 'create' ? `Add ${type || 'Item'}` : `Update ${type || 'Item'} Specifications`)}
           maxWidth="max-w-6xl"
           headerActions={
             <div className="flex items-center gap-3">
-               {modalMode !== 'view' && (
-                  <button
-                      onClick={handleSubmit(onSubmit)}
-                      disabled={isSubmitting}
-                      className="btn-primary py-2.5 px-8 shadow-md flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
-                      style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
-                  >
-                      {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save' : 'Update Specs')}
-                  </button>
-               )}
+              {modalMode !== 'view' && (
+                <button
+                  onClick={handleSubmit(onSubmit)}
+                  disabled={isSubmitting}
+                  className="btn-primary py-2.5 px-8 shadow-md flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                  style={{ boxShadow: '0 4px 12px -2px var(--border-glow)' }}
+                >
+                  {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : (modalMode === 'create' ? 'Save' : 'Update Specs')}
+                </button>
+              )}
             </div>
           }
         >
           {modalMode === 'view' ? (
             /* Universal View Mode */
             <div className="space-y-10 pb-10 max-h-[82vh] overflow-y-auto custom-scrollbar pr-4">
-               <div className="px-1">
-                  <Breadcrumbs 
-                    items={[
-                      { label: 'Dashboard', path: '/admin/dashboard' },
-                      { label: 'Inventory', path: '/admin/inventory' },
-                      { label: selectedItem?.category || type || 'General', path: `/admin/inventory/${(selectedItem?.category || type || '').toLowerCase()}` },
-                      { label: selectedItem?.pcb_name || selectedItem?.part_name || selectedItem?.name, active: true }
-                    ]} 
-                  />
-               </div>
+              <div className="px-1">
+                <Breadcrumbs
+                  items={[
+                    { label: 'Dashboard', path: '/admin/dashboard' },
+                    { label: 'Inventory', path: '/admin/inventory' },
+                    { label: selectedItem?.category || type || 'General', path: `/admin/inventory/${(selectedItem?.category || type || '').toLowerCase()}` },
+                    { label: selectedItem?.pcb_name || selectedItem?.part_name || selectedItem?.name, active: true }
+                  ]}
+                />
+              </div>
 
-               {/* Premium Header Layout */}
-               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                  {/* Visual Reference Side */}
-                  <div className="lg:col-span-5 space-y-6">
-                    {(() => {
-                        const allImages = selectedItem?.pcb_images && selectedItem.pcb_images.length > 0 
-                            ? selectedItem.pcb_images 
-                            : (selectedItem?.part_images && selectedItem.part_images.length > 0 
-                                ? selectedItem.part_images 
-                                : (selectedItem?.images && selectedItem.images.length > 0 
-                                    ? selectedItem.images 
-                                    : (selectedItem?.image_url ? [selectedItem.image_url] : [])));
-                        const currentUrl = allImages[activeImageIdx] || allImages[0];
-                        
-                        return (
-                            <>
-                                <div 
-                                    className="aspect-square bg-[var(--bg-workspace)] rounded-[40px] border-2 border-[var(--border-color)] overflow-hidden group relative flex items-center justify-center shadow-inner hover:border-[var(--accent)]/30 transition-all duration-500 cursor-zoom-in"
-                                    onClick={() => {
-                                        if(currentUrl) setLightboxData({ isOpen: true, images: allImages, initialIndex: activeImageIdx });
-                                    }}
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 opacity-40 pointer-events-none" />
-                                    {currentUrl && (
-                                        <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-md text-white p-2.5 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl pointer-events-none z-10 translate-y-2 group-hover:translate-y-0">
-                                            <Maximize2 size={20} />
-                                        </div>
-                                    )}
-                                    {currentUrl ? (
-                                        <img 
-                                            src={getFullUrl(currentUrl)} 
-                                            className="w-full h-full object-contain p-10 animate-in fade-in zoom-in-95 duration-700 group-hover:scale-105" 
-                                            alt="Technical Asset" 
-                                        />
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-4 opacity-10">
-                                            <Box size={100} strokeWidth={1} />
-                                            <p className="text-[10px] font-black uppercase tracking-[0.3em]">No Visual Data</p>
-                                        </div>
-                                    )}
-                                    {allImages.length > 1 && (
-                                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2.5 z-10 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
-                                            {allImages.map((_, i) => (
-                                                <button 
-                                                    key={i} 
-                                                    onClick={() => setActiveImageIdx(i)} 
-                                                    className={`h-1.5 rounded-full transition-all duration-500 ${i === activeImageIdx ? 'bg-[var(--accent)] w-8 shadow-[0_0_10px_var(--accent)]' : 'bg-white/40 w-1.5 hover:bg-white/80'}`} 
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                {allImages.length > 1 && (
-                                    <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
-                                        {allImages.map((url, idx) => (
-                                            <button 
-                                                key={idx} 
-                                                onClick={() => setActiveImageIdx(idx)} 
-                                                className={`w-24 h-24 flex-shrink-0 rounded-[20px] border-2 transition-all duration-300 overflow-hidden bg-[var(--bg-workspace)] shadow-md ${idx === activeImageIdx ? 'border-[var(--accent)] scale-105 shadow-xl ring-4 ring-[var(--accent)]/10' : 'border-transparent opacity-50 hover:opacity-100 hover:scale-105'}`}
-                                            >
-                                                <img src={getFullUrl(url)} className="w-full h-full object-contain p-2.5" />
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </>
-                        );
-                    })()}
-                  </div>
+              {/* Premium Header Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                {/* Visual Reference Side */}
+                <div className="lg:col-span-5 space-y-6">
+                  {(() => {
+                    const allImages = selectedItem?.pcb_images && selectedItem.pcb_images.length > 0
+                      ? selectedItem.pcb_images
+                      : (selectedItem?.part_images && selectedItem.part_images.length > 0
+                        ? selectedItem.part_images
+                        : (selectedItem?.images && selectedItem.images.length > 0
+                          ? selectedItem.images
+                          : (selectedItem?.image_url ? [selectedItem.image_url] : [])));
+                    const currentUrl = allImages[activeImageIdx] || allImages[0];
 
-                  {/* Technical Information Side */}
-                  <div className="lg:col-span-7 space-y-8">
-                     <div className="space-y-6">
-                        <div className="flex items-center gap-4">
-                          <span className="bg-[var(--nav-hover)] text-[var(--accent)] font-black text-[11px] uppercase tracking-[0.2em] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
-                              {selectedItem?.category || selectedItem?.type || type || 'General Inventory'}
-                          </span>
-                          <span className="text-[var(--text-muted)] font-black text-[11px] uppercase tracking-widest opacity-40">REF: {selectedItem?.pcb_id || selectedItem?.part_id || 'INTERNAL-ID'}</span>
-                        </div>
-                        
-                        <div>
-                            <h2 className="text-4xl font-black text-[var(--text-main)] tracking-tighter uppercase leading-[1.1]">
-                                {selectedItem?.pcb_name || selectedItem?.part_name || selectedItem?.name}
-                            </h2>
-                            <p className="text-[14px] font-bold text-[var(--accent)] uppercase tracking-[0.25em] mt-3 opacity-80">{selectedItem?.manufacturer || 'LIPL INTERNAL LOGISTICS'}</p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-8 py-8 border-y border-[var(--border-color)]">
-                          <div className="space-y-2">
-                             <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Master Part ID</p>
-                             <div className="flex items-center gap-3">
-                                <Fingerprint size={18} className="text-[var(--accent)]" />
-                                <span className="text-[17px] font-black text-[var(--text-main)] font-mono">{selectedItem?.part_no || selectedItem?.part_number || 'N/A-RECORD'}</span>
-                             </div>
-                          </div>
-                          <div className="space-y-2">
-                             <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Registration Date</p>
-                             <div className="flex items-center gap-3">
-                                <Calendar size={18} className="text-[var(--accent)]" />
-                                <span className="text-[17px] font-black text-[var(--text-main)]">{new Date(selectedItem?.created_at).toLocaleDateString()}</span>
-                             </div>
-                          </div>
-                          {(selectedItem?.category === 'PCB' || (!selectedItem?.category && type === 'PCB')) && (
-                            <div className="col-span-2 space-y-2">
-                               <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Stock Quantity</p>
-                               <div className="flex items-center gap-3">
-                                  <Box size={18} className="text-[var(--accent)]" />
-                                  <span className="text-[24px] font-black text-[var(--accent)]">{selectedItem?.stock_quantity ?? 0}</span>
-                                  <span className="text-[12px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Units in Stock</span>
-                               </div>
+                    return (
+                      <>
+                        <div
+                          className="aspect-square bg-[var(--bg-workspace)] rounded-[40px] border-2 border-[var(--border-color)] overflow-hidden group relative flex items-center justify-center shadow-inner hover:border-[var(--accent)]/30 transition-all duration-500 cursor-zoom-in"
+                          onClick={() => {
+                            if (currentUrl) setLightboxData({ isOpen: true, images: allImages, initialIndex: activeImageIdx });
+                          }}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 opacity-40 pointer-events-none" />
+                          {currentUrl && (
+                            <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-md text-white p-2.5 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl pointer-events-none z-10 translate-y-2 group-hover:translate-y-0">
+                              <Maximize2 size={20} />
+                            </div>
+                          )}
+                          {currentUrl ? (
+                            <img
+                              src={getFullUrl(currentUrl)}
+                              className="w-full h-full object-contain p-10 animate-in fade-in zoom-in-95 duration-700 group-hover:scale-105"
+                              alt="Technical Asset"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center gap-4 opacity-10">
+                              <Box size={100} strokeWidth={1} />
+                              <p className="text-[10px] font-black uppercase tracking-[0.3em]">No Visual Data</p>
+                            </div>
+                          )}
+                          {allImages.length > 1 && (
+                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2.5 z-10 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                              {allImages.map((_, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => setActiveImageIdx(i)}
+                                  className={`h-1.5 rounded-full transition-all duration-500 ${i === activeImageIdx ? 'bg-[var(--accent)] w-8 shadow-[0_0_10px_var(--accent)]' : 'bg-white/40 w-1.5 hover:bg-white/80'}`}
+                                />
+                              ))}
                             </div>
                           )}
                         </div>
-
-                        <div className="flex items-center gap-4 py-2">
-                            {hasPermission('inventory', 'edit') && (
-                                <button 
-                                    onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedItem), 100); }} 
-                                    className="btn-primary flex-1 py-4 px-6 shadow-lg uppercase tracking-widest text-[11px]" 
-                                    style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
-                                >
-                                    Edit Specifications
-                                </button>
-                            )}
-                            {hasPermission('inventory', 'delete') && (
-                               <button 
-                                   onClick={() => handleDelete(selectedItem)} 
-                                   className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
-                               >
-                                   <Trash2 size={18} />
-                               </button>
-                            )}
-                        </div>                        {hasPermission('inventory', 'view', 'general') && (
-                          <div className="p-8 bg-[var(--bg-workspace)]/50 rounded-[32px] border border-[var(--border-color)] shadow-inner">
-                             <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.25em] mb-4 flex items-center gap-3">
-                                <Info size={14} /> Technical Abstract
-                             </h4>
-                             <p className="text-[15px] text-[var(--text-main)] leading-relaxed font-bold opacity-90 italic">
-                                "{selectedItem?.description || selectedItem?.pcb_description || selectedItem?.part_description || 'Detailed technical specifications for this hardware asset are available in the attached documentation library.'}"
-                             </p>
+                        {allImages.length > 1 && (
+                          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
+                            {allImages.map((url, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => setActiveImageIdx(idx)}
+                                className={`w-24 h-24 flex-shrink-0 rounded-[20px] border-2 transition-all duration-300 overflow-hidden bg-[var(--bg-workspace)] shadow-md ${idx === activeImageIdx ? 'border-[var(--accent)] scale-105 shadow-xl ring-4 ring-[var(--accent)]/10' : 'border-transparent opacity-50 hover:opacity-100 hover:scale-105'}`}
+                              >
+                                <img src={getFullUrl(url)} className="w-full h-full object-contain p-2.5" />
+                              </button>
+                            ))}
                           </div>
                         )}
-                     </div>
-                  </div>
-               </div>
+                      </>
+                    );
+                  })()}
+                </div>
 
-               {/* Technical Specs Grid */}
-               {hasPermission('inventory', 'view', 'tech_spec') && renderTechnicalSpecs()}
-
-               {/* Documentation Library */}
-               {hasPermission('inventory', 'view', 'files') && (
-                 <div className="space-y-6">
-                    <div className="flex items-center gap-4 ml-4">
-                       <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-sm"><FileUp size={20} /></div>
-                       <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Documentation Library</h3>
+                {/* Technical Information Side */}
+                <div className="lg:col-span-7 space-y-8">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <span className="bg-[var(--nav-hover)] text-[var(--accent)] font-black text-[11px] uppercase tracking-[0.2em] px-4 py-2 rounded-xl border border-[var(--border-color)] shadow-sm">
+                        {selectedItem?.category || selectedItem?.type || type || 'General Inventory'}
+                      </span>
+                      <span className="text-[var(--text-muted)] font-black text-[11px] uppercase tracking-widest opacity-40">REF: {selectedItem?.pcb_id || selectedItem?.part_id || 'INTERNAL-ID'}</span>
                     </div>
-                    {renderDocumentationLibrary()}
-                 </div>
-               )}
+
+                    <div>
+                      <h2 className="text-4xl font-black text-[var(--text-main)] tracking-tighter uppercase leading-[1.1]">
+                        {selectedItem?.pcb_name || selectedItem?.part_name || selectedItem?.name}
+                      </h2>
+                      <p className="text-[14px] font-bold text-[var(--accent)] uppercase tracking-[0.25em] mt-3 opacity-80">{selectedItem?.manufacturer || 'LIPL INTERNAL LOGISTICS'}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8 py-8 border-y border-[var(--border-color)]">
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Master Part ID</p>
+                        <div className="flex items-center gap-3">
+                          <Fingerprint size={18} className="text-[var(--accent)]" />
+                          <span className="text-[17px] font-black text-[var(--text-main)] font-mono">{selectedItem?.part_no || selectedItem?.part_number || 'N/A-RECORD'}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Registration Date</p>
+                        <div className="flex items-center gap-3">
+                          <Calendar size={18} className="text-[var(--accent)]" />
+                          <span className="text-[17px] font-black text-[var(--text-main)]">{new Date(selectedItem?.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      {(selectedItem?.category === 'PCB' || (!selectedItem?.category && type === 'PCB')) && (
+                        <div className="col-span-2 space-y-2">
+                          <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Stock Quantity</p>
+                          <div className="flex items-center gap-3">
+                            <Box size={18} className="text-[var(--accent)]" />
+                            <span className="text-[24px] font-black text-[var(--accent)]">{selectedItem?.stock_quantity ?? 0}</span>
+                            <span className="text-[12px] font-black text-[var(--text-muted)] uppercase tracking-widest opacity-60">Units in Stock</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-4 py-2">
+                      {hasPermission('inventory', 'edit') && (
+                        <button
+                          onClick={() => { setIsModalOpen(false); setTimeout(() => handleEdit(selectedItem), 100); }}
+                          className="btn-primary flex-1 py-4 px-6 shadow-lg uppercase tracking-widest text-[11px]"
+                          style={{ boxShadow: '0 10px 15px -3px var(--border-glow)' }}
+                        >
+                          Edit Specifications
+                        </button>
+                      )}
+                      {hasPermission('inventory', 'delete') && (
+                        <button
+                          onClick={() => handleDelete(selectedItem)}
+                          className="px-6 py-4 rounded-2xl border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
+                    </div>                        {hasPermission('inventory', 'view', 'general') && (
+                      <div className="p-8 bg-[var(--bg-workspace)]/50 rounded-[32px] border border-[var(--border-color)] shadow-inner">
+                        <h4 className="text-[10px] font-black text-[var(--accent)] uppercase tracking-[0.25em] mb-4 flex items-center gap-3">
+                          <Info size={14} /> Technical Abstract
+                        </h4>
+                        <p className="text-[15px] text-[var(--text-main)] leading-relaxed font-bold opacity-90 italic">
+                          "{selectedItem?.description || selectedItem?.pcb_description || selectedItem?.part_description || 'Detailed technical specifications for this hardware asset are available in the attached documentation library.'}"
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Technical Specs Grid */}
+              {hasPermission('inventory', 'view', 'tech_spec') && renderTechnicalSpecs()}
+
+              {/* Documentation Library */}
+              {hasPermission('inventory', 'view', 'files') && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 ml-4">
+                    <div className="w-9 h-9 rounded-xl bg-[var(--nav-hover)] flex items-center justify-center text-[var(--accent)] shadow-sm"><FileUp size={20} /></div>
+                    <h3 className="text-[13px] font-black text-[var(--text-main)] uppercase tracking-[0.2em]">Documentation Library</h3>
+                  </div>
+                  {renderDocumentationLibrary()}
+                </div>
+              )}
             </div>
           ) : (
             /* Create / Edit Mode (Tabs) */
             <div className="flex flex-col h-full max-h-[85vh]">
               {/* Tab Navigation */}
               <div className="flex bg-[var(--bg-workspace)]/50 p-1.5 rounded-2xl mb-8 border border-[var(--border-color)]">
-                  {((selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
-                    [
-                      { id: 'general', label: 'General', icon: Info },
-                      { id: 'processor', label: 'Processor', icon: Settings },
-                      { id: 'firmware', label: 'Firmware', icon: Code },
-                      { id: 'files', label: 'PCB Files', icon: FileUp }
-                    ]
-                  ) : (
-                    [
-                      { id: 'general', label: 'General Info', icon: Info },
-                      { id: 'specifications', label: 'Specifications', icon: Settings },
-                      { id: 'files', label: 'Documents & Images', icon: FileUp }
-                    ]
-                  )).map((tab) => (
+                {((selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
+                  [
+                    { id: 'general', label: 'General', icon: Info },
+                    { id: 'processors', label: 'Processors', icon: Settings },
+                    { id: 'files', label: 'PCB Files', icon: FileUp }
+                  ]
+                ) : (
+                  [
+                    { id: 'general', label: 'General Info', icon: Info },
+                    { id: 'specifications', label: 'Specifications', icon: Settings },
+                    { id: 'files', label: 'Documents & Images', icon: FileUp }
+                  ]
+                )).map((tab) => (
                   <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setModalTab(tab.id)}
-                      className={`flex-1 flex items-center justify-center gap-3 py-3 rounded-xl transition-all duration-300 font-black text-[10px] uppercase tracking-widest ${modalTab === tab.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--nav-hover)] hover:text-[var(--text-main)]'}`}
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setModalTab(tab.id)}
+                    className={`flex-1 flex items-center justify-center gap-3 py-3 rounded-xl transition-all duration-300 font-black text-[10px] uppercase tracking-widest ${modalTab === tab.id ? 'bg-[var(--accent)] text-white shadow-lg' : 'text-[var(--text-muted)] hover:bg-[var(--nav-hover)] hover:text-[var(--text-main)]'}`}
                   >
-                      <tab.icon size={14} strokeWidth={3} />
-                      <span>{tab.label}</span>
+                    <tab.icon size={14} strokeWidth={3} />
+                    <span>{tab.label}</span>
                   </button>
-                  ))}
+                ))}
               </div>
 
               {/* Tab Content */}
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 pb-4">
-                  <form id="pcb-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                                    {modalTab === 'general' && (
-                      <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
+                <form id="pcb-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                  {modalTab === 'general' && (
+                    <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
                       <div className="grid grid-cols-2 gap-8">
-                          <FormField label={(selectedItem?.category === 'PCB' || !selectedItem?.category) ? "PCB Name" : "Part Name"} name={(selectedItem?.category === 'PCB' || !selectedItem?.category) ? "pcb_name" : "part_name"} placeholder="e.g. Main Control Board V2" required />
-                          <FormField label="Part Number" name="part_number" placeholder="e.g. PCB-MCB-001" required />
+                        <FormField label={(selectedItem?.category === 'PCB' || !selectedItem?.category) ? "PCB Name" : "Part Name"} name={(selectedItem?.category === 'PCB' || !selectedItem?.category) ? "pcb_name" : "part_name"} placeholder="e.g. Main Control Board V2" required />
+                        <FormField label="Part Number" name="part_number" placeholder="e.g. PCB-MCB-001" required />
                       </div>
                       {(selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
                         <>
-                          <div className="grid grid-cols-2 gap-8">
-                              <FormField label="PCB Type" name="pcb_type" placeholder="e.g. 4-Layer FR4" />
-                              <FormField label="PCB Type Description" name="pcb_type_desc" placeholder="Details about construction..." />
-                          </div>
-                          <div className="grid grid-cols-2 gap-8">
-                              <FormField label="Processor Count" name="processor_count" type="number" placeholder="e.g. 1" />
-                              <FormField label="Stock Quantity" name="stock_quantity" type="number" placeholder="e.g. 10" />
+                          <div className="grid grid-cols-1 gap-8">
+                            <FormField label="PCB Type" name="pcb_type" placeholder="e.g. 4-Layer FR4" />
                           </div>
                           <TextAreaField label="PCB Description" name="pcb_description" placeholder="Technical overview and purpose of this board..." />
                         </>
                       ) : (
                         <>
                           <div className="grid grid-cols-2 gap-8">
-                              <FormField label="Manufacturer" name="manufacturer" />
-                              <FormField label="Status" name="status" />
+                            <FormField label="Manufacturer" name="manufacturer" />
+                            <FormField label="Status" name="status" />
                           </div>
                           <TextAreaField label="Description" name="description" />
                         </>
                       )}
-                      
+
                       {/* Save & Next Button for General */}
                       <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
-                          <button type="button" onClick={() => setModalTab((selectedItem?.category === 'PCB' || !selectedItem?.category) ? 'processor' : 'specifications')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
-                              Save & Next <ChevronRight size={16} strokeWidth={3} />
-                          </button>
+                        <button type="button" onClick={() => setModalTab((selectedItem?.category === 'PCB' || !selectedItem?.category) ? 'processors' : 'specifications')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                          Save & Next <ChevronRight size={16} strokeWidth={3} />
+                        </button>
                       </div>
-                      </div>
+                    </div>
                   )}
 
                   {modalTab === 'specifications' && (
-                      <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                          <div className="grid grid-cols-2 gap-8">
-                              {selectedItem?.category === 'Electronic Part' && selectedItem?.categorySpec?.category_name && (
-                                  ELECTRONICS_SPEC_FIELDS[selectedItem.categorySpec.category_name]?.map(f => (
-                                      f.isSelect ? (
-                                        <SelectField key={f.key} label={f.label} name={`spec_${f.key}`} options={f.options} />
-                                      ) : (
-                                        <FormField key={f.key} label={f.label} name={`spec_${f.key}`} type={f.type || 'text'} />
-                                      )
-                                  ))
-                              )}
-                              {selectedItem?.category === 'Electrical Part' && selectedItem?.category_name && (
-                                  ELECTRICAL_SPEC_FIELDS[selectedItem.category_name]?.map(f => (
-                                      f.isSelect ? (
-                                        <SelectField key={f.key} label={f.label} name={f.key} options={f.options} />
-                                      ) : (
-                                        <FormField key={f.key} label={f.label} name={f.key} type={f.type || 'text'} />
-                                      )
-                                  ))
-                              )}
-                              {selectedItem?.category === 'Structural Part' && selectedItem?.category_name && (
-                                  STRUCTURAL_SPEC_FIELDS[selectedItem.category_name]?.map(f => (
-                                      f.isSelect ? (
-                                        <SelectField key={f.key} label={f.label} name={`spec_${f.key}`} options={f.options} />
-                                      ) : (
-                                        <FormField key={f.key} label={f.label} name={`spec_${f.key}`} type={f.type || 'text'} />
-                                      )
-                                  ))
-                              )}
-                          </div>
-                          
-                          {/* Save & Next Button for Specifications */}
-                          <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
-                              <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
-                                  Save & Next <ChevronRight size={16} strokeWidth={3} />
-                              </button>
-                          </div>
+                    <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
+                      <div className="grid grid-cols-2 gap-8">
+                        {selectedItem?.category === 'Electronic Part' && selectedItem?.categorySpec?.category_name && (
+                          ELECTRONICS_SPEC_FIELDS[selectedItem.categorySpec.category_name]?.map(f => (
+                            f.isSelect ? (
+                              <SelectField key={f.key} label={f.label} name={`spec_${f.key}`} options={f.options} />
+                            ) : (
+                              <FormField key={f.key} label={f.label} name={`spec_${f.key}`} type={f.type || 'text'} />
+                            )
+                          ))
+                        )}
+                        {selectedItem?.category === 'Electrical Part' && selectedItem?.category_name && (
+                          ELECTRICAL_SPEC_FIELDS[selectedItem.category_name]?.map(f => (
+                            f.isSelect ? (
+                              <SelectField key={f.key} label={f.label} name={f.key} options={f.options} />
+                            ) : (
+                              <FormField key={f.key} label={f.label} name={f.key} type={f.type || 'text'} />
+                            )
+                          ))
+                        )}
+                        {selectedItem?.category === 'Structural Part' && selectedItem?.category_name && (
+                          STRUCTURAL_SPEC_FIELDS[selectedItem.category_name]?.map(f => (
+                            f.isSelect ? (
+                              <SelectField key={f.key} label={f.label} name={`spec_${f.key}`} options={f.options} />
+                            ) : (
+                              <FormField key={f.key} label={f.label} name={`spec_${f.key}`} type={f.type || 'text'} />
+                            )
+                          ))
+                        )}
                       </div>
+
+                      {/* Save & Next Button for Specifications */}
+                      <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
+                        <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                          Save & Next <ChevronRight size={16} strokeWidth={3} />
+                        </button>
+                      </div>
+                    </div>
                   )}
                   {/* Processor & Firmware Tabs (PCB Only) */}
                   {(selectedItem?.category === 'PCB' || !selectedItem?.category) && (
                     <>
-                      {modalTab === 'processor' && (
-                          <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                          <div className="grid grid-cols-2 gap-8">
-                              <FormField label="Processor Type" name="processor_type" placeholder="e.g. ARM Cortex-M4" />
-                              <FormField label="Processor Part Number" name="processor_part_no" placeholder="e.g. STM32F405RGT6" />
-                          </div>
-                          <div className="grid grid-cols-2 gap-8">
-                              <FormField label="Processor Count" name="processor_count" type="number" placeholder="e.g. 1" />
-                              <FormField label="Processor Description" name="processor_desc" placeholder="Package type, clock speed, etc..." />
-                          </div>
-                          
-                          {/* Save & Next Button for Processor */}
-                          <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
-                              <button type="button" onClick={() => setModalTab('firmware')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
-                                  Save & Next <ChevronRight size={16} strokeWidth={3} />
-                              </button>
-                          </div>
-                          </div>
-                      )}
 
-                      {modalTab === 'firmware' && (
-                          <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
-                          <div className="grid grid-cols-2 gap-8">
-                              <FormField label="Firmware Branch Name" name="firmware_branch" placeholder="e.g. main / production-v1" />
-                              <FormField label="Firmware Version Number" name="firmware_version" placeholder="e.g. v2.1.0-stable" />
+                      {modalTab === 'processors' && (
+                        <div className="animate-in fade-in slide-in-from-left-4 duration-500 space-y-6">
+                          <div className="grid grid-cols-1 gap-8 mb-6">
+                            <FormField label="Total Processor Count" name="processor_count" type="number" placeholder="e.g. 1, 2" />
                           </div>
-                          <div className="grid grid-cols-1 gap-8">
-                              <FormField label="Firmware Feature Name" name="firmware_feature" placeholder="e.g. CAN-FD Support" />
-                              <TextAreaField label="Firmware Feature Description" name="firmware_feature_desc" placeholder="Describe the capabilities of this firmware build..." />
-                          </div>
-                          
-                          {/* Save & Next Button for Firmware */}
+
+                          {Array.from({ length: Math.max(1, parseInt(watch('processor_count') || 1)) }).map((_, idx) => (
+                            <ProcessorBlock
+                              key={idx}
+                              index={idx}
+                              control={control}
+                              watch={watch}
+                              setValue={setValue}
+                              gitRepos={gitRepos}
+                              getGitReleases={getGitReleases}
+                            />
+                          ))}
+
                           <div className="pt-6 flex justify-end border-t border-[var(--border-color)]/40 mt-6">
-                              <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
-                                  Save & Next <ChevronRight size={16} strokeWidth={3} />
-                              </button>
+                            <button type="button" onClick={() => setModalTab('files')} className="btn-primary py-2.5 px-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest shadow-md hover:scale-[1.02] transition-transform">
+                              Save & Next <ChevronRight size={16} strokeWidth={3} />
+                            </button>
                           </div>
+                        </div>
+                      )}
+                      {modalTab === 'files' && (
+                        <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                            {(selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
+                              <>
+                                <FileInput label="Individual Gerber File" name="file_gerber" existingUrl={selectedItem?.files?.processor_file_url} />
+                                <FileInput label="Board File (.brd/.pcb)" name="file_board" existingUrl={selectedItem?.files?.brd_file_url} />
+                                <FileInput label="Schematic File (.sch/.pdf)" name="file_schematic" existingUrl={selectedItem?.files?.sch_file_url} />
+                                <FileInput label="BOM File (.csv/.xlsx)" name="file_bom" existingUrl={selectedItem?.files?.bom_file_url} />
+                                <FileInput label="Stencile File" name="file_stencile" existingUrl={selectedItem?.files?.stencil_file_url} />
+                                <FileInput label="Panel Gerber File" name="file_panel_gerber" existingUrl={selectedItem?.files?.panel_gerber_file_url} />
+                                <FileInput label="Layer Stacking File" name="file_layer_stack" existingUrl={selectedItem?.files?.layer_stacking_file_url} />
+                                <FileInput label="Production Instruction File" name="file_production_note" existingUrl={selectedItem?.files?.production_instruction_url} />
+                              </>
+                            ) : selectedItem?.category === 'Structural Part' ? (
+                              <>
+                                <FileInput label="2D Drawing" name="file_2d_drawing" existingUrl={selectedItem?.categoryData?.file_2d_drawing} />
+                                <FileInput label="3D Model" name="file_3d_model" existingUrl={selectedItem?.categoryData?.file_3d_model} />
+                                <FileInput label="Fabrication Drawing" name="file_fabrication_drawing" existingUrl={selectedItem?.categoryData?.file_fabrication_drawing} />
+                                <FileInput label="Assembly Drawing" name="file_assembly_drawing" existingUrl={selectedItem?.categoryData?.file_assembly_drawing} />
+                                <FileInput label="Cutting File" name="file_cutting" existingUrl={selectedItem?.categoryData?.file_cutting} />
+                              </>
+                            ) : (
+                              <>
+                                <FileInput label="Technical Datasheet" name="file_datasheet" existingUrl={selectedItem?.files?.datasheet_url} />
+                                <FileInput label="Warranty Certificate" name="file_warranty" existingUrl={selectedItem?.files?.warranty_cert_url || selectedItem?.files?.warranty_doc_url} />
+                              </>
+                            )}
+                            <div className="md:col-span-2">
+                              <div className="space-y-3 p-6 bg-[var(--nav-hover)]/30 border border-dashed border-[var(--border-color)] rounded-[24px]">
+                                <div className="flex items-center justify-between mb-4">
+                                  <div className="flex items-center gap-3">
+                                    <ImageIcon size={18} className="text-[var(--accent)]" />
+                                    <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">PCB Images Gallery</h4>
+                                  </div>
+                                  {previews.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={clearPendingImages}
+                                      className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline"
+                                    >
+                                      Clear All Pending
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Existing Images Display in Edit Mode */}
+                                {modalMode === 'edit' && (selectedItem?.pcb_images || selectedItem?.part_images || selectedItem?.images) && (
+                                  <div className="space-y-3 mb-6">
+                                    <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Existing Images</p>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                      {(selectedItem.pcb_images || selectedItem.part_images || selectedItem.images || []).map((img, idx) => (
+                                        <div key={idx} className="relative aspect-square rounded-xl border border-[var(--border-color)] overflow-hidden group">
+                                          <img src={buildFileUrl(img)} alt="Part" className="w-full h-full object-cover" />
+                                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                            <a href={buildFileUrl(img)} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
+                                            <button type="button" onClick={() => handleRemoveImage(img)} className="text-rose-500 hover:text-white"><Trash2 size={16} /></button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Pending Images Previews */}
+                                {previews.length > 0 && (
+                                  <div className="space-y-3 mb-6">
+                                    <p className="text-[9px] font-black text-[var(--accent)] uppercase tracking-widest ml-1">Pending Uploads ({previews.length})</p>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                      {previews.map((preview, idx) => (
+                                        <div key={preview.id} className="relative aspect-square rounded-xl border-2 border-[var(--accent)] border-dashed overflow-hidden group bg-[var(--bg-workspace)]">
+                                          <img src={preview.url} alt="Preview" className="w-full h-full object-cover" />
+                                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button
+                                              type="button"
+                                              onClick={() => removePendingImage(idx)}
+                                              className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"
+                                            >
+                                              <Trash2 size={16} />
+                                            </button>
+                                          </div>
+                                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
+                                            <p className="text-[8px] text-white truncate">{preview.name}</p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="relative group">
+                                  <input
+                                    type="file"
+                                    multiple
+                                    onChange={handleImageChange}
+                                    accept="image/*"
+                                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                  />
+                                  <div className="w-full bg-[var(--bg-workspace)]/50 border border-dashed border-[var(--text-dim)] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all">
+                                    <div className="p-4 bg-[var(--bg-workspace)] rounded-2xl text-[var(--accent)] shadow-sm"><Plus size={24} /></div>
+                                    <p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest text-center">
+                                      {pendingImages.length > 0 ? 'Add More Board Photos' : 'Upload Multiple Board Photos'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
+                        </div>
                       )}
                     </>
                   )}
 
-                  {modalTab === 'files' && (
-                      <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                          {(selectedItem?.category === 'PCB' || !selectedItem?.category) ? (
-                            <>
-                              <FileInput label="Individual Gerber File" name="file_gerber" existingUrl={selectedItem?.files?.processor_file_url} />
-                              <FileInput label="Board File (.brd/.pcb)" name="file_board" existingUrl={selectedItem?.files?.brd_file_url} />
-                              <FileInput label="Schematic File (.sch/.pdf)" name="file_schematic" existingUrl={selectedItem?.files?.sch_file_url} />
-                              <FileInput label="BOM File (.csv/.xlsx)" name="file_bom" existingUrl={selectedItem?.files?.bom_file_url} />
-                              <FileInput label="Stencile File" name="file_stencile" existingUrl={selectedItem?.files?.stencil_file_url} />
-                              <FileInput label="Panel Gerber File" name="file_panel_gerber" existingUrl={selectedItem?.files?.panel_gerber_file_url} />
-                              <FileInput label="Layer Stacking File" name="file_layer_stack" existingUrl={selectedItem?.files?.layer_stacking_file_url} />
-                              <FileInput label="Production Instruction File" name="file_production_note" existingUrl={selectedItem?.files?.production_instruction_url} />
-                            </>
-                          ) : selectedItem?.category === 'Structural Part' ? (
-                            <>
-                              <FileInput label="2D Drawing" name="file_2d_drawing" existingUrl={selectedItem?.categoryData?.file_2d_drawing} />
-                              <FileInput label="3D Model" name="file_3d_model" existingUrl={selectedItem?.categoryData?.file_3d_model} />
-                              <FileInput label="Fabrication Drawing" name="file_fabrication_drawing" existingUrl={selectedItem?.categoryData?.file_fabrication_drawing} />
-                              <FileInput label="Assembly Drawing" name="file_assembly_drawing" existingUrl={selectedItem?.categoryData?.file_assembly_drawing} />
-                              <FileInput label="Cutting File" name="file_cutting" existingUrl={selectedItem?.categoryData?.file_cutting} />
-                            </>
-                          ) : (
-                            <>
-                              <FileInput label="Technical Datasheet" name="file_datasheet" existingUrl={selectedItem?.files?.datasheet_url} />
-                              <FileInput label="Warranty Certificate" name="file_warranty" existingUrl={selectedItem?.files?.warranty_cert_url || selectedItem?.files?.warranty_doc_url} />
-                            </>
-                          )}
-                          <div className="md:col-span-2">
-                          <div className="space-y-3 p-6 bg-[var(--nav-hover)]/30 border border-dashed border-[var(--border-color)] rounded-[24px]">
-                              <div className="flex items-center justify-between mb-4">
-                                  <div className="flex items-center gap-3">
-                                      <ImageIcon size={18} className="text-[var(--accent)]" />
-                                      <h4 className="text-[11px] font-black uppercase tracking-widest text-[var(--text-main)]">PCB Images Gallery</h4>
-                                  </div>
-                                  {previews.length > 0 && (
-                                      <button 
-                                          type="button" 
-                                          onClick={clearPendingImages}
-                                          className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline"
-                                      >
-                                          Clear All Pending
-                                      </button>
-                                  )}
-                              </div>
-
-                              {/* Existing Images Display in Edit Mode */}
-                              {modalMode === 'edit' && (selectedItem?.pcb_images || selectedItem?.part_images || selectedItem?.images) && (
-                                  <div className="space-y-3 mb-6">
-                                      <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">Existing Images</p>
-                                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                                          {(selectedItem.pcb_images || selectedItem.part_images || selectedItem.images || []).map((img, idx) => (
-                                              <div key={idx} className="relative aspect-square rounded-xl border border-[var(--border-color)] overflow-hidden group">
-                                                  <img src={buildFileUrl(img)} alt="Part" className="w-full h-full object-cover" />
-                                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                                                      <a href={buildFileUrl(img)} target="_blank" rel="noreferrer" className="text-white hover:text-[var(--accent)]"><Eye size={16} /></a>
-                                                      <button type="button" onClick={() => handleRemoveImage(img)} className="text-rose-500 hover:text-white"><Trash2 size={16} /></button>
-                                                  </div>
-                                              </div>
-                                          ))}
-                                      </div>
-                                  </div>
-                              )}
-
-                              {/* Pending Images Previews */}
-                              {previews.length > 0 && (
-                                  <div className="space-y-3 mb-6">
-                                      <p className="text-[9px] font-black text-[var(--accent)] uppercase tracking-widest ml-1">Pending Uploads ({previews.length})</p>
-                                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                                          {previews.map((preview, idx) => (
-                                              <div key={preview.id} className="relative aspect-square rounded-xl border-2 border-[var(--accent)] border-dashed overflow-hidden group bg-[var(--bg-workspace)]">
-                                                  <img src={preview.url} alt="Preview" className="w-full h-full object-cover" />
-                                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                      <button 
-                                                          type="button" 
-                                                          onClick={() => removePendingImage(idx)}
-                                                          className="p-2 bg-rose-500 text-white rounded-lg shadow-lg hover:scale-110 transition-all"
-                                                      >
-                                                          <Trash2 size={16} />
-                                                      </button>
-                                                  </div>
-                                                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
-                                                      <p className="text-[8px] text-white truncate">{preview.name}</p>
-                                                  </div>
-                                              </div>
-                                          ))}
-                                      </div>
-                                  </div>
-                              )}
-
-                              <div className="relative group">
-                              <input 
-                                  type="file" 
-                                  multiple 
-                                  onChange={handleImageChange}
-                                  accept="image/*" 
-                                  className="absolute inset-0 opacity-0 cursor-pointer z-10" 
-                              />
-                              <div className="w-full bg-[var(--bg-workspace)]/50 border border-dashed border-[var(--text-dim)] rounded-2xl p-8 flex flex-col items-center justify-center gap-3 hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all">
-                                  <div className="p-4 bg-[var(--bg-workspace)] rounded-2xl text-[var(--accent)] shadow-sm"><Plus size={24} /></div>
-                                  <p className="text-[10px] font-black text-[var(--text-dim)] uppercase tracking-widest text-center">
-                                      {pendingImages.length > 0 ? 'Add More Board Photos' : 'Upload Multiple Board Photos'}
-                                  </p>
-                              </div>
-                              </div>
-                          </div>
-                          </div>
-                      </div>
-                      </div>
-                  )}
-
-                  </form>
+                </form>
               </div>
             </div>
           )}
@@ -1692,53 +1931,53 @@ const InventoryListPage = ({ type = '' }) => {
           maxWidth="max-w-md"
         >
           <form onSubmit={handleQuickAddSubmit} className="space-y-6">
-             <div className="bg-[var(--bg-workspace)] p-4 rounded-2xl border border-[var(--border-color)]">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Item to Restock</p>
-                <p className="text-[14px] font-bold text-[var(--text-main)] truncate">{quickAddModal.item?.pcb_name || quickAddModal.item?.part_name || quickAddModal.item?.name}</p>
-                <p className="text-[11px] font-black text-[var(--accent)] mt-1">{quickAddModal.item?.part_no || quickAddModal.item?.part_number}</p>
-             </div>
-             
-             <div className="space-y-2">
-                <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
-                   Quantity to Add <span className="text-rose-500">*</span>
-                </label>
-                <input 
-                   type="number"
-                   min="1"
-                   required
-                   value={quickAddModal.quantityToAdd}
-                   onChange={(e) => setQuickAddModal(prev => ({ ...prev, quantityToAdd: e.target.value }))}
-                   placeholder="Enter quantity"
-                   className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 transition-all font-bold"
-                />
-             </div>
+            <div className="bg-[var(--bg-workspace)] p-4 rounded-2xl border border-[var(--border-color)]">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Item to Restock</p>
+              <p className="text-[14px] font-bold text-[var(--text-main)] truncate">{quickAddModal.item?.pcb_name || quickAddModal.item?.part_name || quickAddModal.item?.name}</p>
+              <p className="text-[11px] font-black text-[var(--accent)] mt-1">{quickAddModal.item?.part_no || quickAddModal.item?.part_number}</p>
+            </div>
 
-             <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]">
-                <button
-                   type="button"
-                   onClick={() => setQuickAddModal({ isOpen: false, item: null, quantityToAdd: '' })}
-                   className="px-6 py-2.5 text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
-                >
-                   Cancel
-                </button>
-                <button
-                   type="submit"
-                   disabled={addStockMutation.isLoading}
-                   className="px-6 py-2.5 text-[11px] font-black uppercase tracking-widest bg-[var(--accent)] text-white rounded-xl hover:opacity-90 shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
-                >
-                   {addStockMutation.isLoading ? <Loader2 size={14} className="animate-spin" /> : <PackagePlus size={14} />}
-                   Confirm Restock
-                </button>
-             </div>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest ml-1">
+                Quantity to Add <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={quickAddModal.quantityToAdd}
+                onChange={(e) => setQuickAddModal(prev => ({ ...prev, quantityToAdd: e.target.value }))}
+                placeholder="Enter quantity"
+                className="w-full bg-[var(--bg-workspace)] border border-[var(--border-color)] rounded-xl px-5 py-3.5 text-[14px] text-[var(--text-main)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10 transition-all font-bold"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-color)]">
+              <button
+                type="button"
+                onClick={() => setQuickAddModal({ isOpen: false, item: null, quantityToAdd: '' })}
+                className="px-6 py-2.5 text-[11px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={addStockMutation.isLoading}
+                className="px-6 py-2.5 text-[11px] font-black uppercase tracking-widest bg-[var(--accent)] text-white rounded-xl hover:opacity-90 shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {addStockMutation.isLoading ? <Loader2 size={14} className="animate-spin" /> : <PackagePlus size={14} />}
+                Confirm Restock
+              </button>
+            </div>
           </form>
         </Modal>
       )}
-        <Lightbox 
-            images={lightboxData.images}
-            initialIndex={lightboxData.initialIndex}
-            isOpen={lightboxData.isOpen}
-            onClose={() => setLightboxData(prev => ({ ...prev, isOpen: false }))}
-        />
+      <Lightbox
+        images={lightboxData.images}
+        initialIndex={lightboxData.initialIndex}
+        isOpen={lightboxData.isOpen}
+        onClose={() => setLightboxData(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
