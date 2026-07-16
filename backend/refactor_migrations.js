@@ -63,11 +63,20 @@ uniqueOccurrences.reverse().forEach(occ => {
   const cols = [];
   let curCol = '';
   let p = 0;
-  for(let j = 0; j < occ.columnsText.length; j++) {
-    const c = occ.columnsText[j];
-    if (c === '(') p++;
-    if (c === ')') p--;
-    if (c === ',' && p === 0) {
+  let inString = false;
+  const cleanColumnsText = occ.columnsText.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  
+  for(let j = 0; j < cleanColumnsText.length; j++) {
+    const c = cleanColumnsText[j];
+    if (c === "'") {
+      inString = !inString;
+    }
+    if (!inString) {
+      if (c === '(') p++;
+      if (c === ')') p--;
+    }
+    
+    if (c === ',' && p === 0 && !inString) {
       cols.push(curCol.trim());
       curCol = '';
     } else {
@@ -150,9 +159,8 @@ uniqueOccurrences.reverse().forEach(occ => {
   }
   
   // Insert additiveSql right after occ.fullBlock in newSql
-  // Because we are iterating in reverse, replacing by index string replacement is safe 
-  // if we just replace the exact block.
-  newSql = newSql.replace(occ.fullBlock, occ.fullBlock + '\n' + additiveSql);
+  // Using a callback function prevents JavaScript from interpreting '$$' as '$'
+  newSql = newSql.replace(occ.fullBlock, () => occ.fullBlock + '\n' + additiveSql);
 });
 
 fs.writeFileSync('database/migration_refactored.sql', newSql);
