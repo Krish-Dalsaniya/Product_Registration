@@ -22,9 +22,17 @@ const QuestionBlock = ({ q, ans, onTextChange, onOptionChange, disabled }) => {
     }
   };
 
+  const totalPoints = q.points || 0;
+
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:border-gray-200 transition-colors">
-      <div className="mb-4">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:border-gray-200 transition-colors relative">
+      {totalPoints > 0 && (
+        <div className="absolute top-4 right-5 text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+          {totalPoints} {totalPoints === 1 ? 'point' : 'points'}
+        </div>
+      )}
+      
+      <div className="mb-4 pr-16">
         <p className="text-base font-medium text-gray-800 leading-snug">
           {q.label || <span className="text-gray-400 italic">Untitled question</span>}
           {q.required && <span className="text-red-500 ml-1">*</span>}

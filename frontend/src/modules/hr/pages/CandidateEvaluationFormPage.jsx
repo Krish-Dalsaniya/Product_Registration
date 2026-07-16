@@ -22,13 +22,13 @@ const formCategories = [
 ];
 
 /* ─── Template Card (for "blank" + "upload") ────────────────── */
-const TemplateCard = ({ label, icon, description, onClick, accent }) => (
+const TemplateCard = ({ label, icon, description, onClick, isGray }) => (
   <button
     onClick={onClick}
     className="flex flex-col items-start p-5 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl hover:border-[var(--accent)] hover:shadow-lg transition-all text-left group"
   >
-    <div className="p-3 rounded-xl mb-3 transition-colors" style={{ backgroundColor: `${accent}18` }}>
-      <div style={{ color: accent }}>{icon}</div>
+    <div className={`p-3 rounded-xl mb-3 transition-colors ${isGray ? 'bg-gray-100 dark:bg-gray-800 text-gray-500' : 'bg-[var(--accent)]/15 text-[var(--accent)]'}`}>
+      {icon}
     </div>
     <p className="font-bold text-gray-800 dark:text-gray-100 text-sm mb-1">{label}</p>
     <p className="text-xs text-gray-400">{description}</p>
@@ -38,13 +38,12 @@ const TemplateCard = ({ label, icon, description, onClick, accent }) => (
 /* ─── Form Card ─────────────────────────────────────────────── */
 const FormCard = ({ form, onEdit, onDelete, onView, viewMode }) => {
   const isEnterprise = isNaN(form.id);
-  const catColor = formCategories.find(c => c.id === form.category)?.color || '#4f46e5';
 
   if (viewMode === 'list') {
     return (
       <div className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-[var(--accent)] hover:shadow-sm transition-all group">
-        <div className="p-3 rounded-xl flex-shrink-0" style={{ backgroundColor: `${catColor}18` }}>
-          <FileText size={20} style={{ color: catColor }} />
+        <div className="p-3 rounded-xl flex-shrink-0 bg-[var(--accent)]/15 text-[var(--accent)]">
+          <FileText size={20} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-gray-800 dark:text-gray-100 truncate">{form.label}</p>
@@ -75,11 +74,11 @@ const FormCard = ({ form, onEdit, onDelete, onView, viewMode }) => {
   return (
     <div className="flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden hover:border-[var(--accent)] hover:shadow-md transition-all group cursor-pointer" onClick={() => onEdit(form)}>
       {/* Color Header */}
-      <div className="h-3" style={{ backgroundColor: catColor }} />
+      <div className="h-3 bg-[var(--accent)]" />
       <div className="p-5 flex-1">
         <div className="flex justify-between items-start mb-3">
-          <div className="p-2 rounded-lg" style={{ backgroundColor: `${catColor}15` }}>
-            <FileText size={18} style={{ color: catColor }} />
+          <div className="p-2 rounded-lg bg-[var(--accent)]/15 text-[var(--accent)]">
+            <FileText size={18} />
           </div>
           <div className="flex flex-col items-end gap-1">
             {isEnterprise && (
@@ -237,8 +236,7 @@ const CandidateEvaluationFormPage = () => {
       <div className="flex gap-2 overflow-x-auto pb-3 mb-6 border-b border-gray-200 dark:border-gray-700">
         {formCategories.map(cat => (
           <button key={cat.id} onClick={() => setSelectedTab(cat.id)}
-            className={`px-4 py-2 text-xs font-bold rounded-lg whitespace-nowrap transition-all flex-shrink-0 ${selectedTab === cat.id ? 'text-white shadow-md' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}
-            style={selectedTab === cat.id ? { backgroundColor: cat.color } : {}}
+            className={`px-4 py-2 text-xs font-bold rounded-lg whitespace-nowrap transition-all flex-shrink-0 ${selectedTab === cat.id ? 'text-white shadow-md bg-[var(--accent)]' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}
           >
             {cat.title}
           </button>
@@ -276,14 +274,13 @@ const CandidateEvaluationFormPage = () => {
                 label="Blank form"
                 description="Build with drag-and-drop questions"
                 icon={<Plus size={22} strokeWidth={2.5} />}
-                accent={currentCat?.color || '#4f46e5'}
                 onClick={() => handleCreateBlankForm(selectedTab)}
               />
               <TemplateCard
                 label="Upload document"
                 description="Upload a PDF, DOCX, or XLSX"
                 icon={<Upload size={22} />}
-                accent="#6b7280"
+                isGray={true}
                 onClick={() => { setUploadData({ label: '', file: null }); setUploadModal(true); }}
               />
             </>

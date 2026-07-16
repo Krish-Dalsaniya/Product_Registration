@@ -23,16 +23,21 @@ function App() {
 
 function AuthInterceptor() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
   
   React.useEffect(() => {
     const handleUnauthorized = () => {
       logout();
-      navigate('/login');
+      const publicPaths = ['/login', '/register', '/forms/', '/attendance/verify/', '/payslip/'];
+      const isPublic = publicPaths.some(path => location.pathname.startsWith(path));
+      if (!isPublic) {
+        navigate('/login');
+      }
     };
     window.addEventListener('unauthorized', handleUnauthorized);
     return () => window.removeEventListener('unauthorized', handleUnauthorized);
-  }, [navigate, logout]);
+  }, [navigate, logout, location.pathname]);
 
   return null;
 }

@@ -104,9 +104,24 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
             return (
               <div 
                 key={q.id} 
-                className="w-full gap-2 p-5 bg-[var(--bg-workspace)]/50 border border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-colors rounded-xl"
+                className="w-full gap-2 p-5 bg-[var(--bg-workspace)]/50 border border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-colors rounded-xl relative"
               >
-                <label className="flex items-start mb-2">
+                {(() => {
+                  let totalPoints = q.points || 0;
+                  if (!totalPoints && q.options && Array.isArray(q.options)) {
+                    totalPoints = q.options.filter(o => o.is_correct).reduce((sum, opt) => sum + (parseFloat(opt.score) || 0), 0);
+                  }
+                  if (totalPoints > 0) {
+                    return (
+                      <div className="absolute top-4 right-5 text-[11px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700">
+                        {totalPoints} {totalPoints === 1 ? 'point' : 'points'}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                <label className="flex items-start mb-2 pr-20">
                   <div className="flex-1">
                     <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{q.label}</span>
                     {q.required && <span className="text-red-500 ml-1 font-bold">*</span>}

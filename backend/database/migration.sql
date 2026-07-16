@@ -40,6 +40,23 @@ CREATE TABLE IF NOT EXISTS user_permissions (
     PRIMARY KEY (user_id, permission_id)
 );
 
+-- Auto-generated additive upgrades for user_permissions
+ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS permission_id INT;
+ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS granted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'user_permissions'::regclass AND conname = 'user_permissions_user_id_fkey') THEN
+        ALTER TABLE user_permissions ADD CONSTRAINT user_permissions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'user_permissions'::regclass AND conname = 'user_permissions_permission_id_fkey') THEN
+        ALTER TABLE user_permissions ADD CONSTRAINT user_permissions_permission_id_fkey FOREIGN KEY (permission_id) REFERENCES permissions(permission_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- ==============================================================================
 -- 4. DATA MIGRATION: Permissions and Role Assignments
 -- Uses an anonymous DO block to handle logic natively in PostgreSQL
@@ -148,107 +165,28 @@ BEGIN
 END $$;
 
 -- 5. User Security & Extensions
-CREATE TABLE IF NOT EXISTS audit_logs (
-    log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
-    action VARCHAR(100) NOT NULL,
-    entity_type VARCHAR(100),
-    entity_id VARCHAR(255),
-    old_value JSONB,
-    new_value JSONB,
-    ip_address VARCHAR(45),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+-- REMOVED DUPLICATE: audit_logs
 
-CREATE TABLE IF NOT EXISTS user_password_reset (
-    user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-    requires_password_change BOOLEAN DEFAULT false
-);
+-- REMOVED DUPLICATE: user_password_reset
 
-CREATE TABLE IF NOT EXISTS user_email_verified (
-    user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-    is_verified BOOLEAN DEFAULT false
-);
+-- REMOVED DUPLICATE: user_email_verified
 
-CREATE TABLE IF NOT EXISTS user_mobile (
-    user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-    mobile_number VARCHAR(20)
-);
+-- REMOVED DUPLICATE: user_mobile
 
-CREATE TABLE IF NOT EXISTS user_two_factor (
-    user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-    two_factor_secret VARCHAR(255),
-    is_two_factor_enabled BOOLEAN DEFAULT false
-);
+-- REMOVED DUPLICATE: user_two_factor
 
 -- 6. HR Module Tables
-CREATE TABLE IF NOT EXISTS hr_departments (
-    department_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+-- REMOVED DUPLICATE: hr_departments
 
-CREATE TABLE IF NOT EXISTS hr_designations (
-    designation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    department_id UUID REFERENCES hr_departments(department_id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(department_id, name)
-);
+-- REMOVED DUPLICATE: hr_designations
 
-CREATE TABLE IF NOT EXISTS hr_employees (
-    employee_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
-    emp_code VARCHAR(50) UNIQUE NOT NULL,
-    department_id UUID REFERENCES hr_departments(department_id) ON DELETE SET NULL,
-    designation_id UUID REFERENCES hr_designations(designation_id) ON DELETE SET NULL,
-    manager_id UUID REFERENCES hr_employees(employee_id) ON DELETE SET NULL,
-    date_of_joining DATE NOT NULL,
-    employment_status VARCHAR(50) DEFAULT 'Full-Time',
-    work_location VARCHAR(100),
-    base_salary DECIMAL(12,2),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+-- REMOVED DUPLICATE: hr_employees
 
-CREATE TABLE IF NOT EXISTS hr_attendance (
-    attendance_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    clock_in TIMESTAMP,
-    clock_out TIMESTAMP,
-    status VARCHAR(50) DEFAULT 'Present',
-    work_hours NUMERIC(5,2),
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(employee_id, date)
-);
+-- REMOVED DUPLICATE: hr_attendance
 
-CREATE TABLE IF NOT EXISTS leave_balances (
-    id SERIAL PRIMARY KEY,
-    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
-    leave_type VARCHAR(50) NOT NULL,
-    total_days NUMERIC(5,2) DEFAULT 0,
-    used_days NUMERIC(5,2) DEFAULT 0,
-    year INTEGER NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, leave_type, year)
-);
+-- REMOVED DUPLICATE: leave_balances
 
-CREATE TABLE IF NOT EXISTS leave_requests (
-    id SERIAL PRIMARY KEY,
-    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
-    leave_type VARCHAR(50) NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    status VARCHAR(50) DEFAULT 'Pending',
-    reason TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- REMOVED DUPLICATE: leave_requests
 
 -- 5. User Security & Extensions
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -263,26 +201,99 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for audit_logs
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS log_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS action VARCHAR(100) NOT NULL;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS entity_type VARCHAR(100);
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS entity_id VARCHAR(255);
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS old_value JSONB;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS new_value JSONB;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'audit_logs'::regclass AND conname = 'audit_logs_user_id_fkey') THEN
+        ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS user_password_reset (
     user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
     requires_password_change BOOLEAN DEFAULT false
 );
+
+-- Auto-generated additive upgrades for user_password_reset
+ALTER TABLE user_password_reset ADD COLUMN IF NOT EXISTS user_id UUID PRIMARY KEY;
+ALTER TABLE user_password_reset ADD COLUMN IF NOT EXISTS requires_password_change BOOLEAN DEFAULT false;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'user_password_reset'::regclass AND conname = 'user_password_reset_user_id_fkey') THEN
+        ALTER TABLE user_password_reset ADD CONSTRAINT user_password_reset_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 CREATE TABLE IF NOT EXISTS user_email_verified (
     user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
     is_verified BOOLEAN DEFAULT false
 );
 
+-- Auto-generated additive upgrades for user_email_verified
+ALTER TABLE user_email_verified ADD COLUMN IF NOT EXISTS user_id UUID PRIMARY KEY;
+ALTER TABLE user_email_verified ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT false;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'user_email_verified'::regclass AND conname = 'user_email_verified_user_id_fkey') THEN
+        ALTER TABLE user_email_verified ADD CONSTRAINT user_email_verified_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS user_mobile (
     user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
     mobile_number VARCHAR(20)
 );
+
+-- Auto-generated additive upgrades for user_mobile
+ALTER TABLE user_mobile ADD COLUMN IF NOT EXISTS user_id UUID PRIMARY KEY;
+ALTER TABLE user_mobile ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(20);
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'user_mobile'::regclass AND conname = 'user_mobile_user_id_fkey') THEN
+        ALTER TABLE user_mobile ADD CONSTRAINT user_mobile_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 CREATE TABLE IF NOT EXISTS user_two_factor (
     user_id UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
     two_factor_secret VARCHAR(255),
     is_two_factor_enabled BOOLEAN DEFAULT false
 );
+
+-- Auto-generated additive upgrades for user_two_factor
+ALTER TABLE user_two_factor ADD COLUMN IF NOT EXISTS user_id UUID PRIMARY KEY;
+ALTER TABLE user_two_factor ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR(255);
+ALTER TABLE user_two_factor ADD COLUMN IF NOT EXISTS is_two_factor_enabled BOOLEAN DEFAULT false;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'user_two_factor'::regclass AND conname = 'user_two_factor_user_id_fkey') THEN
+        ALTER TABLE user_two_factor ADD CONSTRAINT user_two_factor_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- 6. HR Module Tables
 CREATE TABLE IF NOT EXISTS hr_departments (
@@ -292,6 +303,21 @@ CREATE TABLE IF NOT EXISTS hr_departments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for hr_departments
+ALTER TABLE hr_departments ADD COLUMN IF NOT EXISTS department_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_departments ADD COLUMN IF NOT EXISTS name VARCHAR(100) NOT NULL;
+ALTER TABLE hr_departments ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE hr_departments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_departments'::regclass AND conname = 'hr_departments_name_key') THEN
+        ALTER TABLE hr_departments ADD CONSTRAINT hr_departments_name_key UNIQUE (name);
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS hr_designations (
     designation_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     department_id UUID REFERENCES hr_departments(department_id) ON DELETE CASCADE,
@@ -299,6 +325,24 @@ CREATE TABLE IF NOT EXISTS hr_designations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(department_id, name)
 );
+
+-- Auto-generated additive upgrades for hr_designations
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS designation_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS department_id UUID;
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS name VARCHAR(100) NOT NULL;
+ALTER TABLE hr_designations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_designations'::regclass AND conname = 'hr_designations_department_id_fkey') THEN
+        ALTER TABLE hr_designations ADD CONSTRAINT hr_designations_department_id_fkey FOREIGN KEY (department_id) REFERENCES hr_departments(department_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_designations'::regclass AND conname = 'hr_designations_department_id_name_key') THEN
+        ALTER TABLE hr_designations ADD CONSTRAINT hr_designations_department_id_name_key UNIQUE(department_id, name);
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 CREATE TABLE IF NOT EXISTS hr_employees (
     employee_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -315,6 +359,44 @@ CREATE TABLE IF NOT EXISTS hr_employees (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for hr_employees
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS employee_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS emp_code VARCHAR(50) NOT NULL;
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS department_id UUID;
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS designation_id UUID;
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS manager_id UUID;
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS date_of_joining DATE NOT NULL;
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS employment_status VARCHAR(50) DEFAULT 'Full-Time';
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS work_location VARCHAR(100);
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS base_salary DECIMAL(12,2);
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_employees'::regclass AND conname = 'hr_employees_user_id_key') THEN
+        ALTER TABLE hr_employees ADD CONSTRAINT hr_employees_user_id_key UNIQUE (user_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_employees'::regclass AND conname = 'hr_employees_user_id_fkey') THEN
+        ALTER TABLE hr_employees ADD CONSTRAINT hr_employees_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_employees'::regclass AND conname = 'hr_employees_emp_code_key') THEN
+        ALTER TABLE hr_employees ADD CONSTRAINT hr_employees_emp_code_key UNIQUE (emp_code);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_employees'::regclass AND conname = 'hr_employees_department_id_fkey') THEN
+        ALTER TABLE hr_employees ADD CONSTRAINT hr_employees_department_id_fkey FOREIGN KEY (department_id) REFERENCES hr_departments(department_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_employees'::regclass AND conname = 'hr_employees_designation_id_fkey') THEN
+        ALTER TABLE hr_employees ADD CONSTRAINT hr_employees_designation_id_fkey FOREIGN KEY (designation_id) REFERENCES hr_designations(designation_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_employees'::regclass AND conname = 'hr_employees_manager_id_fkey') THEN
+        ALTER TABLE hr_employees ADD CONSTRAINT hr_employees_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES hr_employees(employee_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS hr_attendance (
     attendance_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
@@ -329,6 +411,30 @@ CREATE TABLE IF NOT EXISTS hr_attendance (
     UNIQUE(employee_id, date)
 );
 
+-- Auto-generated additive upgrades for hr_attendance
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS attendance_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS employee_id UUID;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS date DATE NOT NULL;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS clock_in TIMESTAMP;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS clock_out TIMESTAMP;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Present';
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS work_hours NUMERIC(5,2);
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_attendance'::regclass AND conname = 'hr_attendance_employee_id_fkey') THEN
+        ALTER TABLE hr_attendance ADD CONSTRAINT hr_attendance_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_attendance'::regclass AND conname = 'hr_attendance_employee_id_date_key') THEN
+        ALTER TABLE hr_attendance ADD CONSTRAINT hr_attendance_employee_id_date_key UNIQUE(employee_id, date);
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS leave_balances (
     id SERIAL PRIMARY KEY,
     user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
@@ -340,6 +446,28 @@ CREATE TABLE IF NOT EXISTS leave_balances (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, leave_type, year)
 );
+
+-- Auto-generated additive upgrades for leave_balances
+ALTER TABLE leave_balances ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;
+ALTER TABLE leave_balances ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE leave_balances ADD COLUMN IF NOT EXISTS leave_type VARCHAR(50) NOT NULL;
+ALTER TABLE leave_balances ADD COLUMN IF NOT EXISTS total_days NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE leave_balances ADD COLUMN IF NOT EXISTS used_days NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE leave_balances ADD COLUMN IF NOT EXISTS year INTEGER NOT NULL;
+ALTER TABLE leave_balances ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE leave_balances ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'leave_balances'::regclass AND conname = 'leave_balances_user_id_fkey') THEN
+        ALTER TABLE leave_balances ADD CONSTRAINT leave_balances_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'leave_balances'::regclass AND conname = 'leave_balances_user_id_leave_type_year_key') THEN
+        ALTER TABLE leave_balances ADD CONSTRAINT leave_balances_user_id_leave_type_year_key UNIQUE(user_id, leave_type, year);
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 CREATE TABLE IF NOT EXISTS leave_requests (
     id SERIAL PRIMARY KEY,
@@ -353,12 +481,47 @@ CREATE TABLE IF NOT EXISTS leave_requests (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for leave_requests
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS leave_type VARCHAR(50) NOT NULL;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS start_date DATE NOT NULL;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS end_date DATE NOT NULL;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Pending';
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS reason TEXT;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'leave_requests'::regclass AND conname = 'leave_requests_user_id_fkey') THEN
+        ALTER TABLE leave_requests ADD CONSTRAINT leave_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS hr_holidays (
     holiday_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     date DATE NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto-generated additive upgrades for hr_holidays
+ALTER TABLE hr_holidays ADD COLUMN IF NOT EXISTS holiday_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_holidays ADD COLUMN IF NOT EXISTS name VARCHAR(100) NOT NULL;
+ALTER TABLE hr_holidays ADD COLUMN IF NOT EXISTS date DATE NOT NULL;
+ALTER TABLE hr_holidays ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_holidays'::regclass AND conname = 'hr_holidays_date_key') THEN
+        ALTER TABLE hr_holidays ADD CONSTRAINT hr_holidays_date_key UNIQUE (date);
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 CREATE TABLE IF NOT EXISTS hr_salary_structures (
     structure_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -374,6 +537,31 @@ CREATE TABLE IF NOT EXISTS hr_salary_structures (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(employee_id)
 );
+
+-- Auto-generated additive upgrades for hr_salary_structures
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS structure_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS employee_id UUID;
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS basic_salary DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS hra DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS special_allowance DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS travel_allowance DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS medical_allowance DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS pf_deduction DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS professional_tax DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS tds DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_salary_structures ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_salary_structures'::regclass AND conname = 'hr_salary_structures_employee_id_fkey') THEN
+        ALTER TABLE hr_salary_structures ADD CONSTRAINT hr_salary_structures_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_salary_structures'::regclass AND conname = 'hr_salary_structures_employee_id_key') THEN
+        ALTER TABLE hr_salary_structures ADD CONSTRAINT hr_salary_structures_employee_id_key UNIQUE(employee_id);
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 CREATE TABLE IF NOT EXISTS hr_payrolls (
     payroll_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -395,6 +583,36 @@ CREATE TABLE IF NOT EXISTS hr_payrolls (
     UNIQUE(employee_id, month, year)
 );
 
+-- Auto-generated additive upgrades for hr_payrolls
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS payroll_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS employee_id UUID;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS month INTEGER NOT NULL;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS year INTEGER NOT NULL;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS basic_salary DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS hra DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS special_allowance DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS travel_allowance DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS medical_allowance DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS pf_deduction DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS professional_tax DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS tds DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS net_salary DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Draft';
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_payrolls ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_payrolls'::regclass AND conname = 'hr_payrolls_employee_id_fkey') THEN
+        ALTER TABLE hr_payrolls ADD CONSTRAINT hr_payrolls_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_payrolls'::regclass AND conname = 'hr_payrolls_employee_id_month_year_key') THEN
+        ALTER TABLE hr_payrolls ADD CONSTRAINT hr_payrolls_employee_id_month_year_key UNIQUE(employee_id, month, year);
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS hr_onboarding (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
@@ -408,6 +626,27 @@ CREATE TABLE IF NOT EXISTS hr_onboarding (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for hr_onboarding
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS employee_id UUID;
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Pending';
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS offer_acceptance_date DATE;
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS document_checklist JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS asset_checklist JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS training_checklist JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS rcd_checklist JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_onboarding ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_onboarding'::regclass AND conname = 'hr_onboarding_employee_id_fkey') THEN
+        ALTER TABLE hr_onboarding ADD CONSTRAINT hr_onboarding_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS hr_offboarding (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
@@ -420,6 +659,27 @@ CREATE TABLE IF NOT EXISTS hr_offboarding (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto-generated additive upgrades for hr_offboarding
+ALTER TABLE hr_offboarding ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_offboarding ADD COLUMN IF NOT EXISTS employee_id UUID;
+ALTER TABLE hr_offboarding ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Resignation Submitted';
+ALTER TABLE hr_offboarding ADD COLUMN IF NOT EXISTS resignation_date DATE;
+ALTER TABLE hr_offboarding ADD COLUMN IF NOT EXISTS last_working_day DATE;
+ALTER TABLE hr_offboarding ADD COLUMN IF NOT EXISTS exit_interview_notes TEXT;
+ALTER TABLE hr_offboarding ADD COLUMN IF NOT EXISTS clearance_checklist JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE hr_offboarding ADD COLUMN IF NOT EXISTS asset_recovery_checklist JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE hr_offboarding ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_offboarding ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_offboarding'::regclass AND conname = 'hr_offboarding_employee_id_fkey') THEN
+        ALTER TABLE hr_offboarding ADD CONSTRAINT hr_offboarding_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 COMMIT;
 
@@ -441,6 +701,25 @@ CREATE TABLE IF NOT EXISTS pms_closures (
     FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE
 );
 
+-- Auto-generated additive upgrades for pms_closures
+ALTER TABLE pms_closures ADD COLUMN IF NOT EXISTS closure_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE pms_closures ADD COLUMN IF NOT EXISTS employee_id UUID NOT NULL;
+ALTER TABLE pms_closures ADD COLUMN IF NOT EXISTS closure_date DATE NOT NULL;
+ALTER TABLE pms_closures ADD COLUMN IF NOT EXISTS total_hours NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE pms_closures ADD COLUMN IF NOT EXISTS remarks TEXT;
+ALTER TABLE pms_closures ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Submitted';
+ALTER TABLE pms_closures ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE pms_closures ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_closures'::regclass AND conname = 'pms_closures_employee_id_fkey') THEN
+        ALTER TABLE pms_closures ADD CONSTRAINT pms_closures_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS pms_closure_items (
     item_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     closure_id UUID NOT NULL,
@@ -450,6 +729,23 @@ CREATE TABLE IF NOT EXISTS pms_closure_items (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (closure_id) REFERENCES pms_closures(closure_id) ON DELETE CASCADE
 );
+
+-- Auto-generated additive upgrades for pms_closure_items
+ALTER TABLE pms_closure_items ADD COLUMN IF NOT EXISTS item_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE pms_closure_items ADD COLUMN IF NOT EXISTS closure_id UUID NOT NULL;
+ALTER TABLE pms_closure_items ADD COLUMN IF NOT EXISTS project_id UUID NULL;
+ALTER TABLE pms_closure_items ADD COLUMN IF NOT EXISTS task_description TEXT NOT NULL;
+ALTER TABLE pms_closure_items ADD COLUMN IF NOT EXISTS hours_spent NUMERIC(5,2) NOT NULL;
+ALTER TABLE pms_closure_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_closure_items'::regclass AND conname = 'pms_closure_items_closure_id_fkey') THEN
+        ALTER TABLE pms_closure_items ADD CONSTRAINT pms_closure_items_closure_id_fkey FOREIGN KEY (closure_id) REFERENCES pms_closures(closure_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- ==============================================================================
 -- MODULE: PMS
@@ -481,6 +777,49 @@ CREATE TABLE IF NOT EXISTS pms_projects (
     FOREIGN KEY (client_handler_id) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
+-- Auto-generated additive upgrades for pms_projects
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS project_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS project_code VARCHAR(50) NOT NULL;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS project_name VARCHAR(255) NOT NULL;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS team_id INTEGER NULL;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS product_id INTEGER NULL;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS start_date DATE;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS end_date DATE;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Planned';
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS priority VARCHAR(50) DEFAULT 'Medium';
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS progress_percentage NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS team_lead_id UUID NULL;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS client_handler_id UUID NULL;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS project_members JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS created_by UUID;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE pms_projects ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_projects'::regclass AND conname = 'pms_projects_project_code_key') THEN
+        ALTER TABLE pms_projects ADD CONSTRAINT pms_projects_project_code_key UNIQUE (project_code);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_projects'::regclass AND conname = 'pms_projects_created_by_fkey') THEN
+        ALTER TABLE pms_projects ADD CONSTRAINT pms_projects_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_projects'::regclass AND conname = 'pms_projects_team_id_fkey') THEN
+        ALTER TABLE pms_projects ADD CONSTRAINT pms_projects_team_id_fkey FOREIGN KEY (team_id) REFERENCES teams(team_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_projects'::regclass AND conname = 'pms_projects_product_id_fkey') THEN
+        ALTER TABLE pms_projects ADD CONSTRAINT pms_projects_product_id_fkey FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_projects'::regclass AND conname = 'pms_projects_team_lead_id_fkey') THEN
+        ALTER TABLE pms_projects ADD CONSTRAINT pms_projects_team_lead_id_fkey FOREIGN KEY (team_lead_id) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_projects'::regclass AND conname = 'pms_projects_client_handler_id_fkey') THEN
+        ALTER TABLE pms_projects ADD CONSTRAINT pms_projects_client_handler_id_fkey FOREIGN KEY (client_handler_id) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- ==============================================================================
 -- MODULE: HR LMS
 -- TABLES: hr_lms_modules, hr_lms_assignments
@@ -503,6 +842,34 @@ CREATE TABLE IF NOT EXISTS hr_lms_modules (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for hr_lms_modules
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS module_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS title VARCHAR(255) NOT NULL;
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS category VARCHAR(100);
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS department_id UUID;
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS training_type VARCHAR(50);
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS difficulty_level VARCHAR(50);
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS duration_hours INTEGER;
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS training_url TEXT;
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active';
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS created_by UUID;
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_lms_modules ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_lms_modules'::regclass AND conname = 'hr_lms_modules_department_id_fkey') THEN
+        ALTER TABLE hr_lms_modules ADD CONSTRAINT hr_lms_modules_department_id_fkey FOREIGN KEY (department_id) REFERENCES hr_departments(department_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_lms_modules'::regclass AND conname = 'hr_lms_modules_created_by_fkey') THEN
+        ALTER TABLE hr_lms_modules ADD CONSTRAINT hr_lms_modules_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS hr_lms_assignments (
     assignment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     module_id UUID REFERENCES hr_lms_modules(module_id) ON DELETE CASCADE,
@@ -518,6 +885,36 @@ CREATE TABLE IF NOT EXISTS hr_lms_assignments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto-generated additive upgrades for hr_lms_assignments
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS assignment_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS module_id UUID;
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS employee_id UUID;
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS assigned_by UUID;
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS assigned_date DATE NOT NULL;
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS due_date DATE;
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Assigned';
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS retest_requested BOOLEAN DEFAULT FALSE;
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS retest_approved BOOLEAN DEFAULT FALSE;
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS progress_percentage INTEGER DEFAULT 0;
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP WITH TIME ZONE NULL;
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_lms_assignments'::regclass AND conname = 'hr_lms_assignments_module_id_fkey') THEN
+        ALTER TABLE hr_lms_assignments ADD CONSTRAINT hr_lms_assignments_module_id_fkey FOREIGN KEY (module_id) REFERENCES hr_lms_modules(module_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_lms_assignments'::regclass AND conname = 'hr_lms_assignments_employee_id_fkey') THEN
+        ALTER TABLE hr_lms_assignments ADD CONSTRAINT hr_lms_assignments_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_lms_assignments'::regclass AND conname = 'hr_lms_assignments_assigned_by_fkey') THEN
+        ALTER TABLE hr_lms_assignments ADD CONSTRAINT hr_lms_assignments_assigned_by_fkey FOREIGN KEY (assigned_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- ==========================================
 -- HR CONVERSION REQUESTS (FOR APPROVAL WORKFLOW)
@@ -537,6 +934,40 @@ CREATE TABLE IF NOT EXISTS hr_conversion_requests (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for hr_conversion_requests
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS request_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS intern_id UUID;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS trainee_id UUID;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS target_role VARCHAR(50) NOT NULL;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS payload JSONB;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS emp_code ;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS designation_id ;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS etc. status VARCHAR(50) DEFAULT 'Pending';
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS 'Approved' ;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS 'Rejected' certificate_url TEXT;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS requested_by UUID;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS approved_by UUID;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_conversion_requests ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_conversion_requests'::regclass AND conname = 'hr_conversion_requests_intern_id_fkey') THEN
+        ALTER TABLE hr_conversion_requests ADD CONSTRAINT hr_conversion_requests_intern_id_fkey FOREIGN KEY (intern_id) REFERENCES hr_interns(intern_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_conversion_requests'::regclass AND conname = 'hr_conversion_requests_trainee_id_fkey') THEN
+        ALTER TABLE hr_conversion_requests ADD CONSTRAINT hr_conversion_requests_trainee_id_fkey FOREIGN KEY (trainee_id) REFERENCES hr_trainees(trainee_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_conversion_requests'::regclass AND conname = 'hr_conversion_requests_requested_by_fkey') THEN
+        ALTER TABLE hr_conversion_requests ADD CONSTRAINT hr_conversion_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_conversion_requests'::regclass AND conname = 'hr_conversion_requests_approved_by_fkey') THEN
+        ALTER TABLE hr_conversion_requests ADD CONSTRAINT hr_conversion_requests_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS hr_lms_assessments (
     assessment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     assignment_id UUID REFERENCES hr_lms_assignments(assignment_id) ON DELETE CASCADE,
@@ -549,6 +980,29 @@ CREATE TABLE IF NOT EXISTS hr_lms_assessments (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for hr_lms_assessments
+ALTER TABLE hr_lms_assessments ADD COLUMN IF NOT EXISTS assessment_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_lms_assessments ADD COLUMN IF NOT EXISTS assignment_id UUID;
+ALTER TABLE hr_lms_assessments ADD COLUMN IF NOT EXISTS score INTEGER NOT NULL;
+ALTER TABLE hr_lms_assessments ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL;
+ALTER TABLE hr_lms_assessments ADD COLUMN IF NOT EXISTS remarks TEXT;
+ALTER TABLE hr_lms_assessments ADD COLUMN IF NOT EXISTS assessed_by UUID;
+ALTER TABLE hr_lms_assessments ADD COLUMN IF NOT EXISTS assessed_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_lms_assessments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_lms_assessments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_lms_assessments'::regclass AND conname = 'hr_lms_assessments_assignment_id_fkey') THEN
+        ALTER TABLE hr_lms_assessments ADD CONSTRAINT hr_lms_assessments_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES hr_lms_assignments(assignment_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_lms_assessments'::regclass AND conname = 'hr_lms_assessments_assessed_by_fkey') THEN
+        ALTER TABLE hr_lms_assessments ADD CONSTRAINT hr_lms_assessments_assessed_by_fkey FOREIGN KEY (assessed_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS hr_lms_questions (
     question_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     module_id UUID REFERENCES hr_lms_modules(module_id) ON DELETE CASCADE,
@@ -558,36 +1012,29 @@ CREATE TABLE IF NOT EXISTS hr_lms_questions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for hr_lms_questions
+ALTER TABLE hr_lms_questions ADD COLUMN IF NOT EXISTS question_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_lms_questions ADD COLUMN IF NOT EXISTS module_id UUID;
+ALTER TABLE hr_lms_questions ADD COLUMN IF NOT EXISTS question_text TEXT NOT NULL;
+ALTER TABLE hr_lms_questions ADD COLUMN IF NOT EXISTS options JSONB NOT NULL;
+ALTER TABLE hr_lms_questions ADD COLUMN IF NOT EXISTS correct_answer TEXT NOT NULL;
+ALTER TABLE hr_lms_questions ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_lms_questions'::regclass AND conname = 'hr_lms_questions_module_id_fkey') THEN
+        ALTER TABLE hr_lms_questions ADD CONSTRAINT hr_lms_questions_module_id_fkey FOREIGN KEY (module_id) REFERENCES hr_lms_modules(module_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- ==============================================================================
 -- MODULE: HR Trainees
 -- TABLES: hr_trainees
 -- ==============================================================================
 
-CREATE TABLE IF NOT EXISTS hr_trainees (
-    trainee_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    trainee_code VARCHAR(50) UNIQUE NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    email VARCHAR(150) NOT NULL,
-    mobile VARCHAR(20),
-    gender VARCHAR(20),
-    date_of_birth DATE,
-    joining_date DATE,
-    expected_completion_date DATE,
-    department_id UUID REFERENCES hr_departments(department_id) ON DELETE SET NULL,
-    mentor_employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE SET NULL,
-    training_batch VARCHAR(100),
-    education VARCHAR(100),
-    institute VARCHAR(200),
-    specialization VARCHAR(100),
-    resume_url TEXT,
-    profile_photo TEXT,
-    status VARCHAR(50) DEFAULT 'Applied',
-    remarks TEXT,
-    created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+-- REMOVED DUPLICATE: hr_trainees
 
 -- Alter hr_lms_assignments to support trainees
 ALTER TABLE hr_lms_assignments ADD COLUMN IF NOT EXISTS trainee_id UUID REFERENCES hr_trainees(trainee_id) ON DELETE CASCADE;
@@ -619,6 +1066,50 @@ CREATE TABLE IF NOT EXISTS hr_trainees (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for hr_trainees
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS trainee_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS trainee_code VARCHAR(50) NOT NULL;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS first_name VARCHAR(100) NOT NULL;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS last_name VARCHAR(100) NOT NULL;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS email VARCHAR(150) NOT NULL;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS mobile VARCHAR(20);
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS gender VARCHAR(20);
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS date_of_birth DATE;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS joining_date DATE;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS expected_completion_date DATE;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS department_id UUID;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS mentor_employee_id UUID;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS training_batch VARCHAR(100);
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS education VARCHAR(200);
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS institute VARCHAR(200);
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS specialization VARCHAR(200);
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Applied';
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS remarks TEXT;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS created_by UUID;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_trainees'::regclass AND conname = 'hr_trainees_trainee_code_key') THEN
+        ALTER TABLE hr_trainees ADD CONSTRAINT hr_trainees_trainee_code_key UNIQUE (trainee_code);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_trainees'::regclass AND conname = 'hr_trainees_email_key') THEN
+        ALTER TABLE hr_trainees ADD CONSTRAINT hr_trainees_email_key UNIQUE (email);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_trainees'::regclass AND conname = 'hr_trainees_department_id_fkey') THEN
+        ALTER TABLE hr_trainees ADD CONSTRAINT hr_trainees_department_id_fkey FOREIGN KEY (department_id) REFERENCES hr_departments(department_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_trainees'::regclass AND conname = 'hr_trainees_mentor_employee_id_fkey') THEN
+        ALTER TABLE hr_trainees ADD CONSTRAINT hr_trainees_mentor_employee_id_fkey FOREIGN KEY (mentor_employee_id) REFERENCES hr_employees(employee_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_trainees'::regclass AND conname = 'hr_trainees_created_by_fkey') THEN
+        ALTER TABLE hr_trainees ADD CONSTRAINT hr_trainees_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 ALTER TABLE hr_lms_assignments 
 ADD COLUMN IF NOT EXISTS trainee_id UUID REFERENCES hr_trainees(trainee_id) ON DELETE CASCADE;
 
@@ -644,6 +1135,24 @@ CREATE TABLE IF NOT EXISTS company_settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for company_settings
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS setting_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS company_name VARCHAR(255) NOT NULL;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS office_latitude DECIMAL(10, 8);
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS office_longitude DECIMAL(11, 8);
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS office_radius_meters INTEGER DEFAULT 200;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'company_settings'::regclass AND conname = 'company_settings_company_name_key') THEN
+        ALTER TABLE company_settings ADD CONSTRAINT company_settings_company_name_key UNIQUE (company_name);
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS attendance_verification_tokens (
     token_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
@@ -655,6 +1164,29 @@ CREATE TABLE IF NOT EXISTS attendance_verification_tokens (
     used BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto-generated additive upgrades for attendance_verification_tokens
+ALTER TABLE attendance_verification_tokens ADD COLUMN IF NOT EXISTS token_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE attendance_verification_tokens ADD COLUMN IF NOT EXISTS employee_id UUID;
+ALTER TABLE attendance_verification_tokens ADD COLUMN IF NOT EXISTS token VARCHAR(255) NOT NULL;
+ALTER TABLE attendance_verification_tokens ADD COLUMN IF NOT EXISTS action_type VARCHAR(50) NOT NULL;
+ALTER TABLE attendance_verification_tokens ADD COLUMN IF NOT EXISTS liveness_challenge VARCHAR(50);
+ALTER TABLE attendance_verification_tokens ADD COLUMN IF NOT EXISTS liveness_status VARCHAR(50);
+ALTER TABLE attendance_verification_tokens ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP NOT NULL;
+ALTER TABLE attendance_verification_tokens ADD COLUMN IF NOT EXISTS used BOOLEAN DEFAULT false;
+ALTER TABLE attendance_verification_tokens ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'attendance_verification_tokens'::regclass AND conname = 'attendance_verification_tokens_employee_id_fkey') THEN
+        ALTER TABLE attendance_verification_tokens ADD CONSTRAINT attendance_verification_tokens_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'attendance_verification_tokens'::regclass AND conname = 'attendance_verification_tokens_token_key') THEN
+        ALTER TABLE attendance_verification_tokens ADD CONSTRAINT attendance_verification_tokens_token_key UNIQUE (token);
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_selfie_url TEXT;
 ALTER TABLE hr_attendance ADD COLUMN IF NOT EXISTS punch_in_latitude DECIMAL(10, 8);
@@ -702,6 +1234,31 @@ CREATE TABLE IF NOT EXISTS hr_claims (
     remarks TEXT
 );
 
+-- Auto-generated additive upgrades for hr_claims
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS claim_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS employee_id UUID;
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS claim_type VARCHAR(50) NOT NULL;
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS amount DECIMAL(12,2) NOT NULL;
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS receipt_url VARCHAR(512);
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Pending';
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS submitted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS approved_by UUID;
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS approved_date TIMESTAMP;
+ALTER TABLE hr_claims ADD COLUMN IF NOT EXISTS remarks TEXT;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_claims'::regclass AND conname = 'hr_claims_employee_id_fkey') THEN
+        ALTER TABLE hr_claims ADD CONSTRAINT hr_claims_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_claims'::regclass AND conname = 'hr_claims_approved_by_fkey') THEN
+        ALTER TABLE hr_claims ADD CONSTRAINT hr_claims_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS hr_advances (
     advance_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     employee_id UUID REFERENCES hr_employees(employee_id) ON DELETE CASCADE,
@@ -716,6 +1273,32 @@ CREATE TABLE IF NOT EXISTS hr_advances (
     approved_date TIMESTAMP,
     remarks TEXT
 );
+
+-- Auto-generated additive upgrades for hr_advances
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS advance_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS employee_id UUID;
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS amount DECIMAL(12,2) NOT NULL;
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS reason TEXT;
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS repayment_term_months INT NOT NULL;
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS monthly_deduction DECIMAL(12,2) NOT NULL;
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS months_paid INT DEFAULT 0;
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Pending';
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS submitted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS approved_by UUID;
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS approved_date TIMESTAMP;
+ALTER TABLE hr_advances ADD COLUMN IF NOT EXISTS remarks TEXT;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_advances'::regclass AND conname = 'hr_advances_employee_id_fkey') THEN
+        ALTER TABLE hr_advances ADD CONSTRAINT hr_advances_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES hr_employees(employee_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_advances'::regclass AND conname = 'hr_advances_approved_by_fkey') THEN
+        ALTER TABLE hr_advances ADD CONSTRAINT hr_advances_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- Add org_chart_parent_id for independent org chart structure
 ALTER TABLE hr_employees ADD COLUMN IF NOT EXISTS org_chart_parent_id UUID REFERENCES hr_employees(employee_id) ON DELETE SET NULL;
@@ -758,6 +1341,27 @@ CREATE TABLE IF NOT EXISTS hr_candidates (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto-generated additive upgrades for hr_candidates
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT uuid_generate_v4();
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS position VARCHAR(255) NOT NULL;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS name VARCHAR(255) NOT NULL;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS experience_type VARCHAR(50) NOT NULL;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS email VARCHAR(255) NOT NULL;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS whatsapp VARCHAR(50);
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS mobile VARCHAR(50);
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS current_location VARCHAR(255);
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS relocate BOOLEAN DEFAULT true;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS education_route VARCHAR(50) DEFAULT 'REGULAR';
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS total_years NUMERIC;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS designation VARCHAR(255);
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS current_company VARCHAR(255);
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS past_experiences JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS documents JSONB DEFAULT '{}';
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Pending';
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+
 
 -- Add JSONB column for technical/role-specific assessment details
 ALTER TABLE hr_candidates ADD COLUMN IF NOT EXISTS technical_details JSONB DEFAULT '{}';
@@ -802,6 +1406,55 @@ CREATE TABLE IF NOT EXISTS pms_tasks (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for pms_tasks
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS task_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS task_title VARCHAR(255) NOT NULL;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS task_description TEXT;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS task_type VARCHAR(50) DEFAULT 'Task';
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS project_id UUID;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS team_id INTEGER;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS assignee_id UUID;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS reporter_id UUID;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS reviewer_id UUID;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS parent_task_id UUID;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS priority VARCHAR(50) DEFAULT 'Medium';
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Backlog';
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS start_date DATE;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS due_date DATE;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS estimated_hours NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS remaining_hours NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS actual_logged_hours NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS attachments JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS related_links JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS dependency_tasks JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_tasks'::regclass AND conname = 'pms_tasks_project_id_fkey') THEN
+        ALTER TABLE pms_tasks ADD CONSTRAINT pms_tasks_project_id_fkey FOREIGN KEY (project_id) REFERENCES pms_projects(project_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_tasks'::regclass AND conname = 'pms_tasks_team_id_fkey') THEN
+        ALTER TABLE pms_tasks ADD CONSTRAINT pms_tasks_team_id_fkey FOREIGN KEY (team_id) REFERENCES teams(team_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_tasks'::regclass AND conname = 'pms_tasks_assignee_id_fkey') THEN
+        ALTER TABLE pms_tasks ADD CONSTRAINT pms_tasks_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_tasks'::regclass AND conname = 'pms_tasks_reporter_id_fkey') THEN
+        ALTER TABLE pms_tasks ADD CONSTRAINT pms_tasks_reporter_id_fkey FOREIGN KEY (reporter_id) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_tasks'::regclass AND conname = 'pms_tasks_reviewer_id_fkey') THEN
+        ALTER TABLE pms_tasks ADD CONSTRAINT pms_tasks_reviewer_id_fkey FOREIGN KEY (reviewer_id) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_tasks'::regclass AND conname = 'pms_tasks_parent_task_id_fkey') THEN
+        ALTER TABLE pms_tasks ADD CONSTRAINT pms_tasks_parent_task_id_fkey FOREIGN KEY (parent_task_id) REFERENCES pms_tasks(task_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS pms_task_comments (
     comment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
@@ -813,6 +1466,28 @@ CREATE TABLE IF NOT EXISTS pms_task_comments (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for pms_task_comments
+ALTER TABLE pms_task_comments ADD COLUMN IF NOT EXISTS comment_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE pms_task_comments ADD COLUMN IF NOT EXISTS task_id UUID;
+ALTER TABLE pms_task_comments ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE pms_task_comments ADD COLUMN IF NOT EXISTS comment_text TEXT NOT NULL;
+ALTER TABLE pms_task_comments ADD COLUMN IF NOT EXISTS mentions JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE pms_task_comments ADD COLUMN IF NOT EXISTS attachments JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE pms_task_comments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE pms_task_comments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_comments'::regclass AND conname = 'pms_task_comments_task_id_fkey') THEN
+        ALTER TABLE pms_task_comments ADD CONSTRAINT pms_task_comments_task_id_fkey FOREIGN KEY (task_id) REFERENCES pms_tasks(task_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_comments'::regclass AND conname = 'pms_task_comments_user_id_fkey') THEN
+        ALTER TABLE pms_task_comments ADD CONSTRAINT pms_task_comments_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS pms_task_activity_logs (
     log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
@@ -821,6 +1496,26 @@ CREATE TABLE IF NOT EXISTS pms_task_activity_logs (
     details JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto-generated additive upgrades for pms_task_activity_logs
+ALTER TABLE pms_task_activity_logs ADD COLUMN IF NOT EXISTS log_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE pms_task_activity_logs ADD COLUMN IF NOT EXISTS task_id UUID;
+ALTER TABLE pms_task_activity_logs ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE pms_task_activity_logs ADD COLUMN IF NOT EXISTS action VARCHAR(255) NOT NULL;
+ALTER TABLE pms_task_activity_logs ADD COLUMN IF NOT EXISTS details JSONB;
+ALTER TABLE pms_task_activity_logs ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_activity_logs'::regclass AND conname = 'pms_task_activity_logs_task_id_fkey') THEN
+        ALTER TABLE pms_task_activity_logs ADD CONSTRAINT pms_task_activity_logs_task_id_fkey FOREIGN KEY (task_id) REFERENCES pms_tasks(task_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_activity_logs'::regclass AND conname = 'pms_task_activity_logs_user_id_fkey') THEN
+        ALTER TABLE pms_task_activity_logs ADD CONSTRAINT pms_task_activity_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 CREATE TABLE IF NOT EXISTS pms_task_attachments (
     attachment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -833,12 +1528,51 @@ CREATE TABLE IF NOT EXISTS pms_task_attachments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for pms_task_attachments
+ALTER TABLE pms_task_attachments ADD COLUMN IF NOT EXISTS attachment_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE pms_task_attachments ADD COLUMN IF NOT EXISTS task_id UUID;
+ALTER TABLE pms_task_attachments ADD COLUMN IF NOT EXISTS uploaded_by UUID;
+ALTER TABLE pms_task_attachments ADD COLUMN IF NOT EXISTS file_name VARCHAR(255) NOT NULL;
+ALTER TABLE pms_task_attachments ADD COLUMN IF NOT EXISTS file_url TEXT NOT NULL;
+ALTER TABLE pms_task_attachments ADD COLUMN IF NOT EXISTS file_size INTEGER;
+ALTER TABLE pms_task_attachments ADD COLUMN IF NOT EXISTS file_type VARCHAR(100);
+ALTER TABLE pms_task_attachments ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_attachments'::regclass AND conname = 'pms_task_attachments_task_id_fkey') THEN
+        ALTER TABLE pms_task_attachments ADD CONSTRAINT pms_task_attachments_task_id_fkey FOREIGN KEY (task_id) REFERENCES pms_tasks(task_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_attachments'::regclass AND conname = 'pms_task_attachments_uploaded_by_fkey') THEN
+        ALTER TABLE pms_task_attachments ADD CONSTRAINT pms_task_attachments_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS pms_task_watchers (
     task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (task_id, user_id)
 );
+
+-- Auto-generated additive upgrades for pms_task_watchers
+ALTER TABLE pms_task_watchers ADD COLUMN IF NOT EXISTS task_id UUID;
+ALTER TABLE pms_task_watchers ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE pms_task_watchers ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_watchers'::regclass AND conname = 'pms_task_watchers_task_id_fkey') THEN
+        ALTER TABLE pms_task_watchers ADD CONSTRAINT pms_task_watchers_task_id_fkey FOREIGN KEY (task_id) REFERENCES pms_tasks(task_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_watchers'::regclass AND conname = 'pms_task_watchers_user_id_fkey') THEN
+        ALTER TABLE pms_task_watchers ADD CONSTRAINT pms_task_watchers_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 CREATE TABLE IF NOT EXISTS pms_task_time_logs (
     log_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -850,6 +1584,27 @@ CREATE TABLE IF NOT EXISTS pms_task_time_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for pms_task_time_logs
+ALTER TABLE pms_task_time_logs ADD COLUMN IF NOT EXISTS log_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE pms_task_time_logs ADD COLUMN IF NOT EXISTS task_id UUID;
+ALTER TABLE pms_task_time_logs ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE pms_task_time_logs ADD COLUMN IF NOT EXISTS hours_logged NUMERIC(5,2) NOT NULL;
+ALTER TABLE pms_task_time_logs ADD COLUMN IF NOT EXISTS log_date DATE NOT NULL;
+ALTER TABLE pms_task_time_logs ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE pms_task_time_logs ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_time_logs'::regclass AND conname = 'pms_task_time_logs_task_id_fkey') THEN
+        ALTER TABLE pms_task_time_logs ADD CONSTRAINT pms_task_time_logs_task_id_fkey FOREIGN KEY (task_id) REFERENCES pms_tasks(task_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_time_logs'::regclass AND conname = 'pms_task_time_logs_user_id_fkey') THEN
+        ALTER TABLE pms_task_time_logs ADD CONSTRAINT pms_task_time_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 CREATE TABLE IF NOT EXISTS pms_task_dependencies (
     task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
     depends_on_task_id UUID REFERENCES pms_tasks(task_id) ON DELETE CASCADE,
@@ -857,6 +1612,24 @@ CREATE TABLE IF NOT EXISTS pms_task_dependencies (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (task_id, depends_on_task_id)
 );
+
+-- Auto-generated additive upgrades for pms_task_dependencies
+ALTER TABLE pms_task_dependencies ADD COLUMN IF NOT EXISTS task_id UUID;
+ALTER TABLE pms_task_dependencies ADD COLUMN IF NOT EXISTS depends_on_task_id UUID;
+ALTER TABLE pms_task_dependencies ADD COLUMN IF NOT EXISTS dependency_type VARCHAR(50) DEFAULT 'Blocks';
+ALTER TABLE pms_task_dependencies ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_dependencies'::regclass AND conname = 'pms_task_dependencies_task_id_fkey') THEN
+        ALTER TABLE pms_task_dependencies ADD CONSTRAINT pms_task_dependencies_task_id_fkey FOREIGN KEY (task_id) REFERENCES pms_tasks(task_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_task_dependencies'::regclass AND conname = 'pms_task_dependencies_depends_on_task_id_fkey') THEN
+        ALTER TABLE pms_task_dependencies ADD CONSTRAINT pms_task_dependencies_depends_on_task_id_fkey FOREIGN KEY (depends_on_task_id) REFERENCES pms_tasks(task_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- ==============================================================================
 -- MODULE: PMS SCRUMS & SPRINTS
@@ -875,6 +1648,27 @@ CREATE TABLE IF NOT EXISTS pms_sprints (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for pms_sprints
+ALTER TABLE pms_sprints ADD COLUMN IF NOT EXISTS sprint_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE pms_sprints ADD COLUMN IF NOT EXISTS project_id UUID;
+ALTER TABLE pms_sprints ADD COLUMN IF NOT EXISTS sprint_name VARCHAR(255) NOT NULL;
+ALTER TABLE pms_sprints ADD COLUMN IF NOT EXISTS goal TEXT;
+ALTER TABLE pms_sprints ADD COLUMN IF NOT EXISTS start_date DATE;
+ALTER TABLE pms_sprints ADD COLUMN IF NOT EXISTS end_date DATE;
+ALTER TABLE pms_sprints ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Planning';
+ALTER TABLE pms_sprints ADD COLUMN IF NOT EXISTS Active ;
+ALTER TABLE pms_sprints ADD COLUMN IF NOT EXISTS Completed created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE pms_sprints ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_sprints'::regclass AND conname = 'pms_sprints_project_id_fkey') THEN
+        ALTER TABLE pms_sprints ADD CONSTRAINT pms_sprints_project_id_fkey FOREIGN KEY (project_id) REFERENCES pms_projects(project_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS sprint_id UUID REFERENCES pms_sprints(sprint_id) ON DELETE SET NULL;
 ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS story_points INTEGER DEFAULT 0;
 
@@ -889,6 +1683,27 @@ CREATE TABLE IF NOT EXISTS pms_epics (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto-generated additive upgrades for pms_epics
+ALTER TABLE pms_epics ADD COLUMN IF NOT EXISTS epic_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE pms_epics ADD COLUMN IF NOT EXISTS project_id UUID;
+ALTER TABLE pms_epics ADD COLUMN IF NOT EXISTS name VARCHAR(255) NOT NULL;
+ALTER TABLE pms_epics ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE pms_epics ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Planning';
+ALTER TABLE pms_epics ADD COLUMN IF NOT EXISTS In Progress;
+ALTER TABLE pms_epics ADD COLUMN IF NOT EXISTS Completed start_date DATE;
+ALTER TABLE pms_epics ADD COLUMN IF NOT EXISTS target_date DATE;
+ALTER TABLE pms_epics ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE pms_epics ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'pms_epics'::regclass AND conname = 'pms_epics_project_id_fkey') THEN
+        ALTER TABLE pms_epics ADD CONSTRAINT pms_epics_project_id_fkey FOREIGN KEY (project_id) REFERENCES pms_projects(project_id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 ALTER TABLE pms_tasks ADD COLUMN IF NOT EXISTS epic_id UUID REFERENCES pms_epics(epic_id) ON DELETE SET NULL;
 
@@ -910,6 +1725,26 @@ CREATE TABLE IF NOT EXISTS candidate_evaluation_forms (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for candidate_evaluation_forms
+ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;
+ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS category VARCHAR(50) NOT NULL;
+ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS label VARCHAR(255) NOT NULL;
+ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS file_name VARCHAR(255) NOT NULL;
+ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS file_size VARCHAR(50);
+ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS file_path TEXT NOT NULL;
+ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS uploaded_by UUID;
+ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'candidate_evaluation_forms'::regclass AND conname = 'candidate_evaluation_forms_uploaded_by_fkey') THEN
+        ALTER TABLE candidate_evaluation_forms ADD CONSTRAINT candidate_evaluation_forms_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 
 CREATE TABLE IF NOT EXISTS open_positions (
   id SERIAL PRIMARY KEY,
@@ -923,6 +1758,42 @@ CREATE TABLE IF NOT EXISTS open_positions (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto-generated additive upgrades for open_positions
+ALTER TABLE open_positions ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;
+ALTER TABLE open_positions ADD COLUMN IF NOT EXISTS name VARCHAR(255) NOT NULL;
+ALTER TABLE open_positions ADD COLUMN IF NOT EXISTS skills_form_id INT;
+ALTER TABLE open_positions ADD COLUMN IF NOT EXISTS knowledge_form_id INT;
+ALTER TABLE open_positions ADD COLUMN IF NOT EXISTS traits_form_id INT;
+ALTER TABLE open_positions ADD COLUMN IF NOT EXISTS self_image_form_id INT;
+ALTER TABLE open_positions ADD COLUMN IF NOT EXISTS motive_form_id INT;
+ALTER TABLE open_positions ADD COLUMN IF NOT EXISTS created_by UUID;
+ALTER TABLE open_positions ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE open_positions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'open_positions'::regclass AND conname = 'open_positions_skills_form_id_fkey') THEN
+        ALTER TABLE open_positions ADD CONSTRAINT open_positions_skills_form_id_fkey FOREIGN KEY (skills_form_id) REFERENCES candidate_evaluation_forms(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'open_positions'::regclass AND conname = 'open_positions_knowledge_form_id_fkey') THEN
+        ALTER TABLE open_positions ADD CONSTRAINT open_positions_knowledge_form_id_fkey FOREIGN KEY (knowledge_form_id) REFERENCES candidate_evaluation_forms(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'open_positions'::regclass AND conname = 'open_positions_traits_form_id_fkey') THEN
+        ALTER TABLE open_positions ADD CONSTRAINT open_positions_traits_form_id_fkey FOREIGN KEY (traits_form_id) REFERENCES candidate_evaluation_forms(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'open_positions'::regclass AND conname = 'open_positions_self_image_form_id_fkey') THEN
+        ALTER TABLE open_positions ADD CONSTRAINT open_positions_self_image_form_id_fkey FOREIGN KEY (self_image_form_id) REFERENCES candidate_evaluation_forms(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'open_positions'::regclass AND conname = 'open_positions_motive_form_id_fkey') THEN
+        ALTER TABLE open_positions ADD CONSTRAINT open_positions_motive_form_id_fkey FOREIGN KEY (motive_form_id) REFERENCES candidate_evaluation_forms(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'open_positions'::regclass AND conname = 'open_positions_created_by_fkey') THEN
+        ALTER TABLE open_positions ADD CONSTRAINT open_positions_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- Add designation_id to hr_trainees
 ALTER TABLE hr_trainees ADD COLUMN IF NOT EXISTS designation_id UUID REFERENCES hr_designations(designation_id) ON DELETE SET NULL;
@@ -983,6 +1854,55 @@ CREATE TABLE IF NOT EXISTS hr_interns (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for hr_interns
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS intern_id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS intern_code VARCHAR(50) NOT NULL;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS first_name VARCHAR(100) NOT NULL;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS last_name VARCHAR(100) NOT NULL;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS email VARCHAR(150) NOT NULL;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS mobile VARCHAR(20);
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS gender VARCHAR(20);
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS date_of_birth DATE;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS joining_date DATE;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS expected_completion_date DATE;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS department_id UUID;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS designation_id UUID;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS mentor_employee_id UUID;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS training_batch VARCHAR(100);
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS education VARCHAR(200);
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS institute VARCHAR(200);
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS specialization VARCHAR(200);
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Applied';
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS remarks TEXT;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS created_by UUID;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE hr_interns ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_interns'::regclass AND conname = 'hr_interns_intern_code_key') THEN
+        ALTER TABLE hr_interns ADD CONSTRAINT hr_interns_intern_code_key UNIQUE (intern_code);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_interns'::regclass AND conname = 'hr_interns_email_key') THEN
+        ALTER TABLE hr_interns ADD CONSTRAINT hr_interns_email_key UNIQUE (email);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_interns'::regclass AND conname = 'hr_interns_department_id_fkey') THEN
+        ALTER TABLE hr_interns ADD CONSTRAINT hr_interns_department_id_fkey FOREIGN KEY (department_id) REFERENCES hr_departments(department_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_interns'::regclass AND conname = 'hr_interns_designation_id_fkey') THEN
+        ALTER TABLE hr_interns ADD CONSTRAINT hr_interns_designation_id_fkey FOREIGN KEY (designation_id) REFERENCES hr_designations(designation_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_interns'::regclass AND conname = 'hr_interns_mentor_employee_id_fkey') THEN
+        ALTER TABLE hr_interns ADD CONSTRAINT hr_interns_mentor_employee_id_fkey FOREIGN KEY (mentor_employee_id) REFERENCES hr_employees(employee_id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'hr_interns'::regclass AND conname = 'hr_interns_created_by_fkey') THEN
+        ALTER TABLE hr_interns ADD CONSTRAINT hr_interns_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 ALTER TABLE hr_lms_assignments 
 ADD COLUMN IF NOT EXISTS intern_id UUID REFERENCES hr_interns(intern_id) ON DELETE CASCADE;
 
@@ -1031,6 +1951,30 @@ CREATE TABLE IF NOT EXISTS FIRMWARE_RELEASE_MASTER (
     checksum VARCHAR(255)
 );
 
+-- Auto-generated additive upgrades for firmware_release_master
+ALTER TABLE firmware_release_master ADD COLUMN IF NOT EXISTS release_id BIGSERIAL PRIMARY KEY;
+ALTER TABLE firmware_release_master ADD COLUMN IF NOT EXISTS firmware_version_id BIGINT;
+ALTER TABLE firmware_release_master ADD COLUMN IF NOT EXISTS release_number VARCHAR(100);
+ALTER TABLE firmware_release_master ADD COLUMN IF NOT EXISTS release_notes TEXT;
+ALTER TABLE firmware_release_master ADD COLUMN IF NOT EXISTS release_date TIMESTAMPTZ;
+ALTER TABLE firmware_release_master ADD COLUMN IF NOT EXISTS released_by UUID;
+ALTER TABLE firmware_release_master ADD COLUMN IF NOT EXISTS environment VARCHAR(50);
+ALTER TABLE firmware_release_master ADD COLUMN IF NOT EXISTS release_status VARCHAR(50) DEFAULT 'Active';
+ALTER TABLE firmware_release_master ADD COLUMN IF NOT EXISTS binary_url TEXT;
+ALTER TABLE firmware_release_master ADD COLUMN IF NOT EXISTS checksum VARCHAR(255);
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'firmware_release_master'::regclass AND conname = 'firmware_release_master_firmware_version_id_fkey') THEN
+        ALTER TABLE firmware_release_master ADD CONSTRAINT firmware_release_master_firmware_version_id_fkey FOREIGN KEY (firmware_version_id) REFERENCES FIRMWARE_VERSION_MASTER(firmware_version_id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'firmware_release_master'::regclass AND conname = 'firmware_release_master_released_by_fkey') THEN
+        ALTER TABLE firmware_release_master ADD CONSTRAINT firmware_release_master_released_by_fkey FOREIGN KEY (released_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 5. Track Product Version in Finished Goods
 ALTER TABLE FINISHED_GOODS ADD COLUMN IF NOT EXISTS product_version_id BIGINT REFERENCES PRODUCT_VERSION_MASTER(product_version_id) ON DELETE SET NULL;
 
@@ -1053,6 +1997,32 @@ CREATE TABLE IF NOT EXISTS forms (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for forms
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS title VARCHAR(255) NOT NULL;
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS category VARCHAR(100);
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Draft';
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS Published ;
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS Archived ;
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS Closed is_public BOOLEAN DEFAULT false;
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS public_url UUID DEFAULT gen_random_uuid();
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS created_by UUID;
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'forms'::regclass AND conname = 'forms_public_url_key') THEN
+        ALTER TABLE forms ADD CONSTRAINT forms_public_url_key UNIQUE (public_url);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'forms'::regclass AND conname = 'forms_created_by_fkey') THEN
+        ALTER TABLE forms ADD CONSTRAINT forms_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 2. Form Settings
 CREATE TABLE IF NOT EXISTS form_settings (
     form_id UUID PRIMARY KEY REFERENCES forms(id) ON DELETE CASCADE,
@@ -1067,6 +2037,27 @@ CREATE TABLE IF NOT EXISTS form_settings (
     closing_message TEXT
 );
 
+-- Auto-generated additive upgrades for form_settings
+ALTER TABLE form_settings ADD COLUMN IF NOT EXISTS form_id UUID PRIMARY KEY;
+ALTER TABLE form_settings ADD COLUMN IF NOT EXISTS theme JSONB DEFAULT '{}';
+ALTER TABLE form_settings ADD COLUMN IF NOT EXISTS language VARCHAR(50) DEFAULT 'en';
+ALTER TABLE form_settings ADD COLUMN IF NOT EXISTS thank_you_message TEXT;
+ALTER TABLE form_settings ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN DEFAULT false;
+ALTER TABLE form_settings ADD COLUMN IF NOT EXISTS one_response_per_user BOOLEAN DEFAULT false;
+ALTER TABLE form_settings ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+ALTER TABLE form_settings ADD COLUMN IF NOT EXISTS access_expiry_date TIMESTAMPTZ;
+ALTER TABLE form_settings ADD COLUMN IF NOT EXISTS max_responses INT;
+ALTER TABLE form_settings ADD COLUMN IF NOT EXISTS closing_message TEXT;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_settings'::regclass AND conname = 'form_settings_form_id_fkey') THEN
+        ALTER TABLE form_settings ADD CONSTRAINT form_settings_form_id_fkey FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 3. Form Sections
 CREATE TABLE IF NOT EXISTS form_sections (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1078,12 +2069,36 @@ CREATE TABLE IF NOT EXISTS form_sections (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for form_sections
+ALTER TABLE form_sections ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE form_sections ADD COLUMN IF NOT EXISTS form_id UUID;
+ALTER TABLE form_sections ADD COLUMN IF NOT EXISTS title VARCHAR(255);
+ALTER TABLE form_sections ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE form_sections ADD COLUMN IF NOT EXISTS order_index INT NOT NULL;
+ALTER TABLE form_sections ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT false;
+ALTER TABLE form_sections ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_sections'::regclass AND conname = 'form_sections_form_id_fkey') THEN
+        ALTER TABLE form_sections ADD CONSTRAINT form_sections_form_id_fkey FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 4. Question Bank Categories
 CREATE TABLE IF NOT EXISTS question_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     description TEXT
 );
+
+-- Auto-generated additive upgrades for question_categories
+ALTER TABLE question_categories ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE question_categories ADD COLUMN IF NOT EXISTS name VARCHAR(255) NOT NULL;
+ALTER TABLE question_categories ADD COLUMN IF NOT EXISTS description TEXT;
+
 
 -- 5. Question Bank
 CREATE TABLE IF NOT EXISTS question_bank (
@@ -1097,6 +2112,29 @@ CREATE TABLE IF NOT EXISTS question_bank (
     created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto-generated additive upgrades for question_bank
+ALTER TABLE question_bank ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE question_bank ADD COLUMN IF NOT EXISTS category_id UUID;
+ALTER TABLE question_bank ADD COLUMN IF NOT EXISTS type VARCHAR(50) NOT NULL;
+ALTER TABLE question_bank ADD COLUMN IF NOT EXISTS label TEXT NOT NULL;
+ALTER TABLE question_bank ADD COLUMN IF NOT EXISTS default_schema JSONB;
+ALTER TABLE question_bank ADD COLUMN IF NOT EXISTS difficulty VARCHAR(50);
+ALTER TABLE question_bank ADD COLUMN IF NOT EXISTS tags TEXT[];
+ALTER TABLE question_bank ADD COLUMN IF NOT EXISTS created_by UUID;
+ALTER TABLE question_bank ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_bank'::regclass AND conname = 'question_bank_category_id_fkey') THEN
+        ALTER TABLE question_bank ADD CONSTRAINT question_bank_category_id_fkey FOREIGN KEY (category_id) REFERENCES question_categories(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_bank'::regclass AND conname = 'question_bank_created_by_fkey') THEN
+        ALTER TABLE question_bank ADD CONSTRAINT question_bank_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- 6. Form Questions
 CREATE TABLE IF NOT EXISTS form_questions (
@@ -1117,6 +2155,38 @@ CREATE TABLE IF NOT EXISTS form_questions (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for form_questions
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS form_id UUID;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS section_id UUID;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS bank_question_id UUID;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS type VARCHAR(50) NOT NULL;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS label TEXT NOT NULL;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS placeholder VARCHAR(255);
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS help_text TEXT;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS is_required BOOLEAN DEFAULT false;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT false;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS is_read_only BOOLEAN DEFAULT false;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS order_index INT NOT NULL;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}';
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT false;
+ALTER TABLE form_questions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_questions'::regclass AND conname = 'form_questions_form_id_fkey') THEN
+        ALTER TABLE form_questions ADD CONSTRAINT form_questions_form_id_fkey FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_questions'::regclass AND conname = 'form_questions_section_id_fkey') THEN
+        ALTER TABLE form_questions ADD CONSTRAINT form_questions_section_id_fkey FOREIGN KEY (section_id) REFERENCES form_sections(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_questions'::regclass AND conname = 'form_questions_bank_question_id_fkey') THEN
+        ALTER TABLE form_questions ADD CONSTRAINT form_questions_bank_question_id_fkey FOREIGN KEY (bank_question_id) REFERENCES question_bank(id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 7. Question Options
 CREATE TABLE IF NOT EXISTS question_options (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1131,6 +2201,27 @@ CREATE TABLE IF NOT EXISTS question_options (
     is_archived BOOLEAN DEFAULT false
 );
 
+-- Auto-generated additive upgrades for question_options
+ALTER TABLE question_options ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE question_options ADD COLUMN IF NOT EXISTS question_id UUID;
+ALTER TABLE question_options ADD COLUMN IF NOT EXISTS label VARCHAR(255) NOT NULL;
+ALTER TABLE question_options ADD COLUMN IF NOT EXISTS value VARCHAR(255);
+ALTER TABLE question_options ADD COLUMN IF NOT EXISTS order_index INT NOT NULL;
+ALTER TABLE question_options ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT false;
+ALTER TABLE question_options ADD COLUMN IF NOT EXISTS score DECIMAL(10, 2) DEFAULT 0;
+ALTER TABLE question_options ADD COLUMN IF NOT EXISTS negative_score DECIMAL(10, 2) DEFAULT 0;
+ALTER TABLE question_options ADD COLUMN IF NOT EXISTS is_correct BOOLEAN DEFAULT false;
+ALTER TABLE question_options ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT false;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_options'::regclass AND conname = 'question_options_question_id_fkey') THEN
+        ALTER TABLE question_options ADD CONSTRAINT question_options_question_id_fkey FOREIGN KEY (question_id) REFERENCES form_questions(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 7b. Question Rows (For Grid Types)
 CREATE TABLE IF NOT EXISTS question_rows (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1139,6 +2230,22 @@ CREATE TABLE IF NOT EXISTS question_rows (
     order_index INT NOT NULL,
     is_archived BOOLEAN DEFAULT false
 );
+
+-- Auto-generated additive upgrades for question_rows
+ALTER TABLE question_rows ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE question_rows ADD COLUMN IF NOT EXISTS question_id UUID;
+ALTER TABLE question_rows ADD COLUMN IF NOT EXISTS label VARCHAR(255) NOT NULL;
+ALTER TABLE question_rows ADD COLUMN IF NOT EXISTS order_index INT NOT NULL;
+ALTER TABLE question_rows ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT false;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_rows'::regclass AND conname = 'question_rows_question_id_fkey') THEN
+        ALTER TABLE question_rows ADD CONSTRAINT question_rows_question_id_fkey FOREIGN KEY (question_id) REFERENCES form_questions(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- 8. Question Validations
 CREATE TABLE IF NOT EXISTS question_validations (
@@ -1154,6 +2261,30 @@ CREATE TABLE IF NOT EXISTS question_validations (
     max_files INT
 );
 
+-- Auto-generated additive upgrades for question_validations
+ALTER TABLE question_validations ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE question_validations ADD COLUMN IF NOT EXISTS question_id UUID;
+ALTER TABLE question_validations ADD COLUMN IF NOT EXISTS char_limit_min INT;
+ALTER TABLE question_validations ADD COLUMN IF NOT EXISTS char_limit_max INT;
+ALTER TABLE question_validations ADD COLUMN IF NOT EXISTS num_min DECIMAL;
+ALTER TABLE question_validations ADD COLUMN IF NOT EXISTS num_max DECIMAL;
+ALTER TABLE question_validations ADD COLUMN IF NOT EXISTS regex_pattern TEXT;
+ALTER TABLE question_validations ADD COLUMN IF NOT EXISTS allowed_file_types TEXT[];
+ALTER TABLE question_validations ADD COLUMN IF NOT EXISTS max_file_size_kb INT;
+ALTER TABLE question_validations ADD COLUMN IF NOT EXISTS max_files INT;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_validations'::regclass AND conname = 'question_validations_question_id_key') THEN
+        ALTER TABLE question_validations ADD CONSTRAINT question_validations_question_id_key UNIQUE (question_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_validations'::regclass AND conname = 'question_validations_question_id_fkey') THEN
+        ALTER TABLE question_validations ADD CONSTRAINT question_validations_question_id_fkey FOREIGN KEY (question_id) REFERENCES form_questions(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 9. Question Logic
 CREATE TABLE IF NOT EXISTS question_logic (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1166,6 +2297,31 @@ CREATE TABLE IF NOT EXISTS question_logic (
     action_target_id UUID -- Could be section or question id
 );
 
+-- Auto-generated additive upgrades for question_logic
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS question_id UUID;
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS condition_type VARCHAR(50);
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS AND ;
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS OR target_question_id UUID;
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS operator VARCHAR(50);
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS GREATER_THAN ;
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS etc. value VARCHAR(255);
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS action VARCHAR(50);
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS HIDE ;
+ALTER TABLE question_logic ADD COLUMN IF NOT EXISTS SKIP action_target_id UUID;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_logic'::regclass AND conname = 'question_logic_question_id_fkey') THEN
+        ALTER TABLE question_logic ADD CONSTRAINT question_logic_question_id_fkey FOREIGN KEY (question_id) REFERENCES form_questions(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_logic'::regclass AND conname = 'question_logic_OR_fkey') THEN
+        ALTER TABLE question_logic ADD CONSTRAINT question_logic_OR_fkey FOREIGN KEY (OR) REFERENCES form_questions(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 10. Question Media
 CREATE TABLE IF NOT EXISTS question_media (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1175,6 +2331,23 @@ CREATE TABLE IF NOT EXISTS question_media (
     caption VARCHAR(255)
 );
 
+-- Auto-generated additive upgrades for question_media
+ALTER TABLE question_media ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE question_media ADD COLUMN IF NOT EXISTS question_id UUID;
+ALTER TABLE question_media ADD COLUMN IF NOT EXISTS media_type VARCHAR(50);
+ALTER TABLE question_media ADD COLUMN IF NOT EXISTS VIDEO ;
+ALTER TABLE question_media ADD COLUMN IF NOT EXISTS PDF url TEXT NOT NULL;
+ALTER TABLE question_media ADD COLUMN IF NOT EXISTS caption VARCHAR(255);
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_media'::regclass AND conname = 'question_media_question_id_fkey') THEN
+        ALTER TABLE question_media ADD CONSTRAINT question_media_question_id_fkey FOREIGN KEY (question_id) REFERENCES form_questions(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 11. Question Scores (Calculated Rules)
 CREATE TABLE IF NOT EXISTS question_scores (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1182,6 +2355,24 @@ CREATE TABLE IF NOT EXISTS question_scores (
     total_marks DECIMAL(10, 2) DEFAULT 0,
     formula TEXT -- For calculated fields
 );
+
+-- Auto-generated additive upgrades for question_scores
+ALTER TABLE question_scores ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE question_scores ADD COLUMN IF NOT EXISTS question_id UUID;
+ALTER TABLE question_scores ADD COLUMN IF NOT EXISTS total_marks DECIMAL(10, 2) DEFAULT 0;
+ALTER TABLE question_scores ADD COLUMN IF NOT EXISTS formula TEXT;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_scores'::regclass AND conname = 'question_scores_question_id_key') THEN
+        ALTER TABLE question_scores ADD CONSTRAINT question_scores_question_id_key UNIQUE (question_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_scores'::regclass AND conname = 'question_scores_question_id_fkey') THEN
+        ALTER TABLE question_scores ADD CONSTRAINT question_scores_question_id_fkey FOREIGN KEY (question_id) REFERENCES form_questions(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- 12. Form Responses
 CREATE TABLE IF NOT EXISTS form_responses (
@@ -1197,6 +2388,30 @@ CREATE TABLE IF NOT EXISTS form_responses (
     ip_address VARCHAR(45)
 );
 
+-- Auto-generated additive upgrades for form_responses
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS form_id UUID;
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS respondent_id UUID;
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS respondent_email VARCHAR(255);
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Submitted';
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS Submitted started_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS total_score DECIMAL(10, 2) DEFAULT 0;
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS is_passed BOOLEAN;
+ALTER TABLE form_responses ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_responses'::regclass AND conname = 'form_responses_form_id_fkey') THEN
+        ALTER TABLE form_responses ADD CONSTRAINT form_responses_form_id_fkey FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_responses'::regclass AND conname = 'form_responses_respondent_id_fkey') THEN
+        ALTER TABLE form_responses ADD CONSTRAINT form_responses_respondent_id_fkey FOREIGN KEY (respondent_id) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 13. Response Answers
 CREATE TABLE IF NOT EXISTS response_answers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1208,12 +2423,50 @@ CREATE TABLE IF NOT EXISTS response_answers (
     file_url TEXT
 );
 
+-- Auto-generated additive upgrades for response_answers
+ALTER TABLE response_answers ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE response_answers ADD COLUMN IF NOT EXISTS response_id UUID;
+ALTER TABLE response_answers ADD COLUMN IF NOT EXISTS question_id UUID;
+ALTER TABLE response_answers ADD COLUMN IF NOT EXISTS text_value TEXT;
+ALTER TABLE response_answers ADD COLUMN IF NOT EXISTS number_value DECIMAL;
+ALTER TABLE response_answers ADD COLUMN IF NOT EXISTS date_value TIMESTAMPTZ;
+ALTER TABLE response_answers ADD COLUMN IF NOT EXISTS file_url TEXT;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'response_answers'::regclass AND conname = 'response_answers_response_id_fkey') THEN
+        ALTER TABLE response_answers ADD CONSTRAINT response_answers_response_id_fkey FOREIGN KEY (response_id) REFERENCES form_responses(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'response_answers'::regclass AND conname = 'response_answers_question_id_fkey') THEN
+        ALTER TABLE response_answers ADD CONSTRAINT response_answers_question_id_fkey FOREIGN KEY (question_id) REFERENCES form_questions(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 14. Response Selected Options (For Multi-Choice)
 CREATE TABLE IF NOT EXISTS response_options (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     answer_id UUID REFERENCES response_answers(id) ON DELETE CASCADE,
     option_id UUID REFERENCES question_options(id) ON DELETE CASCADE
 );
+
+-- Auto-generated additive upgrades for response_options
+ALTER TABLE response_options ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE response_options ADD COLUMN IF NOT EXISTS answer_id UUID;
+ALTER TABLE response_options ADD COLUMN IF NOT EXISTS option_id UUID;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'response_options'::regclass AND conname = 'response_options_answer_id_fkey') THEN
+        ALTER TABLE response_options ADD CONSTRAINT response_options_answer_id_fkey FOREIGN KEY (answer_id) REFERENCES response_answers(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'response_options'::regclass AND conname = 'response_options_option_id_fkey') THEN
+        ALTER TABLE response_options ADD CONSTRAINT response_options_option_id_fkey FOREIGN KEY (option_id) REFERENCES question_options(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- 14b. Response Grid Answers
 CREATE TABLE IF NOT EXISTS response_grid_answers (
@@ -1222,6 +2475,27 @@ CREATE TABLE IF NOT EXISTS response_grid_answers (
     row_id UUID REFERENCES question_rows(id) ON DELETE CASCADE,
     option_id UUID REFERENCES question_options(id) ON DELETE CASCADE
 );
+
+-- Auto-generated additive upgrades for response_grid_answers
+ALTER TABLE response_grid_answers ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE response_grid_answers ADD COLUMN IF NOT EXISTS answer_id UUID;
+ALTER TABLE response_grid_answers ADD COLUMN IF NOT EXISTS row_id UUID;
+ALTER TABLE response_grid_answers ADD COLUMN IF NOT EXISTS option_id UUID;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'response_grid_answers'::regclass AND conname = 'response_grid_answers_answer_id_fkey') THEN
+        ALTER TABLE response_grid_answers ADD CONSTRAINT response_grid_answers_answer_id_fkey FOREIGN KEY (answer_id) REFERENCES response_answers(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'response_grid_answers'::regclass AND conname = 'response_grid_answers_row_id_fkey') THEN
+        ALTER TABLE response_grid_answers ADD CONSTRAINT response_grid_answers_row_id_fkey FOREIGN KEY (row_id) REFERENCES question_rows(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'response_grid_answers'::regclass AND conname = 'response_grid_answers_option_id_fkey') THEN
+        ALTER TABLE response_grid_answers ADD CONSTRAINT response_grid_answers_option_id_fkey FOREIGN KEY (option_id) REFERENCES question_options(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- 14c. Response Files
 CREATE TABLE IF NOT EXISTS response_files (
@@ -1234,6 +2508,24 @@ CREATE TABLE IF NOT EXISTS response_files (
     uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for response_files
+ALTER TABLE response_files ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE response_files ADD COLUMN IF NOT EXISTS answer_id UUID;
+ALTER TABLE response_files ADD COLUMN IF NOT EXISTS file_url TEXT NOT NULL;
+ALTER TABLE response_files ADD COLUMN IF NOT EXISTS original_name VARCHAR(255);
+ALTER TABLE response_files ADD COLUMN IF NOT EXISTS file_size INT;
+ALTER TABLE response_files ADD COLUMN IF NOT EXISTS mime_type VARCHAR(100);
+ALTER TABLE response_files ADD COLUMN IF NOT EXISTS uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'response_files'::regclass AND conname = 'response_files_answer_id_fkey') THEN
+        ALTER TABLE response_files ADD CONSTRAINT response_files_answer_id_fkey FOREIGN KEY (answer_id) REFERENCES response_answers(id) ON DELETE CASCADE;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 15. Audit Logs for Forms
 CREATE TABLE IF NOT EXISTS form_audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1244,6 +2536,26 @@ CREATE TABLE IF NOT EXISTS form_audit_logs (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Auto-generated additive upgrades for form_audit_logs
+ALTER TABLE form_audit_logs ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE form_audit_logs ADD COLUMN IF NOT EXISTS form_id UUID;
+ALTER TABLE form_audit_logs ADD COLUMN IF NOT EXISTS action VARCHAR(100) NOT NULL;
+ALTER TABLE form_audit_logs ADD COLUMN IF NOT EXISTS performed_by UUID;
+ALTER TABLE form_audit_logs ADD COLUMN IF NOT EXISTS details JSONB;
+ALTER TABLE form_audit_logs ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_audit_logs'::regclass AND conname = 'form_audit_logs_form_id_fkey') THEN
+        ALTER TABLE form_audit_logs ADD CONSTRAINT form_audit_logs_form_id_fkey FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_audit_logs'::regclass AND conname = 'form_audit_logs_performed_by_fkey') THEN
+        ALTER TABLE form_audit_logs ADD CONSTRAINT form_audit_logs_performed_by_fkey FOREIGN KEY (performed_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
+
 -- 16. Form Versions
 CREATE TABLE IF NOT EXISTS form_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1253,6 +2565,26 @@ CREATE TABLE IF NOT EXISTS form_versions (
     created_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Auto-generated additive upgrades for form_versions
+ALTER TABLE form_versions ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE form_versions ADD COLUMN IF NOT EXISTS form_id UUID;
+ALTER TABLE form_versions ADD COLUMN IF NOT EXISTS version_number INT NOT NULL;
+ALTER TABLE form_versions ADD COLUMN IF NOT EXISTS form_schema JSONB NOT NULL;
+ALTER TABLE form_versions ADD COLUMN IF NOT EXISTS created_by UUID;
+ALTER TABLE form_versions ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+DO $ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_versions'::regclass AND conname = 'form_versions_form_id_fkey') THEN
+        ALTER TABLE form_versions ADD CONSTRAINT form_versions_form_id_fkey FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'form_versions'::regclass AND conname = 'form_versions_created_by_fkey') THEN
+        ALTER TABLE form_versions ADD CONSTRAINT form_versions_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE SET NULL;
+    END IF;
+EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table not created yet
+END $;
+
 
 -- Add form_mode to candidate_evaluation_forms
 ALTER TABLE candidate_evaluation_forms ADD COLUMN IF NOT EXISTS form_mode VARCHAR(20) DEFAULT 'assessment';

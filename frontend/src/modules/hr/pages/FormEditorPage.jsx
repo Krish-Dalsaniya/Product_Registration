@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Eye, Send, Settings, BarChart2, HelpCircle, MoreVertical,
   Loader2, Globe, Lock, Copy, CheckCircle2, Trash2, ExternalLink,
-  ChevronLeft, ChevronRight, Save, AlertCircle
+  ChevronLeft, ChevronRight, Save, AlertCircle, Download
 } from 'lucide-react';
 import { getFormSchema, updateDynamicForm, publishForm, getFormResponses, deleteForm } from '../../../api/cefApi';
 import FormBuilder from '../components/FormBuilder';
@@ -22,6 +22,42 @@ function useDebounce(fn, delay) {
 }
 
 /* ─── Responses Panel ───────────────────────────────────────── */
+const getFormattedAnswerString = (ans, formSchema = []) => {
+  if (!ans) return '';
+  let q;
+  for (const sec of formSchema) {
+    q = (sec.questions || []).find(qs => qs.id === ans.question_id);
+    if (q) break;
+  }
+  q = q || { type: ans.question_type };
+  
+  if (q.type === 'file_upload' && ans.text_value) {
+    try {
+      const files = JSON.parse(ans.text_value);
+      if (Array.isArray(files)) return files.map(f => f.original_name || 'File').join(', ');
+    } catch (e) {}
+  }
+  
+  if ((q.type === 'grid_radio' || q.type === 'grid_checkbox') && ans.text_value) {
+    try {
+      const gridData = JSON.parse(ans.text_value);
+      const rowLabels = [];
+      Object.entries(gridData).forEach(([rowId, colIds]) => {
+        const rowObj = (q.rows || []).find(r => r.id === rowId);
+        const rLabel = rowObj ? rowObj.label : rowId;
+        const cLabels = (Array.isArray(colIds) ? colIds : [colIds]).map(cId => {
+          const colObj = (q.options || []).find(o => o.id === cId);
+          return colObj ? colObj.label : cId;
+        }).join(', ');
+        if (rLabel && cLabels) rowLabels.push(`${rLabel}: ${cLabels}`);
+      });
+      return rowLabels.join(' | ');
+    } catch (e) {}
+  }
+  
+  return ans.text_value || (ans.selected_options?.length ? ans.selected_options.map(o => o.label).join(', ') : '');
+};
+
 const ResponsesPanel = ({ form }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +89,46 @@ const ResponsesPanel = ({ form }) => {
   }, [data]);
 
   const chartColors = ['#4f46e5', '#ec4899', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4'];
+
+  const exportToExcel = () => {
+    if (!data || !data.responses || data.responses.length === 0) return;
+
+    const escapeCsv = (val) => {
+      const str = String(val ?? '').replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    // Build columns: Timestamp, Email, Score, ...questions
+    const headers = ['Timestamp', 'Respondent Email', 'Score', 'Passed'];
+    allQuestions.forEach(q => headers.push(q.label));
+
+    const rows = data.responses.map(r => {
+      const base = [
+        r.completed_at ? new Date(r.completed_at).toLocaleString() : '',
+        r.respondent_email || '',
+        r.total_score ?? '',
+        r.is_passed === null ? '' : r.is_passed ? 'Yes' : 'No',
+      ];
+      allQuestions.forEach(q => {
+        const ans = (r.answers || []).find(a => a.question_id === q.id);
+        base.push(getFormattedAnswerString(ans, form?.form_schema));
+      });
+      return base;
+    });
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(escapeCsv).join(','))
+      .join('\r\n');
+
+    // Add BOM for Excel to recognise UTF-8
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${form?.title || 'responses'}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -88,17 +164,28 @@ const ResponsesPanel = ({ form }) => {
         )}
       </div>
 
-      {/* Tab Bar */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-        {['summary', 'question', 'individual'].map(tab => (
+      {/* Tab Bar + Export Button */}
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 mb-6">
+        <div className="flex">
+          {['summary', 'question', 'individual'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-3 text-sm font-bold capitalize transition-all border-b-2 -mb-px ${activeTab === tab ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+            >
+              {tab === 'question' ? 'Question' : tab === 'individual' ? 'Individual' : 'Summary'}
+            </button>
+          ))}
+        </div>
+        {data.responses.length > 0 && (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-6 py-3 text-sm font-bold capitalize transition-all border-b-2 -mb-px ${activeTab === tab ? 'border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+            onClick={exportToExcel}
+            className="flex items-center gap-2 px-4 py-2 mb-1 text-sm font-semibold rounded-xl bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/40 transition-all shadow-sm"
           >
-            {tab === 'question' ? 'Question' : tab === 'individual' ? 'Individual' : 'Summary'}
+            <Download size={15} />
+            Export to Excel
           </button>
-        ))}
+        )}
       </div>
 
       {data.responses.length === 0 ? (
@@ -113,15 +200,15 @@ const ResponsesPanel = ({ form }) => {
           {activeTab === 'summary' && (
             <div className="space-y-5">
               {allQuestions.map((q) => {
-                const isText = ['short_answer', 'long_answer', 'email', 'number', 'date', 'short_text', 'long_text'].includes(q.type);
+                const isText = ['short_answer', 'long_answer', 'email', 'number', 'date', 'short_text', 'long_text', 'file_upload'].includes(q.type);
                 const counts = {};
                 const rawAnswers = [];
                 data.responses.forEach(r => {
                   const ans = (r.answers || []).find(a => a.question_id === q.id);
                   if (ans) {
-                    const val = ans.text_value || (ans.selected_options?.length ? ans.selected_options.map(o => o.label).join(', ') : 'Left blank');
+                    const val = getFormattedAnswerString(ans, form?.form_schema) || 'Left blank';
                     counts[val] = (counts[val] || 0) + 1;
-                    if (ans.text_value && isText) rawAnswers.push(ans.text_value);
+                    if (val !== 'Left blank' && isText) rawAnswers.push({ val, ans });
                   }
                 });
                 return (
@@ -131,9 +218,20 @@ const ResponsesPanel = ({ form }) => {
                     {isText ? (
                       <div className="space-y-2">
                         {rawAnswers.length === 0 ? <p className="text-sm text-gray-400 italic">No text responses.</p> : null}
-                        {rawAnswers.map((val, i) => (
+                        {rawAnswers.map(({ val, ans }, i) => (
                           <div key={i} className="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 rounded-xl text-sm text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-gray-700">
-                            {val}
+                            {q.type === 'file_upload' ? (
+                               (() => {
+                                  try {
+                                    const files = JSON.parse(ans.text_value);
+                                    return <div className="flex gap-3 flex-wrap">{files.map((f, fi) => (
+                                      <a key={fi} href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[var(--accent)] hover:underline">
+                                        📄 {f.original_name || 'File'}
+                                      </a>
+                                    ))}</div>;
+                                  } catch(e) { return val; }
+                               })()
+                            ) : val}
                           </div>
                         ))}
                       </div>
@@ -141,14 +239,44 @@ const ResponsesPanel = ({ form }) => {
                       <div className="space-y-3">
                         {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([val, count], i) => {
                           const pct = Math.round((count / data.total) * 100);
+                          
+                          let isCorrect = null;
+                          if (form?.form_mode === 'assessment') {
+                            let schemaQ = null;
+                            for (const sec of (form?.form_schema || [])) {
+                              schemaQ = (sec.questions || []).find(qs => qs.id === q.id);
+                              if (schemaQ) break;
+                            }
+                            if (schemaQ && schemaQ.options) {
+                              const correctOpts = schemaQ.options.filter(o => o.is_correct).map(o => o.label);
+                              if (correctOpts.length > 0) {
+                                if (schemaQ.type === 'checkbox') {
+                                  const valParts = val.split(', ').sort();
+                                  const correctParts = [...correctOpts].sort();
+                                  isCorrect = valParts.length === correctParts.length && valParts.every((v, idx) => v === correctParts[idx]);
+                                } else {
+                                  isCorrect = correctOpts.includes(val);
+                                }
+                              }
+                            }
+                          }
+                          
+                          let barColor = chartColors[i % chartColors.length];
+                          if (isCorrect === true) barColor = '#22c55e'; // Green
+                          else if (isCorrect === false) barColor = '#ef4444'; // Red
+
                           return (
                             <div key={i} className="flex flex-col gap-1.5">
                               <div className="flex justify-between text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">{val}</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                                  {val}
+                                  {isCorrect === true && <span className="ml-2 text-green-500 text-xs font-bold">✓ Correct</span>}
+                                  {isCorrect === false && <span className="ml-2 text-red-500 text-xs font-bold">✕ Wrong</span>}
+                                </span>
                                 <span className="text-gray-400">{count} ({pct}%)</span>
                               </div>
                               <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: chartColors[i % chartColors.length] }} />
+                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: barColor }} />
                               </div>
                             </div>
                           );
@@ -186,7 +314,25 @@ const ResponsesPanel = ({ form }) => {
                         {!isSurvey && <td className="p-4 font-bold text-[var(--accent)]">{r.total_score ?? '—'}</td>}
                         {allQuestions.map(q => {
                           const ans = (r.answers || []).find(a => a.question_id === q.id);
-                          const val = ans ? (ans.text_value || (ans.selected_options?.length ? ans.selected_options.map(o => o.label).join(', ') : '')) : '';
+                          const val = getFormattedAnswerString(ans, form?.form_schema);
+                          
+                          if (q.type === 'file_upload' && ans?.text_value) {
+                             try {
+                               const files = JSON.parse(ans.text_value);
+                               return (
+                                 <td key={q.id} className="p-4">
+                                   <div className="flex flex-col gap-1">
+                                     {files.map((f, fi) => (
+                                       <a key={fi} href={f.url} target="_blank" rel="noreferrer" className="text-[var(--accent)] hover:underline truncate max-w-[250px] inline-block" title={f.original_name}>
+                                         📄 {f.original_name}
+                                       </a>
+                                     ))}
+                                   </div>
+                                 </td>
+                               );
+                             } catch(e) {}
+                          }
+                          
                           return <td key={q.id} className="p-4 truncate max-w-[300px] text-gray-500 dark:text-gray-400" title={val}>{val || '—'}</td>;
                         })}
                       </tr>
@@ -233,14 +379,43 @@ const ResponsesPanel = ({ form }) => {
                       )}
                     </div>
                     <div className="space-y-5">
-                      {(r.answers || []).map((ans, i) => (
-                        <div key={i} className="border-b border-gray-100 dark:border-gray-700 pb-5 last:border-0">
-                          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{ans.question_label}</p>
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {ans.text_value || (ans.selected_options?.length ? ans.selected_options.map(o => o.label).join(', ') : <span className="italic text-gray-400">No answer</span>)}
-                          </p>
-                        </div>
-                      ))}
+                      {(r.answers || []).map((ans, i) => {
+                        const q = (form?.form_schema || []).find(qs => qs.id === ans.question_id) || { type: ans.question_type };
+                        const val = getFormattedAnswerString(ans, form?.form_schema);
+                        return (
+                          <div key={i} className="border-b border-gray-100 dark:border-gray-700 pb-5 last:border-0">
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{ans.question_label}</p>
+                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {val ? (
+                                q.type === 'file_upload' && ans.text_value ? (
+                                  <div className="flex flex-col gap-2 mt-1">
+                                    {(() => {
+                                      try {
+                                        const files = JSON.parse(ans.text_value);
+                                        return files.map((f, fi) => (
+                                          <a key={fi} href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-[var(--accent)] hover:underline break-all max-w-max">
+                                            📄 {f.original_name || 'File'}
+                                          </a>
+                                        ));
+                                      } catch(e) { return val; }
+                                    })()}
+                                  </div>
+                                ) : q.type === 'grid_radio' || q.type === 'grid_checkbox' ? (
+                                  <div className="flex flex-col gap-1.5 mt-1">
+                                    {val.split(' | ').map((line, li) => (
+                                      <div key={li} className="bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-600 inline-block max-w-max text-xs">{line}</div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  val
+                                )
+                              ) : (
+                                <span className="italic text-gray-400">No answer</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );

@@ -35,6 +35,7 @@ const getPublicForm = async (req, res) => {
         q.id AS question_id, q.type, q.label, q.is_required, q.order_index AS question_order, 
         q.placeholder, q.help_text, q.config,
         o.id AS option_id, o.label AS option_label, o.value AS option_value, o.order_index AS option_order,
+        o.score AS option_score, o.is_correct AS option_is_correct,
         r.id AS row_id, r.label AS row_label, r.order_index AS row_order
       FROM form_sections s
       LEFT JOIN form_questions q ON s.id = q.section_id AND q.is_archived = false
@@ -66,19 +67,24 @@ const getPublicForm = async (req, res) => {
           placeholder: row.placeholder,
           help_text: row.help_text,
           config: row.config || {},
+          points: 0,
           options: [],
           rows: []
         });
       }
 
       if (row.question_id && row.option_id) {
-        const qOptions = section.questions.get(row.question_id).options;
+        const question = section.questions.get(row.question_id);
+        const qOptions = question.options;
         if (!qOptions.some(opt => opt.id === row.option_id)) {
           qOptions.push({
             id: row.option_id,
             label: row.option_label,
             value: row.option_value
           });
+          if (row.option_is_correct) {
+            question.points += parseFloat(row.option_score || 0);
+          }
         }
       }
 
