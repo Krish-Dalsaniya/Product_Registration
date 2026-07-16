@@ -1074,6 +1074,7 @@ CREATE TABLE IF NOT EXISTS form_sections (
     title VARCHAR(255),
     description TEXT,
     order_index INT NOT NULL,
+    is_archived BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -1111,6 +1112,8 @@ CREATE TABLE IF NOT EXISTS form_questions (
     is_hidden BOOLEAN DEFAULT false,
     is_read_only BOOLEAN DEFAULT false,
     order_index INT NOT NULL,
+    config JSONB DEFAULT '{}',
+    is_archived BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -1124,7 +1127,17 @@ CREATE TABLE IF NOT EXISTS question_options (
     is_default BOOLEAN DEFAULT false,
     score DECIMAL(10, 2) DEFAULT 0,
     negative_score DECIMAL(10, 2) DEFAULT 0,
-    is_correct BOOLEAN DEFAULT false
+    is_correct BOOLEAN DEFAULT false,
+    is_archived BOOLEAN DEFAULT false
+);
+
+-- 7b. Question Rows (For Grid Types)
+CREATE TABLE IF NOT EXISTS question_rows (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question_id UUID REFERENCES form_questions(id) ON DELETE CASCADE,
+    label VARCHAR(255) NOT NULL,
+    order_index INT NOT NULL,
+    is_archived BOOLEAN DEFAULT false
 );
 
 -- 8. Question Validations
@@ -1200,6 +1213,25 @@ CREATE TABLE IF NOT EXISTS response_options (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     answer_id UUID REFERENCES response_answers(id) ON DELETE CASCADE,
     option_id UUID REFERENCES question_options(id) ON DELETE CASCADE
+);
+
+-- 14b. Response Grid Answers
+CREATE TABLE IF NOT EXISTS response_grid_answers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    answer_id UUID REFERENCES response_answers(id) ON DELETE CASCADE,
+    row_id UUID REFERENCES question_rows(id) ON DELETE CASCADE,
+    option_id UUID REFERENCES question_options(id) ON DELETE CASCADE
+);
+
+-- 14c. Response Files
+CREATE TABLE IF NOT EXISTS response_files (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    answer_id UUID REFERENCES response_answers(id) ON DELETE CASCADE,
+    file_url TEXT NOT NULL,
+    original_name VARCHAR(255),
+    file_size INT,
+    mime_type VARCHAR(100),
+    uploaded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 15. Audit Logs for Forms

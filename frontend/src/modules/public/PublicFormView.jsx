@@ -1,138 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { getFieldConfig } from '../hr/components/fields/FieldRegistry';
 import {
   CheckCircle2, AlertCircle, ChevronLeft, ChevronRight,
-  Upload, Calendar, Star, Loader2, Send
+  Loader2, Send
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 /* ---------- Field Components ---------- */
-const ShortField = ({ q, value, onChange, disabled }) => (
-  <input
-    type={q.type === 'email' ? 'email' : q.type === 'phone' ? 'tel' : q.type === 'url' ? 'url' : 'text'}
-    value={value}
-    onChange={e => onChange(e.target.value)}
-    placeholder={q.placeholder || 'Your answer'}
-    disabled={disabled}
-    required={q.required}
-    className="w-full border-0 border-b-2 border-gray-200 focus:border-indigo-500 bg-transparent outline-none py-2 text-gray-800 placeholder-gray-300 text-sm transition-colors disabled:opacity-60"
-  />
-);
-
-const LongField = ({ q, value, onChange, disabled }) => (
-  <textarea
-    value={value}
-    onChange={e => onChange(e.target.value)}
-    placeholder={q.placeholder || 'Your answer'}
-    disabled={disabled}
-    required={q.required}
-    rows={4}
-    className="w-full border-0 border-b-2 border-gray-200 focus:border-indigo-500 bg-transparent outline-none py-2 text-gray-800 placeholder-gray-300 text-sm transition-colors resize-none disabled:opacity-60"
-  />
-);
-
-const NumberField = ({ q, value, onChange, disabled }) => (
-  <div className="relative w-56">
-    {q.type === 'currency' && <span className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₹</span>}
-    <input
-      type="number"
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder="0"
-      disabled={disabled}
-      required={q.required}
-      className={`w-full border-0 border-b-2 border-gray-200 focus:border-indigo-500 bg-transparent outline-none py-2 text-gray-800 text-sm transition-colors disabled:opacity-60 ${q.type === 'currency' ? 'pl-4' : ''}`}
-    />
-  </div>
-);
-
-const DateField = ({ q, value, onChange, disabled }) => (
-  <input
-    type={q.type === 'datetime' ? 'datetime-local' : q.type}
-    value={value}
-    onChange={e => onChange(e.target.value)}
-    disabled={disabled}
-    required={q.required}
-    className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all disabled:opacity-60 bg-white"
-  />
-);
-
-const RadioField = ({ q, value, onChange, disabled }) => (
-  <div className="space-y-2">
-    {(q.options || []).map((opt, i) => {
-      const optVal = typeof opt === 'string' ? opt : (opt.id || opt.value || opt.label);
-      const optLabel = typeof opt === 'string' ? opt : opt.label;
-      const isSelected = value === optVal;
-      return (
-        <label key={i} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? 'border-indigo-400 bg-indigo-50' : 'border-gray-100 hover:border-gray-300 bg-white'} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}>
-          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-none transition-colors ${isSelected ? 'border-indigo-500' : 'border-gray-300'}`}>
-            {isSelected && <div className="w-2 h-2 rounded-full bg-indigo-500" />}
-          </div>
-          <input type="radio" className="sr-only" checked={isSelected} onChange={() => !disabled && onChange(optVal)} />
-          <span className="text-sm text-gray-700">{optLabel}</span>
-        </label>
-      );
-    })}
-  </div>
-);
-
-const CheckboxField = ({ q, value = [], onChange, disabled }) => (
-  <div className="space-y-2">
-    {(q.options || []).map((opt, i) => {
-      const optVal = typeof opt === 'string' ? opt : (opt.id || opt.value || opt.label);
-      const optLabel = typeof opt === 'string' ? opt : opt.label;
-      const isSelected = value.includes(optVal);
-      return (
-        <label key={i} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? 'border-indigo-400 bg-indigo-50' : 'border-gray-100 hover:border-gray-300 bg-white'} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}>
-          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-none transition-colors ${isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-gray-300'}`}>
-            {isSelected && <CheckCircle2 className="text-white w-3 h-3" strokeWidth={4} />}
-          </div>
-          <input type="checkbox" className="sr-only" checked={isSelected}
-            onChange={() => {
-              if (disabled) return;
-              const next = isSelected ? value.filter(v => v !== optVal) : [...value, optVal];
-              onChange(next);
-            }}
-          />
-          <span className="text-sm text-gray-700">{optLabel}</span>
-        </label>
-      );
-    })}
-  </div>
-);
-
-const DropdownField = ({ q, value, onChange, disabled }) => (
-  <select
-    value={value || ''}
-    onChange={e => onChange(e.target.value)}
-    disabled={disabled}
-    required={q.required}
-    className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all disabled:opacity-60 bg-white min-w-[220px]"
-  >
-    <option value="" disabled>Choose</option>
-    {(q.options || []).map((opt, i) => {
-      const optVal = typeof opt === 'string' ? opt : (opt.value || opt.label);
-      const optLabel = typeof opt === 'string' ? opt : opt.label;
-      return <option key={i} value={optVal}>{optLabel}</option>;
-    })}
-  </select>
-);
-
-const RatingField = ({ value, onChange, disabled }) => (
-  <div className="flex gap-2">
-    {[1,2,3,4,5].map(s => (
-      <button key={s} type="button" onClick={() => !disabled && onChange(s.toString())} disabled={disabled}
-        className={`transition-transform hover:scale-125 disabled:cursor-not-allowed ${disabled ? '' : 'cursor-pointer'}`}>
-        <Star size={32} className={parseInt(value) >= s ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
-      </button>
-    ))}
-  </div>
-);
-
 const QuestionBlock = ({ q, ans, onTextChange, onOptionChange, disabled }) => {
-  const hasChoices = ['radio', 'checkbox', 'dropdown'].includes(q.type);
+  const isOptionsType = ['radio', 'checkbox', 'dropdown'].includes(q.type);
+  const value = isOptionsType ? (ans?.options || []) : (ans?.text_value || '');
+  
+  const handleChange = (val) => {
+    if (isOptionsType) {
+      onOptionChange(val);
+    } else {
+      onTextChange(val);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:border-gray-200 transition-colors">
       <div className="mb-4">
@@ -143,37 +32,12 @@ const QuestionBlock = ({ q, ans, onTextChange, onOptionChange, disabled }) => {
         {q.help_text && <p className="text-sm text-gray-500 mt-1">{q.help_text}</p>}
       </div>
 
-      {['short_text', 'email', 'phone', 'url'].includes(q.type) && (
-        <ShortField q={q} value={ans?.text_value || ''} onChange={onTextChange} disabled={disabled} />
-      )}
-      {q.type === 'long_text' && (
-        <LongField q={q} value={ans?.text_value || ''} onChange={onTextChange} disabled={disabled} />
-      )}
-      {['number', 'currency', 'percentage'].includes(q.type) && (
-        <NumberField q={q} value={ans?.text_value || ''} onChange={onTextChange} disabled={disabled} />
-      )}
-      {['date', 'time', 'datetime'].includes(q.type) && (
-        <DateField q={q} value={ans?.text_value || ''} onChange={onTextChange} disabled={disabled} />
-      )}
-      {q.type === 'radio' && (
-        <RadioField q={q} value={ans?.options?.[0] || ''} onChange={v => onOptionChange([v])} disabled={disabled} />
-      )}
-      {q.type === 'checkbox' && (
-        <CheckboxField q={q} value={ans?.options || []} onChange={onOptionChange} disabled={disabled} />
-      )}
-      {q.type === 'dropdown' && (
-        <DropdownField q={q} value={ans?.options?.[0] || ''} onChange={v => onOptionChange([v])} disabled={disabled} />
-      )}
-      {q.type === 'rating' && (
-        <RatingField value={ans?.text_value || ''} onChange={onTextChange} disabled={disabled} />
-      )}
-      {q.type === 'file_upload' && (
-        <label className="inline-flex flex-col items-center gap-2 px-6 py-4 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/50 transition-all">
-          <Upload size={22} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-500">Click to upload file</span>
-          <input type="file" className="sr-only" disabled={disabled} />
-        </label>
-      )}
+      {(() => {
+        const fieldConfig = getFieldConfig(q.type);
+        if (!fieldConfig || !fieldConfig.RendererComponent) return <div className="text-red-500 text-sm">Unsupported field type: {q.type}</div>;
+        const Renderer = fieldConfig.RendererComponent;
+        return <Renderer q={q} value={value} onChange={handleChange} disabled={disabled} />;
+      })()}
     </div>
   );
 };

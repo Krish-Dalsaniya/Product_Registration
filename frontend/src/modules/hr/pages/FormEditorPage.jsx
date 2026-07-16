@@ -321,10 +321,44 @@ const SendModal = ({ form, onClose }) => {
   const publicLink = form.public_url ? `${window.location.origin}/forms/${form.public_url}` : null;
 
   const copy = () => {
-    if (publicLink) {
-      navigator.clipboard.writeText(publicLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    if (!publicLink) return;
+
+    // First attempt modern Clipboard API (requires HTTPS/localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(publicLink)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        })
+        .catch(err => console.error('Clipboard copy failed:', err));
+    } else {
+      // Enterprise Fallback for HTTP Testing environments (execCommand)
+      const textArea = document.createElement('textarea');
+      textArea.value = publicLink;
+      
+      // Prevent scrolling to bottom of page in some browsers
+      textArea.style.position = 'fixed';
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.opacity = '0';
+      
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } else {
+          console.error('Fallback copy command returned false');
+        }
+      } catch (err) {
+        console.error('Fallback copy error:', err);
+      }
+      
+      document.body.removeChild(textArea);
     }
   };
 
@@ -404,9 +438,18 @@ const FormEditorPage = () => {
     load();
   }, [id]);
 
+  const isSavingRef = useRef(false);
+  const pendingSaveRef = useRef(null);
+
   // Auto-save function
   const doSave = useCallback(async (newSchema, overrides = {}) => {
     if (!form) return;
+    if (isSavingRef.current) {
+      pendingSaveRef.current = { newSchema, overrides };
+      return;
+    }
+    
+    isSavingRef.current = true;
     setSaveStatus('saving');
     try {
       await updateDynamicForm(id, {
@@ -419,6 +462,13 @@ const FormEditorPage = () => {
     } catch (e) {
       setSaveStatus('error');
       console.error(e);
+    } finally {
+      isSavingRef.current = false;
+      if (pendingSaveRef.current) {
+        const nextSave = pendingSaveRef.current;
+        pendingSaveRef.current = null;
+        doSave(nextSave.newSchema, nextSave.overrides);
+      }
     }
   }, [form, id]);
 
