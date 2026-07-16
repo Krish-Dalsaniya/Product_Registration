@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight, Star } from 'lucide-react';
-import { getFieldConfig } from './fields/FieldRegistry';
+import { getFieldConfig, getCEFFieldConfig } from './fields/FieldRegistry';
 
 const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = false }) => {
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -97,8 +97,13 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
         <div className="grid grid-cols-1 gap-8">
           {currentSection.questions.map((q) => {
             const isOptionsType = ['radio', 'checkbox', 'dropdown'].includes(q.type);
+            const isGridOrMatrix = ['grid_radio', 'grid_checkbox', 'cef_rating'].includes(q.type);
             const ans = answers[q.id] || { text_value: '', options: [] };
-            const value = isOptionsType ? (ans.options || []) : (ans.text_value || '');
+            const value = isOptionsType
+              ? (ans.options || [])
+              : (ans.text_value || '');
+            // Grid/Matrix types store as JSON string in text_value
+            const fieldValue = isGridOrMatrix ? (ans.text_value || '{}') : value;
             const Renderer = getFieldConfig(q.type).renderer;
             
             return (
@@ -132,11 +137,20 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
                 <div className="w-full">
                   {/* Dynamic Renderer */}
                   {(() => {
-                    const fieldConfig = getFieldConfig(q.type);
+                    const fieldConfig = getCEFFieldConfig(q.type);
                     if (!fieldConfig || !fieldConfig.RendererComponent) return <div className="text-red-500 text-sm">Unsupported field type: {q.type}</div>;
                     const Renderer = fieldConfig.RendererComponent;
                     
-                    return <Renderer q={q} value={value} onChange={val => handleAnswerUpdate(q.id, val, isOptionsType)} disabled={disabled} />;
+                    const rendererValue = isGridOrMatrix ? fieldValue : value;
+                    const handleChange = (val) => {
+                      if (isGridOrMatrix) {
+                        handleAnswerUpdate(q.id, val, false);
+                      } else {
+                        handleAnswerUpdate(q.id, val, isOptionsType);
+                      }
+                    };
+                    
+                    return <Renderer q={q} value={rendererValue} onChange={handleChange} disabled={disabled} />;
                   })()}
                 </div>
               </div>

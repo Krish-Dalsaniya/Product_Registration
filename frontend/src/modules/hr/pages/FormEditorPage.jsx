@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getFormSchema, updateDynamicForm, publishForm, getFormResponses, deleteForm } from '../../../api/cefApi';
 import FormBuilder from '../components/FormBuilder';
+import CEFBuilder from '../components/CEFBuilder';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
 import Swal from 'sweetalert2';
 
@@ -430,39 +431,37 @@ const ResponsesPanel = ({ form }) => {
 
 /* ─── Settings Panel ────────────────────────────────────────── */
 const SettingsPanel = ({ form, onUpdate }) => {
-  const isSurvey = form.form_mode === 'survey';
+  const mode = form.form_mode || 'assessment';
+  const isSurvey = mode === 'survey';
+  const isCEF = mode === 'candidate_evaluation';
+  const isAssessment = !isSurvey && !isCEF;
+
+  const ModeOption = ({ id, label, description, active }) => (
+    <button
+      onClick={() => onUpdate({ form_mode: id })}
+      className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all text-left ${active ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
+    >
+      <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${active ? 'border-[var(--accent)]' : 'border-gray-300'}`}>
+        {active && <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent)]" />}
+      </div>
+      <div>
+        <p className="font-bold text-gray-800 dark:text-gray-100">{label}</p>
+        <p className="text-sm text-gray-500 mt-0.5">{description}</p>
+      </div>
+    </button>
+  );
+
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      {/* Quiz Settings */}
+      {/* Form Mode Settings */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
         <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
           <h3 className="font-bold text-gray-800 dark:text-gray-100">Form Mode</h3>
         </div>
         <div className="p-6 space-y-4">
-          <button
-            onClick={() => onUpdate({ form_mode: 'assessment' })}
-            className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all text-left ${!isSurvey ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
-          >
-            <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${!isSurvey ? 'border-[var(--accent)]' : 'border-gray-300'}`}>
-              {!isSurvey && <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent)]" />}
-            </div>
-            <div>
-              <p className="font-bold text-gray-800 dark:text-gray-100">Assessment (Quiz)</p>
-              <p className="text-sm text-gray-500 mt-0.5">Questions can have correct answers and points. Scores are calculated automatically.</p>
-            </div>
-          </button>
-          <button
-            onClick={() => onUpdate({ form_mode: 'survey' })}
-            className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all text-left ${isSurvey ? 'border-[var(--accent)] bg-[var(--accent)]/5' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
-          >
-            <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${isSurvey ? 'border-[var(--accent)]' : 'border-gray-300'}`}>
-              {isSurvey && <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent)]" />}
-            </div>
-            <div>
-              <p className="font-bold text-gray-800 dark:text-gray-100">Survey / Data Collection</p>
-              <p className="text-sm text-gray-500 mt-0.5">Collect information without scoring. No pass/fail. Great for interest forms, feedback, and registration.</p>
-            </div>
-          </button>
+          <ModeOption id="assessment" label="Assessment (Quiz)" description="Questions can have correct answers and points. Scores are calculated automatically." active={isAssessment} />
+          <ModeOption id="survey" label="Survey / Data Collection" description="Collect information without scoring. No pass/fail. Great for interest forms, feedback, and registration." active={isSurvey} />
+          <ModeOption id="candidate_evaluation" label="Candidate Evaluation Form (CEF)" description="Enterprise Interview Assessment Builder. Section types, Skill Matrix, Monaco Code Editor, Rich Text. For HR, Technical Interviewers, and Managers." active={isCEF} />
         </div>
       </div>
 
@@ -814,11 +813,18 @@ const FormEditorPage = () => {
       {/* ── Tab Content ── */}
       <main className="flex-1 overflow-y-auto py-8 px-4">
         {activeTab === 'questions' && (
-          <FormBuilder
-            schema={schema}
-            onChange={handleSchemaChange}
-            formMode={form.form_mode || 'assessment'}
-          />
+          form.form_mode === 'candidate_evaluation' ? (
+            <CEFBuilder
+              schema={schema}
+              onChange={handleSchemaChange}
+            />
+          ) : (
+            <FormBuilder
+              schema={schema}
+              onChange={handleSchemaChange}
+              formMode={form.form_mode || 'assessment'}
+            />
+          )
         )}
         {activeTab === 'responses' && <ResponsesPanel form={form} />}
         {activeTab === 'settings' && <SettingsPanel form={form} onUpdate={handleSettingsUpdate} />}

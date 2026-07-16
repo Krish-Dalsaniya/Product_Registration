@@ -1280,3 +1280,21 @@ ALTER TABLE IF EXISTS candidate_evaluation_forms ADD COLUMN IF NOT EXISTS form_m
 
 -- Add form_mode to forms
 ALTER TABLE IF EXISTS forms ADD COLUMN IF NOT EXISTS form_mode VARCHAR(20) DEFAULT 'assessment';
+
+-- ==============================================================================
+-- 2026-07-16: Enterprise CEF Builder — Candidate Evaluation Form Mode
+-- ==============================================================================
+-- The form_mode column on both `forms` and `candidate_evaluation_forms` now
+-- supports three values:
+--   'assessment'            → Standard Quiz/Assessment (scored, pass/fail)
+--   'survey'                → Survey / Data Collection (no scoring)
+--   'candidate_evaluation'  → Enterprise Interview Assessment Builder (CEF)
+--                             Uses Section Types (rating, mcq, knowledge, text,
+--                             number, programming, rich_text, mixed).
+--                             Field types: cef_rating (Skill Matrix),
+--                             cef_code (Monaco Editor), cef_rtf (Rich Text).
+-- No schema change is required: form_mode is VARCHAR(20) with no CHECK constraint.
+-- The form_schema JSONB column stores the section_type key inside each section.
+-- All existing forms remain backward compatible.
+-- Response storage is unchanged: cef_rating uses text_value (JSON grid),
+-- cef_code uses text_value (source code), cef_rtf uses text_value (HTML).

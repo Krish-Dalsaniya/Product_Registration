@@ -59,6 +59,11 @@ const FormCard = ({ form, onEdit, onDelete, onView, viewMode }) => {
                 Survey
               </span>
             )}
+            {form.form_mode === 'candidate_evaluation' && (
+              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-purple-600 bg-purple-100 dark:bg-purple-900/30">
+                CEF
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -88,6 +93,9 @@ const FormCard = ({ form, onEdit, onDelete, onView, viewMode }) => {
             )}
             {form.form_mode === 'survey' && (
               <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-blue-600 bg-blue-100 dark:bg-blue-900/30">Survey</span>
+            )}
+            {form.form_mode === 'candidate_evaluation' && (
+              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-purple-600 bg-purple-100 dark:bg-purple-900/30">CEF</span>
             )}
           </div>
         </div>
@@ -138,11 +146,11 @@ const CandidateEvaluationFormPage = () => {
     setCreating(true);
     try {
       const res = await createDynamicForm({
-        label: 'Untitled Form',
+        label: 'Untitled Evaluation Form',
         category: categoryId,
         type: 'dynamic',
         form_schema: [],
-        form_mode: 'assessment',
+        form_mode: 'candidate_evaluation',
       });
       if (res.success) {
         navigate(`/hr/recruitment/cef/${res.data.id}/edit`);

@@ -1,9 +1,12 @@
 import React from 'react';
-import { Type, AlignLeft, Circle, CheckSquare, ChevronDown, Calendar, Upload, Star, Hash, List, ToggleRight, PenTool, LayoutGrid } from 'lucide-react';
+import { Type, AlignLeft, Circle, CheckSquare, ChevronDown, Calendar, Upload, Star, Hash, List, ToggleRight, PenTool, LayoutGrid, Code2, FileText } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Trash2, Plus } from 'lucide-react';
 import { FileUploadField } from './FileUploadField';
 import { GridBuilder, GridRenderer } from './GridField';
+import { SkillMatrixBuilder, SkillMatrixRenderer } from './SkillMatrixField';
+import { MonacoBuilder, MonacoRenderer } from './MonacoField';
+import { RichTextBuilder, RichTextRenderer } from './RichTextField';
 
 // Basic Option-Based Fields Builder
 export const OptionsBuilder = ({ q, isActive, formMode, onUpdateOption, onRemoveOption, onAddOption }) => (
@@ -315,6 +318,74 @@ export const FieldRegistry = {
       </div>
     )
   },
+  // ── CEF-Specific Field Types ────────────────────────────────
+  // These are only exposed via CEF_FIELD_REGISTRY when form_mode = 'candidate_evaluation'
+  cef_rating: {
+    id: 'cef_rating',
+    label: 'Rating (Skill Matrix)',
+    icon: <Star size={16} />,
+    BuilderComponent: SkillMatrixBuilder,
+    RendererComponent: SkillMatrixRenderer,
+  },
+  cef_code: {
+    id: 'cef_code',
+    label: 'Programming',
+    icon: <Code2 size={16} />,
+    BuilderComponent: MonacoBuilder,
+    RendererComponent: MonacoRenderer,
+  },
+  cef_rtf: {
+    id: 'cef_rtf',
+    label: 'Rich Text (RTF)',
+    icon: <FileText size={16} />,
+    BuilderComponent: RichTextBuilder,
+    RendererComponent: RichTextRenderer,
+  },
 };
 
 export const getFieldConfig = (type) => FieldRegistry[type] || FieldRegistry.short_text;
+
+// ── CEF Field Registry ─────────────────────────────────────────
+// Exposed ONLY when form_mode = 'candidate_evaluation'
+// The full FieldRegistry above is untouched for all other modules.
+export const CEF_FIELD_REGISTRY = {
+  cef_rating: FieldRegistry.cef_rating,
+  radio: {
+    ...FieldRegistry.radio,
+    label: 'MCQ (Multiple Choice)',
+  },
+  checkbox: {
+    ...FieldRegistry.checkbox,
+    label: 'Knowledge (Checklist)',
+  },
+  short_text: {
+    ...FieldRegistry.short_text,
+    label: 'Text (Short Answer)',
+  },
+  long_text: {
+    ...FieldRegistry.long_text,
+    label: 'Text (Paragraph)',
+  },
+  number: FieldRegistry.number,
+  cef_code: FieldRegistry.cef_code,
+  cef_rtf: FieldRegistry.cef_rtf,
+};
+
+// Returns the right config for a type — CEF types OR standard types
+export const getCEFFieldConfig = (type) => {
+  return CEF_FIELD_REGISTRY[type] || FieldRegistry[type] || FieldRegistry.short_text;
+};
+
+// ── Section Type definitions (CEF) ────────────────────────────
+export const CEF_SECTION_TYPES = [
+  { id: 'rating',      label: 'Rating',           description: 'Skill Matrix — Nil / Noob / Mod / Adv / Ace', icon: <Star size={20} />,     color: '#f59e0b', allowedTypes: ['cef_rating']                                               },
+  { id: 'mcq',         label: 'MCQ',              description: 'Multiple Choice Questions',                    icon: <Circle size={20} />,   color: '#4f46e5', allowedTypes: ['radio']                                                   },
+  { id: 'knowledge',   label: 'Knowledge',        description: 'Knowledge Checklists',                         icon: <CheckSquare size={20}/>,color: '#059669', allowedTypes: ['checkbox']                                                 },
+  { id: 'text',        label: 'Text',             description: 'Short or Long Answer Text',                   icon: <Type size={20} />,     color: '#0891b2', allowedTypes: ['short_text', 'long_text']                              },
+  { id: 'number',      label: 'Number',           description: 'Numeric Input',                               icon: <Hash size={20} />,     color: '#7c3aed', allowedTypes: ['number']                                               },
+  { id: 'programming', label: 'Programming',      description: 'Monaco Code Editor (VS Code)',                icon: <Code2 size={20} />,    color: '#0f766e', allowedTypes: ['cef_code']                                            },
+  { id: 'rich_text',   label: 'Rich Text (RTF)',  description: 'Full Rich Text Editor',                       icon: <FileText size={20} />, color: '#be185d', allowedTypes: ['cef_rtf']                                              },
+  { id: 'mixed',       label: 'Mixed',            description: 'Any question type in one section',            icon: <LayoutGrid size={20}/>,color: '#6b7280', allowedTypes: ['cef_rating','radio','checkbox','short_text','long_text','number','cef_code','cef_rtf'] },
+];
+
+export const getCEFSectionType = (id) => CEF_SECTION_TYPES.find(s => s.id === id) || CEF_SECTION_TYPES[CEF_SECTION_TYPES.length - 1];
