@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS user_permissions (
 ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS user_id UUID;
 ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS permission_id INT;
 ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS granted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
-DO $ 
+DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'user_permissions'::regclass AND conname = 'user_permissions_user_id_fkey') THEN
         ALTER TABLE user_permissions ADD CONSTRAINT user_permissions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE;
