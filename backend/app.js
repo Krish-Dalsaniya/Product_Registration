@@ -49,7 +49,7 @@ const origins = [
 
 app.use(cors({ 
   origin: function (origin, callback) {
-    if (!origin || origins.indexOf(origin) !== -1 || (env.NODE_ENV !== 'production' && origin.includes('localhost'))) {
+    if (!origin || origins.indexOf(origin) !== -1 || (env.NODE_ENV !== 'production' && (origin.includes('localhost') || origin.includes('165.232.191.122')))) {
       callback(null, true);
     } else {
       console.error(`CORS Reject: ${origin}. Allowed: ${origins}`);
