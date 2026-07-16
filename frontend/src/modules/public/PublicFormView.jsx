@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { getFieldConfig } from '../hr/components/fields/FieldRegistry';
 import {
   CheckCircle2, AlertCircle, ChevronLeft, ChevronRight,
-  Loader2, Send
+  Loader2, Send, Edit
 } from 'lucide-react';
+import DynamicFormRenderer from '../hr/components/DynamicFormRenderer';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
@@ -142,6 +143,60 @@ const PublicFormView = () => {
       </div>
     </div>
   );
+
+  if (form?.form_mode === 'candidate_evaluation') {
+    return (
+      <div className="min-h-screen bg-white py-8 px-4 relative">
+        <div className="max-w-6xl mx-auto">
+          {/* Quick Edit button for HR users previewing the form */}
+          <div className="absolute top-4 right-4 md:right-8 lg:right-12 z-10">
+            <Link to={`/hr/recruitment/cef/${form.internal_id || form.id}/edit`} className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-200 text-xs font-bold text-gray-600 hover:text-[#60839b] transition-colors">
+              <Edit size={14} /> Edit Form
+            </Link>
+          </div>
+
+          <div className="bg-white">
+            {/* Minimal top bar, no heavy card border */}
+            <div className="px-4 md:px-8 py-4 mb-4">
+              <h1 className="text-2xl md:text-3xl font-bold text-[#60839b] mb-2">{form?.title}</h1>
+              {form?.description && <p className="text-gray-500 text-sm leading-relaxed">{form.description}</p>}
+              {email !== undefined && (
+                <div className="mt-4 mb-2">
+                  <label className="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Respondent Email (Optional)</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="candidate@example.com"
+                    className="w-64 bg-transparent border-0 border-b border-[#a1b9ca] py-1 text-[13px] text-gray-800 focus:border-[#60839b] outline-none transition-colors"
+                  />
+                </div>
+              )}
+            </div>
+            
+            <DynamicFormRenderer
+              schema={sections}
+              disabled={false}
+              isPublic={true}
+              formMode="candidate_evaluation"
+              onSubmit={async (answersData) => {
+                setSubmitting(true);
+                try {
+                  const res = await axios.post(`${API_URL}/hr/public-forms/${uuid}/submit`, { answers: answersData, email });
+                  if (res.data.success) setSubmitted(true);
+                  else setError(res.data.message || 'Submission failed');
+                } catch (err) {
+                  setError(err.response?.data?.message || 'Failed to submit. Please try again.');
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f0f4f9] py-10 px-4">

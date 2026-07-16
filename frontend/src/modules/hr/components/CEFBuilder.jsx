@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   Plus, Trash2, Copy, GripVertical, ChevronDown, Layers, Star,
   Circle, CheckSquare, Type, Hash, Code2, FileText, LayoutGrid,
-  ChevronUp, Pencil, X, Check
+  ChevronUp, Pencil, X, Check, Edit3
 } from 'lucide-react';
 
 import {
@@ -110,7 +110,7 @@ const CEFTypeDropdown = ({ value, allowedTypes, onChange }) => {
   );
 };
 
-/* ─── Question Card ─────────────────────────────────────────── */
+/* ─── Question Card (WYSIWYG) ─────────────────────────────────── */
 const CEFQuestionCard = ({
   q, section, sectionType, allowedTypes,
   onUpdate, onRemove, onDuplicate,
@@ -122,46 +122,48 @@ const CEFQuestionCard = ({
   const isMixed = sectionType?.id === 'mixed';
 
   return (
-    <div
-      className={`relative bg-white dark:bg-gray-800 rounded-xl border-l-4 transition-all shadow-sm mb-4 ${
-        isActive
-          ? 'border-l-[var(--accent)] shadow-md ring-1 ring-[var(--accent)]/20'
-          : 'border-l-transparent hover:border-l-gray-300 dark:hover:border-l-gray-600'
-      }`}
-      onClick={onActivate}
-    >
-      <div className="p-6">
-        {/* Question Label + Type Dropdown */}
-        <div className="flex gap-4 items-start mb-4">
-          <input
-            type="text"
-            value={q.label}
-            onChange={e => onUpdate({ label: e.target.value })}
-            placeholder={q.type === 'cef_rating' ? 'Skill category name (e.g. Embedded C Programming)' : 'Question'}
-            className="flex-1 text-base font-medium bg-transparent border-0 border-b-2 border-gray-100 dark:border-gray-700 focus:border-[var(--accent)] outline-none py-1 text-gray-800 dark:text-gray-100 placeholder-gray-300 dark:placeholder-gray-600 transition-colors"
-          />
-          {/* Only show type selector in Mixed sections */}
-          {isMixed && (
-            <CEFTypeDropdown
-              value={q.type}
-              allowedTypes={allowedTypes}
-              onChange={type => {
-                const defaults = makeDefaultQuestion(type);
-                onUpdate({ type, options: defaults.options, rows: defaults.rows, config: defaults.config, starter_code: defaults.starter_code });
-              }}
-            />
-          )}
-        </div>
+    <div className={`relative p-3 mb-2 rounded-xl transition-colors ${isActive ? 'bg-white border-2 border-[#60839b] shadow-md z-10' : 'bg-transparent border-2 border-transparent hover:border-gray-100 hover:bg-gray-50/50'}`} onClick={() => !isActive && onActivate()}>
+      <div className="pl-6 relative">
+        {isActive && (
+          <div className="absolute left-0 top-3 text-gray-300 cursor-grab hover:text-gray-500 transition-colors" title="Drag to reorder (coming soon)">
+            <GripVertical size={16} />
+          </div>
+        )}
 
-        {/* Help Text */}
-        {isActive && q.type !== 'cef_rating' && (
-          <input
-            type="text"
-            value={q.help_text || ''}
-            onChange={e => onUpdate({ help_text: e.target.value })}
-            placeholder="Description (optional)"
-            className="w-full text-sm bg-transparent border-0 border-b border-gray-100 dark:border-gray-700 focus:border-[var(--accent)] outline-none pb-1 mb-4 text-gray-500 dark:text-gray-400 placeholder-gray-300 dark:placeholder-gray-600 transition-colors"
-          />
+        {/* Header / Editor */}
+        {isActive ? (
+          <div className="mb-3">
+            <div className="flex gap-4 items-start mb-2">
+              <input
+                type="text"
+                value={q.label}
+                onChange={e => onUpdate({ label: e.target.value })}
+                placeholder={q.type === 'cef_rating' ? 'Category name (e.g. C & Embedded C)' : 'Question text'}
+                className="flex-1 text-[14px] font-bold bg-white border border-[#a1b9ca] px-2 py-1 outline-none focus:border-[#60839b] text-[#4a728a]"
+              />
+              {isMixed && (
+                <CEFTypeDropdown
+                  value={q.type}
+                  allowedTypes={allowedTypes}
+                  onChange={type => {
+                    const defaults = makeDefaultQuestion(type);
+                    onUpdate({ type, options: defaults.options, rows: defaults.rows, config: defaults.config, starter_code: defaults.starter_code });
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Inactive Preview Mode (WYSIWYG) */
+          <div className="flex items-start justify-between group/qtitle">
+            <div className={`text-[12px] font-bold text-gray-800 leading-tight mb-1 ${q.type === 'cef_rating' ? 'text-[#4a728a] text-[14px] mb-2' : ''}`}>
+              {q.label || <span className="text-gray-400 italic">Untitled Question</span>}
+              {q.required && <span className="text-red-500 ml-1">*</span>}
+            </div>
+            <div className="opacity-0 group-hover/qtitle:opacity-100 transition-opacity">
+              <Pencil size={14} className="text-gray-400 cursor-pointer hover:text-[#60839b]" onClick={(e) => { e.stopPropagation(); onActivate(); }} />
+            </div>
+          </div>
         )}
 
         {/* Field Builder */}
@@ -177,23 +179,23 @@ const CEFQuestionCard = ({
           />
         )}
 
-        {/* Card Footer */}
+        {/* Card Footer (Actions) */}
         {isActive && (
-          <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
-            <button type="button" onClick={onDuplicate} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="Duplicate">
-              <Copy size={18} />
+          <div className="flex items-center justify-end gap-3 mt-4 pt-3 border-t border-gray-200">
+            <button type="button" onClick={onDuplicate} className="p-1.5 text-gray-500 hover:text-[#60839b] transition-colors rounded hover:bg-white" title="Duplicate">
+              <Copy size={16} />
             </button>
-            <button type="button" onClick={onRemove} className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete">
-              <Trash2 size={18} />
+            <button type="button" onClick={onRemove} className="p-1.5 text-gray-500 hover:text-red-500 transition-colors rounded hover:bg-red-50" title="Delete">
+              <Trash2 size={16} />
             </button>
-            <div className="w-px h-6 bg-gray-200 dark:bg-gray-600" />
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Required</span>
+            <div className="w-px h-5 bg-gray-300" />
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <span className="text-xs font-bold text-gray-600">Required</span>
               <div
-                className={`w-10 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${q.required ? 'bg-[var(--accent)]' : 'bg-gray-200 dark:bg-gray-600'}`}
+                className={`w-8 h-4 rounded-full p-0.5 transition-colors cursor-pointer ${q.required ? 'bg-[#60839b]' : 'bg-gray-300'}`}
                 onClick={() => onUpdate({ required: !q.required })}
               >
-                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${q.required ? 'translate-x-5' : 'translate-x-0'}`} />
+                <div className={`w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${q.required ? 'translate-x-4' : 'translate-x-0'}`} />
               </div>
             </label>
           </div>
@@ -203,83 +205,40 @@ const CEFQuestionCard = ({
   );
 };
 
-/* ─── Section Header ────────────────────────────────────────── */
+/* ─── Section Header (WYSIWYG) ────────────────────────────────── */
 const SectionHeader = ({ section, sectionType, sIdx, total, onUpdate, onRemove, onDuplicate, collapsed, onToggleCollapse }) => {
-  const [editingTitle, setEditingTitle] = useState(false);
-
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
-      {/* Accent bar — colored by section type */}
-      <div className="h-2.5 w-full" style={{ background: `linear-gradient(90deg, ${sectionType?.color || 'var(--accent)'}, ${sectionType?.color || 'var(--accent)'}99)` }} />
-      <div className="p-5">
-        <div className="flex items-start gap-3">
-          {/* Section type badge */}
-          <div className="flex-shrink-0 mt-0.5 p-2 rounded-lg" style={{ background: `${sectionType?.color || '#4f46e5'}15`, color: sectionType?.color || '#4f46e5' }}>
-            {sectionType?.icon || <Layers size={18} />}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              {/* Section type pill */}
-              <span
-                className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
-                style={{ background: `${sectionType?.color || '#4f46e5'}15`, color: sectionType?.color || '#4f46e5' }}
-              >
-                {sectionType?.label || 'Mixed'}
-              </span>
-              {total > 1 && (
-                <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">
-                  Section {sIdx + 1} of {total}
-                </span>
-              )}
-            </div>
-            {/* Editable title */}
-            <input
-              type="text"
-              value={section.title}
-              onChange={e => onUpdate({ title: e.target.value })}
-              placeholder="Section title"
-              className="w-full text-xl font-bold bg-transparent border-0 border-b-2 border-transparent focus:border-[var(--accent)] outline-none py-0.5 text-gray-800 dark:text-gray-100 placeholder-gray-300 transition-colors"
-            />
-            <input
-              type="text"
-              value={section.description || ''}
-              onChange={e => onUpdate({ description: e.target.value })}
-              placeholder="Section description (optional)"
-              className="w-full text-sm bg-transparent border-0 border-b border-transparent focus:border-gray-200 dark:focus:border-gray-700 outline-none py-0.5 mt-1 text-gray-500 dark:text-gray-400 placeholder-gray-300 transition-colors"
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title={collapsed ? 'Expand' : 'Collapse'}
-            >
-              {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-            </button>
-            <button
-              type="button"
-              onClick={onDuplicate}
-              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Duplicate section"
-            >
-              <Copy size={15} />
-            </button>
-            {total > 1 && (
-              <button
-                type="button"
-                onClick={onRemove}
-                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                title="Delete section"
-              >
-                <Trash2 size={15} />
-              </button>
-            )}
-          </div>
+    <div className="group/section flex items-start justify-between mb-3 pt-4 border-t-2 border-gray-100">
+      <div className="flex-1 min-w-0 pr-4">
+        <div className="relative group cursor-text mb-1">
+          <input
+            type="text"
+            value={section.title}
+            onChange={e => onUpdate({ title: e.target.value })}
+            placeholder="Click to enter Section Title..."
+            title="Click to edit section title"
+            className="w-full text-[17px] font-bold text-[#60839b] bg-[#f8fafc] border border-gray-300 border-dashed hover:border-gray-400 focus:border-[#60839b] focus:border-solid focus:bg-white rounded px-2 pr-8 -ml-2 py-1 outline-none transition-all placeholder-gray-400"
+          />
+          <Edit3 size={15} className="text-[#60839b] opacity-60 group-hover:opacity-100 absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity" />
         </div>
+      </div>
+
+      {/* Actions (visible on hover) */}
+      <div className="flex items-center gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity">
+        <span className="text-[10px] font-bold uppercase text-[#60839b] bg-[#e6edf2] px-2 py-0.5 rounded mr-2">
+          {sectionType?.label || 'Mixed'}
+        </span>
+        <button type="button" onClick={onToggleCollapse} className="p-1 text-gray-400 hover:text-gray-800" title={collapsed ? 'Expand' : 'Collapse'}>
+          {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+        </button>
+        <button type="button" onClick={onDuplicate} className="p-1 text-gray-400 hover:text-[#60839b]" title="Duplicate section">
+          <Copy size={13} />
+        </button>
+        {total > 1 && (
+          <button type="button" onClick={onRemove} className="p-1 text-gray-400 hover:text-red-500" title="Delete section">
+            <Trash2 size={13} />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -295,17 +254,15 @@ const AddQuestionBar = ({ sectionType, onAdd }) => {
     const fieldConfig = getCEFFieldConfig(allowedTypes[0]);
     const defaultTypeId = allowedTypes[0];
     return (
-      <div className="flex items-center gap-3 my-4">
-        <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
+      <div className="flex items-center gap-2 my-2 opacity-50 hover:opacity-100 transition-opacity pl-2">
         <button
           type="button"
           onClick={() => onAdd(defaultTypeId)}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-semibold text-gray-600 dark:text-gray-400 hover:border-[var(--accent)] hover:text-[var(--accent)] shadow-sm transition-all"
+          className="flex items-center gap-1.5 text-[11px] font-bold text-[#60839b] hover:text-[#4d6a7d]"
         >
-          <Plus size={16} strokeWidth={2.5} />
-          {sectionType?.id === 'rating' ? 'Add skill row' : `Add ${fieldConfig?.label?.replace(' (Skill Matrix)', '').replace(' (Short Answer)', '').replace(' (Paragraph)', '').replace(' (Multiple Choice)', '').replace(' (Checklist)', '')} question`}
+          <Plus size={14} strokeWidth={3} />
+          {sectionType?.id === 'rating' ? 'ADD SKILL ROW' : `ADD ${fieldConfig?.label?.replace(' (Skill Matrix)', '').replace(' (Short Answer)', '').replace(' (Paragraph)', '').replace(' (Multiple Choice)', '').replace(' (Checklist)', '').toUpperCase()} QUESTION`}
         </button>
-        <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
       </div>
     );
   }
@@ -320,37 +277,32 @@ const AddQuestionBar = ({ sectionType, onAdd }) => {
   }, []);
 
   return (
-    <div className="flex items-center gap-3 my-4">
-      <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
-      <div className="relative" ref={ref}>
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-semibold text-gray-600 dark:text-gray-400 hover:border-[var(--accent)] hover:text-[var(--accent)] shadow-sm transition-all"
-        >
-          <Plus size={16} strokeWidth={2.5} /> Add question
-          <ChevronDown size={14} />
-        </button>
-        {open && (
-          <div className="absolute left-0 top-full mt-2 w-60 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20 py-1">
-            {allowedTypes.map(typeId => {
-              const fc = getCEFFieldConfig(typeId);
-              return (
-                <button
-                  key={typeId}
-                  type="button"
-                  onClick={() => { onAdd(typeId); setOpen(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
-                >
-                  <span className="text-gray-400">{fc?.icon}</span>
-                  {fc?.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
+    <div className="flex items-center gap-2 my-2 opacity-50 hover:opacity-100 transition-opacity pl-2 relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-[11px] font-bold text-[#60839b] hover:text-[#4d6a7d]"
+      >
+        <Plus size={14} strokeWidth={3} /> ADD QUESTION
+        <ChevronDown size={12} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-[#a1b9ca] rounded shadow-lg z-20 py-1">
+          {allowedTypes.map(typeId => {
+            const fc = getCEFFieldConfig(typeId);
+            return (
+              <button
+                key={typeId}
+                type="button"
+                onClick={() => { onAdd(typeId); setOpen(false); }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold text-gray-700 hover:bg-[#e6edf2] hover:text-[#60839b] transition-colors text-left"
+              >
+                {fc?.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
@@ -372,7 +324,7 @@ const CEFBuilder = ({ schema = [], onChange }) => {
       } else {
         const defaultSection = {
           id: uuidv4(),
-          title: 'Technical Skills',
+          title: '',
           description: '',
           section_type: 'mixed',
           questions: schema,
@@ -383,9 +335,9 @@ const CEFBuilder = ({ schema = [], onChange }) => {
     } else {
       const initSection = {
         id: uuidv4(),
-        title: 'Technical Skills',
+        title: '',
         description: '',
-        section_type: 'rating',
+        section_type: 'mixed',
         questions: [],
       };
       setLocalSchema([initSection]);
@@ -508,78 +460,76 @@ const CEFBuilder = ({ schema = [], onChange }) => {
         />
       )}
 
-      <div className="max-w-3xl mx-auto space-y-0 relative pl-6">
-        {localSchema.map((section, sIdx) => {
-          const sectionType = getCEFSectionType(section.section_type || 'mixed');
-          const allowedTypes = sectionType?.allowedTypes || Object.keys(CEF_FIELD_REGISTRY);
-          const isCollapsed = collapsedSections[section.id];
+      <div className="max-w-4xl mx-auto bg-white border border-[#a1b9ca] p-8 md:p-12 shadow-sm font-sans text-gray-800">
+        <div className="text-right text-[10px] text-gray-400 font-bold mb-4 uppercase tracking-widest border-b border-gray-100 pb-2">
+          Enterprise Interview Assessment Builder
+        </div>
+        <div className="space-y-6">
+          {localSchema.map((section, sIdx) => {
+            const sectionType = getCEFSectionType(section.section_type || 'mixed');
+            const allowedTypes = sectionType?.allowedTypes || Object.keys(CEF_FIELD_REGISTRY);
+            const isCollapsed = collapsedSections[section.id];
 
-          return (
-            <div key={section.id} className="relative">
-              {/* Left Timeline Line */}
-              {localSchema.length > 1 && (
-                <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-gray-200 dark:from-gray-700 to-transparent" style={{ left: '-24px' }} />
-              )}
+            return (
+              <div key={section.id} className="relative">
+                {/* Section Header */}
+                <SectionHeader
+                  section={section}
+                  sectionType={sectionType}
+                  sIdx={sIdx}
+                  total={localSchema.length}
+                  onUpdate={updates => updateSection(section.id, updates)}
+                  onRemove={() => removeSection(section.id)}
+                  onDuplicate={() => duplicateSection(section.id)}
+                  collapsed={isCollapsed}
+                  onToggleCollapse={() => toggleCollapse(section.id)}
+                />
 
-              {/* Section Header */}
-              <SectionHeader
-                section={section}
-                sectionType={sectionType}
-                sIdx={sIdx}
-                total={localSchema.length}
-                onUpdate={updates => updateSection(section.id, updates)}
-                onRemove={() => removeSection(section.id)}
-                onDuplicate={() => duplicateSection(section.id)}
-                collapsed={isCollapsed}
-                onToggleCollapse={() => toggleCollapse(section.id)}
-              />
+                {/* Questions */}
+                {!isCollapsed && (
+                  <div className={sectionType.id === 'rating' ? 'grid grid-cols-1 md:grid-cols-2 md:gap-x-12' : 'flex flex-col'}>
+                    {section.questions.map(q => (
+                      <CEFQuestionCard
+                        key={q.id}
+                        q={q}
+                        section={section}
+                        sectionType={sectionType}
+                        allowedTypes={allowedTypes}
+                        isActive={activeQuestionId === q.id}
+                        onActivate={() => { setActiveQuestionId(q.id); setActiveSectionId(section.id); }}
+                        onUpdate={updates => updateQuestion(section.id, q.id, updates)}
+                        onRemove={() => removeQuestion(section.id, q.id)}
+                        onDuplicate={() => duplicateQuestion(section.id, q)}
+                        onAddOption={() => addOption(section.id, q.id)}
+                        onUpdateOption={(idx, updates) => updateOption(section.id, q.id, idx, updates)}
+                        onRemoveOption={idx => removeOption(section.id, q.id, idx)}
+                      />
+                    ))}
 
-              {/* Questions */}
-              {!isCollapsed && (
-                <>
-                  {section.questions.map(q => (
-                    <CEFQuestionCard
-                      key={q.id}
-                      q={q}
-                      section={section}
+                    {/* Add Question Bar */}
+                    <AddQuestionBar
                       sectionType={sectionType}
-                      allowedTypes={allowedTypes}
-                      isActive={activeQuestionId === q.id}
-                      onActivate={() => { setActiveQuestionId(q.id); setActiveSectionId(section.id); }}
-                      onUpdate={updates => updateQuestion(section.id, q.id, updates)}
-                      onRemove={() => removeQuestion(section.id, q.id)}
-                      onDuplicate={() => duplicateQuestion(section.id, q)}
-                      onAddOption={() => addOption(section.id, q.id)}
-                      onUpdateOption={(idx, updates) => updateOption(section.id, q.id, idx, updates)}
-                      onRemoveOption={idx => removeOption(section.id, q.id, idx)}
+                      onAdd={typeId => addQuestion(section.id, typeId)}
                     />
-                  ))}
+                  </div>
+                )}
 
-                  {/* Add Question Bar */}
-                  <AddQuestionBar
-                    sectionType={sectionType}
-                    onAdd={typeId => addQuestion(section.id, typeId)}
-                  />
-                </>
-              )}
-
-              {/* Add Section — only after last section */}
-              {sIdx === localSchema.length - 1 && (
-                <div className="flex items-center gap-3 my-6">
-                  <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
-                  <button
-                    type="button"
-                    onClick={() => setShowSectionModal(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-full text-sm font-semibold text-gray-500 hover:border-[var(--accent)] hover:text-[var(--accent)] shadow-sm transition-all"
-                  >
-                    <Layers size={16} /> + Add section
-                  </button>
-                  <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
-                </div>
-              )}
-            </div>
-          );
-        })}
+                {/* Add Section — only after last section */}
+                {sIdx === localSchema.length - 1 && (
+                  <div className="flex items-center gap-2 mt-8 pt-8 border-t border-gray-200 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowSectionModal(true)}
+                      className="flex items-center gap-2 px-5 py-2 bg-[#e6edf2] text-[#60839b] font-bold text-[11px] uppercase tracking-wide hover:bg-[#60839b] hover:text-white transition-colors rounded"
+                    >
+                      <Layers size={14} /> ADD NEW SECTION
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </>
   );

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Eye, Send, Settings, BarChart2, HelpCircle, MoreVertical,
   Loader2, Globe, Lock, Copy, CheckCircle2, Trash2, ExternalLink,
-  ChevronLeft, ChevronRight, Save, AlertCircle, Download
+  ChevronLeft, ChevronRight, Save, AlertCircle, Download, Edit3
 } from 'lucide-react';
 import { getFormSchema, updateDynamicForm, publishForm, getFormResponses, deleteForm } from '../../../api/cefApi';
 import FormBuilder from '../components/FormBuilder';
@@ -738,7 +738,7 @@ const FormEditorPage = () => {
             >
               <ArrowLeft size={18} />
             </button>
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 group cursor-text relative">
               <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center flex-shrink-0">
                 <HelpCircle size={16} className="text-white" />
               </div>
@@ -746,9 +746,11 @@ const FormEditorPage = () => {
                 type="text"
                 value={form.title || ''}
                 onChange={handleTitleChange}
-                className="text-base font-bold text-gray-800 dark:text-gray-100 bg-transparent border-0 border-b-2 border-transparent focus:border-[var(--accent)] outline-none py-0.5 min-w-0 w-full max-w-xs transition-colors"
-                placeholder="Untitled Form"
+                className="text-base font-bold text-gray-800 dark:text-gray-100 bg-gray-50/80 hover:bg-gray-100 border border-gray-300 border-dashed hover:border-gray-400 focus:border-[var(--accent)] focus:border-solid focus:bg-white px-2 pr-8 -ml-2 outline-none py-1 min-w-0 w-full max-w-xs transition-all rounded"
+                placeholder="Click here to rename form..."
+                title="Click to rename form"
               />
+              <Edit3 size={14} className="text-[var(--accent)] opacity-70 group-hover:opacity-100 absolute right-1 pointer-events-none transition-opacity" />
             </div>
           </div>
 

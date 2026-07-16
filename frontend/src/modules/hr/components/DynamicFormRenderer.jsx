@@ -1,8 +1,509 @@
-import React, { useState } from 'react';
-import { CheckCircle2, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import React, { useState, Suspense, lazy } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getFieldConfig, getCEFFieldConfig } from './fields/FieldRegistry';
+import { SkillMatrixRenderer } from './fields/SkillMatrixField';
+import 'react-quill-new/dist/quill.snow.css';
 
-const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = false }) => {
+/* ─────────────────────────────────────────────────────────────────
+   CEF Public Form Renderer
+   
+   For candidate_evaluation forms renders in compact document style
+   matching real interview evaluation sheets:
+   - Rating sections: two per row side-by-side, compact inline radio
+   - Knowledge/Checkbox: dense multi-column grid
+   - Number: compact inline boxes  
+   - RTF: full Quill editor
+   - Code: Monaco editor
+   - Standard forms: existing card-based layout
+───────────────────────────────────────────────────────────────── */
+
+/* ─── Lazy Monaco ─────────────────────────────────────────────── */
+const MonacoEditor = lazy(() => import('@monaco-editor/react'));
+
+/* ─── CEF Rating Section Block (compact interview sheet style) ── */
+const CEFRatingBlock = ({ question, value, onChange, disabled }) => {
+  return (
+    <div className="w-full h-full min-w-0">
+      {/* Section title */}
+      <div className="text-[15px] font-bold text-[#60839b] mb-1 leading-tight">
+        {question.label}
+        {question.required && <span className="text-red-500 ml-1">*</span>}
+      </div>
+      <SkillMatrixRenderer
+        q={question}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+      />
+    </div>
+  );
+};
+
+/* ─── CEF Checkbox/Knowledge Block (multi-column grid) ─────────── */
+const CEFCheckboxBlock = ({ question, value = [], onChange, disabled }) => {
+  const options = question.options || [];
+
+  const toggle = (optId) => {
+    if (disabled) return;
+    const cur = Array.isArray(value) ? value : [];
+    const next = cur.includes(optId) ? cur.filter(v => v !== optId) : [...cur, optId];
+    onChange(next);
+  };
+
+  // Determine columns based on option count
+  const cols = options.length > 6 ? 4 : (options.length > 3 ? 3 : 2);
+
+  return (
+    <div className="w-full">
+      <div className="text-[15px] font-bold text-[#60839b] mb-1">
+        {question.label}
+        {question.required && <span className="text-red-500 ml-1">*</span>}
+      </div>
+      {question.help_text && (
+        <p className="text-xs text-gray-500 mb-2">{question.help_text}</p>
+      )}
+      <div
+        className="grid gap-x-6 gap-y-1"
+        style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+      >
+        {options.map(opt => {
+          const isChecked = Array.isArray(value) ? value.includes(opt.id) : false;
+          return (
+            <label
+              key={opt.id}
+              className={`flex items-center gap-1.5 text-[11px] font-bold text-gray-700 uppercase tracking-wide ${
+                disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:text-black'
+              }`}
+            >
+              <input 
+                type="checkbox"
+                checked={isChecked}
+                onChange={() => toggle(opt.id)}
+                disabled={disabled}
+                className="w-3.5 h-3.5 flex-shrink-0 text-[#60839b] border-gray-400 focus:ring-0 cursor-pointer rounded-sm"
+              />
+              <span className="truncate">{opt.label}</span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ─── CEF Radio/MCQ Block ─────────────────────────────────────── */
+const CEFRadioBlock = ({ question, value = [], onChange, disabled }) => {
+  const options = question.options || [];
+
+  const select = (optId) => {
+    if (disabled) return;
+    onChange([optId]);
+  };
+
+  return (
+    <div className="w-full">
+      <div className="text-[15px] font-bold text-[#60839b] mb-1">
+        {question.label}
+        {question.required && <span className="text-red-500 ml-1">*</span>}
+      </div>
+      <div className="flex flex-wrap gap-x-6 gap-y-1">
+        {options.map(opt => {
+          const isSelected = Array.isArray(value) ? value.includes(opt.id) : false;
+          return (
+            <label
+              key={opt.id}
+              className={`flex items-center gap-1.5 text-[12px] font-bold text-gray-700 uppercase tracking-wide ${
+                disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:text-black'
+              }`}
+            >
+              <input 
+                type="radio"
+                checked={isSelected}
+                onChange={() => select(opt.id)}
+                disabled={disabled}
+                className="w-3.5 h-3.5 text-[#60839b] border-gray-400 focus:ring-0 cursor-pointer accent-[#60839b]"
+              />
+              <span>{opt.label}</span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ─── CEF Text Block ──────────────────────────────────────────── */
+const CEFTextBlock = ({ question, value, onChange, disabled }) => {
+  if (question.type === 'long_text') {
+    return (
+      <div className="w-full">
+        <div className="text-[12px] font-bold text-[#60839b] mb-1">
+          {question.label}
+          {question.required && <span className="text-red-500 ml-1">*</span>}
+        </div>
+        <textarea
+          value={value || ''}
+          onChange={e => !disabled && onChange(e.target.value)}
+          disabled={disabled}
+          rows={3}
+          placeholder={question.placeholder || ''}
+          className="w-full text-[13px] border border-gray-300 bg-white rounded-none px-2 py-1.5 outline-none focus:border-[#60839b] resize-none text-gray-700 disabled:opacity-70 disabled:cursor-not-allowed"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center">
+      <div className="w-[180px] flex-shrink-0 text-[12px] font-bold text-gray-700 pr-2 leading-tight">
+        {question.label}
+        {question.required && <span className="text-red-500 ml-1">*</span>}
+      </div>
+      <input
+        type="text"
+        value={value || ''}
+        onChange={e => !disabled && onChange(e.target.value)}
+        disabled={disabled}
+        placeholder={question.placeholder || ''}
+        className="w-64 flex-shrink-0 text-[13px] border border-[#a1b9ca] bg-[#e6edf2] px-2 py-1 outline-none focus:border-[#60839b] text-gray-800 disabled:opacity-70 disabled:cursor-not-allowed"
+      />
+    </div>
+  );
+};
+
+/* ─── CEF Number Block ────────────────────────────────────────── */
+const CEFNumberBlock = ({ question, value, onChange, disabled }) => (
+  <div className="flex flex-col mb-2">
+    <div className="text-[12px] font-bold text-gray-700 mb-1 h-8">
+      {question.label}
+      {question.required && <span className="text-red-500 ml-1">*</span>}
+    </div>
+    <input
+      type="number"
+      value={value || ''}
+      onChange={e => !disabled && onChange(e.target.value)}
+      disabled={disabled}
+      placeholder="0"
+      className="w-full max-w-[120px] text-[13px] text-center font-bold border border-[#a1b9ca] bg-[#e6edf2] px-2 py-1 outline-none focus:border-[#60839b] text-gray-800 disabled:opacity-70 disabled:cursor-not-allowed"
+    />
+  </div>
+);
+
+/* ─── CEF Rich Text Block ─────────────────────────────────────── */
+const ReactQuill = React.lazy(() => import('react-quill-new'));
+
+const CEFRTFBlock = ({ question, value, onChange, disabled }) => {
+  if (disabled && value) {
+    return (
+      <div className="w-full">
+        <div className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-1">
+          {question.label}
+          {question.required && <span className="text-red-500 ml-1">*</span>}
+        </div>
+        <div
+          className="prose prose-sm dark:prose-invert max-w-none p-3 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
+          dangerouslySetInnerHTML={{ __html: value }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full">
+      <div className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-1">
+        {question.label}
+        {question.required && <span className="text-red-500 ml-1">*</span>}
+      </div>
+      <Suspense fallback={<div className="h-32 border border-gray-300 rounded bg-gray-50 dark:bg-gray-800" />}>
+        <ReactQuill
+          theme="snow"
+          value={value || ''}
+          onChange={val => !disabled && onChange(val)}
+          readOnly={!!disabled}
+          placeholder={question.placeholder || 'Write your answer here...'}
+        />
+      </Suspense>
+    </div>
+  );
+};
+
+/* ─── CEF Code Block ──────────────────────────────────────────── */
+const CEFCodeBlock = ({ question, value, onChange, disabled }) => {
+  const language = question.config?.language || 'c';
+  const starter = question.starter_code || '';
+  return (
+    <div className="w-full">
+      <div className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-1">
+        {question.label}
+        {question.required && <span className="text-red-500 ml-1">*</span>}
+      </div>
+      <div className="rounded border border-gray-300 dark:border-gray-700 overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1e1e1e]">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+          <span className="text-[10px] text-gray-400 font-mono ml-2">{language}</span>
+        </div>
+        <Suspense fallback={<div className="h-40 bg-[#1e1e1e] flex items-center justify-center text-gray-600 text-xs">Loading editor...</div>}>
+          <MonacoEditor
+            height="240px"
+            language={language}
+            theme="vs-dark"
+            value={value || starter}
+            onChange={val => !disabled && onChange(val || '')}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 13,
+              fontFamily: "'JetBrains Mono', Consolas, monospace",
+              lineNumbers: 'on',
+              wordWrap: 'on',
+              automaticLayout: true,
+              scrollBeyondLastLine: false,
+              readOnly: !!disabled,
+              padding: { top: 8, bottom: 8 },
+            }}
+          />
+        </Suspense>
+      </div>
+    </div>
+  );
+};
+
+/* ─── CEF Section Renderer (full section) ─────────────────────── */
+const CEFSectionRenderer = ({ section, answers, onAnswerUpdate, disabled }) => {
+  const questions = section.questions || [];
+  const sectionType = section.section_type || 'mixed';
+
+  // For rating sections: render all cef_rating questions in two-column layout
+  if (sectionType === 'rating') {
+
+
+    return (
+      <div className="mb-6">
+        {section.title && (
+          <div className="text-[17px] font-bold text-[#60839b] mb-1">
+            {section.title}
+          </div>
+        )}
+        {section.description && (
+          <p className="text-xs text-gray-500 mb-3">{section.description}</p>
+        )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8 mt-4">
+          {questions.map(q => {
+            const ans = answers[q.id] || { text_value: '{}', options: [] };
+            const val = ans.text_value || '{}';
+            const isFullWidth = q.config?.columns === 2;
+            
+            return (
+              <div key={q.id} className={`${isFullWidth ? 'col-span-1 lg:col-span-2' : 'col-span-1'} min-w-0`}>
+                <CEFRatingBlock question={q} value={val} onChange={v => onAnswerUpdate(q.id, v, false)} disabled={disabled} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // For knowledge (checkbox) sections — multi-column grid
+  if (sectionType === 'knowledge') {
+    return (
+      <div className="mb-6">
+        {section.title && (
+          <div className="text-[17px] font-bold text-[#60839b] mb-2">
+            {section.title}
+          </div>
+        )}
+        <div className="space-y-4">
+          {questions.map(q => {
+            const ans = answers[q.id] || { text_value: '', options: [] };
+            return (
+              <CEFCheckboxBlock key={q.id} question={q} value={ans.options} onChange={v => onAnswerUpdate(q.id, v, true)} disabled={disabled} />
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // For number sections — compact inline layout
+  if (sectionType === 'number') {
+    return (
+      <div className="mb-6">
+        {section.title && (
+          <div className="text-[17px] font-bold text-[#60839b] mb-2">
+            {section.title}
+          </div>
+        )}
+        <div className="flex flex-wrap gap-x-10 gap-y-4">
+          {questions.map(q => {
+            const ans = answers[q.id] || { text_value: '', options: [] };
+            return (
+              <div key={q.id} className="w-[180px]">
+                <CEFNumberBlock question={q} value={ans.text_value} onChange={v => onAnswerUpdate(q.id, v, false)} disabled={disabled} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // For MCQ sections
+  if (sectionType === 'mcq') {
+    return (
+      <div className="mb-6">
+        {section.title && (
+          <div className="text-[17px] font-bold text-[#60839b] mb-2">
+            {section.title}
+          </div>
+        )}
+        <div className="space-y-4">
+          {questions.map(q => {
+            const ans = answers[q.id] || { text_value: '', options: [] };
+            return (
+              <CEFRadioBlock key={q.id} question={q} value={ans.options} onChange={v => onAnswerUpdate(q.id, v, true)} disabled={disabled} />
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // For text sections
+  if (sectionType === 'text') {
+    const shortQuestions = questions.filter(q => q.type === 'short_text');
+    const longQuestions = questions.filter(q => q.type === 'long_text');
+    return (
+      <div className="mb-6">
+        {section.title && (
+          <div className="text-[17px] font-bold text-[#60839b] mb-2">
+            {section.title}
+          </div>
+        )}
+        {shortQuestions.length > 0 && (
+          <div className="space-y-1.5 mb-4 max-w-2xl">
+            {shortQuestions.map(q => {
+              const ans = answers[q.id] || { text_value: '', options: [] };
+              return (
+                <CEFTextBlock key={q.id} question={q} value={ans.text_value} onChange={v => onAnswerUpdate(q.id, v, false)} disabled={disabled} />
+              );
+            })}
+          </div>
+        )}
+        {longQuestions.map(q => {
+          const ans = answers[q.id] || { text_value: '', options: [] };
+          return (
+            <div key={q.id} className="mb-4">
+              <CEFTextBlock question={q} value={ans.text_value} onChange={v => onAnswerUpdate(q.id, v, false)} disabled={disabled} />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Programming, RTF, and Mixed — full-width each
+  return (
+    <div className="mb-6">
+      {section.title && (
+        <div className="text-[17px] font-bold text-[#60839b] mb-2">
+          {section.title}
+        </div>
+      )}
+      {section.description && (
+        <p className="text-[13px] text-gray-500 mb-3">{section.description}</p>
+      )}
+      <div className="space-y-5">
+        {questions.map(q => {
+          const isOptionsType = ['radio', 'checkbox', 'dropdown'].includes(q.type);
+          const isGridOrMatrix = ['grid_radio', 'grid_checkbox', 'cef_rating'].includes(q.type);
+          const ans = answers[q.id] || { text_value: '', options: [] };
+          const rawValue = isOptionsType ? (ans.options || []) : (ans.text_value || '');
+          const fieldValue = isGridOrMatrix ? (ans.text_value || '{}') : rawValue;
+
+          const handleChange = (val) => {
+            if (isGridOrMatrix) {
+              onAnswerUpdate(q.id, val, false);
+            } else {
+              onAnswerUpdate(q.id, val, isOptionsType);
+            }
+          };
+
+          if (q.type === 'cef_rtf') return <CEFRTFBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          if (q.type === 'cef_code') return <CEFCodeBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          if (q.type === 'cef_rating') {
+            return (
+              <div key={q.id}>
+                <div className="text-xs font-bold text-gray-700 dark:text-gray-200 mb-1.5">{q.label}</div>
+                <SkillMatrixRenderer q={q} value={fieldValue} onChange={handleChange} disabled={disabled} />
+              </div>
+            );
+          }
+          if (q.type === 'radio') return <CEFRadioBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          if (q.type === 'checkbox') return <CEFCheckboxBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          if (q.type === 'number') return <CEFNumberBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          if (q.type === 'short_text' || q.type === 'long_text') return <CEFTextBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
+
+          // Fallback to generic renderer
+          const fieldConfig = getCEFFieldConfig(q.type);
+          if (!fieldConfig?.RendererComponent) return <div key={q.id} className="text-red-400 text-xs">Unknown type: {q.type}</div>;
+          const Renderer = fieldConfig.RendererComponent;
+          return <Renderer key={q.id} q={q} value={fieldValue} onChange={handleChange} disabled={disabled} />;
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ─── Standard Question Card (non-CEF forms) ──────────────────── */
+const StandardQuestionCard = ({ q, answers, onAnswerUpdate, disabled }) => {
+  const isOptionsType = ['radio', 'checkbox', 'dropdown'].includes(q.type);
+  const isGridOrMatrix = ['grid_radio', 'grid_checkbox', 'cef_rating'].includes(q.type);
+  const ans = answers[q.id] || { text_value: '', options: [] };
+  const value = isOptionsType ? (ans.options || []) : (ans.text_value || '');
+  const fieldValue = isGridOrMatrix ? (ans.text_value || '{}') : value;
+
+  const handleChange = (val) => {
+    if (isGridOrMatrix) {
+      onAnswerUpdate(q.id, val, false);
+    } else {
+      onAnswerUpdate(q.id, val, isOptionsType);
+    }
+  };
+
+  const fieldConfig = getCEFFieldConfig(q.type);
+  if (!fieldConfig?.RendererComponent) return <div className="text-red-500 text-sm">Unsupported: {q.type}</div>;
+  const Renderer = fieldConfig.RendererComponent;
+
+  let totalPoints = q.points || 0;
+  if (!totalPoints && q.options && Array.isArray(q.options)) {
+    totalPoints = q.options.filter(o => o.is_correct).reduce((s, o) => s + (parseFloat(o.score) || 0), 0);
+  }
+
+  return (
+    <div className="w-full p-5 bg-[var(--bg-workspace)]/50 border border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-colors rounded-xl relative">
+      {totalPoints > 0 && (
+        <div className="absolute top-4 right-5 text-[11px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700">
+          {totalPoints} {totalPoints === 1 ? 'point' : 'points'}
+        </div>
+      )}
+      <label className="flex items-start mb-2 pr-20">
+        <div className="flex-1">
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{q.label}</span>
+          {q.required && <span className="text-red-500 ml-1 font-bold">*</span>}
+          {q.help_text && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{q.help_text}</p>}
+        </div>
+      </label>
+      <div className="w-full">
+        <Renderer q={q} value={isGridOrMatrix ? fieldValue : value} onChange={handleChange} disabled={disabled} />
+      </div>
+    </div>
+  );
+};
+
+/* ─── Main DynamicFormRenderer ────────────────────────────────── */
+const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = false, formMode }) => {
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -10,7 +511,7 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
   // Normalize legacy vs new schema
   let sections = [];
   if (schema && schema.length > 0) {
-    if (schema[0].questions) {
+    if (schema[0].questions !== undefined) {
       sections = schema;
     } else {
       sections = [{ id: 'default', title: 'Assessment', questions: schema }];
@@ -25,44 +526,82 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
     );
   }
 
+  const isCEF = formMode === 'candidate_evaluation';
   const currentSection = sections[currentSectionIndex];
 
   const handleAnswerUpdate = (questionId, value, isOptionsType) => {
     if (disabled) return;
     setAnswers(prev => ({
       ...prev,
-      [questionId]: isOptionsType 
-        ? { ...prev[questionId], options: value, text_value: prev[questionId]?.text_value || '' } 
+      [questionId]: isOptionsType
+        ? { ...prev[questionId], options: value, text_value: prev[questionId]?.text_value || '' }
         : { ...prev[questionId], text_value: value, options: prev[questionId]?.options || [] }
     }));
   };
 
   const nextSection = () => {
-    if (currentSectionIndex < sections.length - 1) {
-      setCurrentSectionIndex(prev => prev + 1);
-    }
+    if (currentSectionIndex < sections.length - 1) setCurrentSectionIndex(p => p + 1);
   };
 
   const prevSection = () => {
-    if (currentSectionIndex > 0) {
-      setCurrentSectionIndex(prev => prev - 1);
-    }
+    if (currentSectionIndex > 0) setCurrentSectionIndex(p => p - 1);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (disabled || !onSubmit) return;
-    
     setIsSubmitting(true);
-    try {
-      await onSubmit(answers);
-    } finally {
-      setIsSubmitting(false);
-    }
+    try { await onSubmit(answers); } finally { setIsSubmitting(false); }
   };
 
   const progress = ((currentSectionIndex + 1) / sections.length) * 100;
 
+  /* ── CEF Full-Page Layout (all sections on one scroll page) ── */
+  if (isCEF) {
+    return (
+      <div className={`w-full ${isPublic ? 'bg-white' : 'bg-white'} border border-gray-200 shadow-sm font-sans rounded text-gray-800`}>
+        <form onSubmit={handleSubmit}>
+          <div className="p-8 md:p-12 space-y-8 divide-y divide-gray-200">
+            {sections.map(section => (
+              <div key={section.id} className="pt-8 first:pt-0">
+                <CEFSectionRenderer
+                  section={section}
+                  answers={answers}
+                  onAnswerUpdate={handleAnswerUpdate}
+                  disabled={disabled}
+                />
+              </div>
+            ))}
+          </div>
+          {/* Actions */}
+          {!disabled && (
+            <div className="px-8 md:px-12 pb-10 pt-6 border-t border-gray-200 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  if(window.confirm('Are you sure you want to clear all form fields?')) {
+                    setAnswers({});
+                  }
+                }}
+                className="text-xs font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest transition-colors"
+              >
+                Clear Form
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-8 py-2.5 bg-[#60839b] text-white text-[13px] uppercase tracking-wider font-bold shadow-sm disabled:opacity-50 hover:bg-[#4d6a7d] transition-colors"
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit Evaluation'}
+              </button>
+            </div>
+          )}
+        </form>
+      </div>
+    );
+  }
+
+  /* ── Standard Paginated Layout (assessment / survey) ────────── */
   return (
     <div className={`max-w-4xl mx-auto p-6 md:p-8 ${isPublic ? 'bg-transparent' : 'bg-white dark:bg-[#1a232c]'} rounded-2xl`}>
       {/* Progress Bar */}
@@ -78,10 +617,7 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
             </span>
           </div>
           <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[var(--accent)] transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="h-full bg-[var(--accent)] transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
         </div>
       )}
@@ -95,83 +631,30 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-8">
-          {currentSection.questions.map((q) => {
-            const isOptionsType = ['radio', 'checkbox', 'dropdown'].includes(q.type);
-            const isGridOrMatrix = ['grid_radio', 'grid_checkbox', 'cef_rating'].includes(q.type);
-            const ans = answers[q.id] || { text_value: '', options: [] };
-            const value = isOptionsType
-              ? (ans.options || [])
-              : (ans.text_value || '');
-            // Grid/Matrix types store as JSON string in text_value
-            const fieldValue = isGridOrMatrix ? (ans.text_value || '{}') : value;
-            const Renderer = getFieldConfig(q.type).renderer;
-            
-            return (
-              <div 
-                key={q.id} 
-                className="w-full gap-2 p-5 bg-[var(--bg-workspace)]/50 border border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-colors rounded-xl relative"
-              >
-                {(() => {
-                  let totalPoints = q.points || 0;
-                  if (!totalPoints && q.options && Array.isArray(q.options)) {
-                    totalPoints = q.options.filter(o => o.is_correct).reduce((sum, opt) => sum + (parseFloat(opt.score) || 0), 0);
-                  }
-                  if (totalPoints > 0) {
-                    return (
-                      <div className="absolute top-4 right-5 text-[11px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-700">
-                        {totalPoints} {totalPoints === 1 ? 'point' : 'points'}
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
-                <label className="flex items-start mb-2 pr-20">
-                  <div className="flex-1">
-                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{q.label}</span>
-                    {q.required && <span className="text-red-500 ml-1 font-bold">*</span>}
-                    {q.help_text && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{q.help_text}</p>}
-                  </div>
-                </label>
-
-                <div className="w-full">
-                  {/* Dynamic Renderer */}
-                  {(() => {
-                    const fieldConfig = getCEFFieldConfig(q.type);
-                    if (!fieldConfig || !fieldConfig.RendererComponent) return <div className="text-red-500 text-sm">Unsupported field type: {q.type}</div>;
-                    const Renderer = fieldConfig.RendererComponent;
-                    
-                    const rendererValue = isGridOrMatrix ? fieldValue : value;
-                    const handleChange = (val) => {
-                      if (isGridOrMatrix) {
-                        handleAnswerUpdate(q.id, val, false);
-                      } else {
-                        handleAnswerUpdate(q.id, val, isOptionsType);
-                      }
-                    };
-                    
-                    return <Renderer q={q} value={rendererValue} onChange={handleChange} disabled={disabled} />;
-                  })()}
-                </div>
-              </div>
-            );
-          })}
+          {currentSection.questions.map(q => (
+            <StandardQuestionCard
+              key={q.id}
+              q={q}
+              answers={answers}
+              onAnswerUpdate={handleAnswerUpdate}
+              disabled={disabled}
+            />
+          ))}
         </div>
-        
+
         <div className="mt-10 pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
           {sections.length > 1 ? (
             <>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={prevSection}
                 disabled={currentSectionIndex === 0}
                 className={`px-5 py-2.5 flex items-center gap-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${currentSectionIndex === 0 ? 'opacity-0 pointer-events-none' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
               >
                 <ChevronLeft size={14} /> Back
               </button>
-              
               {currentSectionIndex < sections.length - 1 ? (
-                <button 
+                <button
                   type="button"
                   onClick={nextSection}
                   className="px-6 py-2.5 flex items-center gap-2 bg-[var(--text-main)] text-[var(--bg-card)] text-xs uppercase tracking-widest font-black rounded-lg shadow-md hover:scale-105 transition-transform"
@@ -179,9 +662,9 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
                   Next <ChevronRight size={14} />
                 </button>
               ) : (
-                <button 
+                <button
                   type="submit"
-                  disabled={disabled || isSubmitting} 
+                  disabled={disabled || isSubmitting}
                   className="px-8 py-3 flex items-center gap-2 bg-[var(--accent)] text-white text-[12px] uppercase tracking-widest font-black rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:bg-[var(--accent-hover)] transition-transform"
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Form'}
@@ -190,9 +673,9 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
             </>
           ) : (
             <div className="flex-1 flex justify-end">
-              <button 
+              <button
                 type="submit"
-                disabled={disabled || isSubmitting} 
+                disabled={disabled || isSubmitting}
                 className="px-8 py-3 bg-[var(--accent)] text-white text-[12px] uppercase tracking-widest font-black rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:bg-[var(--accent-hover)] transition-transform"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Form'}

@@ -14,7 +14,7 @@ const getPublicForm = async (req, res) => {
     }
 
     const formResult = await db.query(
-      'SELECT id, title, description, status, is_public FROM forms WHERE public_url = $1', 
+      'SELECT id, title, description, status, is_public, form_mode FROM forms WHERE public_url = $1', 
       [uuid]
     );
     
@@ -109,8 +109,10 @@ const getPublicForm = async (req, res) => {
       success: true, 
       data: { 
         id: uuid, // Use public UUID, hide internal DB ID 
+        internal_id: form.id, // Needed for Edit button mapping
         title: form.title, 
         description: form.description,
+        form_mode: form.form_mode,
         form_schema: formSchema 
       } 
     });

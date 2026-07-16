@@ -4,14 +4,14 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Fixed CEF Rating columns — NEVER editable by HR
 export const CEF_RATING_COLS = [
-  { id: 'nil',  label: 'Nil',  score: 0 },
-  { id: 'noob', label: 'Noob', score: 1 },
-  { id: 'mod',  label: 'Mod',  score: 2 },
-  { id: 'adv',  label: 'Adv',  score: 3 },
-  { id: 'ace',  label: 'Ace',  score: 4 },
+  { id: 'nil',  label: 'NILL', score: 0 },
+  { id: 'noob', label: 'NOOB', score: 1 },
+  { id: 'mod',  label: 'MOD',  score: 2 },
+  { id: 'adv',  label: 'ADV',  score: 3 },
+  { id: 'ace',  label: 'ACE',  score: 4 },
 ];
 
-/* ─── Builder Component ─────────────────────────────────────── */
+/* ─── Builder Component (unchanged) ─────────────────────────── */
 export const SkillMatrixBuilder = ({ q, isActive, onUpdate }) => {
   const rows = q.rows || [{ id: uuidv4(), label: '', order_index: 0 }];
 
@@ -31,55 +31,62 @@ export const SkillMatrixBuilder = ({ q, isActive, onUpdate }) => {
   };
 
   return (
-    <div className="mt-4 space-y-4">
-      {/* Column Preview — read-only */}
-      <div className="flex items-center gap-2">
-        <div className="w-1/3 text-xs font-bold text-gray-400 uppercase tracking-wider">Skill</div>
-        <div className="flex-1 grid grid-cols-5 gap-2">
-          {CEF_RATING_COLS.map(col => (
-            <div
-              key={col.id}
-              className="text-center text-xs font-black uppercase tracking-wider text-[var(--accent)] bg-[var(--accent)]/10 rounded-lg py-1.5 px-1"
+    <div className="mt-4 space-y-3">
+      {/* Layout Config */}
+      {isActive && (
+        <div className="flex items-center gap-4 mb-4 bg-gray-50/50 p-2 rounded-lg border border-gray-100">
+          <label className="text-[11px] font-bold text-gray-500 uppercase">Layout:</label>
+          <div className="flex bg-white rounded-md border border-gray-200 overflow-hidden shadow-sm">
+            <button
+              onClick={() => onUpdate({ config: { ...q.config, columns: 1 } })}
+              className={`px-3 py-1 text-xs font-bold transition-colors ${!q.config?.columns || q.config.columns === 1 ? 'bg-[#60839b] text-white' : 'text-gray-500 hover:bg-gray-50'}`}
             >
-              {col.label}
-            </div>
-          ))}
+              1 Column (Half Width)
+            </button>
+            <button
+              onClick={() => onUpdate({ config: { ...q.config, columns: 2 } })}
+              className={`px-3 py-1 text-xs font-bold transition-colors border-l border-gray-200 ${q.config?.columns === 2 ? 'bg-[#60839b] text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              2 Columns (Full Width)
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Skill Rows */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {rows.map((row, i) => (
           <div key={row.id} className="flex items-center gap-2 group/row">
             {isActive && (
-              <div className="text-gray-300 cursor-grab opacity-0 group-hover/row:opacity-100 transition-opacity">
-                <GripVertical size={14} />
+              <div className="text-gray-300 cursor-grab opacity-0 group-hover/row:opacity-100 transition-opacity flex-none">
+                <GripVertical size={13} />
               </div>
             )}
-            <div className="flex-none text-xs text-gray-400 font-medium w-4">{i + 1}.</div>
+            <div className="flex-none text-[10px] text-gray-400 font-medium w-3">{i + 1}.</div>
             <input
               type="text"
               value={row.label}
               onChange={e => updateRow(i, e.target.value)}
-              placeholder={`e.g. Pointers, UART, Memory Management...`}
-              className="w-1/3 text-sm bg-transparent border-0 border-b border-gray-200 dark:border-gray-700 focus:border-[var(--accent)] outline-none pb-1 text-gray-700 dark:text-gray-300 placeholder-gray-300 transition-colors"
+              placeholder="e.g. C-Programming"
+              className="w-32 xl:w-40 flex-shrink-0 text-[12px] bg-transparent border-0 border-b border-gray-200 dark:border-gray-700 focus:border-[#60839b] outline-none pb-0.5 text-gray-700 dark:text-gray-300 placeholder-gray-300 transition-colors font-medium"
             />
-            <div className="flex-1 grid grid-cols-5 gap-2">
+            
+            {/* Inline Radio buttons preview */}
+            <div className="flex-1 flex flex-wrap items-center gap-x-2 xl:gap-x-3 gap-y-1 pointer-events-none opacity-60">
               {CEF_RATING_COLS.map(col => (
-                <div
-                  key={col.id}
-                  className="flex items-center justify-center"
-                >
-                  <div className="w-4 h-4 rounded-full border-2 border-gray-200 dark:border-gray-600" />
-                </div>
+                <label key={col.id} className="flex items-center gap-0.5 xl:gap-1 select-none">
+                  <div className="w-3 h-3 rounded-full border-2 border-gray-400" />
+                  <span className="text-[10px] uppercase text-gray-600 tracking-wide font-semibold">{col.label === 'NILL' ? 'Nill' : col.label}</span>
+                </label>
               ))}
             </div>
+
             {isActive && (
               <button
                 type="button"
                 onClick={() => removeRow(i)}
                 disabled={rows.length <= 1}
-                className="text-gray-300 hover:text-red-400 disabled:opacity-20 transition-colors opacity-0 group-hover/row:opacity-100"
+                className="text-gray-300 hover:text-red-400 disabled:opacity-20 transition-colors opacity-0 group-hover/row:opacity-100 ml-2 flex-none"
               >
                 <Trash2 size={13} />
               </button>
@@ -92,22 +99,19 @@ export const SkillMatrixBuilder = ({ q, isActive, onUpdate }) => {
         <button
           type="button"
           onClick={addRow}
-          className="flex items-center gap-2 text-sm text-[var(--accent)] hover:text-[var(--accent-hover)] font-medium mt-2 ml-10"
+          className="flex items-center gap-2 text-[11px] uppercase font-bold text-[#60839b] hover:text-[#4d6a7d] mt-2 ml-8 tracking-widest"
         >
-          <Plus size={14} strokeWidth={2.5} /> Add skill
+          <Plus size={14} strokeWidth={3} /> Add skill
         </button>
-      )}
-
-      {!isActive && (
-        <p className="text-xs text-gray-400 italic ml-10">
-          Click to edit skill rows · Columns are always: Nil, Noob, Mod, Adv, Ace
-        </p>
       )}
     </div>
   );
 };
 
-/* ─── Renderer Component ────────────────────────────────────── */
+/* ─── Renderer: Classic Interview Sheet Style ─────────────────
+   Matches the user's screenshots: inline native-looking radios 
+   with labels next to them. 
+─────────────────────────────────────────────────────────────── */
 export const SkillMatrixRenderer = ({ q, value = '{}', onChange, disabled }) => {
   let gridAns = {};
   try {
@@ -125,67 +129,53 @@ export const SkillMatrixRenderer = ({ q, value = '{}', onChange, disabled }) => 
   };
 
   if (rows.length === 0) {
-    return (
-      <div className="text-sm text-gray-400 italic py-2">No skills defined yet.</div>
-    );
+    return <div className="text-sm text-gray-400 italic py-1">No skills defined yet.</div>;
   }
 
+  const columns = q.config?.columns === 2 ? 2 : 1;
+
   return (
-    <div className="w-full overflow-x-auto mt-2">
-      <table className="w-full text-sm border-collapse min-w-[480px]">
-        <thead>
-          <tr>
-            <th className="p-3 text-left w-2/5 text-xs font-bold text-gray-500 uppercase tracking-wider"></th>
-            {CEF_RATING_COLS.map(col => (
-              <th key={col.id} className="p-3 text-center">
-                <span className="text-xs font-black uppercase tracking-wider text-[var(--accent)] bg-[var(--accent)]/10 px-2 py-1 rounded-lg">
-                  {col.label}
-                </span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, rIdx) => {
-            const selectedColId = (gridAns[row.id] || [])[0] || null;
-            return (
-              <tr
-                key={row.id}
-                className={`border-b border-gray-100 dark:border-gray-800 transition-colors ${
-                  rIdx % 2 === 0 ? 'bg-gray-50/50 dark:bg-gray-800/20' : 'bg-white dark:bg-transparent'
-                }`}
-              >
-                <td className="p-3 font-medium text-gray-800 dark:text-gray-200 text-sm">
-                  {row.label || <span className="text-gray-300 italic">Unnamed skill</span>}
-                </td>
+    <div className="w-full">
+      {/* Skill rows */}
+      <div className={columns === 2 ? "grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1" : "flex flex-col gap-y-1"}>
+        {rows.map((row) => {
+          const selectedColId = (gridAns[row.id] || [])[0] || null;
+          return (
+            <div key={row.id} className="flex items-center py-0.5">
+              {/* Skill name */}
+              <div className="w-[140px] xl:w-[170px] flex-shrink-0 text-[12px] text-[#333333] font-bold truncate pr-2 leading-tight">
+                {row.label || 'Unnamed skill'}
+              </div>
+              
+              {/* Inline Radio buttons with labels */}
+              <div className="flex-1 flex items-center gap-x-3">
                 {CEF_RATING_COLS.map(col => {
                   const isSelected = selectedColId === col.id;
                   return (
-                    <td key={col.id} className="p-3 text-center">
-                      <label
-                        className={`inline-flex items-center justify-center cursor-pointer ${disabled ? 'opacity-60 cursor-not-allowed' : 'hover:scale-110 transition-transform'}`}
-                        onClick={() => handleSelect(row.id, col.id)}
-                      >
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                            isSelected
-                              ? 'border-[var(--accent)] bg-[var(--accent)]/10'
-                              : 'border-gray-300 dark:border-gray-600 hover:border-[var(--accent)]'
-                          }`}
-                        >
-                          {isSelected && (
-                            <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent)]" />
-                          )}
-                        </div>
-                      </label>
-                    </td>
+                    <label
+                      key={col.id}
+                      className={`flex items-center gap-1.5 select-none ${
+                        disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer group'
+                      }`}
+                    >
+                      <input 
+                        type="radio"
+                        checked={isSelected}
+                        onChange={() => handleSelect(row.id, col.id)}
+                        disabled={disabled}
+                        className="w-3 h-3 text-[#60839b] border-gray-400 focus:ring-0 cursor-pointer accent-[#60839b] mt-0.5"
+                      />
+                      <span className={`text-[11px] font-bold tracking-wide transition-colors ${isSelected ? 'text-[#60839b]' : 'text-gray-400 group-hover:text-gray-500'}`}>
+                        {col.label === 'NILL' ? 'Nill' : col.label}
+                      </span>
+                    </label>
                   );
                 })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
