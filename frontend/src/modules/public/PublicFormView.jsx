@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { getFieldConfig } from '../hr/components/fields/FieldRegistry';
 import {
@@ -62,13 +62,16 @@ const PublicFormView = () => {
   const [currentSection, setCurrentSection] = useState(0);
   const [answers, setAnswers] = useState({});
   const [email, setEmail] = useState('');
+  
+  const [searchParams] = useSearchParams();
+  const isViewMode = searchParams.get('mode') === 'view';
 
   useEffect(() => { fetchForm(); }, [uuid]);
 
   const fetchForm = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/hr/public-forms/${uuid}`);
+      const res = await axios.get(`${API_URL}/hr/public-forms/${uuid}?t=${Date.now()}`);
       if (res.data.success) setForm(res.data.data);
       else setError(res.data.message || 'Form not found');
     } catch (err) {
@@ -146,14 +149,9 @@ const PublicFormView = () => {
 
   if (form?.form_mode === 'candidate_evaluation') {
     return (
-      <div className="min-h-screen bg-white py-8 px-4 relative">
-        <div className="max-w-6xl mx-auto">
-          {/* Quick Edit button for HR users previewing the form */}
-          <div className="absolute top-4 right-4 md:right-8 lg:right-12 z-10">
-            <Link to={`/hr/recruitment/cef/${form.internal_id || form.id}/edit`} className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-200 text-xs font-bold text-gray-600 hover:text-[#60839b] transition-colors">
-              <Edit size={14} /> Edit Form
-            </Link>
-          </div>
+      <div className="min-h-screen bg-white py-8 relative">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+
 
           <div className="bg-white">
             {/* Minimal top bar, no heavy card border */}
@@ -176,7 +174,7 @@ const PublicFormView = () => {
             
             <DynamicFormRenderer
               schema={sections}
-              disabled={false}
+              disabled={isViewMode}
               isPublic={true}
               formMode="candidate_evaluation"
               onSubmit={async (answersData) => {
@@ -252,7 +250,7 @@ const PublicFormView = () => {
                 ans={answers[q.id]}
                 onTextChange={v => handleText(q.id, v)}
                 onOptionChange={opts => handleOptions(q.id, opts)}
-                disabled={false}
+                disabled={isViewMode}
               />
             ))}
           </div>
@@ -269,22 +267,26 @@ const PublicFormView = () => {
               </button>
             ) : <div />}
 
-            {currentSection < sections.length - 1 ? (
-              <button
-                type="submit"
-                className="flex items-center gap-2 px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-md transition-all hover:shadow-lg"
-              >
-                Next <ChevronRight size={16} />
-              </button>
+            {!isViewMode ? (
+              currentSection < sections.length - 1 ? (
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-md transition-all hover:shadow-lg"
+                >
+                  Next <ChevronRight size={16} />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex items-center gap-2 px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-lg shadow-md transition-all hover:shadow-lg disabled:cursor-not-allowed"
+                >
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  {submitting ? 'Submitting...' : 'Submit'}
+                </button>
+              )
             ) : (
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex items-center gap-2 px-7 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-lg shadow-md transition-all hover:shadow-lg disabled:cursor-not-allowed"
-              >
-                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                {submitting ? 'Submitting...' : 'Submit'}
-              </button>
+              <div className="text-gray-400 italic text-sm">Read-only view</div>
             )}
           </div>
         </form>

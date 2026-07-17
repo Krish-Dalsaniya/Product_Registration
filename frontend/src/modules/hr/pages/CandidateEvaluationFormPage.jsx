@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FileText, Plus, Upload, Save, Pencil, Trash2, Download, Eye,
+  FileText, Plus, Upload, Save, Pencil, Trash2, Download, Eye, ExternalLink,
   Share2, BarChart2, Loader2, Search, Grid, List, Clock, Globe, Lock,
   ClipboardList, MessageSquare
 } from 'lucide-react';
@@ -67,7 +67,8 @@ const FormCard = ({ form, onEdit, onDelete, onView, viewMode }) => {
           </div>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => onView(form)} className="p-2 rounded-lg text-gray-400 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors" title="Preview"><Eye size={16} /></button>
+          <button onClick={() => onView(form, false)} className="p-2 rounded-lg text-gray-400 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors" title="View (Read-only)"><Eye size={16} /></button>
+          <button onClick={() => onView(form, true)} className="p-2 rounded-lg text-gray-400 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors" title="Live Preview"><ExternalLink size={16} /></button>
           <button onClick={() => onEdit(form)} className="p-2 rounded-lg text-gray-400 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors" title="Edit"><Pencil size={16} /></button>
           {!isEnterprise && <a href={`${API_URL}/hr/cef-forms/download/${form.id}`} target="_blank" rel="noreferrer" className="p-2 rounded-lg text-gray-400 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors" title="Download"><Download size={16} /></a>}
           <button onClick={() => onDelete(form)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete"><Trash2 size={16} /></button>
@@ -77,7 +78,7 @@ const FormCard = ({ form, onEdit, onDelete, onView, viewMode }) => {
   }
 
   return (
-    <div className="flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden hover:border-[var(--accent)] hover:shadow-md transition-all group cursor-pointer" onClick={() => onEdit(form)}>
+    <div className="flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden hover:border-[var(--accent)] hover:shadow-md transition-all group cursor-pointer" onClick={() => onView(form)}>
       {/* Color Header */}
       <div className="h-3 bg-[var(--accent)]" />
       <div className="p-5 flex-1">
@@ -104,7 +105,9 @@ const FormCard = ({ form, onEdit, onDelete, onView, viewMode }) => {
       </div>
       {/* Hover Actions */}
       <div className="border-t border-gray-100 dark:border-gray-700 px-4 py-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={e => { e.stopPropagation(); onView(form); }} className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors" title="Preview"><Eye size={14} /></button>
+        <button onClick={e => { e.stopPropagation(); onView(form, false); }} className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors" title="View (Read-only)"><Eye size={14} /></button>
+        <button onClick={e => { e.stopPropagation(); onView(form, true); }} className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors" title="Live Preview"><ExternalLink size={14} /></button>
+        <button onClick={e => { e.stopPropagation(); onEdit(form); }} className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors" title="Edit"><Pencil size={14} /></button>
         {!isEnterprise && <a onClick={e => e.stopPropagation()} href={`${API_URL}/hr/cef-forms/download/${form.id}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors" title="Download"><Download size={14} /></a>}
         <button onClick={e => { e.stopPropagation(); onDelete(form); }} className="ml-auto p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete"><Trash2 size={14} /></button>
       </div>
@@ -171,9 +174,17 @@ const CandidateEvaluationFormPage = () => {
     }
   };
 
-  const handleViewForm = async (form) => {
+  const handleViewForm = async (form, isLivePreview = false) => {
     if (form.type === 'dynamic') {
-      if (isNaN(form.id)) navigate(`/hr/recruitment/cef/${form.id}/edit`);
+      if (form.public_url) {
+        if (isLivePreview) {
+          window.open(`/forms/${form.public_url}`, '_blank');
+        } else {
+          setViewingForm(form);
+        }
+      } else {
+        Swal.fire('Not Available', 'Form preview is not available.', 'info');
+      }
     } else {
       setViewingForm(form);
     }
@@ -361,10 +372,33 @@ const CandidateEvaluationFormPage = () => {
       </Modal>
 
       {/* ── Preview Modal (file-based forms) ── */}
-      <Modal isOpen={!!viewingForm} onClose={() => setViewingForm(null)} title={viewingForm?.label || 'Preview'} maxWidth="max-w-5xl">
+      <Modal 
+        isOpen={!!viewingForm} 
+        onClose={() => setViewingForm(null)} 
+        title={viewingForm?.label || 'Preview'} 
+        maxWidth="max-w-5xl"
+        headerActions={
+          viewingForm ? (
+            <button
+              onClick={() => {
+                const formToEdit = viewingForm;
+                setViewingForm(null);
+                handleEditForm(formToEdit);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-[var(--accent)] text-white text-xs font-bold rounded-lg hover:opacity-90 transition-opacity"
+            >
+              <Pencil size={14} /> Edit Form
+            </button>
+          ) : null
+        }
+      >
         <div className="w-full h-[80vh] bg-gray-50 dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800">
           {viewingForm && (
-            <iframe src={`${API_URL}/hr/cef-forms/view/${viewingForm.id}`} className="w-full h-full border-0" title="Form Preview" />
+            <iframe 
+              src={viewingForm.type === 'dynamic' ? `${window.location.origin}/forms/${viewingForm.public_url}?mode=view` : `${API_URL}/hr/cef-forms/view/${viewingForm.id}`} 
+              className="w-full h-full border-0" 
+              title="Form Preview" 
+            />
           )}
         </div>
       </Modal>

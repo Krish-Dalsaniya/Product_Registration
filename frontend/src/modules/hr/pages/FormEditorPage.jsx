@@ -626,13 +626,20 @@ const FormEditorPage = () => {
     isSavingRef.current = true;
     setSaveStatus('saving');
     try {
-      await updateDynamicForm(id, {
+      const response = await updateDynamicForm(id, {
         label: form.title,
         form_mode: form.form_mode || 'assessment',
         form_schema: newSchema,
         ...overrides,
       });
       setSaveStatus('saved');
+      
+      // If the backend created a new version (e.g. because the current one was published),
+      // update the URL so we are editing the new draft version.
+      if (response && response.data && response.data.id && response.data.id !== id) {
+        navigate(`/hr/recruitment/cef/${response.data.id}/edit`, { replace: true });
+        return; // Don't process pending saves on the old ID, the navigate will trigger a reload
+      }
     } catch (e) {
       setSaveStatus('error');
       console.error(e);
@@ -671,11 +678,15 @@ const FormEditorPage = () => {
     } else {
       setSaveStatus('saving');
       try {
-        await updateDynamicForm(id, {
+        const response = await updateDynamicForm(id, {
           label: updated.title,
           form_mode: updated.form_mode,
         });
         setSaveStatus('saved');
+        
+        if (response && response.data && response.data.id && response.data.id !== id) {
+          navigate(`/hr/recruitment/cef/${response.data.id}/edit`, { replace: true });
+        }
       } catch (e) { setSaveStatus('error'); }
     }
   };

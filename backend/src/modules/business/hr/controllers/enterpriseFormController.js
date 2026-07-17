@@ -51,30 +51,32 @@ const getFormSchema = async (req, res) => {
     }
     const form = formResult.rows[0];
 
-    const formQuery = `
-        SELECT 
-          s.id AS section_id, s.title AS section_title, s.description AS section_desc, s.order_index AS section_order,
-          q.id AS question_id, q.type, q.label, q.is_required, q.order_index AS question_order, 
-          q.placeholder, q.help_text, q.config,
-          o.id AS option_id, o.label AS option_label, o.value AS option_value, o.order_index AS option_order, o.score, o.is_correct,
-          r.id AS row_id, r.label AS row_label, r.order_index AS row_order
-        FROM form_sections s
-        LEFT JOIN form_questions q ON s.id = q.section_id AND q.is_archived = false
-        LEFT JOIN question_options o ON q.id = o.question_id AND o.is_archived = false
-        LEFT JOIN question_rows r ON q.id = r.question_id AND r.is_archived = false
-        WHERE s.form_id = $1 AND s.is_archived = false
-        ORDER BY s.order_index, q.order_index, o.order_index, r.order_index
-      `;
-    const schemaResult = await db.query(formQuery, [id]);
+    const schemaResult = await db.query(`
+      SELECT 
+        s.id AS section_id, s.title AS section_title, s.description AS section_description, s.order_index AS section_order, s.section_type, s.config AS section_config,
+        q.id AS question_id, q.type, q.label, q.is_required, q.order_index AS question_order, 
+        q.placeholder, q.help_text, q.config,
+        o.id AS option_id, o.label AS option_label, o.value AS option_value, o.score, o.is_correct,
+        r.id AS row_id, r.label AS row_label, r.order_index AS row_order
+      FROM form_sections s
+      LEFT JOIN form_questions q ON q.section_id = s.id AND q.is_archived = false
+      LEFT JOIN question_options o ON o.question_id = q.id AND o.is_archived = false
+      LEFT JOIN question_rows r ON r.question_id = q.id
+      WHERE s.form_id = $1 AND s.is_archived = false
+      ORDER BY s.order_index, q.order_index, o.order_index, r.order_index
+    `, [id]);
 
     // Build hierarchical JSON schema
     const sectionsMap = new Map();
     schemaResult.rows.forEach(row => {
       if (!sectionsMap.has(row.section_id)) {
+        const secConfig = row.section_config || {};
         sectionsMap.set(row.section_id, {
           id: row.section_id,
           title: row.section_title,
           description: row.section_description,
+          section_type: row.section_type || 'mixed',
+          layout: secConfig.layout,
           questions: new Map()
         });
       }
@@ -82,6 +84,10 @@ const getFormSchema = async (req, res) => {
       const section = sectionsMap.get(row.section_id);
       
       if (row.question_id && !section.questions.has(row.question_id)) {
+        const qConfig = row.config || {};
+        const qLayout = qConfig.layout;
+        delete qConfig.layout;
+        
         section.questions.set(row.question_id, {
           id: row.question_id,
           type: row.type,
@@ -89,7 +95,8 @@ const getFormSchema = async (req, res) => {
           required: row.is_required,
           placeholder: row.placeholder,
           help_text: row.help_text,
-          config: row.config || {},
+          config: qConfig,
+          layout: qLayout,
           options: [],
           rows: []
         });
@@ -184,16 +191,16 @@ const saveDynamicForm = async (req, res) => {
         // If new version, generate new UUIDs for everything by omitting the old ones
         if (isNewVersion || !sectionId || sectionId.startsWith('sec_')) {
           const secRes = await client.query(
-            `INSERT INTO form_sections (form_id, title, description, order_index, is_archived) VALUES ($1, $2, $3, $4, false) RETURNING id`,
-            [formId, section.title || 'Untitled Section', section.description || '', sIndex]
+            `INSERT INTO form_sections (form_id, title, description, order_index, is_archived, section_type, config) VALUES ($1, $2, $3, $4, false, $5, $6) RETURNING id`,
+            [formId, section.title || 'Untitled Section', section.description || '', sIndex, section.section_type || 'mixed', section.layout ? { layout: section.layout } : {}]
           );
           sectionId = secRes.rows[0].id;
         } else {
           await client.query(
-            `INSERT INTO form_sections (id, form_id, title, description, order_index, is_archived) 
-             VALUES ($1, $2, $3, $4, $5, false) 
-             ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description, order_index = EXCLUDED.order_index, is_archived = false`,
-            [sectionId, formId, section.title || 'Untitled Section', section.description || '', sIndex]
+            `INSERT INTO form_sections (id, form_id, title, description, order_index, is_archived, section_type, config) 
+             VALUES ($1, $2, $3, $4, $5, false, $6, $7) 
+             ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description, order_index = EXCLUDED.order_index, section_type = EXCLUDED.section_type, config = EXCLUDED.config, is_archived = false`,
+            [sectionId, formId, section.title || 'Untitled Section', section.description || '', sIndex, section.section_type || 'mixed', section.layout ? { layout: section.layout } : {}]
           );
         }
         activeSectionIds.push(sectionId);
@@ -202,12 +209,14 @@ const saveDynamicForm = async (req, res) => {
           for (let qIndex = 0; qIndex < section.questions.length; qIndex++) {
             const q = section.questions[qIndex];
             let questionId = q.id;
+            const qConfig = q.config || {};
+            if (q.layout) qConfig.layout = q.layout;
 
             if (isNewVersion || !questionId || questionId.startsWith('q_')) {
               const qRes = await client.query(
                 `INSERT INTO form_questions (form_id, section_id, type, label, is_required, order_index, placeholder, help_text, config, is_archived) 
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false) RETURNING id`,
-                [formId, sectionId, q.type, q.label, !!q.required, qIndex, q.placeholder || '', q.help_text || '', q.config || {}]
+                [formId, sectionId, q.type, q.label, !!q.required, qIndex, q.placeholder || '', q.help_text || '', qConfig]
               );
               questionId = qRes.rows[0].id;
             } else {
@@ -215,7 +224,7 @@ const saveDynamicForm = async (req, res) => {
                 `INSERT INTO form_questions (id, form_id, section_id, type, label, is_required, order_index, placeholder, help_text, config, is_archived) 
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, false) 
                  ON CONFLICT (id) DO UPDATE SET type = EXCLUDED.type, label = EXCLUDED.label, is_required = EXCLUDED.is_required, order_index = EXCLUDED.order_index, help_text = EXCLUDED.help_text, config = EXCLUDED.config, is_archived = false`,
-                [questionId, formId, sectionId, q.type, q.label, !!q.required, qIndex, q.placeholder || '', q.help_text || '', q.config || {}]
+                [questionId, formId, sectionId, q.type, q.label, !!q.required, qIndex, q.placeholder || '', q.help_text || '', qConfig]
               );
             }
             activeQuestionIds.push(questionId);

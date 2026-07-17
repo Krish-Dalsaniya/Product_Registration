@@ -1,9 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
   Plus, Trash2, Copy, GripVertical, ChevronDown, Layers, Star,
   Circle, CheckSquare, Type, Hash, Code2, FileText, LayoutGrid,
-  ChevronUp, Pencil, X, Check, Edit3
+  ChevronUp, Pencil, X, Check, Edit3, Maximize2, Minimize2
 } from 'lucide-react';
 
 import {
@@ -85,7 +102,7 @@ const CEFTypeDropdown = ({ value, allowedTypes, onChange }) => {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-gray-700 dark:text-gray-200"
+        className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-gray-700 dark:text-gray-200 whitespace-nowrap flex-shrink-0"
       >
         <span className="text-gray-400">{current.icon}</span>
         {current.label}
@@ -115,7 +132,7 @@ const CEFQuestionCard = ({
   q, section, sectionType, allowedTypes,
   onUpdate, onRemove, onDuplicate,
   onAddOption, onUpdateOption, onRemoveOption,
-  isActive, onActivate,
+  isActive, onActivate, dragHandleProps,
 }) => {
   const fieldConfig = getCEFFieldConfig(q.type);
   const Builder = fieldConfig?.BuilderComponent;
@@ -125,7 +142,7 @@ const CEFQuestionCard = ({
     <div className={`relative p-3 mb-2 rounded-xl transition-colors ${isActive ? 'bg-white border-2 border-[#60839b] shadow-md z-10' : 'bg-transparent border-2 border-transparent hover:border-gray-100 hover:bg-gray-50/50'}`} onClick={() => !isActive && onActivate()}>
       <div className="pl-6 relative">
         {isActive && (
-          <div className="absolute left-0 top-3 text-gray-300 cursor-grab hover:text-gray-500 transition-colors" title="Drag to reorder (coming soon)">
+          <div {...(dragHandleProps || {})} className="absolute left-0 top-3 text-gray-300 cursor-grab hover:text-gray-500 transition-colors">
             <GripVertical size={16} />
           </div>
         )}
@@ -133,13 +150,13 @@ const CEFQuestionCard = ({
         {/* Header / Editor */}
         {isActive ? (
           <div className="mb-3">
-            <div className="flex gap-4 items-start mb-2">
+            <div className="flex flex-wrap gap-2 items-start mb-2">
               <input
                 type="text"
                 value={q.label}
                 onChange={e => onUpdate({ label: e.target.value })}
                 placeholder={q.type === 'cef_rating' ? 'Category name (e.g. C & Embedded C)' : 'Question text'}
-                className="flex-1 text-[14px] font-bold bg-white border border-[#a1b9ca] px-2 py-1 outline-none focus:border-[#60839b] text-[#4a728a]"
+                className="flex-1 min-w-[120px] text-[14px] font-bold bg-white border border-[#a1b9ca] px-2 py-1 outline-none focus:border-[#60839b] text-[#4a728a]"
               />
               {isMixed && (
                 <CEFTypeDropdown
@@ -198,6 +215,15 @@ const CEFQuestionCard = ({
                 <div className={`w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${q.required ? 'translate-x-4' : 'translate-x-0'}`} />
               </div>
             </label>
+            <div className="w-px h-5 bg-gray-300 ml-1" />
+            <button
+              type="button"
+              onClick={() => onUpdate({ layout: { ...(q.layout || {}), w: (q.layout?.w || 1) === 2 ? 1 : 2 } })}
+              className="p-1.5 text-gray-500 hover:text-[#60839b] transition-colors rounded hover:bg-white"
+              title={(q.layout?.w || 1) === 2 ? 'Make Half Width' : 'Make Full Width'}
+            >
+              {(q.layout?.w || 1) === 2 ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
           </div>
         )}
       </div>
@@ -205,29 +231,82 @@ const CEFQuestionCard = ({
   );
 };
 
+/* ─── Sortable Section Wrapper ───────────────────────────────── */
+const SortableSection = ({ section, renderContent }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id, data: { type: 'section' } });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.4 : 1,
+    gridColumn: `span ${section.layout?.w || 2}`,
+    minWidth: 0,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`relative flex flex-col h-full rounded-xl transition-all ${isDragging ? 'shadow-2xl ring-2 ring-[#60839b] bg-white' : ''}`}>
+      {renderContent({ dragHandleProps: { ...attributes, ...listeners } })}
+    </div>
+  );
+};
+
+/* ─── Sortable Question Wrapper ──────────────────────────────── */
+const SortableQuestion = ({ question, sectionId, renderContent }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: question.id, data: { type: 'question', sectionId } });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : 1,
+    gridColumn: `span ${question.layout?.w || 1}`,
+    minWidth: 0,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      {renderContent({ dragHandleProps: { ...attributes, ...listeners } })}
+    </div>
+  );
+};
+
 /* ─── Section Header (WYSIWYG) ────────────────────────────────── */
-const SectionHeader = ({ section, sectionType, sIdx, total, onUpdate, onRemove, onDuplicate, collapsed, onToggleCollapse }) => {
+const SectionHeader = ({ section, sectionType, sIdx, total, onUpdate, onRemove, onDuplicate, collapsed, onToggleCollapse, dragHandleProps }) => {
+  const w = section.layout?.w || 2;
+  const toggleWidth = () => {
+    onUpdate({ layout: { ...(section.layout || { order: sIdx }), w: w === 1 ? 2 : 1 } });
+  };
+
   return (
     <div className="group/section flex items-start justify-between mb-3 pt-4 border-t-2 border-gray-100">
-      <div className="flex-1 min-w-0 pr-4">
-        <div className="relative group cursor-text mb-1">
+      <div className="flex-1 min-w-0 pr-4 flex items-center gap-2">
+        <div 
+          {...(dragHandleProps || {})} 
+          className="cursor-grab hover:text-gray-600 text-gray-300 transition-colors"
+          title="Drag to reorder section"
+        >
+          <GripVertical size={16} />
+        </div>
+        <div className="relative group cursor-text flex-1">
           <input
             type="text"
             value={section.title}
             onChange={e => onUpdate({ title: e.target.value })}
             placeholder="Click to enter Section Title..."
             title="Click to edit section title"
-            className="w-full text-[17px] font-bold text-[#60839b] bg-[#f8fafc] border border-gray-300 border-dashed hover:border-gray-400 focus:border-[#60839b] focus:border-solid focus:bg-white rounded px-2 pr-8 -ml-2 py-1 outline-none transition-all placeholder-gray-400"
+            className="w-full text-[22px] font-bold text-[#60839b] bg-[#f8fafc] border border-gray-300 border-dashed hover:border-gray-400 focus:border-[#60839b] focus:border-solid focus:bg-white rounded px-2 pr-8 -ml-2 py-1 outline-none transition-all placeholder-gray-400"
           />
-          <Edit3 size={15} className="text-[#60839b] opacity-60 group-hover:opacity-100 absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity" />
+          <Edit3 size={15} className="text-[#60839b] opacity-60 group-hover:opacity-100 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity" />
         </div>
       </div>
 
       {/* Actions (visible on hover) */}
-      <div className="flex items-center gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity mt-1">
         <span className="text-[10px] font-bold uppercase text-[#60839b] bg-[#e6edf2] px-2 py-0.5 rounded mr-2">
           {sectionType?.label || 'Mixed'}
         </span>
+        <button type="button" onClick={toggleWidth} className="p-1 text-gray-400 hover:text-[#60839b]" title={w === 1 ? 'Make Full Width' : 'Make Half Width'}>
+          {w === 1 ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+        </button>
         <button type="button" onClick={onToggleCollapse} className="p-1 text-gray-400 hover:text-gray-800" title={collapsed ? 'Expand' : 'Collapse'}>
           {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
         </button>
@@ -350,9 +429,14 @@ const CEFBuilder = ({ schema = [], onChange }) => {
 
   const addQuestion = (sectionId, typeId) => {
     const newQ = makeDefaultQuestion(typeId);
-    const next = localSchema.map(s =>
-      s.id === sectionId ? { ...s, questions: [...s.questions, newQ] } : s
-    );
+    const next = localSchema.map(s => {
+      if (s.id === sectionId) {
+        const qs = [...s.questions, newQ];
+        const sequenced = qs.map((q, i) => ({ ...q, order: i }));
+        return { ...s, questions: sequenced };
+      }
+      return s;
+    });
     push(next);
     setActiveSectionId(sectionId);
     setActiveQuestionId(newQ.id);
@@ -365,12 +449,27 @@ const CEFBuilder = ({ schema = [], onChange }) => {
       options: (q.options || []).map(o => ({ ...o, id: uuidv4() })),
       rows: (q.rows || []).map(r => ({ ...r, id: uuidv4() })),
     };
-    push(localSchema.map(s => s.id === sectionId ? { ...s, questions: [...s.questions, dup] } : s));
+    push(localSchema.map(s => {
+      if (s.id === sectionId) {
+        const idx = s.questions.findIndex(x => x.id === q.id);
+        const qs = [...s.questions.slice(0, idx + 1), dup, ...s.questions.slice(idx + 1)];
+        const sequenced = qs.map((x, i) => ({ ...x, order: i }));
+        return { ...s, questions: sequenced };
+      }
+      return s;
+    }));
     setActiveQuestionId(dup.id);
   };
 
   const removeQuestion = (sectionId, qId) => {
-    push(localSchema.map(s => s.id === sectionId ? { ...s, questions: s.questions.filter(q => q.id !== qId) } : s));
+    push(localSchema.map(s => {
+      if (s.id === sectionId) {
+        const qs = s.questions.filter(x => x.id !== qId);
+        const sequenced = qs.map((x, i) => ({ ...x, order: i }));
+        return { ...s, questions: sequenced };
+      }
+      return s;
+    }));
     if (activeQuestionId === qId) setActiveQuestionId(null);
   };
 
@@ -405,12 +504,14 @@ const CEFBuilder = ({ schema = [], onChange }) => {
   };
 
   const addSection = (sectionTypeDef) => {
+    const nextOrder = localSchema.length > 0 ? Math.max(...localSchema.map(s => s.layout?.order ?? 0)) + 1 : 0;
     const sec = {
       id: uuidv4(),
       title: `${sectionTypeDef.label} Section`,
       description: '',
       section_type: sectionTypeDef.id,
       questions: [],
+      layout: { order: nextOrder, w: 2 },
     };
     const next = [...localSchema, sec];
     push(next);
@@ -432,10 +533,12 @@ const CEFBuilder = ({ schema = [], onChange }) => {
         options: (q.options || []).map(o => ({ ...o, id: uuidv4() })),
         rows: (q.rows || []).map(r => ({ ...r, id: uuidv4() })),
       })),
+      layout: { ...(src.layout || {}), w: src.layout?.w || 2 },
     };
     const idx = localSchema.findIndex(s => s.id === sId);
     const next = [...localSchema.slice(0, idx + 1), dup, ...localSchema.slice(idx + 1)];
-    push(next);
+    const sequenced = next.map((s, i) => ({ ...s, layout: { ...(s.layout || {}), order: i } }));
+    push(sequenced);
   };
 
   const updateSection = (sId, updates) => push(localSchema.map(s => s.id === sId ? { ...s, ...updates } : s));
@@ -451,6 +554,56 @@ const CEFBuilder = ({ schema = [], onChange }) => {
     setCollapsedSections(prev => ({ ...prev, [sId]: !prev[sId] }));
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeType = active.data.current?.type;
+
+    if (activeType === 'section') {
+      const oldIndex = sortedSchema.findIndex(s => s.id === active.id);
+      const newIndex = sortedSchema.findIndex(s => s.id === over.id);
+      const moved = arrayMove(sortedSchema, oldIndex, newIndex);
+      const sequenced = moved.map((s, i) => ({ ...s, layout: { ...(s.layout || {}), order: i } }));
+      push(sequenced);
+    }
+
+    if (activeType === 'question') {
+      const sectionId = active.data.current.sectionId;
+      const overSectionId = over.data.current?.sectionId;
+      if (sectionId !== overSectionId) return;
+
+      const section = localSchema.find(s => s.id === sectionId);
+      if (!section) return;
+
+      const sortedQuestions = [...section.questions].sort((a, b) => {
+        const aOrder = a.order ?? section.questions.indexOf(a);
+        const bOrder = b.order ?? section.questions.indexOf(b);
+        return aOrder - bOrder;
+      });
+
+      const oldIndex = sortedQuestions.findIndex(q => q.id === active.id);
+      const newIndex = sortedQuestions.findIndex(q => q.id === over.id);
+      const reordered = arrayMove(sortedQuestions, oldIndex, newIndex)
+        .map((q, i) => ({ ...q, order: i }));
+
+      push(localSchema.map(s =>
+        s.id === sectionId ? { ...s, questions: reordered } : s
+      ));
+    }
+  };
+
+  const sortedSchema = [...localSchema].sort((a, b) => {
+    const aOrder = a.layout?.order ?? localSchema.indexOf(a);
+    const bOrder = b.layout?.order ?? localSchema.indexOf(b);
+    return aOrder - bOrder;
+  });
+
   return (
     <>
       {showSectionModal && (
@@ -465,70 +618,96 @@ const CEFBuilder = ({ schema = [], onChange }) => {
           Enterprise Interview Assessment Builder
         </div>
         <div className="space-y-6">
-          {localSchema.map((section, sIdx) => {
-            const sectionType = getCEFSectionType(section.section_type || 'mixed');
-            const allowedTypes = sectionType?.allowedTypes || Object.keys(CEF_FIELD_REGISTRY);
-            const isCollapsed = collapsedSections[section.id];
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sortedSchema.map(s => s.id)} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-2 gap-4">
+                {sortedSchema.map((section, sIdx) => {
+                  const sectionType = getCEFSectionType(section.section_type || 'mixed');
+                  const allowedTypes = sectionType?.allowedTypes || Object.keys(CEF_FIELD_REGISTRY);
+                  const isCollapsed = collapsedSections[section.id];
 
-            return (
-              <div key={section.id} className="relative">
-                {/* Section Header */}
-                <SectionHeader
-                  section={section}
-                  sectionType={sectionType}
-                  sIdx={sIdx}
-                  total={localSchema.length}
-                  onUpdate={updates => updateSection(section.id, updates)}
-                  onRemove={() => removeSection(section.id)}
-                  onDuplicate={() => duplicateSection(section.id)}
-                  collapsed={isCollapsed}
-                  onToggleCollapse={() => toggleCollapse(section.id)}
-                />
+                  return (
+                    <SortableSection key={section.id} section={section} renderContent={({ dragHandleProps }) => (
+                      <div className="p-4 flex-1">
+                        {/* Section Header */}
+                        <SectionHeader
+                          section={section}
+                          sectionType={sectionType}
+                          sIdx={sIdx}
+                          total={sortedSchema.length}
+                          onUpdate={updates => updateSection(section.id, updates)}
+                          onRemove={() => removeSection(section.id)}
+                          onDuplicate={() => duplicateSection(section.id)}
+                          collapsed={isCollapsed}
+                          onToggleCollapse={() => toggleCollapse(section.id)}
+                          dragHandleProps={dragHandleProps}
+                        />
 
-                {/* Questions */}
-                {!isCollapsed && (
-                  <div className={sectionType.id === 'rating' ? 'grid grid-cols-1 md:grid-cols-2 md:gap-x-12' : 'flex flex-col'}>
-                    {section.questions.map(q => (
-                      <CEFQuestionCard
-                        key={q.id}
-                        q={q}
-                        section={section}
-                        sectionType={sectionType}
-                        allowedTypes={allowedTypes}
-                        isActive={activeQuestionId === q.id}
-                        onActivate={() => { setActiveQuestionId(q.id); setActiveSectionId(section.id); }}
-                        onUpdate={updates => updateQuestion(section.id, q.id, updates)}
-                        onRemove={() => removeQuestion(section.id, q.id)}
-                        onDuplicate={() => duplicateQuestion(section.id, q)}
-                        onAddOption={() => addOption(section.id, q.id)}
-                        onUpdateOption={(idx, updates) => updateOption(section.id, q.id, idx, updates)}
-                        onRemoveOption={idx => removeOption(section.id, q.id, idx)}
-                      />
-                    ))}
+                        {/* Questions */}
+                        {!isCollapsed && (
+                          <div
+                            className={sectionType.id !== 'rating' ? 'grid grid-cols-2 gap-x-8 gap-y-5' : ''}
+                            style={sectionType.id === 'rating'
+                              ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', columnGap: '2.5rem', rowGap: '1.5rem' }
+                              : {}}
+                          >
+                            {(() => {
+                              const sortedQuestions = [...section.questions].sort((a, b) => {
+                                const aOrder = a.order ?? section.questions.indexOf(a);
+                                const bOrder = b.order ?? section.questions.indexOf(b);
+                                return aOrder - bOrder;
+                              });
+                              return (
+                                <SortableContext items={sortedQuestions.map(q => q.id)} strategy={verticalListSortingStrategy}>
+                                  {sortedQuestions.map(q => (
+                                    <SortableQuestion key={q.id} question={q} sectionId={section.id} renderContent={({ dragHandleProps }) => (
+                                      <CEFQuestionCard
+                                        q={q}
+                                        section={section}
+                                        sectionType={sectionType}
+                                        allowedTypes={allowedTypes}
+                                        isActive={activeQuestionId === q.id}
+                                        onActivate={() => { setActiveQuestionId(q.id); setActiveSectionId(section.id); }}
+                                        onUpdate={updates => updateQuestion(section.id, q.id, updates)}
+                                        onRemove={() => removeQuestion(section.id, q.id)}
+                                        onDuplicate={() => duplicateQuestion(section.id, q)}
+                                        onAddOption={() => addOption(section.id, q.id)}
+                                        onUpdateOption={(idx, updates) => updateOption(section.id, q.id, idx, updates)}
+                                        onRemoveOption={idx => removeOption(section.id, q.id, idx)}
+                                        dragHandleProps={dragHandleProps}
+                                      />
+                                    )} />
+                                  ))}
+                                </SortableContext>
+                              );
+                            })()}
 
-                    {/* Add Question Bar */}
-                    <AddQuestionBar
-                      sectionType={sectionType}
-                      onAdd={typeId => addQuestion(section.id, typeId)}
-                    />
-                  </div>
-                )}
-
-                {/* Add Section — only after last section */}
-                {sIdx === localSchema.length - 1 && (
-                  <div className="flex items-center gap-2 mt-8 pt-8 border-t border-gray-200 justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowSectionModal(true)}
-                      className="flex items-center gap-2 px-5 py-2 bg-[#e6edf2] text-[#60839b] font-bold text-[11px] uppercase tracking-wide hover:bg-[#60839b] hover:text-white transition-colors rounded"
-                    >
-                      <Layers size={14} /> ADD NEW SECTION
-                    </button>
-                  </div>
-                )}
+                            {/* Add Question Bar */}
+                            <div className="col-span-2">
+                              <AddQuestionBar
+                                sectionType={sectionType}
+                                onAdd={typeId => addQuestion(section.id, typeId)}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )} />
+                  );
+                })}
               </div>
-            );
-          })}
+            </SortableContext>
+          </DndContext>
+          
+          <div className="flex items-center gap-2 mt-8 pt-8 border-t border-gray-200 justify-center">
+            <button
+              type="button"
+              onClick={() => setShowSectionModal(true)}
+              className="flex items-center gap-2 px-5 py-2 bg-[#e6edf2] text-[#60839b] font-bold text-[11px] uppercase tracking-wide hover:bg-[#60839b] hover:text-white transition-colors rounded"
+            >
+              <Layers size={14} /> ADD NEW SECTION
+            </button>
+          </div>
         </div>
       </div>
     </>

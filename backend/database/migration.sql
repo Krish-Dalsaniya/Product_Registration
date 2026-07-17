@@ -1298,3 +1298,7 @@ ALTER TABLE IF EXISTS forms ADD COLUMN IF NOT EXISTS form_mode VARCHAR(20) DEFAU
 -- All existing forms remain backward compatible.
 -- Response storage is unchanged: cef_rating uses text_value (JSON grid),
 -- cef_code uses text_value (source code), cef_rtf uses text_value (HTML).
+
+-- Auto-generated additive upgrades for form_sections (Layout & Type)
+ALTER TABLE form_sections ADD COLUMN IF NOT EXISTS section_type VARCHAR(50) DEFAULT 'mixed';
+ALTER TABLE form_sections ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}'::jsonb;

@@ -32,26 +32,7 @@ export const SkillMatrixBuilder = ({ q, isActive, onUpdate }) => {
 
   return (
     <div className="mt-4 space-y-3">
-      {/* Layout Config */}
-      {isActive && (
-        <div className="flex items-center gap-4 mb-4 bg-gray-50/50 p-2 rounded-lg border border-gray-100">
-          <label className="text-[11px] font-bold text-gray-500 uppercase">Layout:</label>
-          <div className="flex bg-white rounded-md border border-gray-200 overflow-hidden shadow-sm">
-            <button
-              onClick={() => onUpdate({ config: { ...q.config, columns: 1 } })}
-              className={`px-3 py-1 text-xs font-bold transition-colors ${!q.config?.columns || q.config.columns === 1 ? 'bg-[#60839b] text-white' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              1 Column (Half Width)
-            </button>
-            <button
-              onClick={() => onUpdate({ config: { ...q.config, columns: 2 } })}
-              className={`px-3 py-1 text-xs font-bold transition-colors border-l border-gray-200 ${q.config?.columns === 2 ? 'bg-[#60839b] text-white' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              2 Columns (Full Width)
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* Skill Rows */}
       <div className="space-y-1.5">
@@ -132,12 +113,10 @@ export const SkillMatrixRenderer = ({ q, value = '{}', onChange, disabled }) => 
     return <div className="text-sm text-gray-400 italic py-1">No skills defined yet.</div>;
   }
 
-  const columns = q.config?.columns === 2 ? 2 : 1;
-
   return (
     <div className="w-full">
       {/* Skill rows */}
-      <div className={columns === 2 ? "grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-1" : "flex flex-col gap-y-1"}>
+      <div className="flex flex-col gap-y-1">
         {rows.map((row) => {
           const selectedColId = (gridAns[row.id] || [])[0] || null;
           return (

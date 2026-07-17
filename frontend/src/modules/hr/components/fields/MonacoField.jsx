@@ -48,8 +48,8 @@ const MONACO_OPTIONS = {
 
 /* ─── Monaco Loading Fallback ────────────────────────────────── */
 const MonacoLoadingFallback = () => (
-  <div className="flex items-center justify-center h-48 bg-[#1e1e1e] rounded-b-lg border border-gray-700">
-    <div className="flex items-center gap-3 text-gray-400">
+  <div className="flex items-center justify-center h-48 bg-gray-50 border border-gray-200 rounded-b-lg">
+    <div className="flex items-center gap-3 text-gray-500">
       <Code2 size={20} className="animate-pulse" />
       <span className="text-sm font-mono">Loading editor...</span>
     </div>
@@ -96,11 +96,11 @@ export const MonacoBuilder = ({ q, isActive, onUpdate }) => {
       {/* Editor Preview in Builder */}
       <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
         {/* Title bar */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-[#1e1e1e] border-b border-gray-700">
+        <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
           <div className="w-3 h-3 rounded-full bg-red-500/80" />
           <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
           <div className="w-3 h-3 rounded-full bg-green-500/80" />
-          <span className="ml-3 text-xs text-gray-400 font-mono">
+          <span className="ml-3 text-xs text-gray-600 dark:text-gray-400 font-mono">
             {SUPPORTED_LANGUAGES.find(l => l.value === language)?.label || 'Code'} • {language === 'cpp' ? 'solution.cpp' : language === 'python' ? 'solution.py' : language === 'java' ? 'Solution.java' : `solution.${language}`}
           </span>
         </div>
@@ -108,7 +108,7 @@ export const MonacoBuilder = ({ q, isActive, onUpdate }) => {
           <MonacoEditor
             height="200px"
             language={language}
-            theme="vs-dark"
+            theme="light"
             value={q.starter_code || placeholder}
             onChange={val => onUpdate({ starter_code: val || '' })}
             options={{ ...MONACO_OPTIONS, readOnly: false }}
@@ -134,11 +134,11 @@ export const MonacoRenderer = ({ q, value, onChange, disabled }) => {
   return (
     <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
       {/* Title bar */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-[#1e1e1e] border-b border-gray-700">
+      <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
         <div className="w-3 h-3 rounded-full bg-red-500/80" />
         <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
         <div className="w-3 h-3 rounded-full bg-green-500/80" />
-        <span className="ml-3 text-xs text-gray-400 font-mono">
+        <span className="ml-3 text-xs text-gray-600 dark:text-gray-400 font-mono">
           {SUPPORTED_LANGUAGES.find(l => l.value === language)?.label || language}
         </span>
         <span className="ml-auto text-[10px] text-gray-600 font-mono uppercase tracking-wider">
@@ -149,7 +149,7 @@ export const MonacoRenderer = ({ q, value, onChange, disabled }) => {
         <MonacoEditor
           height="320px"
           language={language}
-          theme="vs-dark"
+          theme="light"
           value={code}
           onChange={val => !disabled && onChange(val || '')}
           options={{ ...MONACO_OPTIONS, readOnly: !!disabled }}
