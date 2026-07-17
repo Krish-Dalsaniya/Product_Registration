@@ -130,7 +130,7 @@ const CEFTypeDropdown = ({ value, allowedTypes, onChange }) => {
 /* ─── Question Card (WYSIWYG) ─────────────────────────────────── */
 const CEFQuestionCard = ({
   q, section, sectionType, allowedTypes,
-  onUpdate, onRemove, onDuplicate,
+  onUpdate, onRemove, onDuplicate, onAddMultiple,
   onAddOption, onUpdateOption, onRemoveOption,
   isActive, onActivate, dragHandleProps,
 }) => {
@@ -138,8 +138,24 @@ const CEFQuestionCard = ({
   const Builder = fieldConfig?.BuilderComponent;
   const isMixed = sectionType?.id === 'mixed';
 
+  const handleKeyDown = (e) => {
+    if (!isActive) return;
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+      e.preventDefault();
+      onDuplicate();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'Backspace' || e.key === 'Delete')) {
+      e.preventDefault();
+      onRemove();
+    }
+  };
+
   return (
-    <div className={`relative p-3 mb-2 rounded-xl transition-colors ${isActive ? 'bg-white border-2 border-[#60839b] shadow-md z-10' : 'bg-transparent border-2 border-transparent hover:border-gray-100 hover:bg-gray-50/50'}`} onClick={() => !isActive && onActivate()}>
+    <div 
+      className={`relative p-3 mb-2 rounded-xl transition-colors ${isActive ? 'bg-white border-2 border-[#60839b] shadow-md z-10' : 'bg-transparent border-2 border-transparent hover:border-gray-100 hover:bg-gray-50/50'}`} 
+      onClick={() => !isActive && onActivate()}
+      onKeyDown={handleKeyDown}
+    >
       <div className="pl-6 relative">
         {isActive && (
           <div {...(dragHandleProps || {})} className="absolute left-0 top-3 text-gray-300 cursor-grab hover:text-gray-500 transition-colors">
@@ -155,6 +171,17 @@ const CEFQuestionCard = ({
                 type="text"
                 value={q.label}
                 onChange={e => onUpdate({ label: e.target.value })}
+                onPaste={(e) => {
+                  const paste = e.clipboardData.getData('text');
+                  if (paste.includes('\n')) {
+                    const lines = paste.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                    if (lines.length > 1) {
+                      e.preventDefault();
+                      onUpdate({ label: lines[0] });
+                      if (onAddMultiple) onAddMultiple(lines.slice(1));
+                    }
+                  }
+                }}
                 placeholder={q.type === 'cef_rating' ? 'Category name (e.g. C & Embedded C)' : 'Question text'}
                 className="flex-1 min-w-[120px] text-[14px] font-bold bg-white border border-[#a1b9ca] px-2 py-1 outline-none focus:border-[#60839b] text-[#4a728a]"
               />
@@ -442,6 +469,33 @@ const CEFBuilder = ({ schema = [], onChange }) => {
     setActiveQuestionId(newQ.id);
   };
 
+  const addMultipleQuestions = (sectionId, baseQuestionId, labels) => {
+    push(localSchema.map(s => {
+      if (s.id === sectionId) {
+        const baseIdx = s.questions.findIndex(q => q.id === baseQuestionId);
+        if (baseIdx === -1) return s;
+        const baseQuestion = s.questions[baseIdx];
+        
+        const newQuestions = labels.map(label => ({
+          ...baseQuestion,
+          id: uuidv4(),
+          label,
+          options: (baseQuestion.options || []).map(o => ({ ...o, id: uuidv4() })),
+          rows: (baseQuestion.rows || []).map(r => ({ ...r, id: uuidv4() })),
+        }));
+
+        const qs = [
+          ...s.questions.slice(0, baseIdx + 1),
+          ...newQuestions,
+          ...s.questions.slice(baseIdx + 1)
+        ];
+        const sequenced = qs.map((x, i) => ({ ...x, order: i }));
+        return { ...s, questions: sequenced };
+      }
+      return s;
+    }));
+  };
+
   const duplicateQuestion = (sectionId, q) => {
     const dup = {
       ...q,
@@ -668,6 +722,7 @@ const CEFBuilder = ({ schema = [], onChange }) => {
                                         onUpdate={updates => updateQuestion(section.id, q.id, updates)}
                                         onRemove={() => removeQuestion(section.id, q.id)}
                                         onDuplicate={() => duplicateQuestion(section.id, q)}
+                                        onAddMultiple={labels => addMultipleQuestions(section.id, q.id, labels)}
                                         onAddOption={() => addOption(section.id, q.id)}
                                         onUpdateOption={(idx, updates) => updateOption(section.id, q.id, idx, updates)}
                                         onRemoveOption={idx => removeOption(section.id, q.id, idx)}

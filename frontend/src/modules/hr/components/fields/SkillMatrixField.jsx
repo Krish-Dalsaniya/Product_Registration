@@ -48,6 +48,42 @@ export const SkillMatrixBuilder = ({ q, isActive, onUpdate }) => {
               type="text"
               value={row.label}
               onChange={e => updateRow(i, e.target.value)}
+              onPaste={e => {
+                const paste = e.clipboardData.getData('text');
+                let items = [];
+                if (paste.includes('\n')) {
+                  items = paste.split(/\r?\n/);
+                } else if (paste.includes(',')) {
+                  items = paste.split(',');
+                }
+                
+                items = items.map(l => l.trim()).filter(Boolean);
+                
+                if (items.length > 1) {
+                  e.preventDefault();
+                  const newRows = [...rows];
+                  newRows[i] = { ...newRows[i], label: items[0] };
+                  items.slice(1).forEach((l, idx) => {
+                    newRows.splice(i + 1 + idx, 0, { id: uuidv4(), label: l, order_index: 0 });
+                  });
+                  newRows.forEach((r, idx) => { r.order_index = idx; });
+                  onUpdate({ rows: newRows });
+                }
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const newRows = [...rows];
+                  newRows.splice(i + 1, 0, { id: uuidv4(), label: '', order_index: 0 });
+                  newRows.forEach((r, idx) => { r.order_index = idx; });
+                  onUpdate({ rows: newRows });
+                  // Focus is ideally handled via refs, but just adding the row works immediately.
+                  setTimeout(() => {
+                    const inputs = document.querySelectorAll(`input[placeholder="e.g. C-Programming"]`);
+                    if (inputs[i + 1]) inputs[i + 1].focus();
+                  }, 50);
+                }
+              }}
               placeholder="e.g. C-Programming"
               className="w-32 xl:w-40 flex-shrink-0 text-[12px] bg-transparent border-0 border-b border-gray-200 dark:border-gray-700 focus:border-[#60839b] outline-none pb-0.5 text-gray-700 dark:text-gray-300 placeholder-gray-300 transition-colors font-medium"
             />

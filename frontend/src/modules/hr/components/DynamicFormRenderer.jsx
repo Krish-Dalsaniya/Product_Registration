@@ -272,11 +272,6 @@ const CEFSectionRenderer = ({ section, answers, onAnswerUpdate, disabled }) => {
 
     return (
       <div className="mb-4">
-        {section.title && (
-          <div className="text-[22px] font-bold text-[#60839b] mb-3 border-b-2 border-gray-100 pb-1">
-            {section.title}
-          </div>
-        )}
         {section.description && (
           <p className="text-xs text-gray-500 mb-3">{section.description}</p>
         )}
@@ -303,11 +298,6 @@ const CEFSectionRenderer = ({ section, answers, onAnswerUpdate, disabled }) => {
   // Programming, RTF, and Mixed — full-width each
   return (
     <div className="mb-4">
-      {section.title && (
-        <div className="text-[22px] font-bold text-[#60839b] mb-3 border-b-2 border-gray-100 pb-1">
-          {section.title}
-        </div>
-      )}
       {section.description && (
         <p className="text-[13px] text-gray-500 mb-3">{section.description}</p>
       )}

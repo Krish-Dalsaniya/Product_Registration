@@ -806,6 +806,8 @@ const CandidatePage = () => {
         submitData.append('technical_details', JSON.stringify(combinedTechDetails));
       }
 
+      submitData.append('extracted_info', JSON.stringify(liveExtractedInfo));
+
       // Append files
       Object.keys(uploadMock).forEach(key => {
         if (uploadMock[key] instanceof File) {

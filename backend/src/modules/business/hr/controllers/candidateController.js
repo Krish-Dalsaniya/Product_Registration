@@ -116,6 +116,11 @@ exports.createCandidate = async (req, res, next) => {
             try { parsedShortlistedFor = JSON.parse(shortlistedFor); } catch(e) { parsedShortlistedFor = []; }
         }
 
+        let extractedInfoPayload = {};
+        if (req.body.extracted_info) {
+            try { extractedInfoPayload = JSON.parse(req.body.extracted_info); } catch(e) {}
+        }
+
         // Generate fallback string for NOT NULL position column
         const positionFallback = Array.isArray(parsedAppliedAt) && parsedAppliedAt.length > 0 
             ? parsedAppliedAt.join(', ') 
@@ -159,13 +164,13 @@ exports.createCandidate = async (req, res, next) => {
                 current_location, relocate, education_route, date_of_birth,
                 total_years, designation, current_company, past_experiences,
                 documents, status, technical_details, education_details,
-                applied_at, shortlisted_for
+                applied_at, shortlisted_for, extracted_info
             ) VALUES (
                 $1, $2, $3, $4, $5, $6,
                 $7, $8, $9, $10,
                 $11, $12, $13, $14,
                 $15, 'Applied', $16, $17,
-                $18, $19
+                $18, $19, $20
             ) RETURNING *
         `;
 
@@ -188,7 +193,8 @@ exports.createCandidate = async (req, res, next) => {
             JSON.stringify(techDetails || {}),
             JSON.stringify(eduDetails || {}),
             JSON.stringify(parsedAppliedAt || []),
-            JSON.stringify(parsedShortlistedFor || [])
+            JSON.stringify(parsedShortlistedFor || []),
+            JSON.stringify(extractedInfoPayload)
         ];
 
         const result = await query(sql, values);
@@ -198,7 +204,8 @@ exports.createCandidate = async (req, res, next) => {
         extractCandidateInfo(localDocuments, process.cwd()).then(async (extractedInfo) => {
             if (extractedInfo && Object.keys(extractedInfo).length > 0) {
                 try {
-                    await query('UPDATE hr_candidates SET extracted_info = $1 WHERE id = $2', [JSON.stringify(extractedInfo), newCandidateId]);
+                    const mergedInfo = { ...extractedInfoPayload, ...extractedInfo };
+                    await query('UPDATE hr_candidates SET extracted_info = $1 WHERE id = $2', [JSON.stringify(mergedInfo), newCandidateId]);
                     console.log(`Successfully updated AI insights for candidate ${newCandidateId}`);
                 } catch (e) {
                     console.error("Failed to update candidate extracted_info:", e);
@@ -373,15 +380,31 @@ exports.updateCandidate = async (req, res, next) => {
             try { parsedShortlistedFor = JSON.parse(shortlistedFor); } catch(e) { parsedShortlistedFor = []; }
         }
 
+        let extractedInfoPayload = null;
+        if (req.body.extracted_info) {
+            try { extractedInfoPayload = JSON.parse(req.body.extracted_info); } catch(e) {}
+        }
+
         const positionFallback = Array.isArray(parsedAppliedAt) && parsedAppliedAt.length > 0 
             ? parsedAppliedAt.join(', ') 
             : (position || 'N/A');
 
         // Fetch existing candidate to merge documents if files aren't updated
-        const existingSql = `SELECT documents FROM hr_candidates WHERE id = $1`;
+        const existingSql = `SELECT documents, extracted_info FROM hr_candidates WHERE id = $1`;
         const existingResult = await query(existingSql, [id]);
         if (existingResult.rows.length === 0) {
             return res.status(404).json({ success: false, message: 'Candidate not found' });
+        }
+        
+        let existingExtractedInfo = {};
+        try {
+            existingExtractedInfo = typeof existingResult.rows[0].extracted_info === 'string'
+                ? JSON.parse(existingResult.rows[0].extracted_info)
+                : (existingResult.rows[0].extracted_info || {});
+        } catch(e) {}
+        
+        if (extractedInfoPayload) {
+            existingExtractedInfo = { ...existingExtractedInfo, ...extractedInfoPayload };
         }
         
         let documents = {};
@@ -426,8 +449,8 @@ exports.updateCandidate = async (req, res, next) => {
                 current_location = $7, relocate = $8, education_route = $9, date_of_birth = $10,
                 total_years = $11, designation = $12, current_company = $13, past_experiences = $14,
                 documents = $15, technical_details = $16, education_details = $17, 
-                applied_at = $18, shortlisted_for = $19, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $20
+                applied_at = $18, shortlisted_for = $19, extracted_info = $20, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $21
             RETURNING *
         `;
 
@@ -440,7 +463,7 @@ exports.updateCandidate = async (req, res, next) => {
             expDetails?.current_company || null,
             JSON.stringify(expDetails?.past_experiences || []),
             JSON.stringify(documents), JSON.stringify(techDetails || {}), JSON.stringify(eduDetails || {}), 
-            JSON.stringify(parsedAppliedAt || []), JSON.stringify(parsedShortlistedFor || []), id
+            JSON.stringify(parsedAppliedAt || []), JSON.stringify(parsedShortlistedFor || []), JSON.stringify(existingExtractedInfo), id
         ];
 
         const result = await query(sql, values);
@@ -460,7 +483,7 @@ exports.updateCandidate = async (req, res, next) => {
                             }
                         } catch (e) {}
 
-                        const mergedInfo = { ...currentExtractedInfo, ...extractedInfo };
+                        const mergedInfo = { ...existingExtractedInfo, ...currentExtractedInfo, ...extractedInfo };
                         await query('UPDATE hr_candidates SET extracted_info = $1 WHERE id = $2', [JSON.stringify(mergedInfo), id]);
                         console.log(`Successfully updated AI insights for candidate ${id} after update`);
                     } catch (e) {

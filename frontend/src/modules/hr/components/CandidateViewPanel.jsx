@@ -175,13 +175,13 @@ const CandidateViewPanel = ({ candidateId, onClose }) => {
                 </div>
 
                 {/* Right Column: Application Timeline */}
-                <div className="w-full lg:w-[35%] h-full overflow-y-auto custom-scrollbar bg-white border-l border-[var(--border-color)] p-6 relative">
-                    <div className="sticky top-0 bg-white z-10 pb-4 mb-4 border-b border-[var(--border-color)]/50">
+                <div className="w-full lg:w-[35%] h-full overflow-y-auto custom-scrollbar bg-white border-l border-[var(--border-color)] relative">
+                    <div className="sticky top-0 bg-white z-30 px-6 pt-6 pb-4 border-b border-[var(--border-color)]/50">
                         <h3 className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest">Application Timeline</h3>
                         <p className="text-[10px] font-semibold text-[var(--text-muted)] mt-1">Track candidate progress</p>
                     </div>
                     
-                    <div className="pr-2">
+                    <div className="px-6 pb-6 pr-8">
                         <CandidateTimeline 
                             experienceType={candidate.experience_type}
                             pastExperiences={typeof candidate.past_experiences === 'string' ? JSON.parse(candidate.past_experiences || '[]') : (candidate.past_experiences || [])}
