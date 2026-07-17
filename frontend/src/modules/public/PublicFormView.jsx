@@ -4,7 +4,7 @@ import axios from 'axios';
 import { getFieldConfig } from '../hr/components/fields/FieldRegistry';
 import {
   CheckCircle2, AlertCircle, ChevronLeft, ChevronRight,
-  Loader2, Send, Edit
+  Loader2, Send, Edit, Download
 } from 'lucide-react';
 import DynamicFormRenderer from '../hr/components/DynamicFormRenderer';
 
@@ -151,13 +151,25 @@ const PublicFormView = () => {
     return (
       <div className="min-h-screen bg-white py-8 relative">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
-
-
           <div className="bg-white">
-            {/* Minimal top bar, no heavy card border */}
-            <div className="px-4 md:px-8 py-4 mb-4">
-              <h1 className="text-2xl md:text-3xl font-bold text-[#60839b] mb-2">{form?.title}</h1>
-              {form?.description && <p className="text-gray-500 text-sm leading-relaxed">{form.description}</p>}
+              {/* Minimal top bar */}
+              <div className="px-4 md:px-8 py-4 mb-4 flex items-start justify-between">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-[#60839b] mb-2">{form?.title}</h1>
+                  {form?.description && <p className="text-gray-500 text-sm leading-relaxed">{form.description}</p>}
+                </div>
+                {!isViewMode && (
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="print:hidden flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-[#60839b] bg-[#e6edf2] hover:bg-[#d0e0eb] rounded transition-colors"
+                    title="Download Form as PDF"
+                  >
+                    <Download size={14} /> Download Form
+                  </button>
+                )}
+              </div>
+            <div className="px-4 md:px-8">
               {email !== undefined && (
                 <div className="mt-4 mb-2">
                   <label className="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Respondent Email (Optional)</label>
@@ -192,6 +204,18 @@ const PublicFormView = () => {
             />
           </div>
         </div>
+
+        <style dangerouslySetInnerHTML={{__html: `
+          @page { size: auto; margin: 0mm; }
+          @media print {
+            body { 
+              background: white !important; 
+              margin: 1.5cm !important;
+            }
+            .shadow-sm { box-shadow: none !important; border: 1px solid #eee; }
+            .min-h-screen { min-height: auto !important; }
+          }
+        `}} />
       </div>
     );
   }
@@ -203,7 +227,19 @@ const PublicFormView = () => {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
           <div className="h-2.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
           <div className="px-8 py-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">{form?.title}</h1>
+            <div className="flex items-start justify-between mb-2">
+              <h1 className="text-2xl font-bold text-gray-800">{form?.title}</h1>
+              {!isViewMode && (
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="print:hidden flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                  title="Download Form as PDF"
+                >
+                  <Download size={14} /> Download
+                </button>
+              )}
+            </div>
             {form?.description && <p className="text-gray-500 text-sm leading-relaxed">{form.description}</p>}
             {email !== undefined && (
               <div className="mt-4 pt-4 border-t border-gray-100">
@@ -292,10 +328,22 @@ const PublicFormView = () => {
         </form>
 
         {/* Footer */}
-        <div className="text-center mt-10 mb-4">
+        <div className="print:hidden text-center mt-10 mb-4">
           <p className="text-xs text-gray-400 font-medium">Powered by <span className="font-semibold text-gray-500">Enterprise Form Engine</span></p>
         </div>
       </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        @page { size: auto; margin: 0mm; }
+        @media print {
+          body { 
+            background: white !important; 
+            margin: 1.5cm !important;
+          }
+          .shadow-sm { box-shadow: none !important; border: 1px solid #eee; }
+          .min-h-screen { min-height: auto !important; }
+        }
+      `}} />
     </div>
   );
 };

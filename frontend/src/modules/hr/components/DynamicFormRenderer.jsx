@@ -311,7 +311,7 @@ const CEFSectionRenderer = ({ section, answers, onAnswerUpdate, disabled }) => {
       {section.description && (
         <p className="text-[13px] text-gray-500 mb-3">{section.description}</p>
       )}
-      <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 print:!grid-cols-1 gap-x-8 gap-y-5">
         {questions.map(q => {
           const isOptionsType = ['radio', 'checkbox', 'dropdown'].includes(q.type);
           const isGridOrMatrix = ['grid_radio', 'grid_checkbox', 'cef_rating'].includes(q.type);
@@ -348,7 +348,7 @@ const CEFSectionRenderer = ({ section, answers, onAnswerUpdate, disabled }) => {
           }
 
           return (
-            <div key={q.id} style={{ gridColumn: `span ${q.layout?.w || 1}` }}>
+            <div key={q.id} className="print:!col-span-2 print:!w-full" style={{ gridColumn: `span ${q.layout?.w || 1}` }}>
               {BlockContent}
             </div>
           );
@@ -479,12 +479,12 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
     return (
       <div className={isPublic ? '' : 'bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden'}>
         <form onSubmit={handleSubmit}>
-          <div className={`grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8 ${isPublic ? 'px-4 md:px-8 pb-8 pt-2' : 'p-8 md:p-12'}`}>
+          <div className={`grid grid-cols-1 md:grid-cols-2 print:!grid-cols-1 gap-x-6 gap-y-8 ${isPublic ? 'px-4 md:px-8 pb-8 pt-2' : 'p-8 md:p-12'}`}>
             {sortedSections.map((section, idx) => (
               <div
                 key={section.id}
                 style={{ gridColumn: `span ${section.layout?.w || 2}` }}
-                className="pt-0"
+                className="pt-0 print:!col-span-2 print:!w-full"
               >
                 <CEFSectionRenderer
                   section={section}

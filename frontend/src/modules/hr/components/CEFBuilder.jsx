@@ -613,10 +613,7 @@ const CEFBuilder = ({ schema = [], onChange }) => {
         />
       )}
 
-      <div className="max-w-4xl mx-auto bg-white border border-[#a1b9ca] p-8 md:p-12 shadow-sm font-sans text-gray-800">
-        <div className="text-right text-[10px] text-gray-400 font-bold mb-4 uppercase tracking-widest border-b border-gray-100 pb-2">
-          Enterprise Interview Assessment Builder
-        </div>
+      <div className="max-w-4xl mx-auto bg-white border border-[#a1b9ca] px-8 md:px-12 pb-8 md:pb-12 pt-4 md:pt-6 shadow-sm font-sans text-gray-800">
         <div className="space-y-6">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={sortedSchema.map(s => s.id)} strategy={rectSortingStrategy}>

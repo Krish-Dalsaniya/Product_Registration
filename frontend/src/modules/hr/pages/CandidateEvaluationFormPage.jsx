@@ -163,10 +163,10 @@ const CandidateEvaluationFormPage = () => {
     } finally { setCreating(false); }
   };
 
-  const handleEditForm = (form) => {
+  const handleEditForm = (form, tab = 'questions') => {
     if (isNaN(form.id)) {
       // Enterprise (digital) form → go to editor
-      navigate(`/hr/recruitment/cef/${form.id}/edit`);
+      navigate(`/hr/recruitment/cef/${form.id}/edit`, { state: { activeTab: tab } });
     } else {
       // File-based form → open legacy upload modal
       setUploadData({ label: form.label, file: null, editId: form.id });
@@ -379,16 +379,28 @@ const CandidateEvaluationFormPage = () => {
         maxWidth="max-w-5xl"
         headerActions={
           viewingForm ? (
-            <button
-              onClick={() => {
-                const formToEdit = viewingForm;
-                setViewingForm(null);
-                handleEditForm(formToEdit);
-              }}
-              className="flex items-center gap-2 px-3 py-1.5 bg-[var(--accent)] text-white text-xs font-bold rounded-lg hover:opacity-90 transition-opacity"
-            >
-              <Pencil size={14} /> Edit Form
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const formToEdit = viewingForm;
+                  setViewingForm(null);
+                  handleEditForm(formToEdit, 'responses');
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:opacity-90 transition-opacity"
+              >
+                <BarChart2 size={14} /> Responses
+              </button>
+              <button
+                onClick={() => {
+                  const formToEdit = viewingForm;
+                  setViewingForm(null);
+                  handleEditForm(formToEdit, 'questions');
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--accent)] text-white text-xs font-bold rounded-lg hover:opacity-90 transition-opacity"
+              >
+                <Pencil size={14} /> Edit Form
+              </button>
+            </div>
           ) : null
         }
       >

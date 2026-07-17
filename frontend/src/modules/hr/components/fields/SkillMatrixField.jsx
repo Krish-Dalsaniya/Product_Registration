@@ -127,7 +127,7 @@ export const SkillMatrixRenderer = ({ q, value = '{}', onChange, disabled }) => 
               </div>
               
               {/* Inline Radio buttons with labels */}
-              <div className="flex-1 flex items-center gap-x-3">
+              <div className="flex-1 flex flex-wrap items-center gap-x-3 gap-y-2 min-w-[200px]">
                 {CEF_RATING_COLS.map(col => {
                   const isSelected = selectedColId === col.id;
                   return (

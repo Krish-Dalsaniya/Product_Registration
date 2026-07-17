@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, Eye, Send, Settings, BarChart2, HelpCircle, MoreVertical,
   Loader2, Globe, Lock, Copy, CheckCircle2, Trash2, ExternalLink,
-  ChevronLeft, ChevronRight, Save, AlertCircle, Download, Edit3
+  ChevronLeft, ChevronRight, Save, AlertCircle, Download, Edit3, User, Users, CheckCircle, XCircle, Award, ListFilter, AlignLeft, Clock, FileText
 } from 'lucide-react';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { getFormSchema, updateDynamicForm, publishForm, getFormResponses, deleteForm } from '../../../api/cefApi';
 import FormBuilder from '../components/FormBuilder';
 import CEFBuilder from '../components/CEFBuilder';
@@ -39,15 +40,37 @@ const getFormattedAnswerString = (ans, formSchema = []) => {
     } catch (e) {}
   }
   
-  if ((q.type === 'grid_radio' || q.type === 'grid_checkbox') && ans.text_value) {
+  if (q.type === 'cef_rtf' && ans.text_value) {
+    try {
+      const doc = new DOMParser().parseFromString(ans.text_value, 'text/html');
+      return doc.body.textContent.trim() || 'No text';
+    } catch (e) {
+      return ans.text_value.replace(/<[^>]+>/g, '').trim() || 'No text';
+    }
+  }
+  
+  if ((q.type === 'grid_radio' || q.type === 'grid_checkbox' || q.type === 'cef_rating') && ans.text_value) {
     try {
       const gridData = JSON.parse(ans.text_value);
       const rowLabels = [];
+      const CEF_RATING_COLS = [
+        { id: 'nil',  label: 'NILL', score: 0 },
+        { id: 'noob', label: 'NOOB', score: 1 },
+        { id: 'mod',  label: 'MOD',  score: 2 },
+        { id: 'adv',  label: 'ADV',  score: 3 },
+        { id: 'ace',  label: 'ACE',  score: 4 },
+      ];
+      
       Object.entries(gridData).forEach(([rowId, colIds]) => {
         const rowObj = (q.rows || []).find(r => r.id === rowId);
         const rLabel = rowObj ? rowObj.label : rowId;
         const cLabels = (Array.isArray(colIds) ? colIds : [colIds]).map(cId => {
-          const colObj = (q.options || []).find(o => o.id === cId);
+          let colObj;
+          if (q.type === 'cef_rating') {
+            colObj = CEF_RATING_COLS.find(o => o.id === cId);
+          } else {
+            colObj = (q.options || []).find(o => o.id === cId);
+          }
           return colObj ? colObj.label : cId;
         }).join(', ');
         if (rLabel && cLabels) rowLabels.push(`${rLabel}: ${cLabels}`);
@@ -64,7 +87,9 @@ const ResponsesPanel = ({ form }) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('summary');
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showOriginalForm, setShowOriginalForm] = useState(false);
   const isSurvey = form?.form_mode === 'survey';
+  const isCEF = form?.form_mode === 'candidate_evaluation';
 
   useEffect(() => {
     const load = async () => {
@@ -77,17 +102,103 @@ const ResponsesPanel = ({ form }) => {
     load();
   }, [form.id]);
 
-  const allQuestions = React.useMemo(() => {
-    if (!data?.responses) return [];
-    const qMap = new Map();
-    data.responses.forEach(r => {
-      (r.answers || []).forEach(a => {
-        if (!qMap.has(a.question_id))
-          qMap.set(a.question_id, { id: a.question_id, label: a.question_label, type: a.question_type });
-      });
+  const handleDownloadPDF = () => {
+    const printElement = document.getElementById('original-form-print-area');
+    if (!printElement) return;
+
+    // Sync input values to attributes so innerHTML captures them correctly
+    const inputs = printElement.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+      if (input.type === 'checkbox' || input.type === 'radio') {
+        if (input.checked) input.setAttribute('checked', 'checked');
+        else input.removeAttribute('checked');
+      } else {
+        input.setAttribute('value', input.value);
+        if (input.tagName === 'TEXTAREA') input.textContent = input.value;
+      }
     });
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.zIndex = '-1';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]')).map(s => s.outerHTML).join('');
+
+    doc.open();
+    doc.write(`
+      <html>
+        <head>
+          <title>Form Response - ${data.responses[currentIndex]?.respondent_email || 'Anonymous'}</title>
+          ${styles}
+          <style>
+             body { background: white !important; margin: 0; padding: 20px; color: black; }
+             @page { margin: 10mm; }
+             * { overflow: visible !important; }
+             .print-hide { display: none !important; }
+          </style>
+        </head>
+        <body>
+          <div style="max-width: 1000px; margin: 0 auto; background: white; padding: 20px;">
+            ${printElement.innerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    iframe.contentWindow.focus();
+    setTimeout(() => {
+      iframe.contentWindow.print();
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 750);
+  };
+
+  const allQuestions = React.useMemo(() => {
+    const qMap = new Map();
+    
+    // 1. Preload ALL questions from the current form schema
+    if (form?.form_schema) {
+      form.form_schema.forEach(sec => {
+        (sec.questions || []).forEach(q => {
+          qMap.set(q.id, {
+            id: q.id,
+            label: q.label || sec.title || 'Untitled Question',
+            type: q.type
+          });
+        });
+      });
+    }
+
+    // 2. Add any additional questions from responses (e.g. deleted questions)
+    if (data?.responses) {
+      data.responses.forEach(r => {
+        (r.answers || []).forEach(a => {
+          if (!qMap.has(a.question_id)) {
+            let label = a.question_label;
+            if (!label && form?.form_schema) {
+              for (const sec of form.form_schema) {
+                const qs = (sec.questions || []).find(q => q.id === a.question_id);
+                if (qs) {
+                  label = sec.title;
+                  break;
+                }
+              }
+            }
+            qMap.set(a.question_id, { id: a.question_id, label: label || 'Untitled Question', type: a.question_type });
+          }
+        });
+      });
+    }
+    
     return Array.from(qMap.values());
-  }, [data]);
+  }, [data, form]);
 
   const chartColors = ['#4f46e5', '#ec4899', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4'];
 
@@ -143,23 +254,35 @@ const ResponsesPanel = ({ form }) => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Stats Row */}
-      <div className="flex flex-wrap gap-4 mb-6">
-        <div className="text-center px-6 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
-          <p className="text-3xl font-black text-[var(--accent)]">{data.total}</p>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Total Responses</p>
+      {/* Premium Dashboard Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 shadow-lg text-white relative overflow-hidden">
+          <div className="relative z-10">
+            <p className="text-indigo-100 text-sm font-bold uppercase tracking-wider mb-1">Total Responses</p>
+            <p className="text-4xl font-black">{data.total}</p>
+          </div>
+          <Users className="absolute -bottom-4 -right-4 w-24 h-24 text-white/10" />
         </div>
-        {!isSurvey && (
+        {!isSurvey && !isCEF && (
           <>
-            <div className="text-center px-6 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
-              <p className="text-3xl font-black text-green-500">{data.responses.filter(r => r.is_passed).length}</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Passed</p>
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 shadow-lg text-white relative overflow-hidden">
+              <div className="relative z-10">
+                <p className="text-emerald-100 text-sm font-bold uppercase tracking-wider mb-1">Pass Rate</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl font-black">{data.total > 0 ? Math.round((data.responses.filter(r => r.is_passed).length / data.total) * 100) : 0}%</p>
+                  <p className="text-emerald-200 text-sm font-medium">{data.responses.filter(r => r.is_passed).length} passed</p>
+                </div>
+              </div>
+              <CheckCircle className="absolute -bottom-4 -right-4 w-24 h-24 text-white/10" />
             </div>
-            <div className="text-center px-6 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
-              <p className="text-3xl font-black text-orange-500">
-                {data.total > 0 ? (data.responses.reduce((a, r) => a + (parseFloat(r.total_score) || 0), 0) / data.total).toFixed(1) : '—'}
-              </p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Avg Score</p>
+            <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 shadow-lg text-white relative overflow-hidden">
+              <div className="relative z-10">
+                <p className="text-amber-100 text-sm font-bold uppercase tracking-wider mb-1">Average Score</p>
+                <p className="text-4xl font-black">
+                  {data.total > 0 ? (data.responses.reduce((a, r) => a + (parseFloat(r.total_score) || 0), 0) / data.total).toFixed(1) : '—'}
+                </p>
+              </div>
+              <Award className="absolute -bottom-4 -right-4 w-24 h-24 text-white/10" />
             </div>
           </>
         )}
@@ -199,89 +322,110 @@ const ResponsesPanel = ({ form }) => {
         <>
           {/* SUMMARY TAB */}
           {activeTab === 'summary' && (
-            <div className="space-y-5">
+            <div className="space-y-6">
               {allQuestions.map((q) => {
-                const isText = ['short_answer', 'long_answer', 'email', 'number', 'date', 'short_text', 'long_text', 'file_upload'].includes(q.type);
+                const isText = ['short_answer', 'long_answer', 'email', 'number', 'date', 'short_text', 'long_text', 'file_upload', 'cef_rtf', 'cef_code'].includes(q.type);
                 const counts = {};
                 const rawAnswers = [];
-                data.responses.forEach(r => {
-                  const ans = (r.answers || []).find(a => a.question_id === q.id);
-                  if (ans) {
-                    const val = getFormattedAnswerString(ans, form?.form_schema) || 'Left blank';
-                    counts[val] = (counts[val] || 0) + 1;
-                    if (val !== 'Left blank' && isText) rawAnswers.push({ val, ans });
-                  }
-                });
+                let skippedCount = data.total || 0;
+                
+                if (data.responses) {
+                  data.responses.forEach(r => {
+                    const ans = (r.answers || []).find(a => a.question_id === q.id);
+                    if (ans) {
+                      skippedCount--;
+                      const val = getFormattedAnswerString(ans, form?.form_schema) || 'Left blank';
+                      
+                      // For multiple choice/checkboxes with multiple selected options, split them so they count individually
+                      if (q.type === 'checkbox' && val.includes(',')) {
+                         val.split(',').forEach(v => {
+                            const trimmed = v.trim();
+                            counts[trimmed] = (counts[trimmed] || 0) + 1;
+                         });
+                      } else {
+                         counts[val] = (counts[val] || 0) + 1;
+                      }
+
+                      if (val !== 'Left blank' && isText) rawAnswers.push({ val, ans, email: r.respondent_email });
+                    }
+                  });
+                }
+                
+                if (skippedCount > 0 && !isText) {
+                  counts['Skipped'] = (counts['Skipped'] || 0) + skippedCount;
+                }
+                
+                const chartData = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, value }));
+
                 return (
-                  <div key={q.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
-                    <p className="font-bold text-gray-800 dark:text-gray-100 mb-1">{q.label}</p>
-                    <p className="text-xs text-gray-400 mb-5 uppercase tracking-widest">{data.total} responses</p>
+                  <div key={q.id} className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-3xl p-8 shadow-sm">
+                    <div className="mb-6">
+                      <p className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">{q.label}</p>
+                      <p className="text-xs text-gray-400 uppercase tracking-widest">{data.total} responses</p>
+                    </div>
                     {isText ? (
-                      <div className="space-y-2">
-                        {rawAnswers.length === 0 ? <p className="text-sm text-gray-400 italic">No text responses.</p> : null}
-                        {rawAnswers.map(({ val, ans }, i) => (
-                          <div key={i} className="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 rounded-xl text-sm text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-gray-700">
-                            {q.type === 'file_upload' ? (
-                               (() => {
+                      <div className="space-y-3">
+                        {rawAnswers.length === 0 ? <p className="text-sm text-gray-400 italic bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">No text responses provided yet.</p> : null}
+                        {rawAnswers.map(({ val, ans, email }, i) => (
+                          <div key={i} className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
+                            <div className="flex items-center gap-2 mb-2">
+                               <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-500 font-bold text-[10px]">
+                                  {(email || 'A')[0].toUpperCase()}
+                               </div>
+                               <span className="text-xs font-semibold text-gray-500">{email || 'Anonymous'}</span>
+                            </div>
+                            <div className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed pl-8">
+                              {q.type === 'file_upload' ? (
+                                (() => {
                                   try {
                                     const files = JSON.parse(ans.text_value);
                                     return <div className="flex gap-3 flex-wrap">{files.map((f, fi) => (
-                                      <a key={fi} href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[var(--accent)] hover:underline">
-                                        📄 {f.original_name || 'File'}
+                                      <a key={fi} href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-indigo-600 hover:text-indigo-700 hover:border-indigo-300 transition-colors shadow-sm text-xs font-medium">
+                                        📄 {f.original_name || 'View File'}
                                       </a>
                                     ))}</div>;
                                   } catch(e) { return val; }
-                               })()
-                            ) : val}
+                                })()
+                              ) : q.type === 'cef_code' ? (
+                                <pre className="bg-gray-900 text-gray-100 p-4 rounded-xl text-xs overflow-x-auto font-mono">
+                                  {val}
+                                </pre>
+                              ) : (
+                                <p className="whitespace-pre-wrap">{val}</p>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([val, count], i) => {
-                          const pct = Math.round((count / data.total) * 100);
-                          
-                          let isCorrect = null;
-                          if (form?.form_mode === 'assessment') {
-                            let schemaQ = null;
-                            for (const sec of (form?.form_schema || [])) {
-                              schemaQ = (sec.questions || []).find(qs => qs.id === q.id);
-                              if (schemaQ) break;
-                            }
-                            if (schemaQ && schemaQ.options) {
-                              const correctOpts = schemaQ.options.filter(o => o.is_correct).map(o => o.label);
-                              if (correctOpts.length > 0) {
-                                if (schemaQ.type === 'checkbox') {
-                                  const valParts = val.split(', ').sort();
-                                  const correctParts = [...correctOpts].sort();
-                                  isCorrect = valParts.length === correctParts.length && valParts.every((v, idx) => v === correctParts[idx]);
-                                } else {
-                                  isCorrect = correctOpts.includes(val);
-                                }
-                              }
-                            }
-                          }
-                          
-                          let barColor = chartColors[i % chartColors.length];
-                          if (isCorrect === true) barColor = '#22c55e'; // Green
-                          else if (isCorrect === false) barColor = '#ef4444'; // Red
-
-                          return (
-                            <div key={i} className="flex flex-col gap-1.5">
-                              <div className="flex justify-between text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                  {val}
-                                  {isCorrect === true && <span className="ml-2 text-green-500 text-xs font-bold">✓ Correct</span>}
-                                  {isCorrect === false && <span className="ml-2 text-red-500 text-xs font-bold">✕ Wrong</span>}
-                                </span>
-                                <span className="text-gray-400">{count} ({pct}%)</span>
-                              </div>
-                              <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: barColor }} />
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div className="mt-4">
+                        {['radio', 'dropdown', 'boolean'].includes(q.type) ? (
+                           <div className="h-[300px]">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} dataKey="value">
+                                    {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />)}
+                                  </Pie>
+                                  <RechartsTooltip formatter={(val) => [`${val} responses`, 'Count']} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                  <Legend iconType="circle" />
+                                </PieChart>
+                              </ResponsiveContainer>
+                           </div>
+                        ) : (
+                           <div className="h-[300px]">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                                  <XAxis type="number" allowDecimals={false} stroke="#9ca3af" />
+                                  <YAxis dataKey="name" type="category" width={150} tick={{fontSize: 12, fill: '#6b7280'}} />
+                                  <RechartsTooltip formatter={(val) => [`${val} responses`, 'Count']} cursor={{fill: '#f3f4f6'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                  <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]}>
+                                    {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />)}
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                           </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -346,84 +490,199 @@ const ResponsesPanel = ({ form }) => {
 
           {/* INDIVIDUAL TAB */}
           {activeTab === 'individual' && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
-              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                <button disabled={currentIndex === 0} onClick={() => setCurrentIndex(p => p - 1)}
-                  className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-30 transition-colors text-gray-600 dark:text-gray-300">
-                  <ChevronLeft size={20} />
-                </button>
-                <div className="text-sm font-bold text-gray-700 dark:text-gray-200">
-                  Response <span className="text-[var(--accent)]">{currentIndex + 1}</span>
-                  <span className="text-gray-400 font-medium"> of {data.responses.length}</span>
+            <div className="bg-[#f8fafc] dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl overflow-hidden shadow-md">
+              {/* Profile Navigation Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-4 mb-4 sm:mb-0">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-xl shadow-inner">
+                    {(data.responses[currentIndex]?.respondent_email || 'A')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{data.responses[currentIndex]?.respondent_email || 'Anonymous'}</h2>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                      <Clock size={14} />
+                      {new Date(data.responses[currentIndex]?.completed_at).toLocaleString()}
+                    </div>
+                  </div>
                 </div>
-                <button disabled={currentIndex === data.responses.length - 1} onClick={() => setCurrentIndex(p => p + 1)}
-                  className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-30 transition-colors text-gray-600 dark:text-gray-300">
-                  <ChevronRight size={20} />
-                </button>
+                
+                <div className="flex items-center gap-6">
+                  {!isSurvey && !isCEF && (
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Score</p>
+                      <div className="flex items-baseline gap-2 justify-end">
+                        <span className="text-2xl font-black text-gray-800 dark:text-gray-100">{data.responses[currentIndex]?.total_score ?? 0}</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${data.responses[currentIndex]?.is_passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {data.responses[currentIndex]?.is_passed ? 'Passed' : 'Failed'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* View Original Form Button */}
+                  <button 
+                    onClick={() => setShowOriginalForm(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 font-bold text-sm rounded-xl transition-all border border-indigo-200 dark:border-indigo-800"
+                  >
+                    <Eye size={16} />
+                    View Original Form
+                  </button>
+
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <button disabled={currentIndex === 0} onClick={() => setCurrentIndex(p => p - 1)}
+                      className="p-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 hover:shadow-sm disabled:opacity-30 transition-all text-gray-600 dark:text-gray-300">
+                      <ChevronLeft size={20} />
+                    </button>
+                    <div className="text-sm font-bold text-gray-700 dark:text-gray-300 px-2 min-w-[70px] text-center">
+                      {currentIndex + 1} <span className="text-gray-400 font-medium">/ {data.responses.length}</span>
+                    </div>
+                    <button disabled={currentIndex === data.responses.length - 1} onClick={() => setCurrentIndex(p => p + 1)}
+                      className="p-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 hover:shadow-sm disabled:opacity-30 transition-all text-gray-600 dark:text-gray-300">
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                </div>
               </div>
+              
+              {/* Profile Body */}
               {(() => {
                 const r = data.responses[currentIndex];
                 return (
-                  <div className="p-6">
-                    <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
-                      <div className="w-10 h-10 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] font-black text-sm">
-                        {(r.respondent_email || 'A')[0].toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-800 dark:text-gray-100">{r.respondent_email || 'Anonymous'}</p>
-                        <p className="text-xs text-gray-400">{new Date(r.completed_at).toLocaleString()}</p>
-                      </div>
-                      {!isSurvey && (
-                        <div className={`ml-auto px-4 py-2 rounded-xl text-sm font-bold ${r.is_passed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
-                          {r.total_score ?? 0} pts · {r.is_passed ? 'Passed' : 'Failed'}
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-5">
-                      {(r.answers || []).map((ans, i) => {
-                        const q = (form?.form_schema || []).find(qs => qs.id === ans.question_id) || { type: ans.question_type };
-                        const val = getFormattedAnswerString(ans, form?.form_schema);
-                        return (
-                          <div key={i} className="border-b border-gray-100 dark:border-gray-700 pb-5 last:border-0">
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{ans.question_label}</p>
-                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {val ? (
-                                q.type === 'file_upload' && ans.text_value ? (
-                                  <div className="flex flex-col gap-2 mt-1">
-                                    {(() => {
-                                      try {
-                                        const files = JSON.parse(ans.text_value);
-                                        return files.map((f, fi) => (
-                                          <a key={fi} href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-[var(--accent)] hover:underline break-all max-w-max">
-                                            📄 {f.original_name || 'File'}
-                                          </a>
-                                        ));
-                                      } catch(e) { return val; }
-                                    })()}
-                                  </div>
-                                ) : q.type === 'grid_radio' || q.type === 'grid_checkbox' ? (
-                                  <div className="flex flex-col gap-1.5 mt-1">
-                                    {val.split(' | ').map((line, li) => (
-                                      <div key={li} className="bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-600 inline-block max-w-max text-xs">{line}</div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  val
-                                )
-                              ) : (
-                                <span className="italic text-gray-400">No answer</span>
-                              )}
+                  <div className="p-6 md:p-10 max-w-3xl mx-auto space-y-8">
+                    {(r.answers || []).map((ans, i) => {
+                      const q = (form?.form_schema || []).find(qs => qs.id === ans.question_id) || { type: ans.question_type };
+                      const val = getFormattedAnswerString(ans, form?.form_schema);
+                      const fallbackQ = allQuestions.find(aq => aq.id === ans.question_id);
+                      const displayLabel = ans.question_label || fallbackQ?.label || 'Untitled Question';
+                      
+                      return (
+                        <div key={i} className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 relative group">
+                          {/* Question Label */}
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="w-8 h-8 rounded-full bg-gray-50 dark:bg-gray-700 flex items-center justify-center text-gray-400 font-bold text-xs flex-shrink-0 mt-1">
+                              {i + 1}
+                            </div>
+                            <div>
+                              <p className="text-lg font-bold text-gray-800 dark:text-gray-100 leading-snug">{displayLabel}</p>
+                              {q.type && <p className="text-xs text-gray-400 uppercase tracking-wider mt-1">{q.type.replace('_', ' ')}</p>}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                          
+                          {/* Answer Content */}
+                          <div className="pl-12">
+                            {val ? (
+                              q.type === 'file_upload' && ans.text_value ? (
+                                <div className="flex flex-wrap gap-3">
+                                  {(() => {
+                                    try {
+                                      const files = JSON.parse(ans.text_value);
+                                      return files.map((f, fi) => (
+                                        <a key={fi} href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-3 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 transition-colors shadow-sm group/file">
+                                          <div className="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg group-hover/file:bg-indigo-200 transition-colors">
+                                            <FileText size={18} />
+                                          </div>
+                                          <span className="font-medium text-sm">{f.original_name || 'Attached File'}</span>
+                                        </a>
+                                      ));
+                                    } catch(e) { return val; }
+                                  })()}
+                                </div>
+                              ) : q.type === 'grid_radio' || q.type === 'grid_checkbox' ? (
+                                <div className="flex flex-col gap-2">
+                                  {val.split(' | ').map((line, li) => {
+                                    const [row, col] = line.split(': ');
+                                    return (
+                                      <div key={li} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl">
+                                        <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-1 sm:mb-0">{row}</span>
+                                        <span className="bg-white dark:bg-gray-800 px-3 py-1.5 shadow-sm border border-gray-100 dark:border-gray-700 rounded-lg text-sm font-medium text-[var(--accent)]">{col}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : q.type === 'cef_code' ? (
+                                <div className="rounded-xl overflow-hidden shadow-sm border border-gray-800 bg-[#1e1e1e]">
+                                  <div className="px-4 py-2 bg-gray-800 border-b border-gray-700 flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+                                    <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
+                                    <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+                                  </div>
+                                  <pre className="p-4 text-sm font-mono text-gray-300 overflow-x-auto">
+                                    {val}
+                                  </pre>
+                                </div>
+                              ) : q.type === 'cef_rtf' ? (
+                                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed bg-gray-50 dark:bg-gray-900/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-800" dangerouslySetInnerHTML={{ __html: ans.text_value }} />
+                              ) : (
+                                <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed text-[15px]">
+                                  {val}
+                                </div>
+                              )
+                            ) : (
+                              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl text-gray-400 text-sm font-medium italic">
+                                <AlertCircle size={14} />
+                                Question was skipped
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })()}
             </div>
           )}
         </>
+      )}
+
+      {/* Original Form View Modal */}
+      {showOriginalForm && (
+        <div className="fixed inset-0 z-[100] flex justify-center items-start bg-black/60 backdrop-blur-sm overflow-y-auto pt-10 pb-10">
+          <div className="bg-white dark:bg-gray-900 w-full max-w-7xl min-h-[80vh] rounded-3xl shadow-2xl relative flex flex-col">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 rounded-t-3xl">
+              <div className="flex items-center gap-3">
+                <button onClick={() => setShowOriginalForm(false)} className="p-2 -ml-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors">
+                  <ArrowLeft size={20} />
+                </button>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Original Form View</h3>
+                  <p className="text-xs text-gray-500">Filled by {data.responses[currentIndex]?.respondent_email || 'Anonymous'}</p>
+                </div>
+              </div>
+              <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all">
+                <Download size={16} />
+                Download PDF
+              </button>
+            </div>
+            
+            <div id="original-form-print-area" className="flex-1 p-8 bg-gray-50 dark:bg-gray-950 overflow-y-auto">
+              <div className="max-w-6xl mx-auto bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8">
+                <div className="mb-8 border-b border-gray-100 dark:border-gray-800 pb-6">
+                  <h1 className="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2">{form?.title}</h1>
+                  <p className="text-gray-500 dark:text-gray-400">{form?.description}</p>
+                </div>
+                {(() => {
+                  const r = data.responses[currentIndex];
+                  const mappedAnswers = {};
+                  (r.answers || []).forEach(a => {
+                    mappedAnswers[a.question_id] = {
+                      options: a.selected_options ? a.selected_options.map(o => o.id) : [],
+                      text_value: a.text_value || ''
+                    };
+                  });
+                  return (
+                    <DynamicFormRenderer
+                      schema={form?.form_schema || []}
+                      formMode={form?.form_mode || 'assessment'}
+                      disabled={true}
+                      initialAnswers={mappedAnswers}
+                    />
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -581,10 +840,12 @@ const FormEditorPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const location = useLocation();
+
   const [form, setForm] = useState(null);
   const [schema, setSchema] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('questions');
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'questions');
   const [saveStatus, setSaveStatus] = useState('saved'); // 'saving' | 'saved' | 'error'
   const [showSend, setShowSend] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -740,33 +1001,36 @@ const FormEditorPage = () => {
     <div className="min-h-screen bg-[#f0ebfb] dark:bg-[#1a1625] flex flex-col">
       {/* ── Top Navigation Bar ── */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 shadow-sm">
-        <div className="flex items-center justify-between px-4 h-14">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 h-14 gap-4">
           {/* Left — Back + Title */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => navigate('/hr/recruitment/cef')}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 transition-colors flex-shrink-0"
             >
               <ArrowLeft size={18} />
             </button>
-            <div className="flex items-center gap-2 min-w-0 group cursor-text relative">
-              <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center flex-shrink-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center flex-shrink-0 hidden sm:flex">
                 <HelpCircle size={16} className="text-white" />
               </div>
-              <input
-                type="text"
-                value={form.title || ''}
-                onChange={handleTitleChange}
-                className="text-base font-bold text-gray-800 dark:text-gray-100 bg-gray-50/80 hover:bg-gray-100 border border-gray-300 border-dashed hover:border-gray-400 focus:border-[var(--accent)] focus:border-solid focus:bg-white px-2 pr-8 -ml-2 outline-none py-1 min-w-0 w-full max-w-xs transition-all rounded"
-                placeholder="Click here to rename form..."
-                title="Click to rename form"
-              />
-              <Edit3 size={14} className="text-[var(--accent)] opacity-70 group-hover:opacity-100 absolute right-1 pointer-events-none transition-opacity" />
+              <div className="relative group cursor-text flex-none min-w-0 max-w-full">
+                <input
+                  type="text"
+                  value={form.title || ''}
+                  onChange={handleTitleChange}
+                  style={{ width: `${Math.max(20, (form.title || '').length)}ch` }}
+                  className="text-base font-bold text-gray-800 dark:text-gray-100 bg-gray-50/80 hover:bg-gray-100 border border-gray-300 border-dashed hover:border-gray-400 focus:border-[var(--accent)] focus:border-solid focus:bg-white px-2 pr-8 outline-none py-1 min-w-0 max-w-full transition-all rounded"
+                  placeholder="Click here to rename form..."
+                  title="Click to rename form"
+                />
+                <Edit3 size={14} className="text-[var(--accent)] opacity-70 group-hover:opacity-100 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity" />
+              </div>
             </div>
           </div>
 
           {/* Center — Tabs */}
-          <div className="flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+          <div className="flex items-center gap-1">
             {tabs.map(tab => (
               <button
                 key={tab.id}
@@ -780,7 +1044,7 @@ const FormEditorPage = () => {
           </div>
 
           {/* Right — Actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 justify-end">
             {/* Auto-save status */}
             <div className={`text-xs font-medium flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${saveStatus === 'saving' ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' : saveStatus === 'error' ? 'text-red-500 bg-red-50 dark:bg-red-900/20' : 'text-green-600 bg-green-50 dark:bg-green-900/20'}`}>
               {saveStatus === 'saving' ? <Loader2 size={12} className="animate-spin" /> : saveStatus === 'error' ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
