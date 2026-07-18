@@ -9,7 +9,7 @@ import { MonacoBuilder, MonacoRenderer } from './MonacoField';
 import { RichTextBuilder, RichTextRenderer } from './RichTextField';
 
 // Basic Option-Based Fields Builder
-export const OptionsBuilder = ({ q, isActive, formMode, onUpdateOption, onRemoveOption, onAddOption }) => (
+export const OptionsBuilder = ({ q, isActive, formMode, onUpdateOption, onRemoveOption, onAddOption, onUpdate }) => (
   <div className="space-y-2 mt-2">
     {(q.options || []).map((opt, i) => (
       <div key={i} className="flex items-center gap-3 group/opt">
@@ -22,6 +22,27 @@ export const OptionsBuilder = ({ q, isActive, formMode, onUpdateOption, onRemove
           type="text"
           value={opt.label}
           onChange={e => onUpdateOption(i, { label: e.target.value, value: e.target.value })}
+          onPaste={e => {
+            const paste = e.clipboardData.getData('text');
+            let items = [];
+            if (paste.includes('\n')) {
+              items = paste.split(/\r?\n/);
+            } else if (paste.includes(',')) {
+              items = paste.split(',');
+            }
+            
+            items = items.map(l => l.trim()).filter(Boolean);
+            
+            if (items.length > 1 && onUpdate) {
+              e.preventDefault();
+              const newOptions = [...(q.options || [])];
+              newOptions[i] = { ...newOptions[i], label: items[0], value: items[0] };
+              items.slice(1).forEach((l, idx) => {
+                newOptions.splice(i + 1 + idx, 0, { id: uuidv4(), label: l, value: l, score: 0, is_correct: false });
+              });
+              onUpdate({ options: newOptions });
+            }
+          }}
           placeholder={`Option ${i + 1}`}
           className="flex-1 text-sm bg-transparent border-0 border-b border-gray-100 dark:border-gray-700 focus:border-[var(--accent)] outline-none pb-1 text-gray-700 dark:text-gray-300 placeholder-gray-300 transition-colors"
         />

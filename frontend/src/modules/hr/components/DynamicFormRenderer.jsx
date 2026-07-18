@@ -1,7 +1,9 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { getFieldConfig, getCEFFieldConfig } from './fields/FieldRegistry';
 import { SkillMatrixRenderer } from './fields/SkillMatrixField';
+import { SUPPORTED_LANGUAGES } from './fields/MonacoField';
 import 'react-quill-new/dist/quill.snow.css';
 
 /* ─────────────────────────────────────────────────────────────────
@@ -25,10 +27,12 @@ const CEFRatingBlock = ({ question, value, onChange, disabled }) => {
   return (
     <div className="w-full h-full min-w-0">
       {/* Section title */}
-      <div className="text-base font-bold text-[#60839b] mb-2 leading-tight">
-        {question.label}
-        {question.required && <span className="text-red-500 ml-1">*</span>}
-      </div>
+      {question.label && (
+        <div className="text-base font-bold text-[#60839b] mb-2 leading-tight">
+          {question.label}
+          {question.required && <span className="text-red-500 ml-1">*</span>}
+        </div>
+      )}
       <SkillMatrixRenderer
         q={question}
         value={value}
@@ -52,10 +56,12 @@ const CEFCheckboxBlock = ({ question, value = [], onChange, disabled }) => {
 
   return (
     <div className="w-full">
-      <div className="text-base font-bold text-[#60839b] mb-2">
-        {question.label}
-        {question.required && <span className="text-red-500 ml-1">*</span>}
-      </div>
+      {question.label && (
+        <div className="text-base font-bold text-[#60839b] mb-2">
+          {question.label}
+          {question.required && <span className="text-red-500 ml-1">*</span>}
+        </div>
+      )}
       {question.help_text && (
         <p className="text-xs text-gray-500 mb-2">{question.help_text}</p>
       )}
@@ -95,10 +101,12 @@ const CEFRadioBlock = ({ question, value = [], onChange, disabled }) => {
 
   return (
     <div className="w-full">
-      <div className="text-base font-bold text-[#60839b] mb-2">
-        {question.label}
-        {question.required && <span className="text-red-500 ml-1">*</span>}
-      </div>
+      {question.label && (
+        <div className="text-base font-bold text-[#60839b] mb-2">
+          {question.label}
+          {question.required && <span className="text-red-500 ml-1">*</span>}
+        </div>
+      )}
       <div className="flex flex-wrap gap-x-6 gap-y-1">
         {options.map(opt => {
           const isSelected = Array.isArray(value) ? value.includes(opt.id) : false;
@@ -129,10 +137,12 @@ const CEFTextBlock = ({ question, value, onChange, disabled }) => {
   if (question.type === 'long_text') {
     return (
       <div className="w-full">
-        <div className="text-base font-bold text-[#60839b] mb-2">
-          {question.label}
-          {question.required && <span className="text-red-500 ml-1">*</span>}
-        </div>
+        {question.label && (
+          <div className="text-base font-bold text-[#60839b] mb-2">
+            {question.label}
+            {question.required && <span className="text-red-500 ml-1">*</span>}
+          </div>
+        )}
         <textarea
           value={value || ''}
           onChange={e => !disabled && onChange(e.target.value)}
@@ -146,11 +156,13 @@ const CEFTextBlock = ({ question, value, onChange, disabled }) => {
   }
 
   return (
-    <div className="flex items-center">
-      <div className="w-[180px] flex-shrink-0 text-[14px] font-bold text-gray-700 pr-2 leading-tight">
-        {question.label}
-        {question.required && <span className="text-red-500 ml-1">*</span>}
-      </div>
+    <div className={question.label ? "flex items-center" : "w-full"}>
+      {question.label && (
+        <div className="w-[180px] flex-shrink-0 text-[14px] font-bold text-gray-700 pr-2 leading-tight">
+          {question.label}
+          {question.required && <span className="text-red-500 ml-1">*</span>}
+        </div>
+      )}
       <input
         type="text"
         value={value || ''}
@@ -166,10 +178,12 @@ const CEFTextBlock = ({ question, value, onChange, disabled }) => {
 /* ─── CEF Number Block ────────────────────────────────────────── */
 const CEFNumberBlock = ({ question, value, onChange, disabled }) => (
   <div className="flex flex-col mb-2">
-    <div className="text-[14px] font-bold text-gray-700 mb-2">
-      {question.label}
-      {question.required && <span className="text-red-500 ml-1">*</span>}
-    </div>
+    {question.label && (
+      <div className="text-[14px] font-bold text-gray-700 mb-2">
+        {question.label}
+        {question.required && <span className="text-red-500 ml-1">*</span>}
+      </div>
+    )}
     <input
       type="number"
       value={value || ''}
@@ -188,10 +202,12 @@ const CEFRTFBlock = ({ question, value, onChange, disabled }) => {
   if (disabled && value) {
     return (
       <div className="w-full">
-        <div className="text-base font-bold text-gray-800 dark:text-gray-100 mb-2">
-          {question.label}
-          {question.required && <span className="text-red-500 ml-1">*</span>}
-        </div>
+        {question.label && (
+          <div className="text-base font-bold text-gray-800 dark:text-gray-100 mb-2">
+            {question.label}
+            {question.required && <span className="text-red-500 ml-1">*</span>}
+          </div>
+        )}
         <div
           className="prose prose-sm dark:prose-invert max-w-none p-3 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
           dangerouslySetInnerHTML={{ __html: value }}
@@ -221,32 +237,78 @@ const CEFRTFBlock = ({ question, value, onChange, disabled }) => {
 
 /* ─── CEF Code Block ──────────────────────────────────────────── */
 const CEFCodeBlock = ({ question, value, onChange, disabled }) => {
-  const language = question.config?.language || 'c';
-  const starter = question.starter_code || '';
+  const allowSelect = question.config?.allow_language_selection;
+  const defaultLang = question.config?.language || 'c';
+  const defaultCode = question.starter_code || '';
+  
+  let currentLang = defaultLang;
+  let code = defaultCode;
+
+  try {
+    if (value && value.trim().startsWith('{')) {
+      const parsed = JSON.parse(value);
+      if (parsed.language) currentLang = parsed.language;
+      if (typeof parsed.code !== 'undefined') code = parsed.code;
+    } else if (value) {
+      code = value;
+    }
+  } catch (e) {
+    if (value) code = value;
+  }
+
+  const handleLangChange = (e) => {
+    if (disabled) return;
+    onChange(JSON.stringify({ language: e.target.value, code }));
+  };
+
+  const handleCodeChange = (val) => {
+    if (disabled) return;
+    onChange(JSON.stringify({ language: currentLang, code: val || '' }));
+  };
+
   return (
     <div className="w-full">
-      <div className="text-base font-bold text-gray-800 dark:text-gray-100 mb-2">
-        {question.label}
-        {question.required && <span className="text-red-500 ml-1">*</span>}
-      </div>
+      {question.label && (
+        <div className="text-base font-bold text-gray-800 dark:text-gray-100 mb-2">
+          {question.label}
+          {question.required && <span className="text-red-500 ml-1">*</span>}
+        </div>
+      )}
       <div className="rounded border border-gray-300 dark:border-gray-700 overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
           <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
           <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
-          <span className="text-[10px] text-gray-600 dark:text-gray-400 font-mono ml-2">{language}</span>
+          {allowSelect && !disabled ? (
+            <div className="ml-2 relative">
+              <select
+                value={currentLang}
+                onChange={handleLangChange}
+                className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-0.5 pr-6 text-[10px] font-mono font-medium text-gray-700 dark:text-gray-200 outline-none focus:border-[#60839b] transition-colors cursor-pointer"
+              >
+                {SUPPORTED_LANGUAGES.map(lang => (
+                  <option key={lang.value} value={lang.value}>{lang.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+          ) : (
+            <span className="text-[10px] text-gray-600 dark:text-gray-400 font-mono ml-2">
+              {SUPPORTED_LANGUAGES.find(l => l.value === currentLang)?.label || currentLang}
+            </span>
+          )}
         </div>
         <Suspense fallback={<div className="h-40 bg-gray-50 flex items-center justify-center text-gray-500 text-xs">Loading editor...</div>}>
           <MonacoEditor
             height="240px"
-            language={language}
+            language={currentLang}
             theme="light"
-            value={value || starter}
-            onChange={val => !disabled && onChange(val || '')}
+            value={code}
+            onChange={handleCodeChange}
             options={{
               minimap: { enabled: false },
               fontSize: 13,
-              fontFamily: "'JetBrains Mono', Consolas, monospace",
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
               lineNumbers: 'on',
               wordWrap: 'on',
               automaticLayout: true,
@@ -272,6 +334,12 @@ const CEFSectionRenderer = ({ section, answers, onAnswerUpdate, disabled }) => {
 
     return (
       <div className="mb-4">
+        {section.title && (
+          <h3 className="text-lg font-bold text-[#60839b] border-b border-[#a1b9ca] pb-1 mb-3">
+            {section.title}
+            {questions[0]?.required && <span className="text-red-500 ml-1">*</span>}
+          </h3>
+        )}
         {section.description && (
           <p className="text-xs text-gray-500 mb-3">{section.description}</p>
         )}
@@ -282,9 +350,10 @@ const CEFSectionRenderer = ({ section, answers, onAnswerUpdate, disabled }) => {
           {questions.map(q => {
             const ans = answers[q.id] || { text_value: '{}', options: [] };
             const val = ans.text_value || '{}';
+            const displayQ = { ...q, label: '', required: false };
             return (
               <div key={q.id} className="min-w-0">
-                <CEFRatingBlock question={q} value={val} onChange={v => onAnswerUpdate(q.id, v, false)} disabled={disabled} />
+                <CEFRatingBlock question={displayQ} value={val} onChange={v => onAnswerUpdate(q.id, v, false)} disabled={disabled} />
               </div>
             );
           })}
@@ -298,6 +367,12 @@ const CEFSectionRenderer = ({ section, answers, onAnswerUpdate, disabled }) => {
   // Programming, RTF, and Mixed — full-width each
   return (
     <div className="mb-4">
+      {section.title && (
+        <h3 className="text-lg font-bold text-[#60839b] border-b border-[#a1b9ca] pb-1 mb-3">
+          {section.title}
+          {sectionType !== 'mixed' && questions[0]?.required && <span className="text-red-500 ml-1">*</span>}
+        </h3>
+      )}
       {section.description && (
         <p className="text-[13px] text-gray-500 mb-3">{section.description}</p>
       )}
@@ -318,20 +393,22 @@ const CEFSectionRenderer = ({ section, answers, onAnswerUpdate, disabled }) => {
           };
 
           let BlockContent = null;
-          if (q.type === 'short_text' || q.type === 'long_text') BlockContent = <CEFTextBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
-          else if (q.type === 'number') BlockContent = <CEFNumberBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
-          else if (q.type === 'radio') BlockContent = <CEFRadioBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
-          else if (q.type === 'checkbox') BlockContent = <CEFCheckboxBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
-          else if (q.type === 'dropdown') BlockContent = <CEFDropdownBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
-          else if (q.type === 'file_upload') BlockContent = <CEFFileUploadBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
-          else if (q.type === 'cef_rtf') BlockContent = <CEFRTFBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
-          else if (q.type === 'cef_code') BlockContent = <CEFCodeBlock key={q.id} question={q} value={rawValue} onChange={handleChange} disabled={disabled} />;
-          else if (q.type === 'cef_rating') BlockContent = <CEFRatingBlock key={q.id} question={q} value={fieldValue} onChange={handleChange} disabled={disabled} />;
+          const displayQ = sectionType === 'mixed' ? q : { ...q, label: '', required: false };
+
+          if (q.type === 'short_text' || q.type === 'long_text') BlockContent = <CEFTextBlock key={q.id} question={displayQ} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          else if (q.type === 'number') BlockContent = <CEFNumberBlock key={q.id} question={displayQ} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          else if (q.type === 'radio') BlockContent = <CEFRadioBlock key={q.id} question={displayQ} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          else if (q.type === 'checkbox') BlockContent = <CEFCheckboxBlock key={q.id} question={displayQ} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          else if (q.type === 'dropdown') BlockContent = <CEFDropdownBlock key={q.id} question={displayQ} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          else if (q.type === 'file_upload') BlockContent = <CEFFileUploadBlock key={q.id} question={displayQ} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          else if (q.type === 'cef_rtf') BlockContent = <CEFRTFBlock key={q.id} question={displayQ} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          else if (q.type === 'cef_code') BlockContent = <CEFCodeBlock key={q.id} question={displayQ} value={rawValue} onChange={handleChange} disabled={disabled} />;
+          else if (q.type === 'cef_rating') BlockContent = <CEFRatingBlock key={q.id} question={displayQ} value={fieldValue} onChange={handleChange} disabled={disabled} />;
           else {
             const fieldConfig = getCEFFieldConfig(q.type);
             if (fieldConfig?.RendererComponent) {
               const Renderer = fieldConfig.RendererComponent;
-              BlockContent = <Renderer key={q.id} q={q} value={fieldValue} onChange={handleChange} disabled={disabled} />;
+              BlockContent = <Renderer key={q.id} q={displayQ} value={fieldValue} onChange={handleChange} disabled={disabled} />;
             } else {
               BlockContent = <div key={q.id} className="text-red-400 text-xs">Unknown type: {q.type}</div>;
             }
@@ -491,11 +568,21 @@ const DynamicFormRenderer = ({ schema, disabled = true, onSubmit, isPublic = fal
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm('Are you sure you want to clear all form fields?')) {
-                    setAnswers({});
-                  }
+                  Swal.fire({
+                    title: 'Clear Form?',
+                    text: 'Are you sure you want to clear all form fields? This action cannot be undone.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Yes, clear it!'
+                  }).then((result) => {
+                    if (result.isConfirmed) {
+                      setAnswers({});
+                    }
+                  });
                 }}
-                className="text-xs font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest transition-colors"
+                className="px-6 py-2.5 bg-red-50 text-red-500 hover:bg-red-100 text-[13px] font-bold uppercase tracking-widest rounded transition-colors shadow-sm"
               >
                 Clear Form
               </button>

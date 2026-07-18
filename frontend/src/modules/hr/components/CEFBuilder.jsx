@@ -167,24 +167,26 @@ const CEFQuestionCard = ({
         {isActive ? (
           <div className="mb-3">
             <div className="flex flex-wrap gap-2 items-start mb-2">
-              <input
-                type="text"
-                value={q.label}
-                onChange={e => onUpdate({ label: e.target.value })}
-                onPaste={(e) => {
-                  const paste = e.clipboardData.getData('text');
-                  if (paste.includes('\n')) {
-                    const lines = paste.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-                    if (lines.length > 1) {
-                      e.preventDefault();
-                      onUpdate({ label: lines[0] });
-                      if (onAddMultiple) onAddMultiple(lines.slice(1));
+              {isMixed && (
+                <input
+                  type="text"
+                  value={q.label}
+                  onChange={e => onUpdate({ label: e.target.value })}
+                  onPaste={(e) => {
+                    const paste = e.clipboardData.getData('text');
+                    if (paste.includes('\n')) {
+                      const lines = paste.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                      if (lines.length > 1) {
+                        e.preventDefault();
+                        onUpdate({ label: lines[0] });
+                        if (onAddMultiple) onAddMultiple(lines.slice(1));
+                      }
                     }
-                  }
-                }}
-                placeholder={q.type === 'cef_rating' ? 'Category name (e.g. C & Embedded C)' : 'Question text'}
-                className="flex-1 min-w-[120px] text-[14px] font-bold bg-white border border-[#a1b9ca] px-2 py-1 outline-none focus:border-[#60839b] text-[#4a728a]"
-              />
+                  }}
+                  placeholder={q.type === 'cef_rating' ? 'Category name (e.g. C & Embedded C)' : 'Question text'}
+                  className="flex-1 min-w-[120px] text-[14px] font-bold bg-white border border-[#a1b9ca] px-2 py-1 outline-none focus:border-[#60839b] text-[#4a728a]"
+                />
+              )}
               {isMixed && (
                 <CEFTypeDropdown
                   value={q.type}
@@ -201,8 +203,14 @@ const CEFQuestionCard = ({
           /* Inactive Preview Mode (WYSIWYG) */
           <div className="flex items-start justify-between group/qtitle">
             <div className={`text-[12px] font-bold text-gray-800 leading-tight mb-1 ${q.type === 'cef_rating' ? 'text-[#4a728a] text-[14px] mb-2' : ''}`}>
-              {q.label || <span className="text-gray-400 italic">Untitled Question</span>}
-              {q.required && <span className="text-red-500 ml-1">*</span>}
+              {isMixed ? (
+                <>
+                  {q.label || <span className="text-gray-400 italic">Untitled Question</span>}
+                  {q.required && <span className="text-red-500 ml-1">*</span>}
+                </>
+              ) : (
+                <span className="text-gray-400 italic"></span>
+              )}
             </div>
             <div className="opacity-0 group-hover/qtitle:opacity-100 transition-opacity">
               <Pencil size={14} className="text-gray-400 cursor-pointer hover:text-[#60839b]" onClick={(e) => { e.stopPropagation(); onActivate(); }} />
@@ -296,6 +304,48 @@ const SortableQuestion = ({ question, sectionId, renderContent }) => {
   );
 };
 
+/* ─── Section Type Dropdown (Header) ───────────────────────────── */
+const SectionTypeDropdown = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+  
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  const current = CEF_SECTION_TYPES.find(s => s.id === value) || CEF_SECTION_TYPES.find(s => s.id === 'mixed');
+
+  return (
+    <div className="relative mr-2" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 text-[10px] font-bold uppercase text-[#60839b] bg-[#e6edf2] hover:bg-[#d9e5ed] px-2 py-0.5 rounded transition-colors"
+      >
+        {current?.label || 'Mixed'}
+        <ChevronDown size={12} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden z-20 py-1">
+          {CEF_SECTION_TYPES.map(st => (
+            <button
+              key={st.id}
+              type="button"
+              onClick={() => { onChange(st.id); setOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold transition-colors text-left ${value === st.id ? 'bg-[#e6edf2] text-[#60839b]' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              <span style={{ color: st.color }}>{st.icon}</span>
+              {st.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ─── Section Header (WYSIWYG) ────────────────────────────────── */
 const SectionHeader = ({ section, sectionType, sIdx, total, onUpdate, onRemove, onDuplicate, collapsed, onToggleCollapse, dragHandleProps }) => {
   const w = section.layout?.w || 2;
@@ -328,9 +378,10 @@ const SectionHeader = ({ section, sectionType, sIdx, total, onUpdate, onRemove, 
 
       {/* Actions (visible on hover) */}
       <div className="flex items-center gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity mt-1">
-        <span className="text-[10px] font-bold uppercase text-[#60839b] bg-[#e6edf2] px-2 py-0.5 rounded mr-2">
-          {sectionType?.label || 'Mixed'}
-        </span>
+        <SectionTypeDropdown 
+          value={section.section_type || 'mixed'} 
+          onChange={type => onUpdate({ section_type: type })} 
+        />
         <button type="button" onClick={toggleWidth} className="p-1 text-gray-400 hover:text-[#60839b]" title={w === 1 ? 'Make Full Width' : 'Make Half Width'}>
           {w === 1 ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
         </button>

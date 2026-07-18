@@ -4,7 +4,7 @@ import { Code2, ChevronDown } from 'lucide-react';
 // Lazy-load Monaco Editor — only downloaded when a Programming question is rendered
 const MonacoEditor = lazy(() => import('@monaco-editor/react'));
 
-const SUPPORTED_LANGUAGES = [
+export const SUPPORTED_LANGUAGES = [
   { value: 'c',          label: 'C' },
   { value: 'cpp',        label: 'C++' },
   { value: 'csharp',     label: 'C#' },
@@ -26,7 +26,7 @@ const SUPPORTED_LANGUAGES = [
 const MONACO_OPTIONS = {
   minimap: { enabled: false },
   fontSize: 14,
-  fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace",
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   lineNumbers: 'on',
   wordWrap: 'on',
   automaticLayout: true,
@@ -82,13 +82,23 @@ export const MonacoBuilder = ({ q, isActive, onUpdate }) => {
             <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
 
+          <label className="flex items-center gap-1.5 cursor-pointer ml-3">
+            <input 
+              type="checkbox" 
+              checked={q.config?.allow_language_selection || false}
+              onChange={e => onUpdate({ config: { ...q.config, allow_language_selection: e.target.checked } })}
+              className="accent-[#60839b]"
+            />
+            <span className="text-xs text-gray-600 font-medium tracking-wide">Candidate selects language</span>
+          </label>
+
           {/* Default starter code */}
           <input
             type="text"
             value={placeholder}
             onChange={e => onUpdate({ placeholder: e.target.value })}
             placeholder="Starter code / instructions..."
-            className="flex-1 text-xs bg-transparent border-0 border-b border-gray-200 dark:border-gray-700 focus:border-[var(--accent)] outline-none pb-1 text-gray-500 dark:text-gray-400 placeholder-gray-300 transition-colors"
+            className="flex-1 text-xs bg-transparent border-0 border-b border-gray-200 dark:border-gray-700 focus:border-[var(--accent)] outline-none pb-1 text-gray-500 dark:text-gray-400 placeholder-gray-300 transition-colors ml-3"
           />
         </div>
       )}
@@ -127,9 +137,34 @@ export const MonacoBuilder = ({ q, isActive, onUpdate }) => {
 
 /* ─── Renderer Component ────────────────────────────────────── */
 export const MonacoRenderer = ({ q, value, onChange, disabled }) => {
-  const language = q.config?.language || 'c';
-  const starter = q.starter_code || q.placeholder || '';
-  const code = value || starter || '';
+  const allowSelect = q.config?.allow_language_selection;
+  const defaultLang = q.config?.language || 'c';
+  const defaultCode = q.starter_code || q.placeholder || '';
+  
+  let currentLang = defaultLang;
+  let code = defaultCode;
+
+  try {
+    if (value && value.trim().startsWith('{')) {
+      const parsed = JSON.parse(value);
+      if (parsed.language) currentLang = parsed.language;
+      if (typeof parsed.code !== 'undefined') code = parsed.code;
+    } else if (value) {
+      code = value;
+    }
+  } catch (e) {
+    if (value) code = value;
+  }
+
+  const handleLangChange = (e) => {
+    if (disabled) return;
+    onChange(JSON.stringify({ language: e.target.value, code }));
+  };
+
+  const handleCodeChange = (val) => {
+    if (disabled) return;
+    onChange(JSON.stringify({ language: currentLang, code: val || '' }));
+  };
 
   return (
     <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
@@ -138,9 +173,24 @@ export const MonacoRenderer = ({ q, value, onChange, disabled }) => {
         <div className="w-3 h-3 rounded-full bg-red-500/80" />
         <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
         <div className="w-3 h-3 rounded-full bg-green-500/80" />
-        <span className="ml-3 text-xs text-gray-600 dark:text-gray-400 font-mono">
-          {SUPPORTED_LANGUAGES.find(l => l.value === language)?.label || language}
-        </span>
+        {allowSelect && !disabled ? (
+          <div className="ml-3 relative">
+            <select
+              value={currentLang}
+              onChange={handleLangChange}
+              className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-0.5 pr-6 text-[11px] font-mono font-medium text-gray-700 dark:text-gray-200 outline-none focus:border-[#60839b] transition-colors cursor-pointer"
+            >
+              {SUPPORTED_LANGUAGES.map(lang => (
+                <option key={lang.value} value={lang.value}>{lang.label}</option>
+              ))}
+            </select>
+            <ChevronDown size={12} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
+        ) : (
+          <span className="ml-3 text-xs text-gray-600 dark:text-gray-400 font-mono">
+            {SUPPORTED_LANGUAGES.find(l => l.value === currentLang)?.label || currentLang}
+          </span>
+        )}
         <span className="ml-auto text-[10px] text-gray-600 font-mono uppercase tracking-wider">
           {disabled ? 'Read-only' : 'Editor'}
         </span>
@@ -148,10 +198,10 @@ export const MonacoRenderer = ({ q, value, onChange, disabled }) => {
       <Suspense fallback={<MonacoLoadingFallback />}>
         <MonacoEditor
           height="320px"
-          language={language}
+          language={currentLang}
           theme="light"
           value={code}
-          onChange={val => !disabled && onChange(val || '')}
+          onChange={handleCodeChange}
           options={{ ...MONACO_OPTIONS, readOnly: !!disabled }}
         />
       </Suspense>
